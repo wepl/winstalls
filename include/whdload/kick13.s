@@ -21,6 +21,7 @@
 ;		02.08.01 exec.Supervisor fixed (to work with exec.SuperState)
 ;		03.08.01 NOFPU->NEEDFPU changed, DISKSONBOOT added
 ;			 bug in trackdisk fixed (endio missing on error)
+;		04.08.01 flushcache and callback for dos.LoadSeg added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -114,6 +115,7 @@ kick_patch	PL_START
 	IFND _bootblock
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3c9b6,dos_1
+		PL_PS	$36e4c,dos_LoadSeg
 	ENDC
 	ENDC
 	;the following stuff is from SetPatch 1.38
@@ -621,6 +623,31 @@ dos_init	move.l	#$10001,d1
 
 dos_1		move.l	#$118,d1		;original
 		bra	_flushcache
+
+dos_LoadSeg	clr.l	(12,a1)			;original
+		moveq	#12,d4			;original
+		lea	(.savea4,pc),a6
+		move.l	a4,(a6)
+		lea	(.bcplend,pc),a6
+		rts
+
+.savea4		dc.l	0
+		
+.bcplend	cmp.l	(.savea4,pc),a4		;are we in dos_51?
+		beq	.end51
+		jmp	($34128-$34134,a5)	;call original
+
+.end51		lea	($34128-$34134,a5),a6	;restore original
+	IFD _cb_dosLoadSeg
+		movem.l	d0-a6,-(a7)
+		move.l	(a1),d0			;d0 = BSTR FileName
+		tst.l	d1			;d1 = BPTR SegList
+		beq	.failed
+		bsr	_cb_dosLoadSeg
+.failed		movem.l	(a7)+,d0-a6
+	ENDC
+		bsr	_flushcache
+		jmp	(a6)
 
 	ENDC
 	ENDC
