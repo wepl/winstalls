@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.6 2002/11/05 18:52:57 wepl Exp $
+$Id: kick.readme 1.7 2002/11/22 16:46:32 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -73,6 +73,12 @@ DOSASSIGN
 If that symbol is defined the subroutine _dos_assign will be included and can
 be used (see below).
 
+FONTHEIGHT
+
+If defined that symbol sets the system default font height in the preferences
+(intuition), under Kick1.3 the default is 9 (60 chars per line), 8 makes 80
+chars per line on a standard screen.
+
 HDINIT
 
 If that symbol is defined a dos filesystem handler will be installed which
@@ -119,7 +125,7 @@ present.
 POINTERTICKS
 
 If defined that symbol sets the system default mouse speed in the preferences
-(intuition), under Kick1.3 the default is 2, 1 will be slow, 4 fast
+(intuition), under Kick1.3 the default is 2, 1 will be fast, 4 slow
 
 SETPATCH
 

@@ -39,6 +39,7 @@
 ;			 ACTION_DELETE_OBJECT fixed for nonexistent objects
 ;			 filesystem handler moved to kickfs.s
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
+;		30.11.02 FONTHEIGHT added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -136,6 +137,9 @@ kick_patch	PL_START
 	IFD BLACKSCREEN
 		PL_C	$1b9d2,6			;color17,18,19
 		PL_C	$1b9da,8			;color0,1,2,3
+	ENDC
+	IFD FONTHEIGHT
+		PL_B	$1b96c,FONTHEIGHT
 	ENDC
 	IFD POINTERTICKS
 		PL_W	$1b9d8,POINTERTICKS
@@ -602,6 +606,7 @@ trd_task
 
 .2		rts
 
+	IFD TRDCHANGEDISK
 	;d0.b = unit
 	;d1.b = new disk image number
 _trd_changedisk	movem.l	a6,-(a7)
@@ -619,6 +624,7 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 		movem.l	(a7)+,a6
 		rts
+	ENDC
 
 ;============================================================================
 

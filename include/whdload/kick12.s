@@ -5,6 +5,7 @@
 ;  :Version.	$Id: kick12.s 1.3 2002/05/09 14:18:45 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
+;		30.11.02 FONTHEIGHT added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -93,7 +94,7 @@ kick_patch	PL_START
 	IFD DEBUG
 		PL_L	$29fd4,-1			;disable asynchron io
 		PL_I	$2a51c				;empty dbf-loop in trackdisk.device
-	;	PL_I	$2a5d8				;internal readwrite
+	;	PL_I	$?????				;internal readwrite
 		PL_I	$2aa14				;trd_seek
 		PL_I	$2b2e8				;trd_rawread
 		PL_I	$2b2ee				;trd_rawwrite
@@ -102,6 +103,9 @@ kick_patch	PL_START
 	IFD BLACKSCREEN
 		PL_C	$1bcd6,6			;color17,18,19
 		PL_C	$1bcde,8			;color0,1,2,3
+	ENDC
+	IFD FONTHEIGHT
+		PL_B	$1bc70,FONTHEIGHT
 	ENDC
 	IFD POINTERTICKS
 		PL_W	$1bcdc,POINTERTICKS
@@ -567,6 +571,7 @@ trd_task
 
 .2		rts
 
+	IFD TRDCHANGEDISK
 	;d0.b = unit
 	;d1.b = new disk image number
 _trd_changedisk	movem.l	a6,-(a7)
@@ -584,6 +589,7 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 		movem.l	(a7)+,a6
 		rts
+	ENDC
 
 ;============================================================================
 
