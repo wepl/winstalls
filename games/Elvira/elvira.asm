@@ -3,9 +3,10 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1 
-;  :Version.	$Id: battleisle.asm 0.3 2000/05/11 19:56:23 jah Exp jah $
+;  :Version.	$Id: elvira.asm 1.1 2001/11/10 21:13:07 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
+;		21.12.01 nearly complete
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,7 +20,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:elvira/Elvira.Slave"
+	OUTPUT	"wart:e/elvira de/Elvira.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -32,10 +33,11 @@
 
 CHIPMEMSIZE	= $80000
 FASTMEMSIZE	= $80000
-NUMDRIVES	= 4
+NUMDRIVES	= 1
 WPDRIVES	= %0000
 
-DISKSONBOOT
+;DISKSONBOOT
+HDINIT
 ;HRTMON
 ;MEMFREE	= $100
 ;NEEDFPU
