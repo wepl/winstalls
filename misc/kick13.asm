@@ -1,13 +1,14 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick13.asm
-;  :Contents.	kickstart 1.3 booter
+;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.5 2003/03/30 18:26:15 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.6 2003/04/06 20:30:52 wepl Exp $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
 ;		04.03.03 full caches
+;		20.06.03 rework for whdload v16
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -27,6 +28,7 @@
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-				;disable optimize warnings
 	SUPER
 	ENDC
 
@@ -38,9 +40,14 @@ NUMDRIVES	= 2
 WPDRIVES	= %1111
 
 ;BLACKSCREEN
+;BOOTBLOCK
+;BOOTDOS
+;BOOTEARLY
+;CBDOSLOADSEG
+;CBDOSREAD
 CACHE
 DEBUG
-DISKSONBOOT
+;DISKSONBOOT
 ;DOSASSIGN
 ;FONTHEIGHT	= 8
 HDINIT
@@ -55,58 +62,180 @@ SETPATCH
 
 ;============================================================================
 
-KICKSIZE	= $40000			;34.005
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
+slv_Version	= 16
+slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	15			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_boot-_base		;ws_GameLoader
-		dc.w	_dir-_base		;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
+	INCLUDE	Sources:whdload/kick13.s
 
 ;============================================================================
 
+	IFD BARFLY
 	IFND	.passchk
 	DOSCMD	"WDate  >T:date"
 .passchk
 	ENDC
+	ENDC
 
-_dir		dc.b	"wb13",0
-_name		dc.b	"Kickstarter for 34.005",0
-_copy		dc.b	"1987 Amiga Inc.",0
-_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.5 "
+slv_CurrentDir	dc.b	"wb13",0
+slv_name	dc.b	"Kickstarter for 34.005",0
+slv_copy	dc.b	"1987 Amiga Inc.",0
+slv_info	dc.b	"adapted for WHDLoad by Wepl",10
+		dc.b	"Version 0.7 "
+	IFD BARFLY
 		INCBIN	"T:date"
+	ENDC
 		dc.b	0
 	EVEN
 
 ;============================================================================
+; entry before any diskaccess is performed, no dos.library available
 
-	IFEQ 1
+	IFD BOOTEARLY
+
 _bootearly	blitz
 		rts
+
 	ENDC
 
-	IFEQ 1
+;============================================================================
+; bootblock from "Disk.1" has been loaded, no dos.library available
+
+	IFD BOOTBLOCK
+
 ; A1 = ioreq ($2c+a5)
 ; A4 = buffer (1024 bytes)
 ; A6 = execbase
 
 _bootblock	blitz
 		jmp	(12,a4)
+
 	ENDC
+
+;============================================================================
+; like a program from "startup-sequence" executed, full dos process,
+; HDINIT is required
+
+; the following example is extensive because it saves all registers and
+;   restores them before executing the program, the reason for this that some
+;   programs (e.g. MANX Aztec-C) require specific registers properly setup on
+;   calling
+; in most cases a simpler routine is sufficient :-)
+
+	IFD BOOTDOS
+
+_bootdos	lea	(_saveregs,pc),a0
+		movem.l	d1-d6/a2-a6,(a0)
+		move.l	(a7)+,(44,a0)
+
+	;open doslib
+		lea	(_dosname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOldOpenLibrary,a6)
+		lea	(_dosbase,pc),a0
+		move.l	d0,(a0)
+		move.l	d0,a6			;A6 = dosbase
+
+	;assigns
+		lea	(_disk1,pc),a0
+		sub.l	a1,a1
+		bsr	_dos_assign
+
+	;check version
+		lea	(_program,pc),a0
+		move.l	a0,d1
+		move.l	#MODE_OLDFILE,d2
+		jsr	(_LVOOpen,a6)
+		move.l	d0,d1
+		beq	.end
+		move.l	#300,d3
+		sub.l	d3,a7
+		move.l	a7,d2
+		jsr	(_LVORead,a6)
+		move.l	d3,d0
+		move.l	a7,a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_CRC16,a2)
+		add.l	d3,a7
+		
+		cmp.w	#$dd8e,d0
+		beq	.versionok
+		pea	TDREASON_WRONGVER
+		jmp	(resload_Abort,a2)
+.versionok
+
+	;load exe
+		lea	(_program,pc),a0
+		move.l	a0,d1
+		jsr	(_LVOLoadSeg,a6)
+		move.l	d0,d7			;D7 = segment
+		beq	.end
+
+	;patch
+		lea	(_pl_program,pc),a0
+		move.l	d7,a1
+		jsr	(resload_PatchSeg,a2)
+
+	IFD DEBUG
+	;set debug
+		clr.l	-(a7)
+		move.l	d7,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		add.w	#12,a7
+	ENDC
+
+	;call
+		move.l	d7,a1
+		add.l	a1,a1
+		add.l	a1,a1
+		moveq	#_args_end-_args,d0
+		lea	(_args,pc),a0
+		movem.l	(_saveregs,pc),d1-d6/a2-a6
+		jsr	(4,a1)
+
+	IFD QUIT_AFTER_PROGRAM_EXIT
+		pea	TDREASON_OK
+		jmp	(resload_Abort,a2)
+	ELSE
+	;remove exe
+		move.l	d7,d1
+		move.l	(_dosbase,pc),a6
+		jsr	(_LVOUnLoadSeg,a6)
+	ENDC
+
+.end		moveq	#0,d0
+		move.l	(_saverts,pc),-(a7)
+		rts
+
+_pl_program	PL_START
+		PL_END
+
+	CNOP 0,4
+_disk1		dc.b	3,"df0",0	;for Assign
+_program	dc.b	"program to start",0
+_args		dc.b	10
+_args_end	dc.b	0
+	EVEN
+
+_saveregs	ds.l	11
+_saverts	dc.l	0
+_dosbase	dc.l	0
+
+	ENDC
+
+;============================================================================
+; callback/hook which gets executed after each successful call to dos.LoadSeg
+; can also be used instead of _bootdos, requires the presence of
+; "startup-sequence"
+
+; the following example uses a parameter table to patch different executables
+; after they get loaded
+
+	IFD CBDOSLOADSEG
 
 ; D0 = BSTR name of the loaded program as BCPL string
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
@@ -141,7 +270,7 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		move.l	a1,d7
 		bne	.add
 	;search patch
-		lea	.patch,a1
+		lea	(.patch,pc),a1
 .next		move.l	(a1)+,d3
 		movem.w	(a1)+,d4-d5
 		beq	.end
@@ -166,7 +295,7 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 	;patch
 		lea	(.patch,pc,d5.w),a0
 		move.l	d1,a1
-		move.l	(_resload),a2
+		move.l	(_resload,pc),a2
 		jsr	(resload_PatchSeg,a2)
 	;end
 .end
@@ -176,7 +305,7 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		move.l	d1,-(a7)
 		pea	WHDLTAG_DBGSEG_SET
 		move.l	a7,a0
-		move.l	(_resload),a2
+		move.l	(_resload,pc),a2
 		jsr	(resload_Control,a2)
 		add.w	#12,a7
 	ENDC
@@ -199,9 +328,69 @@ _p_run2568	PL_START
 	;	PL_P	0,.1
 		PL_END
 
-;============================================================================
+	ENDC
 
-	INCLUDE	Sources:whdload/kick13.s
+;============================================================================
+; callback/hook which gets executed after each successful call to
+; dos.LoadRead
+
+; the following example uses a parameter table to patch different files
+; after they get loaded
+
+	IFD CBDOSREAD
+
+; D0 = ULONG bytes read
+; D1 = ULONG offset in file
+; A0 = CPTR name of file
+; A1 = APTR memory buffer
+
+_cb_dosRead
+		move.l	a0,a2
+.1		tst.b	(a2)+
+		bne	.1
+		lea	(.name,pc),a3
+		move.l	a3,a4
+.2		tst.b	(a4)+
+		bne	.2
+		sub.l	a4,a2
+		add.l	a3,a2		;first char to check
+.4		move.b	(a2)+,d2
+		cmp.b	#"A",d2
+		blo	.3
+		cmp.b	#"Z",d2
+		bhi	.3
+		add.b	#$20,d2
+.3		cmp.b	(a3)+,d2
+		bne	.no
+		tst.b	d2
+		bne	.4
+
+	;check position
+		move.l	d0,d2
+		add.l	d1,d2
+		lea	(.data,pc),a2
+		moveq	#0,d3
+.next		movem.w	(a2)+,d3-d4
+		tst.w	d3
+		beq	.no
+		cmp.l	d1,d3
+		blo	.next
+		cmp.l	d2,d3
+		bhs	.next
+		sub.l	d1,d3
+		move.b	d4,(a1,d3.l)
+		bra	.next
+
+.no		rts
+
+.name		dc.b	"tables01",0	;lower case!
+	EVEN
+	;offset, new data
+.data		dc.w	$4278,$c	;original = 0b
+		dc.w	$45b4,$c	;original = 0b
+		dc.w	0
+
+	ENDC
 
 ;============================================================================
 
