@@ -2,7 +2,7 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	BJ
-;  :Version.	$Id: cf2.asm 1.2 1998/09/23 17:34:48 jah Exp jah $
+;  :Version.	$Id: cf2.asm 1.3 1998/09/29 22:49:19 jah Exp jah $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -11,6 +11,7 @@
 ;		21.09.98 access fault in soundplayer in german version fixed
 ;		29.09.98 fix problem with savegames from a floppy game
 ;			 containing absolute address of relocated program
+;		13.01.99 stack decreased on exit because "unacceptible args.."
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -51,7 +52,7 @@ _dir		dc.b	"data",0
 ;======================================================================
 
 	DOSCMD	"WDate >T:date"
-		dc.b	"$VER: CannonFodder2.Slave "
+		dc.b	"$VER: CannonFodder2.Slave 1.4 by Wepl "
 	INCBIN	"T:date"
 		dc.b	0
 	EVEN
@@ -377,9 +378,11 @@ _savepath	dc.b	"/save",0
 
 ;--------------------------------
 
-_badver		pea	TDREASON_WRONGVER
+_badver		subq.l	#8,a7
+		pea	TDREASON_WRONGVER
 		bra	_end
-_exit		pea	TDREASON_OK
+_exit		subq.l	#8,a7
+		pea	TDREASON_OK
 		bra	_end
 _debug		pea	TDREASON_DEBUG
 _end		move.l	(_resload),-(a7)
