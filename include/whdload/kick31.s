@@ -2,12 +2,13 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.7 2003/05/14 22:40:08 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.8 2003/06/07 13:25:23 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
 ;			 cache option added
 ;		15.05.03 patch for exec.ExitIntr to avoid double ints
+;		22.06.03 adapted for whdload v16
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -22,8 +23,70 @@
 	INCLUDE	exec/resident.i
 	INCLUDE	graphics/gfxbase.i
 
-KICKVERSION = 40
+KICKVERSION	= 40
+KICKCRC		= $9ff5				;40.068
+
 	MC68020
+
+;============================================================================
+
+	IFD	slv_Version
+	IFNE	slv_Version-16
+	FAIL	must be slave version 16
+	ENDC
+
+KICKSIZE	= $80000			;40.068
+BASEMEM		= CHIPMEMSIZE
+EXPMEM		= KICKSIZE+FASTMEMSIZE
+
+slv_base	SLAVE_HEADER			;ws_Security + ws_ID
+		dc.w	slv_Version		;ws_Version
+		dc.w	WHDLF_EmulPriv|slv_Flags;ws_flags
+		dc.l	BASEMEM			;ws_BaseMemSize
+		dc.l	0			;ws_ExecInstall
+		dc.w	_boot-slv_base		;ws_GameLoader
+		dc.w	slv_CurrentDir-slv_base	;ws_CurrentDir
+		dc.w	0			;ws_DontCache
+_keydebug	dc.b	0			;ws_keydebug
+_keyexit	dc.b	slv_keyexit		;ws_keyexit
+_expmem		dc.l	EXPMEM			;ws_ExpMem
+		dc.w	slv_name-slv_base	;ws_name
+		dc.w	slv_copy-slv_base	;ws_copy
+		dc.w	slv_info-slv_base	;ws_info
+		dc.w	slv_kickname-slv_base	;ws_kickname
+		dc.l	KICKSIZE		;ws_kicksize
+		dc.w	KICKCRC			;ws_kickcrc
+	ENDC
+
+;============================================================================
+; the following is to avoid "Error 86: Internal global optimize error" with
+; BASM, which is caused by "IFD _label" and _label is defined after the IFD
+
+	IFND BOOTBLOCK
+	IFD _bootblock
+BOOTBLOCK = 1
+	ENDC
+	ENDC
+	IFND BOOTDOS
+	IFD _bootdos
+BOOTDOS = 1
+	ENDC
+	ENDC
+	IFND BOOTEARLY
+	IFD _bootearly
+BOOTEARLY = 1
+	ENDC
+	ENDC
+	IFND CBDOSREAD
+	IFD _cb_dosRead
+CBDOSREAD = 1
+	ENDC
+	ENDC
+	IFND CBDOSLOADSEG
+	IFD _cb_dosLoadSeg
+CBDOSLOADSEG = 1
+	ENDC
+	ENDC
 
 ;============================================================================
 
@@ -47,11 +110,13 @@ _boot		lea	(_resload,pc),a1
 		lea	(_tags,pc),a0
 		jsr	(resload_Control,a5)
 	
+	IFND slv_Version
 	;load kickstart
 		move.l	#KICKSIZE,d0			;length
-		move.w	#$9FF5,d1			;crc16
-		lea	(_kick,pc),a0			;name
+		move.w	#KICKCRC,d1			;crc16
+		lea	(slv_kickname,pc),a0		;name
 		jsr	(resload_LoadKick,a5)
+	ENDC
 
 	;patch the kickstart
 		lea	(kick_patch,pc),a0
@@ -96,10 +161,10 @@ kick_patch	PL_START
 	IFHI NUMDRIVES-4
 		PL_B	$439f,7				;allow 7 floppy drives
 	ENDC
-	IFD _bootearly
+	IFD BOOTEARLY
 		PL_PS	$4798,kick_bootearly
 	ENDC
-	IFD _bootblock
+	IFD BOOTBLOCK
 		PL_PS	$4896,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
 		PL_PS	$b484,gfx_readvpos		;patched to set NTSC/PAL
@@ -120,10 +185,10 @@ kick_patch	PL_START
 	IFD STACKSIZE
 		PL_L	$22772,STACKSIZE/4
 	ENDC
-	IFD _bootdos
+	IFD BOOTDOS
 		PL_PS	$22814,dos_bootdos
 	ENDC
-	IFD _cb_dosLoadSeg
+	IFD CBDOSLOADSEG
 		PL_PS	$272b0,dos_LoadSeg
 	ENDC
 		PL_CB	$3504a				;dont init scsi.device
@@ -219,7 +284,7 @@ exec_AllocMem	move.l	d0,-(a7)
 		rts
 	ENDC
 
-	IFD _bootearly
+	IFD BOOTEARLY
 kick_bootearly	movem.l	d0-a6,-(a7)
 		bsr	_bootearly
 		movem.l	(a7)+,d0-a6
@@ -228,7 +293,7 @@ kick_bootearly	movem.l	d0-a6,-(a7)
 		rts
 	ENDC
 
-	IFD _bootblock
+	IFD BOOTBLOCK
 kick_bootblock	move.l	(a7)+,d1		;original
 		addq.l	#2,d1
 		movem.l	d1-d7/a2-a6,-(a7)	;original
@@ -472,7 +537,7 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
-	IFD _cb_dosLoadSeg
+	IFD CBDOSLOADSEG
 dos_LoadSeg	move.l	d0,d1		;original
 		beq	.end		;successful?
 		tst.l	d7		;filename
@@ -511,7 +576,7 @@ dos_LoadSeg	move.l	d0,d1		;original
 		jmp	(a0)
 	ENDC
 
-	IFD _bootdos
+	IFD BOOTDOS
 dos_bootdos
 	;init boot exe
 		lea	(_bootdos,pc),a0
@@ -520,6 +585,44 @@ dos_bootdos
 		lea	(bootname_ss,pc),a0
 		move.l	a0,d1
 	;return
+		rts
+	ENDC
+
+;---------------
+; performs a C:Assign
+; IN:	A0 = CSTR destination name
+;	A1 = CPTR directory (could be 0 meaning SYS:)
+; OUT:	-
+
+	IFD DOSASSIGN
+_dos_assign	movem.l	d2/a3-a6,-(a7)
+		move.l	a0,a3			;A3 = name
+		move.l	a1,a4			;A4 = directory
+
+	;open doslib
+		lea	(_dosname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a6
+
+	;lock directory
+		move.l	a4,d1
+		move.l	#ACCESS_READ,d2
+		jsr	(_LVOLock,a6)
+		move.l	d0,d2
+	IFD DEBUG
+		beq	_debug3
+	ENDC
+
+	;make assign
+		move.l	a3,d1
+		jsr	(_LVOAssignLock,a6)
+	IFD DEBUG
+		tst.l	d0
+		beq	_debug3
+	ENDC
+		
+		movem.l	(a7)+,d2/a3-a6
 		rts
 	ENDC
 
@@ -550,8 +653,8 @@ _debug3		tst	-3	;error in _dos_assign
 
 ;============================================================================
 
-_kick		dc.b	"40068.a1200",0
-	CNOP 0,4
+slv_kickname	dc.b	"40068.a1200",0
+	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
