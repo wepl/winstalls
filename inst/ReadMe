@@ -10,8 +10,9 @@
 
  This install applies to "Xxx" © 19xx Xxx.
 
- This install requires WHDLoad and The Patcher to be in the path. Both can be
- found in the WHDLoad package.
+ This install requires WHDLoad, DIC, RawDIC and The Patcher to be in the path.
+ The programs can be found in the WHDLoad package.
+ To install from a different drive than DF0: select installation mode Expert.
 
  The installed program requires x.x MB ChipMem and 0.5 MB OtherMem.
  It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
@@ -48,5 +49,5 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
- version 1.0 (01.01.02) done by Xxx:
+ version 1.0 (01.11.04) done by Xxx:
  - initial release
