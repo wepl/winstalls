@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.14 2003/07/12 19:17:20 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.15 2003/08/10 13:12:39 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -14,6 +14,7 @@
 ;		11.06.03 patch for access fault from EndCLI (JOTD)
 ;		20.06.03 adapted for whdload v16
 ;		25.06.03 _dos_assign parameter change
+;		09.12.03 keyboard acknowledgment fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -28,7 +29,7 @@
 	INCLUDE	graphics/gfxbase.i
 
 KICKVERSION	= 33
-KICKCRC		= $e9c6				;33.192
+KICKCRC		= $e9c6				;33.180
 
 ;============================================================================
 
@@ -37,7 +38,7 @@ KICKCRC		= $e9c6				;33.192
 	FAIL	must be slave version 16
 	ENDC
 
-KICKSIZE	= $40000			;33.192
+KICKSIZE	= $40000			;33.180
 BASEMEM		= CHIPMEMSIZE
 EXPMEM		= KICKSIZE+FASTMEMSIZE
 
@@ -168,6 +169,8 @@ kick_patch	PL_START
 	IFD POINTERTICKS
 		PL_W	$1bcdc,POINTERTICKS
 	ENDC
+		PL_PS	$2572e,keyboard_start
+		PL_PS	$25846,keyboard_end
 	IFD HDINIT
 		PL_PS	$288e8,hd_init			;enter while starting strap
 	ENDC
@@ -535,6 +538,31 @@ disk_getunitid
 		rts
 
 ;============================================================================
+; kick13 does not provide fast and fine access to cia timers, therfore we
+; use the rasterbeam, required minimum waiting is 75탎, one rasterline is
+; 63.5탎 a this results in min=127탎 max=190.5탎
+
+keyboard_start	or.b	#CIACRAF_SPMODE,(ciacra,a0)
+		clr.b	(ciasdr,a0)
+		lea	(_keyboarddelay,pc),a1
+		move.b	(_custom+vhposr),(a1)
+		rts
+
+keyboard_end	move.w	(_keyboarddelay,pc),d1
+		lea	(_custom),a1
+.wait1		cmp.b	(vhposr,a1),d1
+		beq	.wait1
+		move.b	(vhposr,a1),d1
+.wait2		cmp.b	(vhposr,a1),d1
+		beq	.wait2
+		move.b	(vhposr,a1),d1
+.wait3		cmp.b	(vhposr,a1),d1
+		beq	.wait3
+		addq.l	#2,(a7)
+		and.b	#~(CIACRAF_SPMODE),(_ciaa+ciacra)
+		rts
+
+;============================================================================
 
 timer_init	move.l	(_time,pc),a0
 		move.l	(whdlt_days,a0),d0
@@ -842,7 +870,8 @@ _debug4		tst	-4	;invalid lock specified
 
 ;============================================================================
 
-slv_kickname	dc.b	"33192.a500",0
+slv_kickname	dc.b	"33180.a500",0
+_keyboarddelay	dc.b	0
 	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
