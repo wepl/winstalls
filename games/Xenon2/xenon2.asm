@@ -2,13 +2,14 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.1 1998/03/16 16:58:59 jah Exp $
+;  :Version.	$Id: xenon2.asm 1.3 1999/05/30 17:24:24 jah Exp jah $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
 ;		20.12.98 work on CDTV version started
 ;		24.12.98 work on disk version started
 ;		25.12.98 disk version finished
 ;		07.01.98 support for second disk version started
+;		03.06.99 support for third disk version added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -16,7 +17,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-CDTV		;if defined Slave for CDTV version will be created
+;CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -71,7 +72,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.3 Floppy "
+		dc.b	"Version 1.4 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -271,6 +272,8 @@ _x2		dc.b	"x2",0
 		jsr	(resload_CRC16,a5)
 		cmp.w	#$7f8f,d0
 		beq	_v1
+		cmp.w	#$7ea7,d0
+		beq	_v3
 		cmp.w	#$c0fb,d0
 		bne	_wrongver
 
@@ -337,6 +340,42 @@ _v2_savehighs	jsr	$86aa			;original
 		movem.l	(a7)+,d0/a0
 
 		jmp	$400
+
+;============== version 3
+
+_v3		patch	$10a8,.1
+		jmp	($1016)
+
+.1		move.l	#$2c00,d0		;offset
+		move.l	#$6b6c0,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		jsr	(resload_DiskLoad,a5)
+
+		lea	$64e52,a7		;$410
+		move.l	#$7670CF6B,d0		;CopyLock
+		rol.l	#8,d0			;$a1a
+		eor.l	#$400,d0		;$a20
+		ror.l	#8,d0			;$a22
+		patch	$64bf2,.2
+		jmp	$64bb6			;$a24
+
+.2		patch	$63e,.3			;second copylock
+		jmp	$400
+
+.3		move.l	#$7670CF6B,d0		;CopyLock
+		patch	$641d4,.4
+		jmp	$b82
+
+	;after intro
+.4		move.l	#$70c00,d0		;offset
+		move.l	#$3fc00,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		move.l	(RESLOAD),a2
+		jsr	(resload_DiskLoad,a2)
+		patch	$64276,_5
+		jmp	$64252
 
 ;============== version 1
 
