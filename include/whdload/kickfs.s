@@ -2,9 +2,10 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl
-;  :Version.	$Id: kickfs.s 1.1 2002/04/17 20:23:35 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.2 2002/05/09 13:34:52 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
+;		09.05.02 symbols moved to the top for Asm-One/Pro
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -36,6 +37,27 @@
 ;		      24 dn_SegList -> .seglist
 ;		      2c dn_SIZEOF
 ; 14 bn_SIZEOF
+
+HD_Cyls			= 80
+HD_Surfaces		= 2
+HD_BlocksPerTrack	= 11
+HD_NumBlocksRes		= 2
+HD_NumBlocks		= HD_Cyls*HD_Surfaces*HD_BlocksPerTrack-HD_NumBlocksRes
+HD_NumBlocksUsed	= HD_NumBlocks/2
+HD_BytesPerBlock	= 512
+
+	;file locking is not implemented! no locklist is used
+	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
+
+	STRUCTURE MyLock,fl_SIZEOF
+		LONG	mfl_pos			;position in file
+		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
+	IFD IOCACHE
+		LONG	mfl_cpos		;fileoffset cache points to
+		LONG	mfl_clen		;amount data in cache (valid only on write cache)
+		LONG	mfl_iocache
+	ENDC
+		LABEL	mfl_SIZEOF
 
 		movem.l	d0-a6,-(a7)
 
@@ -87,14 +109,6 @@
 		dc.w	0			;da_Name
 		dc.w	0			;da_Reserved01
 		dc.w	0			;da_Reserved02
-
-HD_Cyls			= 80
-HD_Surfaces		= 2
-HD_BlocksPerTrack	= 11
-HD_NumBlocksRes		= 2
-HD_NumBlocks		= HD_Cyls*HD_Surfaces*HD_BlocksPerTrack-HD_NumBlocksRes
-HD_NumBlocksUsed	= HD_NumBlocks/2
-HD_BytesPerBlock	= 512
 
 .parameterPkt	dc.l	0			;name of dos handler
 		dc.l	0			;name of exec device
@@ -230,19 +244,6 @@ HD_BytesPerBlock	= 512
 		dc.w	ACTION_END,.a_end-.action				;3ef	1007
 		dc.w	ACTION_SEEK,.a_seek-.action				;3f0	1008
 		dc.w	0
-
-	;file locking is not implemented! no locklist is used
-	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
-
-	STRUCTURE MyLock,fl_SIZEOF
-		LONG	mfl_pos			;position in file
-		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
-	IFD IOCACHE
-		LONG	mfl_cpos		;fileoffset cache points to
-		LONG	mfl_clen		;amount data in cache (valid only on write cache)
-		LONG	mfl_iocache
-	ENDC
-		LABEL	mfl_SIZEOF
 
 	; conventions for action functions:
 	; IN:	a2 = resload
@@ -997,7 +998,7 @@ HD_BytesPerBlock	= 512
 
 .specfile_chk	move.l	a0,-(a7)
 
-.specfile_cmp	cmp.b	(a0)+,(a1)+
+.specfile_cmp	cmpm.b	(a0)+,(a1)+
 		bne	.specfile_end
 		tst.b	(-1,a0)
 		bne	.specfile_cmp

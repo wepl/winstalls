@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.s 0.36 2002/04/17 20:23:35 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.2 2002/05/09 12:11:43 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -446,7 +446,7 @@ disk_getunitid
 
 ;============================================================================
 
-timer_init	move.l	(_time),a0
+timer_init	move.l	(_time,pc),a0
 		move.l	(whdlt_days,a0),d0
 		mulu	#24*60,d0
 		add.l	(whdlt_mins,a0),d0
