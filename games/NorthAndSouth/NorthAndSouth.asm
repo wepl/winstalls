@@ -3,8 +3,9 @@
 ;  :Contents.	Slave for "North & South" from Infogrames
 ;  :Author.	Mr.Larmer of Wanted Team, Wepl
 ;  :Original	
-;  :Version.	$Id: North&South.asm 1.0 2001/01/30 22:17:18 jah Exp $
+;  :Version.	$Id: North&South.asm 1.2 2001/02/17 19:59:05 jah Exp $
 ;  :History.	17.02.01 Wepl adjusted
+;		02.06.03 Wepl minor changes
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -28,38 +29,26 @@
 
 ;============================================================================
 
-; number of floppy drives:
-;	sets the number of floppy drives, valid values are 0-4.
-;	0 means that the number is specified via option Custom1/N
-NUMDRIVES=1
-
-; protection state for floppy disks:
-;	0 means 'write protected', 1 means 'read/write'
-;	bit 0 means drive DF0:, bit 3 means drive DF3:
-WPDRIVES=%0000
-
-; disable fpu support:
-;	results in a different task switching routine, if fpu is enabled also
-;	the fpu status will be saved and restored.
-;	for better compatibility and performance the fpu should be disabled
-NOFPU
-
-; enable debug support for hrtmon:
-;	hrtmon reads to much from the stackframe if entered, if the ssp is at
-;	the end hrtmon will create a access fault.
-;	for better compatibility this option should be disabled
-;HRTMON
-
-; calculate minimal amount of free memory
-;	if the symbol MEMFREE is defined after each call to exec.AllocMem the
-;	size of the largest free memory chunk will be calculated and saved at
-;	the specified address if lower than the previous saved value (chipmem
-;	at MEMFREE, fastmem at MEMFREE+4)
-;MEMFREE=$100
-
-; amount of memory available for the system
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $0
+FASTMEMSIZE	= 0000
+NUMDRIVES	= 1
+WPDRIVES	= %0000
+
+;BLACKSCREEN
+CACHE
+;DEBUG
+DISKSONBOOT
+;DOSASSIGN
+;FONTHEIGHT	= 8
+;HDINIT
+;HRTMON
+;IOCACHE	= 1024
+;MEMFREE	= $100
+;NEEDFPU
+;POINTERTICKS	= 1
+SETPATCH
+;STACKSIZE	= 6000
+;TRDCHANGEDISK
 
 ;============================================================================
 
@@ -70,11 +59,11 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 ;============================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	11			;ws_Version
-		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
+		dc.w	15			;ws_Version
+		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulPriv	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
+		dc.w	_boot-_base		;ws_GameLoader
 		dc.w	0			;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
@@ -89,16 +78,11 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 _name		dc.b	"North & South",0
 _copy		dc.b	"1989 Infogrames",0
 _info		dc.b	"adapted by Wepl & Mr.Larmer",10
-		dc.b	"Version 1.4"
+		dc.b	"Version 1.5"
 		dc.b	0
 	EVEN
 
 ;============================================================================
-_start	;	A0 = resident loader
-;============================================================================
-
-	;initialize kickstart and environment
-		bra	_boot
 
 	;a1 = ioreq ($2c+a5)
 	;a4 = buffer (1024 bytes)
