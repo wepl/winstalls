@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.35 2002/04/17 19:55:24 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.36 2002/04/17 20:23:35 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -671,7 +671,7 @@ dos_bootdos
 		rts
 
 	CNOP 0,4
-bootname_ss_b	dc.b	12
+bootname_ss_b	dc.b	10
 bootname_ss	dc.b	"WHDBoot.ss",0
 bootfile_ss	dc.b	"WHDBoot.exe",10
 bootfile_ss_e

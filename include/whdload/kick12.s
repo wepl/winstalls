@@ -104,7 +104,7 @@ kick_patch	PL_START
 		PL_W	$1bcdc,POINTERTICKS
 	ENDC
 	IFD HDINIT
-		PL_PS	$288da,hd_init			;enter while starting strap
+		PL_PS	$288e8,hd_init			;enter while starting strap
 	ENDC
 	IFND _bootearly
 	IFND _bootblock
@@ -375,7 +375,7 @@ gfx_MrgCop	move.w	($10,a1),d0
 		move.l	a1,-(a7)		;original
 		pea	(.ret,pc)
 		move.l	(8,a7),-(a7)
-		add.l	#-6-$582c+$a5b4,(a7)
+		add.l	#-6-$57c0+$a586,(a7)
 		rts
 
 .ret		addq.l	#8,a7
@@ -636,7 +636,7 @@ dos_bootdos
 		rts
 
 	CNOP 0,4
-bootname_ss_b	dc.b	12
+bootname_ss_b	dc.b	10
 bootname_ss	dc.b	"WHDBoot.ss",0
 bootfile_ss	dc.b	"WHDBoot.exe",10
 bootfile_ss_e
@@ -713,8 +713,7 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 
 	IFD HDINIT
 
-hd_init		moveq	#0,d3				;original
-		sub.l	a4,a4				;original
+hd_init		sub.l	#$7e,a5				;original
 
 	INCLUDE	Sources:whdload/kickfs.s
 	
