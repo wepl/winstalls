@@ -2,7 +2,7 @@
 ;  :Program.	Flink.asm
 ;  :Contents.	Slave for "Flink" from Psygnosis
 ;  :Author.	Mr.Larmer of Wanted Team
-;  :History.	22.03.99
+;  :History.	22.03.99/2.7.2000
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -10,35 +10,58 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Include:
+	INCDIR	asm-one:Include2.0/
+	INCLUDE LIBRARIES/DOS_LIB.I
+	INCLUDE	LIBRARIES/DOS.I
+	INCLUDE EXEC/EXEC_LIB.I
+	INCLUDE	EXEC/MEMORY.I
+	INCLUDE	GRAPHICS/GRAPHICS_LIB.I
+	INCLUDE INTUITION/INTUITION_LIB.I
+	INCLUDE INTUITION/INTUITION.I
+	INCLUDE	OWN/CCRMAKRO
+	INCLUDE	own/whdload.i
+
+	ifeq	1
+	INCDIR	asm-one:include2.0/
 	INCLUDE	lvo/exec_lib.i
 	INCLUDE	lvo/dos_lib.i
 	INCLUDE	lvo/graphics_lib.i
 	INCLUDE	lvo/intuition_lib.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	whdload.i
+	endc
 
-	OUTPUT	dh2:flink/Flink.slave
-	OPT	O+ OG+			;enable optimizing
+;	OUTPUT	dh2:flink/Flink.slave
+;	OPT	O+ OG+			;enable optimizing
 
 Trainer		=	0	; 0-off, 1-on
 Decruncher	=	0
 
 ;======================================================================
-
+SLBASE
 _base
 		SLAVE_HEADER		;ws_Security + ws_ID
-		dc.w	7		;ws_Version
+		dc.w	10		;ws_Version
 		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_ReqAGA|WHDLF_Req68020	;ws_flags
 		dc.l	$200000		;ws_BaseMemSize
 		dc.l	0		;ws_ExecInstall
 		dc.w	Start-_base	;ws_GameLoader
 		dc.w	dir-_base	;ws_CurrentDir
 		dc.w	0		;ws_DontCache
-_keydebug	dc.b	$58		;ws_keydebug = F9
-_keyexit	dc.b	$59		;ws_keyexit = F10
+_keydebug	dc.b	$00		;ws_keydebug = F9
+_keyexit	dc.b	$5D		;ws_keyexit = F10
+		DC.L	0		;no fastmem
+		dc.w	slname-SLBASE
+		dc.w	slcr-SLBASE
+		dc.w	slinst-SLBASE
+***********************************************************************
+slname		dc.b	'Flink',0
+slcr		dc.b	'1994 Psygnosis',0
+slinst		dc.b	'HD-V1.3 July 2000 by Mr.Larmer and Harry',0
 
-	dc.b	'$VER: Flink CD32 HD by Mr.Larmer/Wanted Team - V1.0 (22.03.99)',0
+
+
+	dc.b	'$VER: Flink CD32 HD by Mr.Larmer/Wanted Team - V1.3 (01.04.2000)',0
 dir
 	dc.b	'data',0
 	CNOP 0,2
@@ -52,9 +75,10 @@ Start	;	A0 = resident loader
 
 		move.l	A0,A2
 		moveq	#CACRF_EnableI,d1
-		move.l	d0,d1
+		move.l	d1,d0
 		jsr	resload_SetCACR(a2)
 
+;	ILLEGAL
 		lea	_OSEmu(pc),A0		;file name
 		lea	$5000.w,A1		;address
 		jsr	resload_LoadFileDecrunch(a2)
@@ -82,7 +106,7 @@ Start	;	A0 = resident loader
 		move.l	(A7)+,_LVORawDoFmt+2(a6)
 
 		moveq	#0,D0
-		lea	DosName(pc),A1
+		lea	DosNam(pc),A1
 		move.l	4.w,A6
 		jsr	_LVOOpenLibrary(a6)
 		move.l	D0,A6
@@ -94,6 +118,14 @@ Start	;	A0 = resident loader
 		lsl.l	#2,D0
 		addq.l	#4,D0
 		move.l	D0,A1
+
+	MOVEM.L	a1/a6,-(A7)		;alloc mem for blitter faults
+	move.l	4,a6
+	move.l	#$10000,d0
+	moveq.l	#0,d1
+	jsr	-198(a6)
+
+	MOVEM.L	(A7)+,a1/a6
 
 ;		move.l	#$70004E71,$154(A1)	; open cd device
 		move.l	#$91C84E71,$37A(A1)	; skip read VBR
@@ -117,6 +149,10 @@ Start	;	A0 = resident loader
 		move.l	(a7)+,2(A1)
 		sub.l	#$22BBE,A1
 	endc
+
+	MOVE.L	A1,A0			;REMOVE CRASH IN  SEVERAL SPELLS
+	ADD.L	#$3C106-$19F08,A0
+	MOVE.W	#$207B,(A0)
 
 	ifne	Trainer
 
@@ -310,7 +346,7 @@ lbW000178:
 Return
 		moveq	#0,d0
 		rts
-DosName
+DosNam
 		dc.b	'dos.library',0
 GameName
 		dc.b	'flink',0
@@ -319,7 +355,7 @@ GameName
 ;--------------------------------
 
 _resload	dc.l	0		;address of resident loader
-_OSEmu		dc.b	'OSEmu.400',0
+_OSEmu		dc.b	'OSEmu.5000',0
 
 ;======================================================================
 
