@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.18 2001/09/01 22:09:43 wepl Exp $
+;  :Version.	$Id: kick13.s 0.19 2001/11/10 16:18:48 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -27,6 +27,7 @@
 ;			 BLACKSCREEN added
 ;		08.11.01 Supervisor patch removed, slaves now require 
 ;			 WHDLF_EmulPriv to be set
+;		27.11.01 fs enhanced
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -78,10 +79,10 @@ _boot		lea	(_resload,pc),a1
 		jmp	($fe,a0)			;this entry saves some patches
 
 kick_patch	PL_START
-		PL_W	$132,0				;color00 $444 -> $000
+		PL_CW	$132				;color00 $444 -> $000
 		PL_P	$61a,kick_detectfast
 		PL_P	$592,kick_detectchip
-		PL_W	$25a,0				;color00 $888 -> $000
+		PL_CW	$25a				;color00 $888 -> $000
 	IFD HRTMON
 		PL_PS	$286,kick_hrtmon
 	ENDC
@@ -111,22 +112,20 @@ kick_patch	PL_START
 	ENDC
 		PL_P	$28f88,timer_init
 		PL_P	$2a3b4,trd_readwrite
-		PL_I	$2a5d8				;internal readwrite
+	;	PL_I	$2a5d8				;internal readwrite
 		PL_P	$2a0e2,trd_motor
-		PL_I	$2a694				;trd_seek
+	;	PL_I	$2a694				;trd_seek
 		PL_P	$29cfa,trd_format
 		PL_PS	$2a6d6,trd_protstatus
-		PL_I	$2af68				;trd_rawread
-		PL_I	$2af6e				;trd_rawwrite
-		PL_I	$2a19c				;empty dbf-loop in trackdisk.device
+	;	PL_I	$2af68				;trd_rawread
+	;	PL_I	$2af6e				;trd_rawwrite
+	;	PL_I	$2a19c				;empty dbf-loop in trackdisk.device
 		PL_P	$2960c,trd_task
 	;	PL_L	$29c54,-1			;disable asynchron io
 		PL_P	$4984,disk_getunitid
 	IFD BLACKSCREEN
-		PL_L	$1b9d2,0			;color17,18
-		PL_W	$1b9d6,0			;color19
-		PL_L	$1b9da,0			;color0,1
-		PL_L	$1b9de,0			;color2,3
+		PL_C	$1b9d2,6			;color17,18,19
+		PL_C	$1b9da,8			;color0,1,2,3
 	ENDC
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
@@ -644,6 +643,21 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 	ENDC
 
 ;============================================================================
+;
+; BootNode
+; 08 LN_TYPE = NT_BOOTNODE
+; 0a LN_NAME -> ConfigDev
+;		10 cd_Rom+er_Type = ERTF_DIAGVALID
+;		1c cd_Rom+er_Reserved0c -> DiagArea
+;					   00 da_Config = DAC_CONFIGTIME
+;					   06 da_BootPoint -> .bootcode
+;					   0e da_SIZEOF
+;		44 cd_SIZEOF
+; 10 bn_DeviceNode -> DeviceNode (exp.MakeDosNode)
+*		      04 dn_Type = 2
+;		      24 dn_SegList -> .seglist
+;		      2c dn_SIZEOF
+; 14 bn_SIZEOF
 
 	IFD HDINIT
 
@@ -663,17 +677,19 @@ hd_init		lea	-1,a2				;original
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a4				;A4 = expansionbase
 		
-		lea	(.parameterPkt,pc),a0
+		lea	(.parameterPkt+8,pc),a0
+		lea	(.devicename,pc),a1
+		move.l	a1,-(a0)
 		lea	(.handlername,pc),a1
-		move.l	a1,(a0)
+		move.l	a1,-(a0)
 		move.l	a4,a6
 		jsr	(_LVOMakeDosNode,a6)
 		move.l	d0,a3				;A3 = DeviceNode
-	illegal
 		lea	(.seglist,pc),a1
 		move.l	a1,d1
 		lsr.l	#2,d1
 		move.l	d1,(dn_SegList,a3)
+		move.l	#-1,(dn_GlobalVec,a3)		;no BCPL shit
 
 		moveq	#BootNode_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
@@ -683,9 +699,32 @@ hd_init		lea	-1,a2				;original
 		move.b	#NT_BOOTNODE,(LN_TYPE,a1)
 		move.l	a5,(LN_NAME,a1)			;ConfigDev
 		move.l	a3,(bn_DeviceNode,a1)
+
+	movem.l	a1/a3/a5,$110
 		
 		lea	(eb_MountList,a4),a0
 		jsr	(_LVOEnqueue,a6)
+
+	move.l	$110,a0
+	add.l	#10,a0
+	move.l	#$14-10,d0
+	move.l	_resload,a2
+	;jsr	(resload_ProtectReadWrite,a2)
+
+	move.l	#$2c,d0
+	move.l	a3,a0
+	;jsr	(resload_ProtectReadWrite,a2)
+	move.l	#4,d0
+	lea	(dn_Startup,a3),a0
+	;jsr	(resload_ProtectReadWrite,a2)
+	move.l	#4,d0
+	lea	(dn_SegList,a3),a0
+	;jsr	(resload_ProtectReadWrite,a2)
+
+	move.l	#$44,d0
+	move.l	a5,a0
+	;jsr	(resload_ProtectReadWrite,a2)
+
 		
 		movem.l	(a7)+,d0-a6
 		rts
@@ -699,97 +738,158 @@ hd_init		lea	-1,a2				;original
 		dc.w	0			;da_Reserved01
 		dc.w	0			;da_Reserved02
 
-.parameterPkt	dc.l	0			;name of handler (drive)
+HD_Cyls			= 80
+HD_Surfaces		= 2
+HD_BlocksPerTrack	= 11
+HD_NumBlocksRes		= 2
+HD_NumBlocks		= HD_Cyls*HD_Surfaces*HD_BlocksPerTrack-HD_NumBlocksRes
+HD_NumBlocksUsed	= HD_NumBlocks/2
+HD_BytesPerBlock	= 512
+
+.parameterPkt	dc.l	0			;name of dos handler
 		dc.l	0			;name of exec device
 		dc.l	0			;unit number for OpenDevice
 		dc.l	0			;flags for OpenDevice
 		dc.l	11			;amount following longwords
-		dc.l	512/4			;longs per block
+		dc.l	HD_BytesPerBlock/4	;longs per block
 		dc.l	0			;sector start, unused
-		dc.l	2			;surfaces
+		dc.l	HD_Surfaces		;surfaces
 		dc.l	1			;sectors per block, unused
-		dc.l	11			;blocks per track
-		dc.l	2			;reserved blocks
+		dc.l	HD_BlocksPerTrack	;blocks per track
+		dc.l	HD_NumBlocksRes		;reserved blocks
 		dc.l	0			;unused
 		dc.l	0			;interleave
-		dc.l	0			;first cylinder
-		dc.l	1000			;last cylinder = 11 MB, avoid get detected as floppy
-		dc.l	1			;buffers
+		dc.l	0			;lower cylinder
+		dc.l	HD_Cyls-1		;upper cylinder
+		dc.l	5			;buffers
 
 .handlername	dc.b	"DH0",0
+.devicename	dc.b	"whdload.device",0
 .dosname	dc.b	"dos.library",0
 .expansionname	dc.b	"expansion.library",0
+	EVEN
 
 .bootcode	lea	(.dosname,pc),a1
+	illegal
 		jsr	(_LVOFindResident,a6)
 		move.l	d0,a0
 		move.l	(RT_INIT,a0),a0
 		jmp	(a0)			;init dos.library
 
+	CNOP 0,4
 		dc.l	4			;segment length
 .seglist	dc.l	0			;next segment
-		movem.l	d0-a6,-(a7)
 
-		illegal
+	;get own message port
+		move.l	(4),a6			;A6 = execbase
+		sub.l	a1,a1
+		jsr	(_LVOFindTask,a6)
+		move.l	d0,a0
+		lea	(pr_MsgPort,a0),a5	;A5 = MsgPort
+
+	;fetch and reply startup message
+		move.l	a5,a0
+		jsr	(_LVOWaitPort,a6)
+		move.l	a5,a0
+		jsr	(_LVOGetMsg,a6)
+		move.l	d0,a4
+		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
+		moveq	#-1,d0			;success
+		bra	.reply1
 		
-		movem.l	(a7)+,d0-a6
-		rts
+	;loop on receiving new packets
+.mainloop	move.l	a5,a0
+		jsr	(_LVOWaitPort,a6)
+		move.l	a5,a0
+		jsr	(_LVOGetMsg,a6)
+		move.l	d0,a4
+		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
 
-		lea	(_as,pc),a0
-		lea	(-2,a0),a1
-.next		addq.l	#2,a1
-		move.w	(a1)+,d0
+	;find and call appropriate action
+		moveq	#0,d0
+		move.l	(dp_Type,a4),d2
+		lea	(.action,pc),a0
+.next		movem.w	(a0)+,d0-d1
+		tst.l	d0
 		beq	.notfound
-		cmp.w	d0,d2
+		cmp.l	d0,d2
 		bne	.next
-		add.w	(a1)+,a0
-		jsr	(a0)
+		jmp	(.action,pc,d1.w)
 
-.notfound
+.notfound	illegal
 
-_as	dc.w	ACTION_CURRENT_VOLUME,_a_current_volume-_as
-	dc.w	ACTION_LOCATE_OBJECT,_a_locate_object-_as
-	dc.w	ACTION_RENAME_DISK,_a_rename_disk-_as
-	dc.w	ACTION_FREE_LOCK,_a_free_lock-_as
-	dc.w	ACTION_DELETE_OBJECT,_a_delete_object-_as
-	dc.w	ACTION_RENAME_OBJECT,_a_rename_object-_as
-	dc.w	ACTION_COPY_DIR,_a_copy_dir-_as
-	dc.w	ACTION_SET_PROTECT,_a_set_protect-_as
-	dc.w	ACTION_CREATE_DIR,_a_create_dir-_as
-	dc.w	ACTION_EXAMINE_OBJECT,_a_examine_object-_as
-	dc.w	ACTION_EXAMINE_NEXT,_a_examine_next-_as
-	dc.w	ACTION_DISK_INFO,_a_disk_info-_as
-	dc.w	ACTION_INFO,_a_info-_as
-	dc.w	ACTION_FLUSH,_a_flush-_as
-	dc.w	ACTION_SET_COMMENT,_a_set_comment-_as
-	dc.w	ACTION_PARENT,_a_parent-_as
-	dc.w	ACTION_SET_DATE,_a_set_date-_as
-	dc.w	ACTION_FINDUPDATE,_a_find_update-_as
-	dc.w	ACTION_FINDINPUT,_a_find_input-_as
-	dc.w	ACTION_FINDOUTPUT,_a_find_output-_as
-	dc.w	ACTION_END,_a_end-_as
-	dc.w	ACTION_SEEK,_a_seek-_as
-	dc.w	ACTION_IS_FILESYSTEM,_a_is_filesystem-_as
-	dc.w	ACTION_READ,_a_read-_as
-	dc.w	ACTION_WRITE,_a_write-_as
-	dc.w	0
+;---------------
+; reply dos-packet
+; IN:	D0 = res1
+;	D1 = res2
+;	A4 = DosPacket
+
+.reply2		move.l	d1,(dp_Res2,a4)
+
+;---------------
+; reply dos-packet
+; IN:	D0 = res1
+;	A4 = DosPacket
+
+.reply1		move.l	d0,(dp_Res1,a4)
+		move.l	(dp_Port,a4),a0
+		move.l	(dp_Link,a4),a1
+		move.l	a5,(dp_Port,a4)
+		jsr	(_LVOPutMsg,a6)
+		bra	.mainloop
+
+.action		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
+		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f
+		dc.w	ACTION_FINDINPUT,.a_findinput-.action			;3ed
+		dc.w	0
+		dc.w	ACTION_CURRENT_VOLUME,_a_current_volume-.action
+		dc.w	ACTION_LOCATE_OBJECT,_a_locate_object-.action
+		dc.w	ACTION_RENAME_DISK,_a_rename_disk-.action
+		dc.w	ACTION_FREE_LOCK,_a_free_lock-.action
+		dc.w	ACTION_DELETE_OBJECT,_a_delete_object-.action
+		dc.w	ACTION_RENAME_OBJECT,_a_rename_object-.action
+		dc.w	ACTION_COPY_DIR,_a_copy_dir-.action
+		dc.w	ACTION_SET_PROTECT,_a_set_protect-.action
+		dc.w	ACTION_CREATE_DIR,_a_create_dir-.action
+		dc.w	ACTION_EXAMINE_OBJECT,_a_examine_object-.action
+		dc.w	ACTION_EXAMINE_NEXT,_a_examine_next-.action
+		dc.w	ACTION_INFO,_a_info-.action
+		dc.w	ACTION_FLUSH,_a_flush-.action
+		dc.w	ACTION_SET_COMMENT,_a_set_comment-.action
+		dc.w	ACTION_PARENT,_a_parent-.action
+		dc.w	ACTION_SET_DATE,_a_set_date-.action
+		dc.w	ACTION_FINDUPDATE,_a_find_update-.action
+		dc.w	ACTION_FINDOUTPUT,_a_find_output-.action
+		dc.w	ACTION_END,_a_end-.action
+		dc.w	ACTION_SEEK,_a_seek-.action
+		dc.w	ACTION_IS_FILESYSTEM,_a_is_filesystem-.action
+		dc.w	ACTION_READ,_a_read-.action
+		dc.w	ACTION_WRITE,_a_write-.action
 
 ; conventions for action functions:
-; IN:	a0 = packet
-; OUT:	-
+; IN:	a4 = packet
+
+.a_disk_info	move.l	(dp_Arg1,a4),a0
+		add.l	a0,a0
+		add.l	a0,a0
+		clr.l	(a0)+			;id_NumSoftErrors
+		clr.l	(a0)+			;id_UnitNumber
+		move.l	#ID_VALIDATED,(a0)+	;id_DiskState
+		move.l	#HD_NumBlocks,(a0)+	;id_NumBlocks
+		move.l	#HD_NumBlocksUsed,(a0)+	;id_NumBlocksUsed
+		move.l	#HD_BytesPerBlock,(a0)+	;id_BytesPerBlock
+		move.l	#ID_DOS_DISK,(a0)+	;id_DiskType
+		clr.l	(a0)+			;id_VolumeNode
+		clr.l	(a0)+			;id_InUse
+
+.a_inhibit	moveq	#-1,d0
+		bra	.reply1
+
+_a_findinput
 
 _a_current_volume
-	;	move.l	(_volname),(dp_Res1,a0)
-		rts
-
-_a_rename_disk	move.l	#DOSFALSE,(dp_Res1,a0)
-		move.l	#ERROR_DISK_WRITE_PROTECTED,(dp_Res2,a0)
-		rts
-
+_a_rename_disk
 _a_is_filesystem
-		move.l	#DOSTRUE,(dp_Res1,a0)
-		rts
-
 _a_locate_object
 _a_free_lock
 _a_delete_object
@@ -799,14 +899,12 @@ _a_set_protect
 _a_create_dir
 _a_examine_object
 _a_examine_next
-_a_disk_info
 _a_info
 _a_flush
 _a_set_comment
 _a_parent
 _a_set_date
 _a_find_update
-_a_find_input
 _a_find_output
 _a_end
 _a_seek
