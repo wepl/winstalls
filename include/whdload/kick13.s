@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.6 2000/02/22 22:41:15 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.7 2000/03/01 22:14:03 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -120,6 +120,9 @@ kick_patch	PL_START
 	;	PL_PS	$aec6,gfx_fix1
 	;	PL_B	$d57a,$66
 	;	PL_I	$d568
+	IFD _bootearly
+		PL_P	$284ee,_bootearly
+	ENDC
 	IFD _bootblock
 		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
