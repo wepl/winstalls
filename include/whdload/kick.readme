@@ -4,7 +4,7 @@ important changes:
 NOFPU changed to NEEDFPU
 no longer disk present in any drive by default, see DISKSONBOOT
 
-$Id: kick13.readme 1.1 2001/09/01 22:09:18 wepl Exp $
+$Id: kick13.readme 1.2 2002/01/14 22:48:58 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -58,6 +58,13 @@ If that symbol is defined there will be disks inserted in the drives at
 booting time. Otherwise all drives will be empty. If the symbol is set DF0:
 will contain 'Disk.1', DF1: 'Disk.2' an so on.
 
+HDINIT
+
+If that symbol is defined a dos handler will be installed which mounts the
+actual directory as a drive called DH0:. If there is no bootable disk
+inserted (DISKSONBOOT) the dos.library will try to boot from that device.
+HDINIT requires that the flag WHDLF_Examine is set!
+
 HRTMON
 
 The presence of that symbol adds some debugging support for HrtMon. HrtMon
@@ -67,8 +74,8 @@ SSP.
 
 IOCACHE = 1024
 
-If the symbol is defined it enables a read cache in the emulated filesystem.
-Useful sizes are 96..2048.
+If the symbol is defined it enables a read cache in conjuction with option
+HDINIT. Useful sizes are 96..2048.
 
 MEMFREE = $100
 
@@ -104,7 +111,7 @@ continue using a RTS or similar from the boot entry vector.
 
 _bootearly
 
-	*
+	* will be entered before any diskaccess are performed by the Kickstart
 	
 _bootblock
 
@@ -121,10 +128,14 @@ _bootblock
 	
 _bootdos
 
-	* will be entered short after a maybe existing Startup-Sequence has
-	  been executed
+	* that label will called like a program located in the startup-
+	  sequence, if the code following that label returns the
+	  operation will return to the initial AmigaDOS CLI window
 
 	* dos.library is fully initialized and usable
+
+	* _bootdos requires option HDINIT, because it uses a virtual
+	  startup-sequence and a virtual program loaded from within
 
 
 _cb_dosLoadSeg
