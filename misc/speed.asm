@@ -1,5 +1,17 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: speed.asm 1.1 2000/11/22 20:09:41 jah Exp jah $
+;  :Program.	speed.asm
+;  :Contents.	Slave to benchmark the memory speed under different cpu/mmu
+;		setups, upper half of the screen shows performance with test
+;		code located in Chip memory, lower half code in ExpMem (Fast)
+;  :Author.	Wepl
+;  :Version.	$Id: battleisle.asm 0.5 2000/11/26 21:13:41 jah Exp $
+;  :History.	xx.xx.xx started
+;		12.12.00 cleanup for public release
+;  :Requires.	-
+;  :Copyright.	Public Domain
+;  :Language.	68000 Assembler
+;  :Translator.	Devpac 3.14, Barfly 2.9
+;  :To Do.
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
@@ -27,16 +39,16 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	_start-_base		;ws_GameLoader
 		dc.w	0			;ws_CurrentDir
 		dc.w	0			;ws_DontCache
-		dc.b	$58			;ws_keydebug = F9
+		dc.b	0			;ws_keydebug = F9
 		dc.b	$59			;ws_keyexit = F10
-EXPMEMLEN = $10000
+EXPMEMLEN = $3000
 _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
 
-_name		dc.b	"Benchmark Slave",0
-_copy		dc.b	"Wepl",0
+_name		dc.b	"Memory Speed Benchmark Slave",0
+_copy		dc.b	"2000 Wepl",0
 _info		dc.b	"done by Wepl "
 	DOSCMD	"WDate  >T:date"
 	INCBIN	"T:date"
@@ -52,13 +64,15 @@ _start	;	A0 = resident loader
 		lea	(_custom),a6		;A6 = custom
 		move.l	(_expmem),a7
 		add.l	#EXPMEMLEN-$200,a7	;because hrtmon
+		lea	(_ssp),a0
+		move.l	a7,(a0)
 
 SCREENWIDTH	= 320
 SCREENHEIGHT	= 279
 CHARHEIGHT	= 5
 CHARWIDTH	= 5
 
-MEMRCHIP	= $4000		;16 byte align! must be lower that $10000 !!
+MEMRCHIP	= $4000
 MEMCOPPER	= $e000
 MEMCHIP		= $f000
 MEMSCREEN	= $10000
@@ -271,23 +285,24 @@ CALC_S	MACRO
 		lea	\2,a0			;test address
 		pea	\1
 		move.l	(a7)+,$68
+		move	sr,d5			;D5 = saved SR
+		move.l	a7,d6			;D6 = saved SP
 		bset	#CIACRAB_START,(ciacra,a4)
 	QUAD
 	ENDM
 
 CALC_E	MACRO
-		;tst.w	(2,a7)			;address of interrupted rou <$10000 ?
-		;beq	(.quit0\@)
-		;rte
 .quit0\@	btst	#CIAICRB_TA,(ciaicr,a4)
 		bne	(.quit\@)
 		move.w	#INTF_PORTS,(intreq,a6)
 		rte
-.quit\@		lea	(.end\@),a0
-		move.l	a0,(2,a7)		;that's really dirty !!!
-		move.w	#INTF_PORTS,(intreq,a6)
-		rte
-.end\@		bsr	_pi
+.quit\@		move.w	#INTF_PORTS,(intreq,a6)
+		btst	#13,d5			;supervisor
+		bne	.s\@
+		move.l	(_ssp),a7
+.s\@		move	d5,sr
+		move.l	d6,a7
+		bsr	_pi
 		addq	#2,d0
 	ENDM
 
@@ -369,9 +384,7 @@ CALCW	MACRO
 .q\@
 	ENDM
 
-	QUAD
-_rchip
-		CALCR	_cia,$bfe001,_byte,b
+_rchip		CALCR	_cia,$bfe001,_byte,b
 		CALCW	_cia,$bfec01,_byte,b
 
 		addq	#2,d1
@@ -407,9 +420,7 @@ _rchip
 
 		rts
 
-	QUAD
 _rfast		addq	#2,d1
-
 		CALCR	_cia,$bfe001,_byte,b
 		CALCW	_cia,$bfec01,_byte,b
 
@@ -432,6 +443,7 @@ _rfast		addq	#2,d1
 		rts
 
 	CNOP 0,4
+_ssp		dc.l	0
 _tags		dc.l	WHDLTAG_ECLOCKFREQ_GET
 _freq		dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
@@ -552,6 +564,7 @@ _copper		dc.w	diwstrt,$1a81
 		dc.w	bplcon0,$1200
 		dc.w	bplpt+0,MEMSCREEN>>16
 		dc.w	bplpt+2,MEMSCREEN&$ffff
+		dc.w	bpl1mod,0
 		dc.w	color+0,0
 		dc.w	color+2,$ddd
 		dc.l	-2
@@ -585,7 +598,7 @@ _top3		dc.b	"  Eclock=",0
 _top5		dc.b	"  whdload"
 _equ		dc.b	"=",0
 _dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.6  wepl "
+_quit		dc.b	"hold lmb to quit and save pic  v1.7  wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
