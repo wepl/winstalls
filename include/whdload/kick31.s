@@ -21,6 +21,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
+	INCLUDE	lvo/dos.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
 	INCLUDE	lvo/lowlevel.i
