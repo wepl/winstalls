@@ -3,12 +3,13 @@
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.7 2003/12/09 11:16:52 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.8 2004/01/18 13:29:40 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
 ;		04.03.03 full caches
 ;		20.06.03 rework for whdload v16
+;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -291,24 +292,24 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		bne	.cmp
 		tst.b	(a2)
 		bne	.next
-	;patch
-		lea	(.patch,pc,d5.w),a0
-		move.l	d1,a1
-		move.l	(_resload,pc),a2
-		jsr	(resload_PatchSeg,a2)
-	;end
-.end
-	IFD DEBUG
 	;set debug
+	IFD DEBUG
 		clr.l	-(a7)
 		move.l	d1,-(a7)
 		pea	WHDLTAG_DBGSEG_SET
 		move.l	a7,a0
 		move.l	(_resload,pc),a2
 		jsr	(resload_Control,a2)
+		move.l	(4,a7),d1
 		add.w	#12,a7
 	ENDC
-		rts
+	;patch
+		lea	(.patch,pc,d5.w),a0
+		move.l	d1,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_PatchSeg,a2)
+	;end
+.end		rts
 
 PATCH	MACRO
 		dc.l	\1		;cumulated size of hunks (not filesize!)
