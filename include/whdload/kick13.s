@@ -31,6 +31,7 @@
 ;		17.12.01 beta finished for Elvira
 ;		04.01.02 MAXFILENAME removed
 ;		16.01.02 support for Guru Meditation added
+;		30.01.02 write cache added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1296,28 +1297,8 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_write	move.l	(dp_Arg1,a4),a0		;APTR lock
-		move.l	(dp_Arg3,a4),d0		;len
-		move.l	(mfl_pos,a0),d1		;offset
-		move.l	d1,d2
-		add.l	d0,d2
-		move.l	d2,(mfl_pos,a0)
-		cmp.l	(mfl_fib+fib_Size,a0),d2
-		bls	.write1
-		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
-.write1		move.l	(fl_Key,a0),a0		;name
-		move.l	(dp_Arg2,a4),a1		;buffer
-		jsr	(resload_SaveFileOffset,a2)
-		move.l	(dp_Arg3,a4),d0		;bytes written
-		bra	.reply1
-
 	IFEQ 1
 .a_write	move.l	(dp_Arg1,a4),a0		;APTR lock
-	IFD DEBUG
-		cmp.l	#ACCESS_WRITE,(fl_Access,a0)
-		bne	_debug5
-	ENDC
-	IFND IOCACHE
 		move.l	(dp_Arg3,a4),d0		;len
 		move.l	(mfl_pos,a0),d1		;offset
 		move.l	d1,d2
@@ -1332,6 +1313,103 @@ HD_BytesPerBlock	= 512
 		move.l	(dp_Arg3,a4),d0		;bytes written
 		bra	.reply1
 	ELSE
+.a_write	move.l	(dp_Arg1,a4),a0			;APTR lock
+	IFD DEBUG
+		cmp.l	#ACCESS_WRITE,(fl_Access,a0)
+		bne	_debug5
+	ENDC
+	IFND IOCACHE
+		move.l	(dp_Arg3,a4),d0			;len
+		move.l	(mfl_pos,a0),d1			;offset
+		move.l	d1,d2
+		add.l	d0,d2
+		move.l	d2,(mfl_pos,a0)
+		cmp.l	(mfl_fib+fib_Size,a0),d2
+		bls	.write1
+		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
+.write1		move.l	(fl_Key,a0),a0			;name
+		move.l	(dp_Arg2,a4),a1			;buffer
+		jsr	(resload_SaveFileOffset,a2)
+		move.l	(dp_Arg3,a4),d0			;bytes written
+		bra	.reply1
+	ELSE
+; blitz
+	;set new pos and correct size if necessary
+		move.l	(dp_Arg2,a4),d5			;d5 = buffer
+		move.l	(dp_Arg3,a4),d6			;d6 = len
+		beq	.write_end
+		move.l	(mfl_pos,a0),d7			;d7 = offset
+		move.l	d6,d0
+		add.l	d7,d0
+		move.l	d0,(mfl_pos,a0)
+		cmp.l	(mfl_fib+fib_Size,a0),d0
+		bls	.write_1
+		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
+.write_1
+	;check if fits into cache
+		move.l	#IOCACHE,d0
+		move.l	(mfl_cpos,a0),d1
+		add.l	(mfl_clen,a0),d1
+		cmp.l	d1,d7				;offsets match?
+		bne	.write2
+		add.l	d0,d0
+		sub.l	(mfl_clen,a0),d0
+.write2		cmp.l	(dp_Arg3,a4),d0
+		blo	.write_direct
+	;get memory if necessary
+.write_cache	move.l	(mfl_iocache,a0),d0
+		bne	.write_memok
+		move.l	#IOCACHE,d0
+		moveq	#MEMF_ANY,d1
+		jsr	(_LVOAllocMem,a6)
+		move.l	(dp_Arg1,a4),a0			;lock
+		move.l	d0,(mfl_iocache,a0)
+		beq	.write_direct
+	;into cache
+.write_memok	move.l	(mfl_cpos,a0),d1
+		add.l	(mfl_clen,a0),d1
+		cmp.l	d1,d7				;offsets match?
+		beq	.write_posok
+		tst.l	(mfl_clen,a0)			;any data stored?
+		bne	.write_flush
+		move.l	d7,(mfl_cpos,a0)
+.write_posok	move.l	d0,a1
+		move.l	#IOCACHE,d0
+		sub.l	(mfl_clen,a0),d0		;free space in cache
+		beq	.write_flush
+		cmp.l	d0,d6
+		bhs	.write_4
+		move.l	d6,d0
+.write_4	add.l	(mfl_clen,a0),a1
+		add.l	d0,(mfl_clen,a0)
+		sub.l	d0,d6
+		add.l	d0,d7
+		move.l	d5,a0
+.write_cpy	move.b	(a0)+,(a1)+
+		subq.l	#1,d0
+		bne	.write_cpy
+		move.l	a0,d5
+		tst.l	d6
+		beq	.write_end
+	;flush buffer
+.write_flush	move.l	(dp_Arg1,a4),a0			;lock
+		move.l	(mfl_clen,a0),d0		;len
+		move.l	(mfl_cpos,a0),d1		;offset
+		move.l	(mfl_iocache,a0),a1		;buffer
+		move.l	(fl_Key,a0),a0			;name
+		jsr	(resload_SaveFileOffset,a2)
+		move.l	(dp_Arg1,a4),a0			;lock
+		clr.l	(mfl_clen,a0)
+		clr.l	(mfl_cpos,a0)
+		bra	.write_cache
+	;write without cache
+.write_direct	move.l	d6,d0				;len
+		move.l	d7,d1				;offset
+		move.l	(fl_Key,a0),a0			;name
+		move.l	d5,a1				;buffer
+		jsr	(resload_SaveFileOffset,a2)
+.write_end	move.l	(dp_Arg3,a4),d0			;bytes written
+		bra	.reply1
 	ENDC
 	ENDC
 
@@ -1377,7 +1455,19 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_end		move.l	(dp_Arg1,a4),d0		;APTR lock
+.a_end
+	IFD IOCACHE
+	;flush write buffer
+		move.l	(dp_Arg1,a4),a0			;lock
+		move.l	(mfl_clen,a0),d0		;len
+		beq	.end_nocache
+		move.l	(mfl_cpos,a0),d1		;offset
+		move.l	(mfl_iocache,a0),a1		;buffer
+		move.l	(fl_Key,a0),a0			;name
+		jsr	(resload_SaveFileOffset,a2)
+.end_nocache
+	ENDC
+		move.l	(dp_Arg1,a4),d0		;APTR lock
 		bsr	.unlock
 		moveq	#DOSTRUE,d0
 		bra	.reply1
