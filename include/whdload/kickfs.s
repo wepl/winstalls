@@ -12,6 +12,7 @@
 ;		04.04.03 various changes for kick31
 ;		11.07.03 relative object names now supported (e.g. "dh0:s//c/info")
 ;		06.08.03 sanity check for provided locks added (DEBUG)
+;		09.08.03 JOTD added ACTION_CURRENT_VOLUME packet
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -250,7 +251,8 @@ HD_NumBuffers		= 5
 		jsr	(_LVOPutMsg,a6)
 		bra	.mainloop
 
-.action		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8	8
+.action		dc.w	ACTION_CURRENT_VOLUME,.a_current_volume-.action		;7	7
+		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8	8
 		dc.w	ACTION_FREE_LOCK,.a_free_lock-.action			;f	15
 		dc.w	ACTION_DELETE_OBJECT,.a_delete_object-.action		;10	16
 		dc.w	ACTION_COPY_DIR,.a_copy_dir-.action			;13	19
@@ -286,6 +288,13 @@ HD_NumBuffers		= 5
 	;	a5 = MsgPort
 	;	a6 = execbase
 
+;---------------
+
+.a_current_volume
+		move.l	a3,d0			;volume
+		moveq	#0,d1			;unit number
+		bra	.reply2
+	
 ;---------------
 
 .a_locate_object
@@ -1226,7 +1235,8 @@ HD_NumBuffers		= 5
 ;---------------
 
 	CNOP 0,4
-.volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
+.volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be
+						;0-terminated!)
 .devicename	dc.b	"whdload.device",0
 .handlername	dc.b	"DH0",0
 .expansionname	dc.b	"expansion.library",0
