@@ -4,14 +4,16 @@
 ;  :Author.	Mr.Larmer & Wepl
 ;  :Original	v1 Harry
 ;		v2 Carlo Pirri
-;		v3 Wolfgang Unger
-;  :Version.	$Id: Millennium.asm 1.5 2001/03/13 19:58:13 jah Exp $
+;		v3 Wolfgang Unger PAL
+;		v4 Wolfgang Unger NTSC
+;  :Version.	$Id: Millennium.asm 1.6 2001/04/28 11:40:03 jah Exp jah $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
 ;		13.03.01 extro works now
 ;			 length of loadgames fixed
 ;		19.04.01 support for v2 added
 ;		26.04.01 support for v3 added
+;		26.02.05 support for v4 added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -24,7 +26,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:m/millennium2�2/Millennium2-2.Slave"
+	OUTPUT	"wart:me/millennium2�2/Millennium2-2.Slave"
 	BOPT	O+	;enable optimizing
 	BOPT	OG+	;enable optimizing
 	BOPT	ODd-	;disable mul optimizing
@@ -35,72 +37,56 @@
 
 ;============================================================================
 
-; number of floppy drives:
-;	sets the number of floppy drives, valid values are 0-4.
-;	0 means that the number is specified via option Custom1/N
-NUMDRIVES=1
-
-; protection state for floppy disks:
-;	0 means 'write protected', 1 means 'read/write'
-;	bit 0 means drive DF0:, bit 3 means drive DF3:
-WPDRIVES=%0001
-
-; disable fpu support:
-;	results in a different task switching routine, if fpu is enabled also
-;	the fpu status will be saved and restored.
-;	for better compatibility and performance the fpu should be disabled
-NOFPU
-
-; enable debug support for hrtmon:
-;	hrtmon reads to much from the stackframe if entered, if the ssp is at
-;	the end hrtmon will create a access fault.
-;	for better compatibility this option should be disabled
-;HRTMON
-
-; calculate minimal amount of free memory
-;	if the symbol MEMFREE is defined after each call to exec.AllocMem the
-;	size of the largest free memory chunk will be calculated and saved at
-;	the specified address if lower than the previous saved value (chipmem
-;	at MEMFREE, fastmem at MEMFREE+4)
-;MEMFREE=$100
-
-; amount of memory available for the system
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $0
+FASTMEMSIZE	= 0
+NUMDRIVES	= 1
+WPDRIVES	= %0001
+
+;BLACKSCREEN
+BOOTBLOCK
+;BOOTDOS
+;BOOTEARLY
+;CBDOSLOADSEG
+;CBDOSREAD
+;CACHE
+DEBUG
+DISKSONBOOT
+;DOSASSIGN
+;FONTHEIGHT	= 8
+;HDINIT
+;HRTMON
+;IOCACHE	= 1024
+;MEMFREE	= $200
+;NEEDFPU
+;POINTERTICKS	= 1
+SETPATCH
+;STACKSIZE	= 6000
+TRDCHANGEDISK
 
 ;============================================================================
 
-KICKSIZE	= $40000			;34.005
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
+slv_Version	= 16
+slv_Flags	= WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap
+slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	14			;ws_Version
-		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
-		dc.w	0			;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
+	INCLUDE	Sources:whdload/kick13.s
 
 ;============================================================================
 
 	IFD BARFLY
+	IFND	.passchk
 	DOSCMD	"WDate  >T:date"
+.passchk
+	ENDC
 	ENDC
 
-_name		dc.b	"Millennium 2�2",0
-_copy		dc.b	"1989 Ian Bird / Electric Dreams",0
-_info		dc.b	"adapted by Mr.Larmer & Wepl",10
-		dc.b	"Version 1.2 "
+slv_CurrentDir	= slv_base
+slv_name	dc.b	"Millennium 2�2",0
+slv_copy	dc.b	"1989 Ian Bird / Electric Dreams",0
+slv_info	dc.b	"adapted by Mr.Larmer & Wepl",10
+		dc.b	"Version 1.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -112,40 +98,40 @@ _savename	dc.b	"Disk.2",0
 _start	;	A0 = resident loader
 ;============================================================================
 
-		move.l	a0,a2
+	;a1 = ioreq ($2c+a5)
+	;a4 = buffer (1024 bytes)
+	;a6 = execbase
+_bootblock
+
 	;check for savedisk
 		lea	(_savename,pc),a0
+		move.l	(_resload,pc),a2
 		jsr	(resload_GetFileSize,a2)
 		tst.l	d0
 		bne	.saveok
 	;create savedisk
 		lea	(_savename,pc),a0	;name
-		lea	$2000,a1		;address
+		lea	$20000,a1		;address
 		move.l	#$16c65710,($3fc,a1)	;diskid
 		move.l	#$1600,d0		;length
 		move.l	#0,d1			;offset
 		jsr	(resload_SaveFileOffset,a2)
 	;savedisk ok
-.saveok		move.l	a2,a0
+.saveok
 
-	;initialize kickstart and environment
-		bra	_boot
-
-	;a1 = ioreq ($2c+a5)
-	;a4 = buffer (1024 bytes)
-	;a6 = execbase
-_bootblock
 	;check version
 		move.l	#$400,d0
 		move.l	a4,a0
-		move.l	(_resload,pc),a2
 		jsr	(resload_CRC16,a2)
 		
 		lea	_plb1,a0
-		cmp.w	#$C367,D0
+		cmp.w	#$C367,D0		;v1 v2
 		beq	_bootblock_ok
 		lea	_plb3,a0
-		cmp.w	#$4a80,d0
+		cmp.w	#$4a80,d0		;v3
+		beq	_bootblock_ok
+		lea	_plb4,a0
+		cmp.w	#$80f3,D0		;v4
 		beq	_bootblock_ok
 		
 _wrongver	pea	TDREASON_WRONGVER
@@ -162,7 +148,7 @@ _plb1		PL_START
 		PL_S	$326,6			;skip set stack
 		PL_PA	$32e,_intro
 		PL_S	$356,6			;skip set stack
-		PL_PA	$35e,_main
+		PL_PA	$35e,_main123
 		PL_END
 
 _plb3		PL_START
@@ -170,8 +156,33 @@ _plb3		PL_START
 		PL_S	$2d2,6			;skip set stack
 		PL_PA	$2da,_intro
 		PL_S	$302,6			;skip set stack
-		PL_PA	$30a,_main
+		PL_PA	$30a,_main123
 		PL_END
+
+_plb4		PL_START
+		PL_S	$2a,2			;empty loop
+		PL_P	$9c,_pre4
+		PL_END
+
+_pre4		movem.l	d0/a0,-(a7)
+		move.l	a0,a1			;address = $12800
+		lea	_plp4,a0
+		move.l	_resload,a2
+		jsr	(resload_Patch,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		rts
+
+_plp4		PL_START
+		PL_P	$314,.go
+		PL_END
+
+.go		move.w	$12800+$234,d0		;original
+		move.l	(a7)+,d1
+		cmp.l	#$41000,d1
+		beq	_intro
+		cmp.l	#$13000,d1
+		beq	_main4
+		illegal
 
 _intro		movem.l	d0-d1/a0-a2,-(a7)
 
@@ -185,6 +196,9 @@ _intro		movem.l	d0-d1/a0-a2,-(a7)
 		beq	.go
 		lea	_pli2,a0
 		cmp.w	#$6ce7,d0
+		beq	.go
+		lea	_pli4,a0
+		cmp.w	#$f056,d0
 		bne	_wrongver
 .go
 		lea	$41000,a1
@@ -221,25 +235,17 @@ _pli2		PL_START
 		moveq	#5,d0
 		rts
 
-_main		move.w	#$601A,$766E4		; skip set stack
+_pli4		PL_START
+		PL_PS	$876,.remint
+		PL_S	$b42,$1e		; stack
+		PL_S	$c14,4			; stack
+		PL_END
 
-		move.l	_expmem(pc),-(a7)
-		add.l	#$D300,(a7)
-		move.l	(a7),$68E7C		; random access area
-		move.l	(a7)+,$790F2
+.remint		move.l	#$41826,a1
+		moveq	#5,d0
+		rts
 
-	;	move.w	#$7001,$68f68		;df1:
-	
-		patchs	$69174,.change2
-		move.w	#3,$7056e		;disable format savedisk
-	;	move.b	#0,$6e1fd
-	
-		patchs	$7692c,.change1
-		patchs	$7638e,.loadgame
-
-		jmp	$68000
-
-.change2	movem.l	d0-d1,-(a7)
+_change2	movem.l	d0-d1,-(a7)
 		moveq	#0,d0			;unit
 		moveq	#2,d1			;disk
 		bsr	_trd_changedisk
@@ -247,13 +253,13 @@ _main		move.w	#$601A,$766E4		; skip set stack
 		moveq	#0,d7
 		rts
 
-.change1	moveq	#0,d0			;unit
+_change1	moveq	#0,d0			;unit
 		moveq	#1,d1			;disk
 		bsr	_trd_changedisk
-		add.l	#$7696c-$7692c-6,(a7)
+		add.l	#$7696c-$7692c-6,(a7)	;same for v4
 		rts
 
-.loadgame	move.l	d1,d2
+_loadgame	move.l	d1,d2
 		lea	(_savename),a0
 		move.l	(_resload),a1
 		jsr	(resload_GetFileSize,a1)
@@ -264,9 +270,45 @@ _main		move.w	#$601A,$766E4		; skip set stack
 		move.l	#$4e20,d0
 .q		rts
 
-;============================================================================
+_main123	lea	$68000,a3
+		lea	_plm123,a0
+		bra	_main
 
-	INCLUDE	Sources:whdload/kick13.s
+_main4		move.l	d1,a3			;$13000
+		lea	_plm4,a0
+
+_main		move.l	(_expmem),d0		;kickstart
+		add.l	#$d300,d0		;offset used by game
+		move.l	(-4,a0),d1
+		move.l	d0,(a3,d1.l)
+		move.l	(-8,a0),d1
+		move.l	d0,(a3,d1.l)
+
+		move.l	a3,a1
+		move.l	_resload,a2
+		jsr	(resload_Patch,a2)
+		
+		jmp	(a3)
+
+		dc.l	$e7c,$110f2		;random generator patches
+_plm123		PL_START
+	;	move.w	#$7001,$68f68		;df1:
+	;	move.b	#0,$6e1fd
+		PL_S	$e6e4,$700-$6e4		;skip set stack
+		PL_PS	$1174,_change2
+		PL_W	$856e,3			;disable format savedisk
+		PL_PS	$e38e,_loadgame
+		PL_PS	$e92c,_change1
+		PL_END
+
+		dc.l	$af2,$10c92		;random generator patches
+_plm4		PL_START
+		PL_S	$e384,$a0-$84		;skip set stack
+		PL_PS	$dea,_change2
+		PL_W	$820c,3			;disable format savedisk
+		PL_PS	$e02c,_loadgame
+		PL_PS	$e590,_change1
+		PL_END
 
 ;============================================================================
 
