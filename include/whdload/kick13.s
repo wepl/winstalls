@@ -25,7 +25,7 @@
 ;		05.08.01 hd supported started
 ;		01.09.01 trap #15 to trap #14 changed in _Supervisor (debug rnc)
 ;			 BLACKSCREEN added
-;		08.11.01 Supervisor patch removed, slaves now require 
+;		08.11.01 Supervisor patch removed, slaves now require
 ;			 WHDLF_EmulPriv to be set
 ;		27.11.01 fs enhanced
 ;		17.12.01 beta finished for Elvira
@@ -61,17 +61,17 @@ _boot		lea	(_resload,pc),a1
 		lea	(_cbswitch,pc),a0
 		lea	(_cbswitch_tag,pc),a1
 		move.l	a0,(a1)
-		
+
 	;get tags
 		lea	(_tags,pc),a0
 		jsr	(resload_Control,a5)
-	
+
 	;load kickstart
 		move.l	#KICKSIZE,d0			;length
 		move.w	#$f9e3,d1			;crc16
 		lea	(_kick,pc),a0			;name
 		jsr	(resload_LoadKick,a5)
-		
+
 	;patch the kickstart
 		lea	(kick_patch,pc),a0
 		move.l	(_expmem,pc),a1
@@ -374,7 +374,7 @@ gfx_fix1	move.l	(v_LOFCprList,a1),d0
 		rts
 
 	IFD SETPATCH
-	
+
 gfx_MrgCop	move.w	($10,a1),d0
 		move.w	($9E,a6),d1
 		eor.w	d1,d0
@@ -407,7 +407,7 @@ gfx_MrgCop	move.w	($10,a1),d0
 		move.l	(8,a7),-(a7)
 		add.l	#-6-$582c+$a5b4,(a7)
 		rts
-		
+
 .ret		addq.l	#8,a7
 		rts
 
@@ -505,7 +505,7 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 		beq	.diskok
 
 		move.b	#TDERR_DiskChanged,(IO_ERROR,a1)
-		
+
 .end		movem.l	(a7),d2/a1-a2
 		bsr	trd_endio
 		movem.l	(a7)+,d2/a1-a2
@@ -600,15 +600,15 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 		and.w	#3,d0
 		lea	(_trd_chg,pc),a0
-		
+
 		move.l	(4),a6
 		jsr	(_LVODisable,a6)
-		
+
 		move.b	d1,(-5,a0,d0.w)
 		bset	d0,(a0)
-		
+
 		jsr	(_LVOEnable,a6)
-		
+
 		movem.l	(a7)+,a6
 		rts
 
@@ -631,7 +631,7 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 		rts
 
 .savea4		dc.l	0
-		
+
 .bcplend	cmp.l	(.savea4,pc),a4		;are we in dos_51?
 		beq	.end51
 		jmp	($34128-$34134,a5)	;call original
@@ -656,8 +656,7 @@ dos_bootdos
 
 	;init boot exe
 		lea	(_bootdos,pc),a3
-		lea	(bootfile_exe+34,pc),a4
-		move.l	a3,(a4)
+		move.l	a3,(bootfile_exe_j+2-_bootdos,a3)
 
 	;fake startup-sequence
 		lea	(bootname_ss_b,pc),a3	;bstr
@@ -672,8 +671,9 @@ bootname_ss	dc.b	"WHDBoot.ss",0
 bootfile_ss	dc.b	"WHDBoot.exe",10
 bootfile_ss_e
 bootname_exe	dc.b	"WHDBoot.exe",0
+	EVEN
 bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
-		jmp	$99999999
+bootfile_exe_j	jmp	$99999999
 		dc.w	0
 		dc.l	$3f2
 bootfile_exe_e
@@ -686,8 +686,7 @@ bootfile_exe_e
 ; OUT:	-
 
 	IFD	DOSASSIGN
-
-dos_assign	movem.l	d2/a3-a6,-(a7)
+_dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	a0,a3			;A3 = name
 		move.l	a1,a4			;A4 = directory
 
@@ -696,8 +695,10 @@ dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	#MEMF_CLEAR,d1
 		move.l	(4),a6
 		jsr	(_LVOAllocMem,a6)
+	IFD DEBUG
 		tst.l	d0
 		beq	.error
+	ENDC
 		move.l	d0,a5			;A5 = DosList
 
 	;open doslib
@@ -710,7 +711,9 @@ dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	#ACCESS_READ,d2
 		jsr	(_LVOLock,a6)
 		move.l	d0,d1
-		beq	.error
+	IFD DEBUG
+		beq	_debug3
+	ENDC
 		lsl.l	#2,d1
 		move.l	d1,a0
 		move.l	(fl_Task,a0),(dol_Task,a5)
@@ -734,9 +737,6 @@ dos_assign	movem.l	d2/a3-a6,-(a7)
 
 		movem.l	(a7)+,d2/a3-a6
 		rts
-
-.error		illegal
-
 	ENDC
 
 ;============================================================================
@@ -758,7 +758,7 @@ dos_assign	movem.l	d2/a3-a6,-(a7)
 
 	IFD HDINIT
 
-hd_init		lea	-1,a2				;original
+hd_init		lea	-1,a2				;original A2 = -1
 		movem.l	d0-a6,-(a7)
 
 		moveq	#ConfigDev_SIZEOF,d0
@@ -773,7 +773,7 @@ hd_init		lea	-1,a2				;original
 		lea	(.expansionname,pc),a1
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a4				;A4 = expansionbase
-		
+
 		lea	(.parameterPkt+4,pc),a0
 		lea	(.handlername,pc),a1
 		move.l	a1,-(a0)
@@ -784,7 +784,7 @@ hd_init		lea	-1,a2				;original
 		move.l	a1,d1
 		lsr.l	#2,d1
 		move.l	d1,(dn_SegList,a3)
-		move.l	#-1,(dn_GlobalVec,a3)		;no BCPL shit
+		move.l	a2,(dn_GlobalVec,a3)		;no BCPL shit (A2 = -1)
 
 		moveq	#BootNode_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
@@ -875,7 +875,7 @@ HD_BytesPerBlock	= 512
 		clr.l	-(a7)			;dl_Next
 		move.l	a7,d0
 		lsr.l	#2,d0
-		move.l	d0,a3			;A3 = Volume
+		move.l	d0,a3			;A3 = Volume (BPTR)
 	;add to the system
 		lea	(_dosname,pc),a1
 		jsr	(_LVOOldOpenLibrary,a6)
@@ -898,7 +898,7 @@ HD_BytesPerBlock	= 512
 		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
 		moveq	#-1,d0			;success
 		bra	.reply1
-		
+
 	;loop on receiving new packets
 .mainloop	move.l	a5,a0
 		jsr	(_LVOWaitPort,a6)
@@ -912,65 +912,62 @@ HD_BytesPerBlock	= 512
 		move.l	(dp_Type,a4),d2
 		lea	(.action,pc),a0
 .next		movem.w	(a0)+,d0-d1
+	IFD DEBUG
 		tst.l	d0
-		beq	.illegal		;unknown packet
+		beq	_debug1			;unknown packet
+	ENDC
 		cmp.l	d0,d2
 		bne	.next
 		jmp	(.action,pc,d1.w)
-
-.illegal	tst -1
-.illegal2	tst -2
 
 ;---------------
 ; reply dos-packet
 ; IN:	D0 = res1
 ;	D1 = res2
-;	A4 = DosPacket
 
-.reply1		moveq	#0,d1
 .reply2		move.l	d1,(dp_Res2,a4)
 
 ;---------------
 ; reply dos-packet
 ; IN:	D0 = res1
-;	A4 = DosPacket
 
-		move.l	d0,(dp_Res1,a4)
+.reply1		move.l	d0,(dp_Res1,a4)
 		move.l	(dp_Port,a4),a0
 		move.l	(dp_Link,a4),a1
 		move.l	a5,(dp_Port,a4)
 		jsr	(_LVOPutMsg,a6)
 		bra	.mainloop
 
-.action		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8
-		dc.w	ACTION_FREE_LOCK,.a_free_lock-.action			;f
-		dc.w	ACTION_DELETE_OBJECT,.a_delete_object-.action		;10
-		dc.w	ACTION_COPY_DIR,.a_copy_dir-.action			;13
-		dc.w	ACTION_SET_PROTECT,.a_set_protect-.action		;15
-		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17
-		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18
-		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
-		dc.w	ACTION_INFO,.a_info-.action				;1a
-		dc.w	ACTION_FLUSH,.a_flush-.action				;1b
-		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f
-		dc.w	ACTION_PARENT,.a_parent-.action				;29
-		dc.w	ACTION_READ,.a_read-.action				;52
-		dc.w	ACTION_WRITE,.a_write-.action				;57
-		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec
-		dc.w	ACTION_FINDINPUT,.a_findinput-.action			;3ed
-		dc.w	ACTION_FINDOUTPUT,.a_findoutput-.action			;3ee
-		dc.w	ACTION_END,.a_end-.action				;3ef
-		dc.w	ACTION_SEEK,.a_seek-.action				;3f0
+.action		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8	8
+		dc.w	ACTION_FREE_LOCK,.a_free_lock-.action			;f	15
+		dc.w	ACTION_DELETE_OBJECT,.a_delete_object-.action		;10	16
+		dc.w	ACTION_COPY_DIR,.a_copy_dir-.action			;13	19
+		dc.w	ACTION_SET_PROTECT,.a_set_protect-.action		;15	21
+		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17	23
+		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18	24
+		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19	25
+		dc.w	ACTION_INFO,.a_info-.action				;1a	26
+		dc.w	ACTION_FLUSH,.a_flush-.action				;1b	27
+		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f	31
+		dc.w	ACTION_PARENT,.a_parent-.action				;29	41
+		dc.w	ACTION_READ,.a_read-.action				;52	82
+		dc.w	ACTION_WRITE,.a_write-.action				;57	87
+		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec	1004
+		dc.w	ACTION_FINDINPUT,.a_findinput-.action			;3ed	1005
+		dc.w	ACTION_FINDOUTPUT,.a_findoutput-.action			;3ee	1006
+		dc.w	ACTION_END,.a_end-.action				;3ef	1007
+		dc.w	ACTION_SEEK,.a_seek-.action				;3f0	1008
 		dc.w	0
 
 	;file locking is not implemented! no locklist is used
 	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
-	
+
 	STRUCTURE MyLock,fl_SIZEOF
 		LONG	mfl_pos			;position in file
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
 	IFD IOCACHE
 		LONG	mfl_cpos		;fileoffset cache points to
+		LONG	mfl_clen		;amount data in cache (valid only on write cache)
 		LONG	mfl_iocache
 	ENDC
 		LABEL	mfl_SIZEOF
@@ -985,13 +982,14 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_locate_object
-		bsr	.getarg1
+		bsr	.getarg1		;lock
 		move.l	d7,d0
-		bsr	.getarg2
+		bsr	.getarg2		;name
 		move.l	d7,d1
-		move.l	(dp_Arg3,a4),d2
+		move.l	(dp_Arg3,a4),d2		;mode
 		bsr	.lock
 		lsr.l	#2,d0			;APTR > BPTR
+		bne	.reply1
 		bra	.reply2
 
 ;---------------
@@ -1024,12 +1022,16 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_copy_dir	bsr	.getarg1
-		beq	.illegal2
+	IFD DEBUG
+		beq	_debug2
+	ENDC
 		move.l	d7,a0
 		move.l	(fl_Key,a0),d1
 		moveq	#0,d0
 		move.l	#ACCESS_READ,d2
 		bsr	.lock
+		tst.l	d0
+		bne	.reply1
 		bra	.reply2
 
 ;---------------
@@ -1037,20 +1039,19 @@ HD_BytesPerBlock	= 512
 .a_examine_object
 		bsr	.getarg1
 		move.l	d7,a0			;a0 = APTR lock
-		bsr	.getarg2
-		move.l	d7,a1			;a1 = APTR fib
+		bsr	.getarg2		;d7 = APTR fib
 		move.l	a0,d0
 		beq	.examine_root
 	;copy whdload's examine result
-		move.l	a1,-(a7)
 		add.w	#mfl_fib,a0
+		move.l	d7,a1
 		moveq	#fib_Reserved/4-1,d0
 .examine_fib	move.l	(a0)+,(a1)+
 		dbf	d0,.examine_fib
-		move.l	(a7)+,a1
 	;adjust
 .examine_adj
 	;convert CSTR -> BSTR
+		move.l	d7,a1
 		lea	(fib_FileName,a1),a0
 		bsr	.bstr
 		lea	(fib_Comment,a1),a0
@@ -1061,14 +1062,14 @@ HD_BytesPerBlock	= 512
 	;special handling of NULL lock
 .examine_root	clr.l	-(a7)
 		move.l	a7,a0
+		move.l	d7,a1
 		jsr	(resload_Examine,a2)
 		addq.l	#4,a7
-		lea	(.volumename+1,pc),a0
+		lea	(.volumename+1,pc),a0	;CPTR
 		move.l	d7,a1
 		add.w	#fib_FileName,a1
 .examine_root2	move.b	(a0)+,(a1)+
 		bne	.examine_root2
-		move.l	d7,a1
 		bra	.examine_adj
 
 ;---------------
@@ -1087,12 +1088,13 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_info		move.l	(dp_Arg2,a4),(dp_Arg1,a4)
+.a_info		bsr	.getarg2
+		bra	.a_disk_info_1
 
 ;---------------
 
 .a_disk_info	bsr	.getarg1
-		move.l	d7,a0
+.a_disk_info_1	move.l	d7,a0
 		clr.l	(a0)+			;id_NumSoftErrors
 		clr.l	(a0)+			;id_UnitNumber
 		move.l	#ID_VALIDATED,(a0)+	;id_DiskState
@@ -1153,6 +1155,7 @@ HD_BytesPerBlock	= 512
 		bsr	.lock
 		add.l	d3,a7
 		lsr.l	#2,d0			;APTR > BPTR
+		bne	.reply1
 		bra	.reply2
 	;that is a special case!
 .parent_root	moveq	#0,d0
@@ -1162,6 +1165,10 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_read		move.l	(dp_Arg1,a4),a0		;a0 = APTR lock
+	IFD DEBUG
+		cmp.l	#ACCESS_READ,(fl_Access,a0)
+		bne	_debug4
+	ENDC
 	IFND IOCACHE
 	;correct readsize if necessary
 		move.l	(mfl_fib+fib_Size,a0),d0
@@ -1298,23 +1305,47 @@ HD_BytesPerBlock	= 512
 		cmp.l	(mfl_fib+fib_Size,a0),d2
 		bls	.write1
 		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
-.write1		move.l	d0,d3
-		move.l	(fl_Key,a0),a0		;name
+.write1		move.l	(fl_Key,a0),a0		;name
 		move.l	(dp_Arg2,a4),a1		;buffer
 		jsr	(resload_SaveFileOffset,a2)
-		move.l	d3,d0			;bytes written
+		move.l	(dp_Arg3,a4),d0		;bytes written
 		bra	.reply1
+
+	IFEQ 1
+.a_write	move.l	(dp_Arg1,a4),a0		;APTR lock
+	IFD DEBUG
+		cmp.l	#ACCESS_WRITE,(fl_Access,a0)
+		bne	_debug5
+	ENDC
+	IFND IOCACHE
+		move.l	(dp_Arg3,a4),d0		;len
+		move.l	(mfl_pos,a0),d1		;offset
+		move.l	d1,d2
+		add.l	d0,d2
+		move.l	d2,(mfl_pos,a0)
+		cmp.l	(mfl_fib+fib_Size,a0),d2
+		bls	.write1
+		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
+.write1		move.l	(fl_Key,a0),a0		;name
+		move.l	(dp_Arg2,a4),a1		;buffer
+		jsr	(resload_SaveFileOffset,a2)
+		move.l	(dp_Arg3,a4),d0		;bytes written
+		bra	.reply1
+	ELSE
+	ENDC
+	ENDC
 
 ;---------------
 
-.a_findinput
-.a_findupdate
+.a_findinput	moveq	#ACCESS_READ,d2		;mode
+		bra	.a_findall
+.a_findupdate	moveq	#ACCESS_WRITE,d2	;mode
+.a_findall
 	;check exist and lock it
 		bsr	.getarg2
 		move.l	d7,d0			;APTR lock
 		bsr	.getarg3
 		move.l	d7,d1			;BSTR name
-		moveq	#ACCESS_READ,d2		;mode
 		bsr	.lock
 		tst.l	d0			;APTR lock
 		beq	.reply2
@@ -1325,7 +1356,7 @@ HD_BytesPerBlock	= 512
 	;return
 		moveq	#DOSTRUE,d0
 		bra	.reply1
-		
+
 .a_findoutput	bsr	.getarg2
 		move.l	d7,d0			;APTR lock
 		bsr	.getarg3
@@ -1594,7 +1625,7 @@ HD_BytesPerBlock	= 512
 		lea	(bootname_exe,pc),a1
 		bsr	.specfile_chk
 		beq	.specfile_rts
-	
+
 		moveq	#0,d0
 		rts
 
@@ -1626,6 +1657,17 @@ _waitvb
 
 ;============================================================================
 
+	IFD DEBUG
+_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
+_debug3		tst	-3	;error in _dos_assign
+_debug4		tst	-4	;wrong mode while read
+_debug5		tst	-5	;wrong mode while write
+		illegal		;if executed without mmu
+	ENDC
+
+;============================================================================
+
 	IFD HDINIT
 _dosname	dc.b	"dos.library",0
 	ENDC
@@ -1646,4 +1688,3 @@ _cbswitch_cop2lc	dc.l	0
 ;============================================================================
 
 	END
-
