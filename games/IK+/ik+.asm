@@ -2,9 +2,10 @@
 ;  :Program.	ik+.asm
 ;  :Contents.	Slave for "IK+"
 ;  :Author.	WEPL
-;  :Version.	$Id$
+;  :Version.	$Id: ik+.asm 1.1 1998/03/16 16:58:59 jah Exp $
 ;  :History.	22.09.97 initial
 ;		01.10.97 debug key changed because F9 is used in game
+;		24.11.98 adapted for v8 (obsoletes novbrmove)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -15,30 +16,32 @@
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 
-	OUTPUT	wart:ik+/ik+.slave
-	BOPT	O+ OG+			;enable optimizing
-	BOPT	w4-			;disable 64k warnings
+	OUTPUT	wart:h-j/ik+/IK+.Slave
+	BOPT	O+ OG+				;enable optimizing
+	BOPT	w4-				;disable 64k warnings
 	SUPER
 
 ;======================================================================
 
-.base		SLAVE_HEADER		;ws_Security + ws_ID
-		dc.w	4		;ws_Version
-		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
-		dc.l	$80000		;ws_BaseMemSize
-		dc.l	0		;ws_ExecInstall
-		dc.w	_Start-.base	;ws_GameLoader
-		dc.w	0		;ws_CurrentDir
-		dc.w	0		;ws_DontCache
-_keydebug	dc.b	$5b		;ws_keydebug = F9
-_keyexit	dc.b	$59		;ws_keyexit = F10
+.base		SLAVE_HEADER			;ws_Security + ws_ID
+		dc.w	8			;ws_Version
+		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_NoKbd	;ws_flags
+		dc.l	$80000			;ws_BaseMemSize
+		dc.l	0			;ws_ExecInstall
+		dc.w	_Start-.base		;ws_GameLoader
+		dc.w	0			;ws_CurrentDir
+		dc.w	0			;ws_DontCache
+		dc.b	0			;ws_keydebug
+_keyexit	dc.b	$59			;ws_keyexit = F10
+		dc.l	0			;ws_ExpMem
 
 ;======================================================================
 
 	DOSCMD	"WDate >T:date"
-		dc.b	"$VER:"
+		dc.b	"$VER: IK+.Slave 1.2 by Wepl "
 	INCBIN	"T:date"
 		dc.b	0
+	EVEN
 
 ;======================================================================
 _Start	;	A0 = resident loader
@@ -58,6 +61,7 @@ _Start	;	A0 = resident loader
 		clr.w	$500			;stackframe format error
 		jmp	$100c
 	ENDC
+
 		lea	(_file),a0
 		lea	$600,a1
 		move.l	(_resload),a2
@@ -76,24 +80,19 @@ _Start	;	A0 = resident loader
 
 _keyb		cmp.b	(_keyexit),d0
 		beq	_exit
-		cmp.b	(_keydebug),d0
-		beq	_debug
 		jsr	$1b5e			;original
-		moveq	#3-1,d1				;wait because handshake min 75 탎
+		moveq	#3-1,d1			;wait because handshake min 75 탎
 .int2_w1	move.b	(_custom+vhposr),d0
-.int2_w2	cmp.b	(_custom+vhposr),d0		;one line is 63.5 탎
+.int2_w2	cmp.b	(_custom+vhposr),d0	;one line is 63.5 탎
 		beq	.int2_w2
-		dbf	d1,.int2_w1			;(min=127탎 max=190.5탎)
+		dbf	d1,.int2_w1		;(min=127탎 max=190.5탎)
 		jmp	$1ace
 
 ;--------------------------------
 
-_exit		pea	TDREASON_OK.w
-		move.l	(_resload),-(a7)
-		add.l	#resload_Abort,(a7)
-		rts
-
-_debug		pea	TDREASON_DEBUG.w
+_exit		move	#$2700,sr		;otherwise freeze inside whdload
+		lea	($80000),a7		;otherwise "bad stackpointer" on exit
+		pea	TDREASON_OK.w
 		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
