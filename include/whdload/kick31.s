@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31_A1200.s 1.12 2003/10/20 10:06:49 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.13 2003/11/15 21:32:26 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -43,7 +43,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
-		dc.w	WHDLF_EmulPriv|slv_Flags;ws_flags
+		dc.w	WHDLF_EmulPriv|WHDLF_Req68020|slv_Flags	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_boot-slv_base		;ws_GameLoader
