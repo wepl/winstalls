@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.30 2002/01/30 21:20:49 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.32 2002/02/08 01:18:20 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -33,6 +33,7 @@
 ;		16.01.02 support for Guru Meditation added
 ;		30.01.02 write cache added
 ;		06.02.02 cleanup
+;		27.02.02 trailing slash in .buildname removed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1620,6 +1621,13 @@ HD_BytesPerBlock	= 512
 		move.l	d1,a0			;BSTR
 		move.b	(a0)+,d7		;length
 		beq	.buildname_noname
+	;remove trailing "/"
+		cmp.b	#1,d7
+		beq	.buildname_nots
+		cmp.b	#"/",(-1,a0,d7.l)
+		bne	.buildname_nots
+		subq.l	#1,d7
+.buildname_nots
 	;remove leading "xxx:"
 		lea	(a0,d7.l),a1		;end
 .buildname_col	cmp.b	#":",-(a1)
