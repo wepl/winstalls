@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1 
-;  :Version.	$Id: elvira.asm 1.1 2001/11/10 21:13:07 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.2 2001/12/21 12:16:01 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
@@ -32,14 +32,15 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
+FASTMEMSIZE	= $100000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
 ;DISKSONBOOT
 HDINIT
 ;HRTMON
-;MEMFREE	= $100
+IOCACHE		= 1024
+MEMFREE	= $200
 ;NEEDFPU
 ;SETPATCH
 
@@ -53,7 +54,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	15			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulPriv	;ws_flags
+		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -82,6 +83,7 @@ _info		dc.b	"adapted by Wepl",10
 		dc.b	0
 _data		dc.b	"data",0
 _runit		dc.b	"runit",0
+_arg		dc.b	"gameamiga",10,0
 	EVEN
 
 ;============================================================================
@@ -91,32 +93,24 @@ _start	;	A0 = resident loader
 	;initialize kickstart and environment
 		bra	_boot
 
-_cb_dosLoadSeg	lsl.l	#2,d0
-		move.l	d0,a0
-		moveq	#0,d0
-		add.b	(a0)+,d0
-		subq.w	#1,d0
-		lea	(_runit),a1
-.cmp		cmp.b	(a0)+,(a1)+
-		dbne	d0,.cmp
-		bne	.no
-		lsl.l	#2,d1
-		move.l	d1,a0
-		patchs	$12+4(a0),_go
-.no		rts
+_bootdos
 
-_go		move.l	#$77,d0			;original
-		movem.l	d0-a6,-(a7)
-		move.l	(15*4,a7),d7
-		sub.l	#$12+4+6,d7
-		lsr.l	#2,d7			;d7 = seg
-		
-		bsr	_intro
-		
-		lea	(_dosname),a1
+	;open doslib
+		lea	(_dosname,pc),a1
 		move.l	(4),a6
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a6			;A6 = dosbase
+		
+		bsr	_intro
+
+	;load exe
+		lea	(_runit),a0
+		move.l	a0,d1
+		jsr	(_LVOLoadSeg,a6)
+		move.l	d0,d7			;D7 = segment
+		beq	.end
+
+	;check version
 		lea	(_runit),a0
 		move.l	a0,d1
 		move.l	#MODE_OLDFILE,d2
@@ -126,7 +120,6 @@ _go		move.l	#$77,d0			;original
 		sub.l	d3,a7
 		move.l	a7,d2
 		jsr	(_LVORead,a6)
-		
 		move.l	d3,d0
 		move.l	a7,a0
 		move.l	(_resload),a2
@@ -156,12 +149,28 @@ _go		move.l	#$77,d0			;original
 		move.l	a7,a0
 		jsr	(resload_Control,a2)
 		add.w	#12,a7
-		
-		movem.l	(a7)+,d0-a6
+
+	;call
+		move.l	d7,a1
+		add.l	a1,a1
+		add.l	a1,a1
+		moveq	#10,d0
+		lea	(_arg,pc),a0
+		move.l	a6,-(a7)
+		jsr	(4,a1)
+		move.l	(a7)+,a6
+
+	;remove exe
+		move.l	d7,d1
+		jsr	(_LVOUnLoadSeg,a6)
+
+.end		moveq	#0,d0
 		rts
 
 
 _plde	PL_START
+	PL_S	$20b2,$c8-$b2	;disable DeleteFile
+	PL_W	$168b6,21780	;io buffer size
 	;PL_R	$192ec		;check if hd installed
 	;PL_I	$1984c		;largest chip mem
 	;PL_I	$19882		;largest fast mem
@@ -176,6 +185,8 @@ _plde	PL_START
 	PL_END
 
 _plen	PL_START
+	PL_S	$2122,$38-$22	;disable DeleteFile
+	PL_W	$16cea,21780	;io buffer size
 	PL_PS	$1a10c,_dbffix
 	PL_W	$1a10c+6,$1f4
 	PL_PS	$1a1be,_dbffix
@@ -187,6 +198,8 @@ _plen	PL_START
 	PL_END
 
 _plfr	PL_START
+	PL_S	$2122,$38-$22	;disable DeleteFile
+	PL_W	$16cea,21780	;io buffer size
 	PL_PS	$1a15e,_dbffix
 	PL_W	$1a15e+6,$1f4
 	PL_PS	$1a210,_dbffix
@@ -210,21 +223,14 @@ _dbffix		movem.l	d0-d1/a0,-(a7)
 		addq.l	#2,(a7)
 		rts
 
-; dbffix.s fuer move-.b anpassen!!!
-
 ;============================================================================
 
-_intro		movem.l	d0-a6,-(a7)
-		
-		lea	_custom,a5		;A5 = custom
-		lea	_dosname,a1
-		move.l	(4),a6
-		jsr	(_LVOOldOpenLibrary,a6)
-		move.l	d0,a6			;A6 = dosbase
+_intro		lea	_custom,a5		;A5 = custom
+
 		jsr	(_LVOOutput,a6)
 		move.l	d0,d7			;D7 = output
 		
-		lea	(_text),a2
+		lea	(.text),a2
 		
 .loop		move.l	d7,d1
 		move.l	a2,d2
@@ -248,7 +254,12 @@ _intro		movem.l	d0-a6,-(a7)
 .rmb		bsr	.wait
 		beq	.rmb
 		
-.end		movem.l	(a7)+,d0-a6
+.end		move.l	d7,d1
+		lea	(.lf),a2
+		move.l	a2,d2
+		moveq	#1,d3
+		jsr	(_LVOWrite,a6)
+
 		rts
 
 .wait		moveq	#3,d0
@@ -264,22 +275,23 @@ _intro		movem.l	d0-a6,-(a7)
 		moveq	#0,d0
 		rts
 
-.w3		moveq	#-1,d0
+.w3		btst	#POTGOB_DATLY-8,(potinp,a5)
+		beq	.w3
+		moveq	#-1,d0
 		rts
 
-_dosname	dc.b	"dos.library",0
-_text		dc.b	10
+.text		dc.b	10
 		dc.b	10
 		dc.b	10
 		dc.b   "		 Elvira - Mistress of the Dark",10
 		dc.b	10
-		dc.b   "		WHDLoad Install by Wepl in 2001",10
-		dc.b   "      Kickstart 1.3 emulation interface by Wepl 1999-2001",10
+		dc.b   "		   Install by Wepl 2001-2002",10
+		dc.b   "      Kickstart 1.3 emulation interface by Wepl 1999-2002",10
 		dc.b	10
 		dc.b   "		 Greetings to all my friends!",10
 		dc.b	10
 		dc.b   "		  Press RMB to start Elvira...",10
-		dc.b	10
+.lf		dc.b	10
 		dc.b	0
 	EVEN
 
