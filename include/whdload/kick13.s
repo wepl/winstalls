@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick.asm 0.1 1999/11/29 16:17:28 jah Exp jah $
+;  :Version.	$Id: kick.asm 0.2 1999/12/07 23:18:05 jah Exp jah $
 ;  :History.	19.10.99 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -29,7 +29,12 @@
 ; number of floppy drives:
 ;	sets the number of floppy drives, valid values are 0-4.
 ;	0 means that the number is specified via option Custom1/N
-NUMDRIVES=2
+NUMDRIVES=0
+
+; protection state for floppy disks:
+;	0 means 'write protected', 1 means 'read/write'
+;	bit 0 means drive DF0:, bit 3 means drive DF3:
+WPDRIVES=%1110
 
 ; disable fpu support:
 ;	results in a different task switching routine, if fpu is enabled also
@@ -44,12 +49,13 @@ NOFPU
 HRTMON
 
 ; amount of
-BASEMEM		= $80000
-EXPMEM		= $80000
+CHIPMEMSIZE	= $80000
+FASTMEMSIZE	= $80000
+
 
 KICKSIZE	= $40000		;34.005
-CHIPMEMSIZE	= BASEMEM
-FASTMEMSIZE	= EXPMEM-KICKSIZE
+BASEMEM		= CHIPMEMSIZE
+EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 ;============================================================================
 
@@ -169,11 +175,17 @@ kick_patch	PL_START
 	ENDC
 		PL_P	$546,kick_detectcpu
 		PL_PS	$15b2,exec_MakeFunctions
+		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$422,exec_Supervisor
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
+		PL_W	$aece,0				;color00 $fff -> $000
+		PL_W	$aed4,0				;color01 $fff -> $000
+	;	PL_PS	$aec6,gfx_fix1
+	;	PL_B	$d57a,$66
+	;	PL_I	$d568
 	IFD _bootblock
 		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
@@ -189,7 +201,11 @@ kick_patch	PL_START
 		PL_P	$2960c,td_task
 	;	PL_L	$29c54,-1			;disable asynchron io
 		PL_P	$4984,disk_getunitid
-		PL_END
+		
+		PL_PS	$33ef0,dos_init
+		PL_PS	$3c9b6,dos_1
+
+		PL_END		
 
 ;DANGER:
 ;	$3c9ae
@@ -236,6 +252,13 @@ exec_MakeFunctions
 		move.l	a2,d1			;original
 		rts
 
+exec_SetFunction
+		move.l	(a7)+,d1
+		pea	(_flushcache)
+		move.l	d1,-(a7)
+		bset	#1,(14,a1)		;original
+		rts
+
 exec_Supervisor	lea	(.1),a0
 		move.l	a0,(_LVOSupervisor+2,a6)
 		lea	(_custom),a0		;original
@@ -267,6 +290,10 @@ gfx_detectdisplay
 		beq	.1
 		moveq	#1,d0			;ntsc
 .1		rts
+
+gfx_fix1	waitvb	a3
+		move.w	#DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR,(dmacon,a3)
+		rts
 
 ;============================================================================
 
@@ -329,17 +356,18 @@ td_read		movem.l	d2/a1,-(a7)
 		rts
 
 td_write	movem.l	a1-a2,-(a7)
-		move.b	(_td_prot,pc,d1.w),d0
+		move.b	(_td_prot,pc),d0
+		btst	d1,d0
 		beq	.prot
 		lea	(.disk),a0
 		move.b	(_td_disk,pc,d1.w),d0	;disk
-		add.b	#"1",d0
+		add.b	#"0",d0
 		move.b	d0,(5,a0)		;name
 		move.l	(IO_LENGTH,a1),d0	;length
 		move.l	(IO_OFFSET,a1),d1	;offset
 		move.l	(IO_DATA,a1),a1		;destination
 		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
+		jsr	(resload_SaveFileOffset,a2)
 		movem.l	(a7),_MOVEMREGS
 		bsr	td_endio
 		movem.l	(a7)+,_MOVEMREGS
@@ -353,8 +381,8 @@ td_write	movem.l	a1-a2,-(a7)
 .disk		dc.b	"Disk.",0,0,0
 
 _td_disk	dc.b	1,2,3,4			;number of diskimage in drive
-_td_prot	dc.b	0,0,0,0			;protection status (0=wp)
-_td_chg		dc.b	0,0,0,0			;diskchange
+_td_prot	dc.b	WPDRIVES		;protection status
+_td_chg		dc.b	0			;diskchanged
 
 td_motor	moveq	#0,d0
 		bchg	#7,($41,a3)		;motor status
@@ -362,9 +390,9 @@ td_motor	moveq	#0,d0
 		rts
 
 td_protstatus	moveq	#0,d0
-		moveq	#0,d1
 		move.b	($43,a3),d1
-		move.b	(_td_prot,pc,d1.w),d1
+		move.b	(_td_prot,pc),d0
+		btst	d1,d0
 		seq	d0
 		move.l	d0,(IO_ACTUAL,a1)
 		add.l	#$708-$6d6-6,(a7)
@@ -383,10 +411,9 @@ td_task		bclr	#1,($40,a3)		;set disk inserted
 		addq.l	#1,($126,a3)		;inc change count
 		bsr	tdtask_cause
 .1
-		moveq	#0,d0
-		move.b	($43,a3),d0		;unit number
-		lea	(_td_chg),a0
-		tst.b	(a0,d0.w)		
+		move.b	($43,a3),d1		;unit number
+		move.b	(_td_chg),d0
+		btst	d1,d0
 		beq	.2
 		bset	#1,($40,a3)		;set no disk inserted
 		addq.l	#1,($126,a3)		;inc change count
@@ -403,19 +430,27 @@ _td_changedisk	movem.l	a6,-(a7)
 
 		and.w	#3,d0
 		lea	(_td_chg),a0
-.wait		tst.b	(a0,d0.w)
+.wait		btst	d0,(a0)
 		bne	.wait
 		
 		move.l	(4),a6
 		jsr	(_LVOForbid,a6)
 		
-		move.b	d1,(-8,a0,d0.w)
-		st	(a0,d0.w)
+		move.b	d1,(-5,a0,d0.w)
+		bset	d0,(a0)
 		
 		jsr	(_LVOPermit,a6)
 		
 		movem.l	(a7)+,_MOVEMREGS
 		rts
+
+;============================================================================
+
+dos_init	move.l	#$10001,d1
+		bra	_flushcache
+
+dos_1		move.l	#$118,d1		;original
+		bra	_flushcache
 
 ;============================================================================
 
