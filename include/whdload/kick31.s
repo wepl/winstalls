@@ -5,6 +5,8 @@
 ;  :Version.	$Id: kick31.s 1.3 2003/04/03 07:13:01 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
+;		06.04.03 some dosboot changes
+;			 cache option added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -27,6 +29,13 @@ KICKVERSION = 40
 _boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
+
+	IFD CACHE
+	;enable cache
+		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_All,d1
+		jsr	(resload_SetCPU,a5)
+	ENDC
 
 	;relocate some addresses
 		lea	(_cbswitch,pc),a0
@@ -79,6 +88,12 @@ kick_patch	PL_START
 	ENDC
 	;	PL_L	$329a,$70004e71			;SAD, movec vbr,d0 -> moveq #0,d0
 		PL_S	$38f8,$3a00-$38f8		;autoconfiguration at $e80000
+	IFD HDINIT
+		PL_PS	$42f4,hd_init
+	ENDC
+	IFHI NUMDRIVES-4
+		PL_B	$439f,7				;allow 7 floppy drives
+	ENDC
 	IFD _bootearly
 		PL_PS	$4798,kick_bootearly
 	ENDC
@@ -100,20 +115,24 @@ kick_patch	PL_START
 		PL_PS	$f7be,gfx_beamcon02
 		PL_PS	$f7e0,gfx_snoop1
 		PL_PS	$14b4e,gfx_readvpos		;patched to set NTSC/PAL
-	IFD	_cb_dosLoadSeg
+	IFD STACKSIZE
+		PL_L	$22772,STACKSIZE/4
+	ENDC
+	IFD _bootdos
+		PL_PS	$22814,dos_bootdos
+	ENDC
+	IFD _cb_dosLoadSeg
 		PL_PS	$272b0,dos_LoadSeg
 	ENDC
 		PL_CB	$3504a				;dont init scsi.device
-	IFD	INIT_AUDIO				;audio.device
+	IFD INIT_AUDIO					;audio.device
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
 		PL_CB	$3ddf2				;dont init battclock.ressource
 		PL_S	$40414,$40436-$40414		;skip disk unit detect
-	;	PL_R	$40442
 		PL_P	$40566,disk_getunitid
 		PL_P	$4056e,disk_getunitid
-	;	PL_P	$40442,disk_getunitid
-	IFD	INIT_MATHFFP				;mathffp.library
+	IFD INIT_MATHFFP				;mathffp.library
 		PL_B	$40632,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
 		PL_P	$40D3A,timer_init
@@ -134,16 +153,8 @@ kick_patch	PL_START
 	IFD POINTERTICKS
 		PL_W	$68D1C,POINTERTICKS
 	ENDC
-	IFD	INIT_GADTOOLS				;gadtools.library
+	IFD INIT_GADTOOLS				;gadtools.library
 		PL_B	$68e1e,RTF_COLDSTART|RTF_AUTOINIT
-	ENDC
-
-
-	IFD _bootdos
-		PL_PS	$22814,dos_bootdos		; 3.1
-	ENDC
-	IFD	HDINIT
-		PL_PS	$42F4,hd_init
 	ENDC
 		PL_END
 
@@ -287,7 +298,7 @@ gfx_detectgenlock
 		moveq	#0,d0
 		rts
 
-	IFD	INITAGA					;enable enhanced gfx modes
+	IFD INITAGA					;enable enhanced gfx modes
 gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 		jsr	(_LVOSetChipRev,a6)
 		moveq	#-1,d0
@@ -299,11 +310,13 @@ gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 
 disk_getunitid
 	IFMI NUMDRIVES
+		cmp.l	#1,d0			;at least one drive
+		bcs	.set
 		cmp.l	(_custom1,pc),d0
 	ELSE
-		cmp.l	#NUMDRIVES,d0
+		subq.l	#NUMDRIVES,d0
 	ENDC
-		scc	d0
+.set		scc	d0
 		extb.l	d0
 		rts
 
@@ -326,6 +339,11 @@ timer_init	move.l	(_time),a0
 		rts
 
 ;============================================================================
+;  $60.1 0-disk in drive 1-no disk
+;  $60.4 0-readwrite 1-readonly
+;  $61.7 motor status
+;  $63 unit
+;  $3c disk change count
 
 trd_format
 trd_readwrite	movem.l	d2/a1-a2,-(a7)
@@ -451,7 +469,7 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
-	IFD	_cb_dosLoadSeg
+	IFD _cb_dosLoadSeg
 dos_LoadSeg	move.l	d0,d1		;original
 		beq	.end		;successful?
 		tst.l	d7		;filename
@@ -490,17 +508,14 @@ dos_LoadSeg	move.l	d0,d1		;original
 		jmp	(a0)
 	ENDC
 
-	IFD  _bootdos
+	IFD _bootdos
 dos_bootdos
 	;init boot exe
 		lea	(_bootdos,pc),a0
 		move.l	a0,(bootfile_exe_j+2-_bootdos,a0)
-
 	;fake startup-sequence
-		lea	(bootname_ss_b,pc),a0	;bstr
-		addq.l	#1,a0
+		lea	(bootname_ss,pc),a0
 		move.l	a0,d1
-
 	;return
 		rts
 	ENDC
@@ -511,7 +526,7 @@ dos_bootdos
 ;	A1 = CPTR directory (could be 0 meaning SYS:)
 ; OUT:	-
 
-	IFD	DOSASSIGN
+	IFD DOSASSIGN
 _dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	a0,a3			;A3 = name
 		move.l	a1,a4			;A4 = directory

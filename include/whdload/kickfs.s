@@ -2,13 +2,14 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.4 2003/03/30 11:16:16 wepl Exp $
+;  :Version.	$Id: kickfs.s 1.5 2003/04/03 07:13:01 wepl Exp $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
 ;		04.03.03 ACTION_COPY_DIR fixed, wb double click works now
 ;			 deleting of directories works clean
 ;			 changes by JOTD merged
+;		04.04.03 various changes for kick31
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -65,6 +66,8 @@ HD_NumBuffers		= 5
 	ENDC
 		LABEL	mfl_SIZEOF
 
+;---------------------------------------------------------------------------*
+
 		movem.l	d0-a6,-(a7)
 
 		moveq	#ConfigDev_SIZEOF,d0
@@ -82,24 +85,22 @@ HD_NumBuffers		= 5
 
 		lea	(.parameterPkt+8,pc),a0
 		lea	(.devicename,pc),a1
-		move.l	a1,d0
-		lsr.l	#2,d0
-	moveq #0,d0
-		move.l	d0,-(a0)
+		move.l	a1,-(a0)
 		lea	(.handlername,pc),a1
 		move.l	a1,-(a0)
-		move.l	a4,a6
+		exg.l	a4,a6
 		jsr	(_LVOMakeDosNode,a6)
+		exg.l	a4,a6
 		move.l	d0,a3				;A3 = DeviceNode
 		lea	(.seglist,pc),a1
 		move.l	a1,d1
 		lsr.l	#2,d1
 		move.l	d1,(dn_SegList,a3)
-		move.l	a2,(dn_GlobalVec,a3)		;no BCPL shit (A2 = -1)
+		moveq	#-1,d0
+		move.l	d0,(dn_GlobalVec,a3)		;no BCPL shit
 
 		moveq	#BootNode_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
-		move.l	(4),a6
 		jsr	(_LVOAllocMem,a6)
 		move.l	d0,a1				;BootNode
 		move.b	#NT_BOOTNODE,(LN_TYPE,a1)
@@ -202,7 +203,11 @@ HD_NumBuffers		= 5
 		jsr	(_LVOGetMsg,a6)
 		move.l	d0,a4
 		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
-		moveq	#-1,d0			;success
+		move.l	(dp_Arg3,a4),a0		;DeviceNode
+		add.l	a0,a0
+		add.l	a0,a0
+		move.l	a5,(dn_Task,a0)		;signal: the handler is running
+		moveq	#DOSTRUE,d0		;success
 		bra	.reply1
 
 	;loop on receiving new packets
@@ -255,8 +260,8 @@ HD_NumBuffers		= 5
 		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19	25
 		dc.w	ACTION_INFO,.a_info-.action				;1a	26
 		dc.w	ACTION_FLUSH,.a_flush-.action				;1b	27
+		dc.w	ACTION_PARENT,.a_parent-.action				;1d	29
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f	31
-		dc.w	ACTION_PARENT,.a_parent-.action				;29	41
 		dc.w	ACTION_READ,.a_read-.action				;52	82
 		dc.w	ACTION_WRITE,.a_write-.action				;57	87
 		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec	1004
@@ -265,7 +270,9 @@ HD_NumBuffers		= 5
 		dc.w	ACTION_END,.a_end-.action				;3ef	1007
 		dc.w	ACTION_SEEK,.a_seek-.action				;3f0	1008
 	IFGT KICKVERSION-36
+		dc.w	ACTION_SAME_LOCK,.a_same_lock-.action			;28	40
 		dc.w	ACTION_FH_FROM_LOCK,.a_fh_from_lock-.action		;402	1026
+		dc.w	ACTION_IS_FILESYSTEM,.a_is_filesystem-.action		;403	1027
 		dc.w	ACTION_EXAMINE_FH,.a_examine_fh-.action			;40A	1034
 	ENDC
 		dc.w	0
@@ -465,6 +472,7 @@ HD_NumBuffers		= 5
 
 ;---------------
 
+.a_is_filesystem
 .a_set_protect
 .a_flush
 .a_inhibit	moveq	#DOSTRUE,d0
@@ -519,6 +527,39 @@ HD_NumBuffers		= 5
 .parent_root	moveq	#0,d0
 		moveq	#0,d1
 		bra	.reply2
+
+;---------------
+
+	IFGT KICKVERSION-36
+.a_same_lock	bsr	.getarg1
+		move.l	d7,a0
+		bsr	.getarg2
+		move.l	d7,a1
+		move.l	a0,d0
+		beq	.samelock_zero
+		move.l	(fl_Key,a0),a0
+		tst.b	(a0)
+		beq	.samelock_zero
+		move.l	a1,d0
+		beq	.samelock_neq
+		move.l	(fl_Key,a1),a1
+.samelock_cmp	move.b	(a0)+,d0
+		cmp.b	(a1)+,d0
+		bne	.samelock_neq
+		tst.b	d0
+		bne	.samelock_cmp
+.samelock_equ	moveq	#DOSTRUE,d0
+		bra	.reply1
+
+.samelock_zero	move.l	a1,d0
+		beq	.samelock_equ
+		move.l	(fl_Key,a1),a1
+		tst.b	(a1)
+		beq	.samelock_equ
+.samelock_neq	moveq	#0,d0
+		moveq	#0,d1
+		bra	.reply2
+	ENDC
 
 ;---------------
 
@@ -912,6 +953,7 @@ HD_NumBuffers		= 5
 		bsr	.specialfile
 		tst.l	d0
 		beq	.lock_nospec
+		move.l	#ST_FILE,(mfl_fib+fib_DirEntryType,a4)
 		move.l	d1,(mfl_fib+fib_Size,a4)
 		bra	.lock_spec
 .lock_nospec
@@ -1099,8 +1141,7 @@ HD_NumBuffers		= 5
 
 	CNOP 0,4
 .volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
-	CNOP 0,4
-.devicename	dc.b	14,"whdload.device",0	;BSTR (here with the exception that it must be 0-terminated!)
+.devicename	dc.b	"whdload.device",0
 .handlername	dc.b	"DH0",0
 .expansionname	dc.b	"expansion.library",0
 _dosname	dc.b	"dos.library",0

@@ -2,13 +2,14 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.8 2003/03/30 17:41:29 wepl Exp $
+;  :Version.	$Id: kick12.s 1.9 2003/04/05 13:46:50 wepl Exp $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
 ;		13.02.03 snoopbug at $6e92 fixed (Psygore)
 ;			 STACKSIZE added (Captain HIT)
 ;		30.03.03 _bootearly/block made returnable
+;		06.04.03 cache option added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,6 +30,13 @@ KICKVERSION = 33
 _boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
+
+	IFD CACHE
+	;enable cache
+		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_All,d1
+		jsr	(resload_SetCPU,a5)
+	ENDC
 
 	;relocate some addresses
 		lea	(_cbswitch,pc),a0
@@ -56,25 +64,27 @@ kick_reboot	move.l	(_expmem,pc),a0
 
 kick_patch	PL_START
 		PL_S	$d2,$fe-$d2
+		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
 		PL_CW	$132				;color00 $444 -> $000
-		PL_P	$61a,kick_detectfast
-		PL_P	$592,kick_detectchip
 		PL_CW	$25a				;color00 $888 -> $000
 	IFD HRTMON
 		PL_PS	$286,kick_hrtmon
 	ENDC
-		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
+		PL_PS	$422,exec_flush
+		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$50C,$514-$50C			;skip LED power on
 		PL_P	$546,kick_detectcpu
+		PL_P	$592,kick_detectchip
 		PL_P	$5f0,kick_reboot		;reboot (reset)
+		PL_P	$61a,kick_detectfast
 		PL_P	$1318,exec_snoop1
-		PL_PS	$1576,exec_MakeFunctions
 		PL_PS	$147a,exec_SetFunction
-		PL_PS	$422,exec_flush
+		PL_PS	$1576,exec_MakeFunctions
 	IFD MEMFREE
 		PL_P	$17ea,exec_AllocMem
 	ENDC
-		PL_L	$4f4,-1				;disable search for residents at $f00000
+		PL_S	$48fc,$4910-$48fc		;skip disk unit detect
+		PL_P	$4a74,disk_getunitid
 		PL_S	$4c66,4				;skip autoconfiguration at $e80000
 		PL_PS	$6d04,gfx_vbserver
 		PL_PS	$6d1a,gfx_snoop1
@@ -85,34 +95,12 @@ kick_patch	PL_START
 		PL_P	$afe4,gfx_detectgenlock
 		PL_P	$b058,gfx_detectdisplay
 		PL_PS	$d5cc,gfx_fix1			;gfx_LoadView
-	IFD _bootearly
-		PL_PS	$28986,kick_bootearly
+	IFD FONTHEIGHT
+		PL_B	$1bc70,FONTHEIGHT
 	ENDC
-	IFD _bootblock
-		PL_PS	$28a2c,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
-	ENDC
-		PL_P	$29308,timer_init
-		PL_P	$2a734,trd_readwrite
-		PL_P	$2a462,trd_motor
-		PL_P	$2a07a,trd_format
-		PL_PS	$2aa56,trd_protstatus
-		PL_P	$2998c,trd_task
-	IFD DEBUG
-		PL_L	$29fd4,-1			;disable asynchron io
-		PL_I	$2a51c				;empty dbf-loop in trackdisk.device
-	;	PL_I	$?????				;internal readwrite
-		PL_I	$2aa14				;trd_seek
-		PL_I	$2b2e8				;trd_rawread
-		PL_I	$2b2ee				;trd_rawwrite
-	ENDC
-		PL_S	$48fc,$4910-$48fc		;skip disk unit detect
-		PL_P	$4a74,disk_getunitid
 	IFD BLACKSCREEN
 		PL_C	$1bcd6,6			;color17,18,19
 		PL_C	$1bcde,8			;color0,1,2,3
-	ENDC
-	IFD FONTHEIGHT
-		PL_B	$1bc70,FONTHEIGHT
 	ENDC
 	IFD POINTERTICKS
 		PL_W	$1bcdc,POINTERTICKS
@@ -120,27 +108,42 @@ kick_patch	PL_START
 	IFD HDINIT
 		PL_PS	$288e8,hd_init			;enter while starting strap
 	ENDC
-	IFND _bootearly
-	IFND _bootblock
-		PL_PS	$342ec,dos_init
-		PL_PS	$3c9b2,dos_1
-		PL_PS	$3717c,dos_LoadSeg
+	IFD _bootearly
+		PL_PS	$28986,kick_bootearly
 	ENDC
+	IFD _bootblock
+		PL_PS	$28a2c,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
+	ENDC
+		PL_P	$29308,timer_init
+		PL_P	$2998c,trd_task
+		PL_P	$2a07a,trd_format
+		PL_P	$2a462,trd_motor
+		PL_P	$2a734,trd_readwrite
+		PL_PS	$2aa56,trd_protstatus
+	IFD DEBUG
+		PL_L	$29fd4,-1			;disable asynchron io
+		PL_I	$2a51c				;empty dbf-loop in trackdisk.device
+		PL_I	$2aa14				;trd_seek
+		PL_I	$2b2e8				;trd_rawread
+		PL_I	$2b2ee				;trd_rawwrite
+	ENDC
+		PL_PS	$342ec,dos_init
+		PL_PS	$3717c,dos_LoadSeg
+	IFD _bootdos
+		PL_PS	$38a4a,dos_bootdos
 	ENDC
 	IFD STACKSIZE
 		PL_L	$38ac0,STACKSIZE/4
 	ENDC
-	IFD  _bootdos
-		PL_PS	$38a4a,dos_bootdos
-	ENDC
+		PL_PS	$3c9b2,dos_1
 	;the following stuff is from SetPatch 1.38
 	IFD SETPATCH
+		PL_P	$1174,exec_UserState
+		PL_P	$165a,exec_FindName
+		PL_P	$191e,exec_AllocEntry
 		PL_PS	$57c0,gfx_MrgCop
 		PL_PS	$7f26,gfx_SetFont
 		PL_P	$7f66,gfx_SetSoftStyle
-		PL_P	$191e,exec_AllocEntry
-		PL_P	$1174,exec_UserState
-		PL_P	$165a,exec_FindName
 	ENDC
 		PL_END
 
@@ -451,11 +454,13 @@ gfx_SetSoftStyle
 
 disk_getunitid
 	IFMI NUMDRIVES
+		cmp.l	#1,d0			;at least one drive
+		bcs	.set
 		cmp.l	(_custom1,pc),d0
 	ELSE
-		cmp.l	#NUMDRIVES,d0
+		subq.l	#NUMDRIVES,d0
 	ENDC
-		scc	d0
+.set		scc	d0
 		ext.w	d0
 		ext.l	d0
 		rts
@@ -602,9 +607,6 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
-	IFND _bootearly
-	IFND _bootblock
-
 dos_init	move.l	#$10001,d1
 		bra	_flushcache
 
@@ -636,10 +638,7 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 		bsr	_flushcache
 		jmp	(a6)
 
-	ENDC
-	ENDC
-
-	IFD  _bootdos
+	IFD _bootdos
 dos_bootdos
 
 	;init boot exe
@@ -661,7 +660,7 @@ dos_bootdos
 ;	A1 = CPTR directory (could be 0 meaning SYS:)
 ; OUT:	-
 
-	IFD	DOSASSIGN
+	IFD DOSASSIGN
 _dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	a0,a3			;A3 = name
 		move.l	a1,a4			;A4 = directory
@@ -731,21 +730,12 @@ _flushcache	move.l	(_resload,pc),-(a7)
 		add.l	#resload_FlushCache,(a7)
 		rts
 
-_waitvb
-.1		btst	#0,(_custom+vposr+1)
-		beq	.1
-.2		btst	#0,(_custom+vposr+1)
-		bne	.2
-		rts
-
 ;============================================================================
 
 	IFD DEBUG
 _debug1		tst	-1	;unknown packet (=d2) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
-_debug4		tst	-4	;wrong mode while read
-_debug5		tst	-5	;wrong mode while write
 		illegal		;security if executed without mmu
 	ENDC
 
