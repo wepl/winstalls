@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.11 2003/04/10 05:46:18 wepl Exp wepl $
+$Id: kick.readme 1.12 2003/07/15 20:38:31 wepl Exp $
 
 Symbols in the Slave-Source
 ***************************
@@ -125,6 +125,14 @@ INIT_GADTOOLS
 
 Only available in kick31.s. Forces the kickstart to initialize the
 gadtools.library.
+
+INIT_LOWLEVEL
+
+Only available in kick31.s. Loads the lowlevel.library from disk into memory
+and patches the functions GetLanguageSelection and ReadJoyPort. Emulates
+joypad buttons via keyboard if there is only a usual joystick attached to
+port 1. Requires that the disk version of the lowlevel.library is present on
+the games data directory.
 
 INIT_MATHFFP
 
