@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 14.1 2001/04/17 21:05:07 jah Exp jah $
+;  :Version.	$Id: whdload.i 14.1 2001/04/29 19:26:17 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -131,6 +131,8 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_CHKCOLBST	;enable/disable bplcon0.color check
 ; version 14
  EITEM	WHDLTAG_LANG_GET	;GetLanguageSelection like lowlevel.library
+; version 14.5
+ EITEM	WHDLTAG_DBGADR_SET	;set debug base address
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
@@ -389,8 +391,8 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	-
 	ULONG	resload_LoadFileOffset
 		; load part of file to memory
-		; IN :	d0 = ULONG  offset
-		;	d1 = ULONG  size
+		; IN :	d0 = ULONG  size
+		;	d1 = ULONG  offset
 		;	a0 = CPTR   name of file
 		;	a1 = APTR   destination
 		; OUT :	d0 = BOOL   success
