@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 13.1 2001/01/13 15:23:21 jah Exp $
+;  :Version.	$Id: whdload.i 14.1 2001/04/17 21:05:07 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -12,6 +12,8 @@
 ;		25.11.00 new stuff for whdload v13
 ;		13.01.01 some comments spelling errors fixed
 ;		15.03.01 v14 stuff added
+;		15.04.01 FAILMSG added
+;		29.04.01 resload_Relocate tags added
 ;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -81,6 +83,9 @@ TDREASON_MUSTREG	= 15	;WHDLoad must be registered
 TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 				; primary   = dos errorcode
 				; secondary = file name
+; version 14.1
+TDREASON_FAILMSG	= 43	;failure with variable message text
+				; primary   = text
 
 ;=============================================================================
 ; tagitems for the resload_Control function
@@ -126,6 +131,15 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
  EITEM	WHDLTAG_CHKCOLBST	;enable/disable bplcon0.color check
 ; version 14
  EITEM	WHDLTAG_LANG_GET	;GetLanguageSelection like lowlevel.library
+
+;=============================================================================
+; tagitems for the resload_Relocate function
+;=============================================================================
+
+; version 14.1
+ ENUM	TAG_USER+$8100000
+ EITEM	WHDLTAG_CHIPPTR		;relocate MEMF_CHIP hunks to this address
+ EITEM	WHDLTAG_FASTPTR		;relocate MEMF_FAST hunks to this address
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
