@@ -3,11 +3,15 @@
 ;  :Contents.	Slave for "Millennium 2·2" from Electronic Dreams
 ;  :Author.	Mr.Larmer & Wepl
 ;  :Original	v1 Harry
-;  :Version.	$Id: Millennium.asm 1.4 2001/02/25 13:53:43 jah Exp jah $
+;		v2 Carlo Pirri
+;		v3 Wolfgang Unger
+;  :Version.	$Id: Millennium.asm 1.5 2001/03/13 19:58:13 jah Exp $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
 ;		13.03.01 extro works now
 ;			 length of loadgames fixed
+;		19.04.01 support for v2 added
+;		26.04.01 support for v3 added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,7 +77,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 ;============================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	11			;ws_Version
+		dc.w	14			;ws_Version
 		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -96,7 +100,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 _name		dc.b	"Millennium 2·2",0
 _copy		dc.b	"1989 Ian Bird / Electric Dreams",0
 _info		dc.b	"adapted by Mr.Larmer & Wepl",10
-		dc.b	"Version 1.1 "
+		dc.b	"Version 1.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -136,37 +140,84 @@ _bootblock
 		move.l	a4,a0
 		move.l	(_resload,pc),a2
 		jsr	(resload_CRC16,a2)
+		
+		lea	_plb1,a0
 		cmp.w	#$C367,D0
-		beq	.verok
-		pea	TDREASON_WRONGVER
+		beq	_bootblock_ok
+		lea	_plb3,a0
+		cmp.w	#$4a80,d0
+		beq	_bootblock_ok
+		
+_wrongver	pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
-.verok
+
 	;call bootblock
+_bootblock_ok	move.l	a4,a1
+		jsr	(resload_Patch,a2)
 		lea	($2c,a5),a1
-
-		move.w	#$6004,$24(a4)		; skip set stack
-		move.w	#$6004,$326(a4)		; skip set stack
-		move.w	#$6004,$356(a4)		; skip set stack
-
-		pea	_intro(pc)
-		move.l	(a7)+,$32E(a4)
-
-		pea	_main(pc)
-		move.l	(a7)+,$35E(a4)
-
 		jmp	(12,a4)
 
-_intro		move.w	#$4EB9,$4196A
-		pea	.RemInt(pc)
-		move.l	(a7)+,$4196C
+_plb1		PL_START
+		PL_S	$24,6			;skip set stack
+		PL_S	$326,6			;skip set stack
+		PL_PA	$32e,_intro
+		PL_S	$356,6			;skip set stack
+		PL_PA	$35e,_main
+		PL_END
 
-		move.w	#$4E71,$41F26		; skip set stack
-		move.w	#$601C,$41F40
-		move.w	#$6002,$420AA
+_plb3		PL_START
+		PL_S	$24,6			;skip set stack
+		PL_S	$2d2,6			;skip set stack
+		PL_PA	$2da,_intro
+		PL_S	$302,6			;skip set stack
+		PL_PA	$30a,_main
+		PL_END
 
+_intro		movem.l	d0-d1/a0-a2,-(a7)
+
+		move.l	#$1000,d0
+		lea	$41000,a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_CRC16,a2)
+
+		lea	_pli1,a0
+		cmp.w	#$7b78,d0
+		beq	.go
+		lea	_pli2,a0
+		cmp.w	#$6ce7,d0
+		bne	_wrongver
+.go
+		lea	$41000,a1
+		jsr	(resload_Patch,a2)
+
+		movem.l	(a7)+,_MOVEMREGS
+		move.l	#$a8d398fb,d0		; copylock id
 		jmp	$41000
 
-.RemInt		move.l	#$4191A,a1
+_pli1		PL_START
+		PL_PS	$96A,.remint
+		PL_S	$f26,14			; green screen & stack
+		PL_S	$F40,$1e		; stack
+		PL_S	$10AA,4			; stack
+		PL_S	$7fc,$41808-$417fc	; color
+		PL_R	$810			; color
+		PL_END
+
+.remint		move.l	#$4191A,a1
+		moveq	#5,d0
+		rts
+
+_pli2		PL_START
+		PL_S	0,$14f6			; skip protection
+		PL_PS	$f40,.remint
+		PL_S	$14fc,14		; green screen & stack
+		PL_S	$1510,$1e		; stack
+		PL_S	$167a,4			; stack
+		PL_S	$dd2,$41808-$417fc	; color
+		PL_R	$de6			; color
+		PL_END
+
+.remint		move.l	#$41ef0,a1
 		moveq	#5,d0
 		rts
 
