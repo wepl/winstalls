@@ -1,7 +1,8 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	keyboard.s
+;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: interphase.asm 1.6 1998/05/25 15:45:29 jah Exp jah $
+;  :Version.	$Id: keyboard.s 1.1 1998/06/14 20:54:50 jah Exp $
+;  :Version.	$Id$
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;  :Requires.	_keydebug	byte variable containing rawkey code

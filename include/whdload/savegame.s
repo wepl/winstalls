@@ -1,5 +1,5 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	savegame.s
+;  :Modul.	savegame.s
 ;  :Contents.	routine for multiple save game support
 ;		it creates an interface from which the user can choice between
 ;		9 different savegames, a description can be entered for each
@@ -7,7 +7,7 @@
 ;		grows dynamically
 ;		the savegames must have always the same size
 ;  :Author.	Wepl
-;  :Version.	$Id: interphase.asm 1.6 1998/05/25 15:45:29 jah Exp jah $
+;  :Version.	$Id: savegame.s 1.1 1998/06/27 23:53:54 jah Exp $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed
