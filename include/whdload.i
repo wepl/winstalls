@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@kagi.com
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 9.0 1999/01/11 23:22:35 jah Exp jah $
+;  :Version.	$Id: whdload.i 9.0 1999/01/17 14:06:48 jah Exp jah $
 ;  :History.
 ;  :Copyright.	© 1996,1997,1998 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
@@ -68,7 +68,6 @@ SLAVE_HEADER	MACRO
 ;=============================================================================
 ;	some useful macros
 ;=============================================================================
-
 ****************************************************************
 ***** write opcode ILLEGAL to specified address
 ill	MACRO
@@ -407,6 +406,23 @@ TDREASON_DELETEFILE	= 27	;error with resload_DeleteFile
  EITEM	WHDLTAG_VERSION_GET	;get WHDLoad version number (major)
  EITEM	WHDLTAG_REVISION_GET	;get WHDLoad revision number (minor)
  EITEM	WHDLTAG_BUILD_GET	;get WHDLoad build number
+ EITEM	WHDLTAG_TIME_GET	;gets pointer to filled whdload_time structure
+
+;=============================================================================
+;	structure returned by WHDLTAG_TIME_GET
+;=============================================================================
+
+	STRUCTURE whdload_time,0
+		ULONG	whdlt_days	;days since 1.1.1978
+		ULONG	whdlt_mins	;minutes since last day
+		ULONG	whdlt_ticks	;1/50 seconds since last minute
+		UBYTE	whdlt_year	;78..77 (1978..2077)
+		UBYTE	whdlt_month	;1..12
+		UBYTE	whdlt_day	;1..31
+		UBYTE	whdlt_hour	;0..23
+		UBYTE	whdlt_min	;0..59
+		UBYTE	whdlt_sec	;0..59
+		LABEL	whdlt_SIZEOF
 
 ;=============================================================================
 ; Slave		Version 1..3
@@ -456,6 +472,7 @@ TDREASON_DELETEFILE	= 27	;error with resload_DeleteFile
 
 ;=============================================================================
 ; Flags for ws_Flags
+;=============================================================================
 
 	BITDEF WHDL,Disk,0	;means diskimages are used by the slave
 				;result is a different PRELOAD
