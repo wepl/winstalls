@@ -1,10 +1,11 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.1 1998/06/14 20:54:50 jah Exp $
-;  :Version.	$Id$
+;  :Version.	$Id: keyboard.s 1.2 1998/11/22 14:29:48 jah Exp jah $
+;  :Version.	$Id: keyboard.s 1.2 1998/11/22 14:29:48 jah Exp jah $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
+;		23.12.98 _key_help added
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;		_debug		function to quit with debug
@@ -51,6 +52,12 @@ _SetupKeyboard	lea	(.int2),a0
 	IFD _keyexit2
 		cmp.b	(_keyexit2),d0
 		beq	_exit
+	ENDC
+	IFD _key_help
+		cmp.b	#$5f,d0
+		bne	.help
+		bsr	_key_help
+.help
 	ENDC
 
 		moveq	#3-1,d1				;wait because handshake min 75 µs
