@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.6 2003/04/07 06:51:54 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.7 2003/05/14 22:40:08 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -315,7 +315,7 @@ gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 ;============================================================================
 
 disk_getunitid
-	IFMI NUMDRIVES
+	IFLT NUMDRIVES
 		cmp.l	#1,d0			;at least one drive
 		bcs	.set
 		cmp.l	(_custom1,pc),d0
@@ -560,7 +560,7 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
-	IFMI NUMDRIVES
+	IFLT NUMDRIVES
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
 	ENDC

@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.10 2003/04/06 20:30:28 wepl Exp $
+;  :Version.	$Id: kick12.s 1.11 2003/05/14 22:40:00 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -459,7 +459,7 @@ gfx_SetSoftStyle
 ;============================================================================
 
 disk_getunitid
-	IFMI NUMDRIVES
+	IFLT NUMDRIVES
 		cmp.l	#1,d0			;at least one drive
 		bcs	.set
 		cmp.l	(_custom1,pc),d0
@@ -757,7 +757,7 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
-	IFMI NUMDRIVES
+	IFLT NUMDRIVES
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
 	ENDC
