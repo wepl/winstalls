@@ -3,12 +3,13 @@
 ;  :Contents.	routine to fix empty dbf loops
 ;		the dbf loop will be replaced by a wait based on the vertical
 ;		raster position
-;  :Version.	$Id: dbffix.s 1.1 1999/03/19 18:57:32 jah Exp jah $
+;  :Version.	$Id: dbffix.s 1.2 1999/05/09 20:03:47 jah Exp jah $
 ;  :History.	19.03.99 written based on the stfix routine
+;		07.10.99 some documentation mistakes fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
+;  :Translator.	Barfly 2.9
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 ;
@@ -21,10 +22,8 @@
 ;
 ; IN:	A0 = APTR start of memory to patch
 ;	A1 = APTR end of memory to patch
-;	A2 = APTR space for patch routine MUST be < $8000 !!!
-;		  required only if PATCHCOUNT is used
-; OUT:	D0-D1/A0-A1 unused
-;	A2 = APTR points to the end of patch routine
+;	A2 = APTR space for patch routine (only if PATCHCOUNT is used)
+; OUT:	A2 = APTR points to the end of patch routine (if PATCHCOUNT is used)
 
 _dbffix		movem.l	d0-d1/a0-a1,-(a7)
 
@@ -71,9 +70,10 @@ _dbffix		movem.l	d0-d1/a0-a1,-(a7)
 		move.l	(12,a7),a0		;return PC
 		move.w	(a0)+,d1		;loop counter
 		move.l	a0,(12,a7)		;return PC
-.1		move.b	$dff006,d0
-.2		cmp.b	$dff006,d0
+.1		move.b	($dff006),d0
+.2		cmp.b	($dff006),d0
 		beq	.2
 		dbf	d1,.1
 		movem.l	(a7)+,d0-d1/a0
 		rts
+
