@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.3 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.4 2002/05/09 13:43:24 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.5 2003/03/30 18:26:15 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -30,29 +30,20 @@
 	SUPER
 	ENDC
 
-UPPER	MACRO
-		cmp.b	#"a",\1
-		blo	.l\@
-		cmp.b	#"z",\1
-		bhi	.l\@
-		sub.b	#$20,\1
-.l\@
-	ENDM
-
 ;============================================================================
 
 CHIPMEMSIZE	= $80000
 FASTMEMSIZE	= $80000
-NUMDRIVES	= 1
+NUMDRIVES	= 2
 WPDRIVES	= %1111
 
 ;BLACKSCREEN
+CACHE
 DEBUG
 DISKSONBOOT
 ;DOSASSIGN
 ;FONTHEIGHT	= 8
-;FSSM
-;HDINIT
+HDINIT
 HRTMON
 IOCACHE		= 1024
 ;MEMFREE	= $100
@@ -64,7 +55,7 @@ SETPATCH
 
 ;============================================================================
 
-KICKSIZE	= $40000		;34.005
+KICKSIZE	= $40000			;34.005
 BASEMEM		= CHIPMEMSIZE
 EXPMEM		= KICKSIZE+FASTMEMSIZE
 
@@ -75,7 +66,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
-		dc.w	_bootpre-_base		;ws_GameLoader
+		dc.w	_boot-_base		;ws_GameLoader
 		dc.w	_dir-_base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
@@ -103,15 +94,6 @@ _info		dc.b	"adapted for WHDLoad by Wepl",10
 
 ;============================================================================
 
-_bootpre	move.l	a0,a2
-	;enable cache
-		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
-		move.l	#WCPUF_All,d1
-		jsr	(resload_SetCPU,a2)
-	;kickstart
-		move.l	a2,a0
-		bra	_boot
-
 	IFEQ 1
 _bootearly	blitz
 		rts
@@ -121,6 +103,7 @@ _bootearly	blitz
 ; A1 = ioreq ($2c+a5)
 ; A4 = buffer (1024 bytes)
 ; A6 = execbase
+
 _bootblock	blitz
 		jmp	(12,a4)
 	ENDC
@@ -165,13 +148,16 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		cmp.l	d2,d3		;length match?
 		bne	.next
 	;compare name
-	illegal
 		lea	(.patch,pc,d4.w),a2
 		move.l	a0,a3
 		move.l	d0,d6
 .cmp		move.b	(a3)+,d7
-		UPPER	d7
-		cmp.b	(a2)+,d7
+		cmp.b	#"a",d7
+		blo	.l
+		cmp.b	#"z",d7
+		bhi	.l
+		sub.b	#$20,d7
+.l		cmp.b	(a2)+,d7
 		bne	.next
 		subq.l	#1,d6
 		bne	.cmp
@@ -202,10 +188,9 @@ PATCH	MACRO
 		dc.w	\3-.patch	;patch list
 	ENDM
 
-.patch		;PATCH	2516,.n_run,_p_run2568
+.patch		PATCH	2516,.n_run,_p_run2568
 		dc.l	0
 
-	IFEQ 1
 	;all upper case!
 .n_run		dc.b	"RUN",0
 	EVEN
@@ -213,15 +198,6 @@ PATCH	MACRO
 _p_run2568	PL_START
 	;	PL_P	0,.1
 		PL_END
-
-.1	sub.l	a1,a1
-	move.l	4,a6
-	jsr	(_LVOFindTask,a6)
-	blitz
-	move.l	d0,a0
-	move.l	($a4,a0),d1
-	illegal
-	ENDC
 
 ;============================================================================
 
