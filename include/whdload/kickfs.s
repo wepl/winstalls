@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.14 2004/10/06 07:14:42 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.15 2004/10/18 11:14:16 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -17,6 +17,8 @@
 ;		29.04.04 ACTION_CREATE_DIR returns ERROR_OBJECT_EXISTS if exists
 ;		06.10.04 checks for startup-sequence if not BOOTDOS (JOTD)
 ;		17.10.04 set IoErr on Seek on success to be more system conform
+;		26.11.04 set IoErr on Read on success to be more system conform
+;			 ACTION_SET_COMMENT dummy added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -280,6 +282,7 @@ HD_NumBuffers		= 5
 		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19	25
 		dc.w	ACTION_INFO,.a_info-.action				;1a	26
 		dc.w	ACTION_FLUSH,.a_flush-.action				;1b	27
+		dc.w	ACTION_SET_COMMENT,.a_set_comment-.action		;1c	28
 		dc.w	ACTION_PARENT,.a_parent-.action				;1d	29
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f	31
 		dc.w	ACTION_READ,.a_read-.action				;52	82
@@ -516,6 +519,7 @@ HD_NumBuffers		= 5
 
 .a_is_filesystem
 .a_set_protect
+.a_set_comment
 .a_flush
 .a_inhibit	moveq	#DOSTRUE,d0
 		bra	.reply1
@@ -661,6 +665,7 @@ HD_NumBuffers		= 5
 		jsr	(resload_LoadFileOffset,a2)
 	;finish
 .read_end	move.l	d3,d0				;bytes read
+		moveq	#0,d1				;no error
 	IFD CBDOSREAD
 		movem.l	d0-a6,-(a7)
 		move.l	(dp_Arg1,a4),a0
@@ -671,7 +676,7 @@ HD_NumBuffers		= 5
 		bsr	_cb_dosRead
 		movem.l	(a7)+,d0-a6
 	ENDC
-		bra	.reply1
+		bra	.reply2
 	ELSE
 		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
 		move.l	#IOCACHE,d7			;d7 = IOCACHE
@@ -749,6 +754,7 @@ HD_NumBuffers		= 5
 	;finish
 .read_end	move.l	d3,d0
 		add.l	d4,d0
+		moveq	#0,d1				;no error
 	IFD CBDOSREAD
 		movem.l	d0-a6,-(a7)
 		move.l	(dp_Arg1,a4),a0
@@ -759,7 +765,7 @@ HD_NumBuffers		= 5
 		bsr	_cb_dosRead
 		movem.l	(a7)+,d0-a6
 	ENDC
-		bra	.reply1
+		bra	.reply2
 	ENDC
 
 ;---------------
