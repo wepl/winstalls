@@ -71,7 +71,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.2 (Floppy)"
+		dc.b	"Version 1.3 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -79,7 +79,7 @@ _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.2 (CDTV)"
+		dc.b	"Version 1.3 CDTV "
 		INCBIN	"T:date"
 		dc.b	0
 	ENDC
@@ -110,32 +110,15 @@ _start	;	A0 = resident loader
 		sub.l	a1,a1
 		jsr	(resload_Relocate,a5)
 
-		skip	$3aae8-$3aa4a,$3aa4a	;os stuff
+		lea	_px2,a0
+		sub.l	a1,a1
+		jsr	(resload_Patch,a5)
 
-		skip	$3ab40-$3ab2c,$3ab2c	;asking exec.VBlankFrequency
 		move.l	#NTSC_MONITOR_ID,d0
 		cmp.l	(_monitor),d0
 		bne	.1
 		move.w	#4,($12,a4)		;3=pal 4=ntsc
 .1
-		patch	$4fd78,_load_sounds
-		patch	$3c7de,_load_speech
-		patch	$33930,_load_level
-		patch	$3d86e,_load_intro
-		patch	$411a8,_load_speech2
-		patch	$50fce,_load_piccode
-		patch	$50f68,_load_pics
-		patch	$3e09a,_load_intro2
-		patch	$3d2a4,_load_level2
-		patch	$4fd28,_load_sounds2
-
-		ret	$3a924			;cdtv.device stuff
-		ret	$3a9ba			;cdtv.device stuff
-		
-		patch	$37a98,_32bit
-		
-		patch	$410b2,$34fb2		;strange sound problem (does not help)
-		
 		move.l	(_custom1),d0
 		beq	.notrainer
 		patchs	$3a742,_trainer1
@@ -167,6 +150,26 @@ _start	;	A0 = resident loader
 
 _vbi		move.w	#INTF_VERTB,(_custom+intreq)
 		rte
+
+_px2
+	PL_START
+	PL_S	$3aa4a,$3aae8-$3aa4a		;os stuff
+	PL_S	$3ab2c,$3ab40-$3ab2c		;asking exec.VBlankFrequency
+	PL_P	$4fd78,_load_sounds
+	PL_P	$3c7de,_load_speech
+	PL_P	$33930,_load_level
+	PL_P	$3d86e,_load_intro
+	PL_P	$411a8,_load_speech2
+	PL_P	$50fce,_load_piccode
+	PL_P	$50f68,_load_pics
+	PL_P	$3e09a,_load_intro2
+	PL_P	$3d2a4,_load_level2
+	PL_P	$4fd28,_load_sounds2
+	PL_R	$3a924				;cdtv.device stuff
+	PL_R	$3a9ba				;cdtv.device stuff
+	PL_P	$37a98,_32bit
+	;PL_P	$410b2,$34fb2			;strange sound problem (does not help)
+	PL_END
 
 _load_sounds
 _load_sounds2	lea	($88a48),a1		;186900 bytes
@@ -271,8 +274,71 @@ _x2		dc.b	"x2",0
 		cmp.w	#$c0fb,d0
 		bne	_wrongver
 
-_v2		patch	$10b0,_1
+;============== version 2
+
+_v2		patch	$10ac,_v2_1
 		jmp	($1018)
+
+_v2_1		move.l	#$2c00,d0		;offset
+		move.l	#$6b6c0,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		jsr	(resload_DiskLoad,a5)
+		patch	$63f62,_v2_2
+		jmp	$400
+
+_v2_2		move.l	#$52*$1600,d0		;offset
+		move.l	#$40000,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		move.l  (RESLOAD),a5
+		jsr	(resload_DiskLoad,a5)
+
+		skip	$7058-$7046,$7046	;vector init
+		patch	$47d8,_32bit
+		patch	$9012,_load
+
+		move.l	(_custom1),d0
+		beq	.notrainer
+		patch	$6f98,_trainer1
+		bra	.ash
+.notrainer
+		patch	$853c,_v2_savehighs
+.ash
+		lea	(_highs),a0
+		move.l	(RESLOAD),a5
+		jsr	(resload_GetFileSize,a5)
+		tst.l	d0
+		beq	.nohighs
+		lea	(_highs),a0
+		lea	$8368,a1
+		pea	(a1)
+		jsr	(resload_LoadFileDecrunch,a5)
+		move.l	(a7)+,a0
+		bsr	_crypt
+.nohighs
+		move.l	#$e841c3fc,d0
+		move.l	d0,$2d10		;access fault (lsr->asr,mulu->muls)
+		move.l	d0,$2d42		;access fault (lsr->asr,mulu->muls)
+		move.l	d0,$2f8e		;access fault (lsr->asr,mulu->muls)
+		move.l	d0,$34d6		;access fault (lsr->asr,mulu->muls)
+
+		jmp	$400
+
+_v2_savehighs	jsr	$86aa			;original
+		move.l	#$fc-$66,d0
+		lea	$8368,a0
+		movem.l	d0/a0,-(a7)
+		bsr	_crypt
+		move.l	a0,a1
+		lea	(_highs),a0
+		move.l	(RESLOAD),a2
+		jsr	(resload_SaveFile,a2)
+		movem.l	(a7)+,d0/a0
+
+		jmp	$400
+
+;============== version 1
 
 _v1		patch	$10b0,_1
 		jmp	($1016)
@@ -282,7 +348,6 @@ _1		move.l	#$2c00,d0		;offset
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
 		jsr	(resload_DiskLoad,a5)
- blitz
 
 		lea	$64de4,a7		;$410
 		move.l	#$7670CF6B,d0		;CopyLock
@@ -339,23 +404,6 @@ _5		patch	$70f6,$763a		;third copylock
 		move.l	#$7670CF6B,d0		;CopyLock
 		jmp	$400
 
-_load		mulu	#512,d0			;offset
-		mulu	#512,d1			;size
-		moveq	#2,d2			;disk
-		move.l	a0,-(a7)
-		add.l	d1,(a7)
-		move.l	(RESLOAD),a2
-		jsr	(resload_DiskLoad,a2)
-		move.l	(a7)+,a0
-		moveq	#0,d0
-		rts
-
-_trainer1	move.l	#100000,($c9a)		;cash
-		move.l	#100000,($ca6)		;cash (in level?)
-		move.w	#9,($cca)		;credits
-		clr.w	$cf2			;original
-		rts
-
 _savehighs	jsr	$8c88			;original
 		move.l	#$fc-$66,d0
 		lea	$8946,a0
@@ -367,11 +415,30 @@ _savehighs	jsr	$8c88			;original
 		jsr	(resload_SaveFile,a2)
 		movem.l	(a7)+,d0/a0
 
+;============== all versions
+
 _crypt		movem.l	d0/a0,-(a7)
 		subq.w	#1,d0
 .lp		eor.b	d0,(a0)+
 		dbf	d0,.lp
 		movem.l	(a7)+,d0/a0
+		rts
+
+_trainer1	move.l	#100000,($c9a)		;cash
+		move.l	#100000,($ca6)		;cash (in level?)
+		move.w	#9,($cca)		;credits
+		clr.w	$cf2			;original
+		rts
+
+_load		mulu	#512,d0			;offset
+		mulu	#512,d1			;size
+		moveq	#2,d2			;disk
+		move.l	a0,-(a7)
+		add.l	d1,(a7)
+		move.l	(RESLOAD),a2
+		jsr	(resload_DiskLoad,a2)
+		move.l	(a7)+,a0
+		moveq	#0,d0
 		rts
 
 	ENDC
