@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.27 2002/01/17 00:46:50 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.30 2002/01/30 21:20:49 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -32,6 +32,7 @@
 ;		04.01.02 MAXFILENAME removed
 ;		16.01.02 support for Guru Meditation added
 ;		30.01.02 write cache added
+;		06.02.02 cleanup
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1170,29 +1171,8 @@ HD_BytesPerBlock	= 512
 		cmp.l	#ACCESS_READ,(fl_Access,a0)
 		bne	_debug4
 	ENDC
-	IFND IOCACHE
-	;correct readsize if necessary
-		move.l	(mfl_fib+fib_Size,a0),d0
-		move.l	(mfl_pos,a0),d1		;offset
-		sub.l	d1,d0			;bytes left in file
-		move.l	(dp_Arg3,a4),d3		;bytes to read
-		cmp.l	d0,d3
-		bls	.read_ok
-		move.l	d0,d3			;d3 = readsize
-.read_ok	move.l	d3,d0
-		beq	.reply1			;eof
-		add.l	d0,(mfl_pos,a0)
-		move.l	(fl_Key,a0),a0		;name
-		move.l	(dp_Arg2,a4),a1		;buffer
-		jsr	(resload_LoadFileOffset,a2)
-		move.l	d3,d0			;bytes read
-		bra	.reply1
-	ELSE
 		move.l	(dp_Arg3,a4),d3		;d3 = readsize
-		moveq	#0,d4			;d4 = readcachesize
 		move.l	(mfl_pos,a0),d5		;d5 = pos
-		move.l	(mfl_cpos,a0),d6	;d6 = cachepos
-		move.l	#IOCACHE,d7		;d7 = IOCACHE
 	;correct readsize if necessary
 		move.l	(mfl_fib+fib_Size,a0),d2
 		sub.l	d5,d2			;d2 = bytes left in file
@@ -1203,7 +1183,7 @@ HD_BytesPerBlock	= 512
 		beq	.read_end		;eof
 		add.l	d3,(mfl_pos,a0)
 	IFD _bootdos
-	;special
+	;special files
 		move.l	(fl_Key,a0),a0		;name
 		bsr	.specialfile
 		tst.l	d0
@@ -1218,6 +1198,20 @@ HD_BytesPerBlock	= 512
 		bra	.read_end
 .read_nospec	move.l	(dp_Arg1,a4),a0
 	ENDC
+	IFND IOCACHE
+	;read direct
+		move.l	d3,d0			;length
+		move.l	d5,d1			;offset
+		move.l	(fl_Key,a0),a0		;name
+		move.l	(dp_Arg2,a4),a1		;buffer
+		jsr	(resload_LoadFileOffset,a2)
+	;finish
+.read_end	move.l	d3,d0			;bytes read
+		bra	.reply1
+	ELSE
+		moveq	#0,d4			;d4 = readcachesize
+		move.l	(mfl_cpos,a0),d6	;d6 = cachepos
+		move.l	#IOCACHE,d7		;d7 = IOCACHE
 	;try from cache
 		tst.l	(mfl_iocache,a0)	;buffer allocated?
 		beq	.read_1
@@ -1753,7 +1747,7 @@ _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;wrong mode while read
 _debug5		tst	-5	;wrong mode while write
-		illegal		;if executed without mmu
+		illegal		;security if executed without mmu
 	ENDC
 
 ;============================================================================
