@@ -2,11 +2,12 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.5 2003/04/06 20:30:28 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.6 2003/04/07 06:51:54 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
 ;			 cache option added
+;		15.05.03 patch for exec.ExitIntr to avoid double ints
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -81,6 +82,7 @@ kick_patch	PL_START
 		PL_P	$c1c,kick_detectcpu
 		PL_P	$d36,_flushcache		;exec.CacheControl
 		PL_P	$db8,kick_reboot		;exec.ColdReboot
+		PL_P	$1394,exec_ExitIntr
 		PL_PS	$1c6c,_flushcache		;exec.MakeFunctions using exec.CacheClearU without
 							;proper init for cpu's providing CopyBack
 	IFD MEMFREE
@@ -191,6 +193,10 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 		and.w	#~(AFF_68881|AFF_68882|AFF_FPU40),d0
 	ENDC
 		rts
+
+exec_ExitIntr	tst.w	(_custom+intreqr)	;delay to make sure int is cleared
+		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
+		rte
 
 	IFD MEMFREE
 exec_AllocMem	move.l	d0,-(a7)
@@ -326,10 +332,7 @@ timer_init	move.l	(_time),a0
 		move.l	(whdlt_days,a0),d0
 		mulu	#24*60,d0
 		add.l	(whdlt_mins,a0),d0
-		move.l	d0,d1
-		lsl.l	#6,d0			;*64
-		lsl.l	#2,d1			;*4
-		sub.l	d1,d0			;=*60
+		mulu.l	#60,d0
 		move.l	(whdlt_ticks,a0),d1
 		divu	#50,d1
 		ext.l	d1
@@ -398,7 +401,7 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 _trd_disk	dc.b	1,2,3,4			;number of diskimage in drive
 _trd_prot	dc.b	WPDRIVES		;protection status
 	IFD DISKSONBOOT
-_trd_chg	dc.b	%1111			;diskchanged
+_trd_chg	dc.b	%1111111		;diskchanged
 	ELSE
 _trd_chg	dc.b	0			;diskchanged
 	ENDC
@@ -520,66 +523,6 @@ dos_bootdos
 		rts
 	ENDC
 
-;---------------
-; performs a C:Assign
-; IN:	A0 = BSTR destination name (null terminated BCPL string, at long word address!)
-;	A1 = CPTR directory (could be 0 meaning SYS:)
-; OUT:	-
-
-	IFD DOSASSIGN
-_dos_assign	movem.l	d2/a3-a6,-(a7)
-		move.l	a0,a3			;A3 = name
-		move.l	a1,a4			;A4 = directory
-
-	;get memory for node
-		move.l	#DosList_SIZEOF,d0
-		move.l	#MEMF_CLEAR,d1
-		move.l	(4),a6
-		jsr	(_LVOAllocMem,a6)
-	IFD DEBUG
-		tst.l	d0
-		beq	_debug3
-	ENDC
-		move.l	d0,a5			;A5 = DosList
-
-	;open doslib
-		lea	(_dosname,pc),a1
-		jsr	(_LVOOldOpenLibrary,a6)
-		move.l	d0,a6
-
-	;lock directory
-		move.l	a4,d1
-		move.l	#ACCESS_READ,d2
-		jsr	(_LVOLock,a6)
-		move.l	d0,d1
-	IFD DEBUG
-		beq	_debug3
-	ENDC
-		lsl.l	#2,d1
-		move.l	d1,a0
-		move.l	(fl_Task,a0),(dol_Task,a5)
-		move.l	d0,(dol_Lock,a5)
-
-	;init structure
-		move.l	#DLT_DIRECTORY,(dol_Type,a5)
-		move.l	a3,d0
-		lsr.l	#2,d0
-		move.l	d0,(dol_Name,a5)
-
-	;add to the system
-		move.l	(dl_Root,a6),a6
-		move.l	(rn_Info,a6),a6
-		add.l	a6,a6
-		add.l	a6,a6
-		move.l	(di_DevInfo,a6),(dol_Next,a5)
-		move.l	a5,d0
-		lsr.l	#2,d0
-		move.l	d0,(di_DevInfo,a6)
-
-		movem.l	(a7)+,d2/a3-a6
-		rts
-	ENDC
-
 ;============================================================================
 
 	IFD HDINIT
@@ -632,4 +575,3 @@ _cbflag_vbstrt		dc.b	0
 ;============================================================================
 
 	END
-

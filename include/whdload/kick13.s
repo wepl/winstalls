@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.45 2003/04/05 13:46:50 wepl Exp $
+;  :Version.	$Id: kick13.s 0.46 2003/04/06 20:30:28 wepl Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -44,6 +44,7 @@
 ;			 STACKSIZE added (Captain HIT)
 ;		30.03.03 _bootearly/block made returnable
 ;		06.04.03 cache option added
+;		15.05.03 patch for exec.ExitIntr to avoid double ints
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -111,6 +112,7 @@ kick_patch	PL_START
 		PL_P	$592,kick_detectchip
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$61a,kick_detectfast
+		PL_P	$ebc,exec_ExitIntr
 		PL_P	$1354,exec_snoop1
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$15b2,exec_MakeFunctions
@@ -213,6 +215,10 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 		and.w	#~(AFF_68881|AFF_68882|AFF_FPU40),d0
 	ENDC
 		rts
+
+exec_ExitIntr	tst.w	(_custom+intreqr)	;delay to make sure int is cleared
+		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
+		rte
 
 	;move.w (a7)+,($dff09c) does not work with Snoop/S on 68060
 exec_snoop1	move.w	(a7),($dff09c)
