@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.9 2003/08/01 15:25:43 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.11 2003/08/10 14:59:07 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -12,7 +12,8 @@
 ;		04.04.03 various changes for kick31
 ;		11.07.03 relative object names now supported (e.g. "dh0:s//c/info")
 ;		06.08.03 sanity check for provided locks added (DEBUG)
-;		09.08.03 JOTD added ACTION_CURRENT_VOLUME packet
+;		09.08.03 ACTION_CURRENT_VOLUME added (JOTD)
+;		01.09.03 ACTION_EXAMINE_FH fixed (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -410,8 +411,7 @@ HD_NumBuffers		= 5
 ;---------------
 
 	IFGT KICKVERSION-36
-.a_examine_fh	move.l	(dp_Arg1,a4),a0		;filehandle
-		move.l	(fh_Arg1,a0),a0		;lock
+.a_examine_fh	move.l	(dp_Arg1,a4),a0		;lock
 		bra	.a_examine
 	ENDC
 
