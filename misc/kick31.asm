@@ -3,12 +3,13 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.5 2004/10/16 14:44:12 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.6 2004/10/18 11:18:49 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;		02.05.04 lowlevel added, error msg on program loading
 ;		16.10.04 saving d7 for UnLoadSeg in _bootdos
+;		23.02.05 _bootdos simplified
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -61,6 +62,7 @@ IOCACHE		= 1024
 ;MEMFREE	= $200
 ;NEEDFPU
 ;POINTERTICKS	= 1
+;PROMOTE_DISPLAY
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
 
@@ -121,19 +123,14 @@ _bootblock	blitz
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
 ; HDINIT is required
-
-; the following example is extensive because it saves all registers and
-;   restores them before executing the program, the reason for this that some
-;   programs (e.g. MANX Aztec-C) require specific registers properly setup on
-;   calling
-; in most cases a simpler routine is sufficient :-)
+;
+; the following example is simple and wont work for BCPL programs and 
+; programs build using MANX Aztec-C
+; for a more compatible routine check kick13.s
 
 	IFD BOOTDOS
 
-_bootdos	lea	(_saveregs,pc),a0
-		movem.l	d1-d6/a2-a6,(a0)
-		move.l	(a7)+,(44,a0)
-		move.l	(_resload,pc),a2	;A2 = resload
+_bootdos	move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
 		lea	(_dosname,pc),a1
@@ -164,7 +161,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 		
-		cmp.w	#$dd8e,d0
+		cmp.w	#$e99a,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
@@ -193,16 +190,11 @@ _bootdos	lea	(_saveregs,pc),a0
 	ENDC
 
 	;call
-	IFND QUIT_AFTER_PROGRAM_EXIT
-		lea	(_saveseg,pc),a0
-		move.l	d7,(a0)
-	ENDC
 		move.l	d7,a1
 		add.l	a1,a1
 		add.l	a1,a1
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
-		movem.l	(_saveregs,pc),d1-d6/a2-a6
 		jsr	(4,a1)
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
@@ -211,12 +203,11 @@ _bootdos	lea	(_saveregs,pc),a0
 		jmp	(resload_Abort,a2)
 	ELSE
 	;remove exe
-		move.l	(_saveseg,pc),d1
+		move.l	d7,d1
 		move.l	(_dosbase,pc),a6
 		jsr	(_LVOUnLoadSeg,a6)
 
 		moveq	#0,d0
-		move.l	(_saverts,pc),-(a7)
 		rts
 	ENDC
 
@@ -230,16 +221,11 @@ _pl_program	PL_START
 		PL_END
 
 _disk1		dc.b	"mydisk1",0
-_program	dc.b	"program to start",0
-_args		dc.b	10
-_args_end	dc.b	0
+_program	dc.b	"C:List",0
+_args		dc.b	"DEVS:#?.device",10
+_args_end
 	EVEN
 
-_saveregs	ds.l	11
-_saverts	dc.l	0
-	IFND QUIT_AFTER_PROGRAM_EXIT
-_saveseg	dc.l	0
-	ENDC
 _dosbase	dc.l	0
 
 	ENDC

@@ -2,8 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
-;  :Original.
-;  :Version.	$Id: kick13.asm 1.9 2004/03/05 07:44:10 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.10 2004/10/16 14:45:01 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -11,6 +10,7 @@
 ;		20.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;		25.05.04 error msg on program loading
+;		23.02.05 startup init code for BCPL programs fixed
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -43,14 +43,14 @@ WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
-;BOOTDOS
+BOOTDOS
 ;BOOTEARLY
 ;CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
 DEBUG
 ;DISKSONBOOT
-;DOSASSIGN
+DOSASSIGN
 ;FONTHEIGHT	= 8
 HDINIT
 HRTMON
@@ -120,17 +120,29 @@ _bootblock	blitz
 ; like a program from "startup-sequence" executed, full dos process,
 ; HDINIT is required
 
-; the following example is extensive because it saves all registers and
-;   restores them before executing the program, the reason for this that some
-;   programs (e.g. MANX Aztec-C) require specific registers properly setup on
-;   calling
-; in most cases a simpler routine is sufficient :-)
+; the following example is extensive because it preserves all registers and
+; is able to start BCPL programs and programs build by MANX Aztec-C
+;
+; usually a simpler routine is sufficient, check kick31.asm for an simpler one
+;
+; D0 = ULONG argument line length, including LF
+; D2 = ULONG stack size
+; D4 = D0
+; A0 = CPTR  argument line
+; A1 = APTR  BCPL stack, low end
+; A2 = APTR  BCPL
+; A4 = APTR  return address, frame (A7+4)
+; A5 = BPTR  BCPL
+; A6 = BPTR  BCPL
+; (SP)       return address
+; (4,SP)     stack size
+; (8,SP)     previous stack frame -> +4 = A1,A2,A5,A6
 
 	IFD BOOTDOS
 
 _bootdos	lea	(_saveregs,pc),a0
-		movem.l	d1-d6/a2-a6,(a0)
-		move.l	(a7)+,(44,a0)
+		movem.l	d1-d3/d5-d7/a1-a2/a4-a6,(a0)
+		move.l	(a7)+,(11*4,a0)
 		move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
@@ -162,7 +174,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 		
-		cmp.w	#$dd8e,d0
+		cmp.w	#$0ac4,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
@@ -191,13 +203,10 @@ _bootdos	lea	(_saveregs,pc),a0
 	ENDC
 
 	;call
-		move.l	d7,a1
-		add.l	a1,a1
-		add.l	a1,a1
+		move.l	d7,d1
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
-		movem.l	(_saveregs,pc),d1-d6/a2-a6
-		jsr	(4,a1)
+		bsr	.call
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
@@ -221,18 +230,58 @@ _bootdos	lea	(_saveregs,pc),a0
 		pea	TDREASON_DOSREAD
 		jmp	(resload_Abort,a2)
 
+; D0 = ULONG arg length
+; D1 = BPTR  segment
+; A0 = CPTR  arg string
+
+.call		lea	(_callregs,pc),a1
+		movem.l	d2-d7/a2-a6,(a1)
+		move.l	(a7)+,(11*4,a1)
+		move.l	d0,d4
+		lsl.l	#2,d1
+		move.l	d1,a3
+		move.l	a0,a4
+	;create longword aligend copy of args
+		lea	(_callargs,pc),a1
+		move.l	a1,d2
+.callca		move.b	(a0)+,(a1)+
+		subq.w	#1,d0
+		bne	.callca
+	;set args
+		move.l	(_dosbase,pc),a6
+		jsr	(_LVOInput,a6)
+		lsl.l	#2,d0		;BPTR -> APTR
+		move.l	d0,a0
+		lsr.l	#2,d2		;APTR -> BPTR
+		move.l	d2,(fh_Buf,a0)
+		clr.l	(fh_Pos,a0)
+		move.l	d4,(fh_End,a0)
+	;call
+		move.l	d4,d0
+		move.l	a4,a0
+		movem.l	(_saveregs,pc),d1-d3/d5-d7/a1-a2/a4-a6
+		jsr	(4,a3)
+	;return
+		movem.l	(_callregs,pc),d2-d7/a2-a6
+		move.l	(_callrts,pc),a0
+		jmp	(a0)
+
 _pl_program	PL_START
 		PL_END
 
-_disk1		dc.b	"df0",0		;for Assign
-_program	dc.b	"program to start",0
-_args		dc.b	10
-_args_end	dc.b	0
+_disk1		dc.b	"DF0",0		;for Assign
+_program	dc.b	"C:Echo",0
+_args		dc.b	"Test!",10	;must be LF terminated
+_args_end
 	EVEN
 
+	CNOP 0,4
 _saveregs	ds.l	11
 _saverts	dc.l	0
 _dosbase	dc.l	0
+_callregs	ds.l	11
+_callrts	dc.l	0
+_callargs	ds.b	208
 
 	ENDC
 
