@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
-;  :Modul.	kick31.s
-;  :Contents.	interface code and patches for kickstart 3.1
+;  :Modul.	kick31_A1200.s
+;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.9 2003/07/12 19:17:30 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.10 2003/08/10 13:12:44 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -24,7 +24,7 @@
 	INCLUDE	graphics/gfxbase.i
 
 KICKVERSION	= 40
-KICKCRC		= $9ff5				;40.068
+KICKCRC		= $9ff5				;40.068 A1200
 
 	MC68020
 
