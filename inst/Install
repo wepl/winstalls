@@ -1,13 +1,18 @@
 ; $Id: Install 1.8 2004/10/07 00:56:04 wepl Exp wepl $
 
+(set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #sub-dir "")			;sub directory containing data files
+(set #highs-file "highs")		;name of high scores file
+
 (set #readme-file "ReadMe")		;name of readme file
 (set #man-file "Manual")		;name of manual file
 (set #hint-file "Hints")		;name of hint file
 (set #sol-file "Solution")		;name of solution file
-(set #highs-file "highs")		;name of high scores file
-(set #last-file "Disk.1")		;last file the imager should create
+(set #extra-file "Extra")		;name of extra file
+(set #extra2-file "Extra2")		;name of second extra file
+(set #extra3-file "Extra3")		;name of third extra file
 (set #prefix @app-name)			;name of slave, directory
+(set #version_suffix "")		;
 
 (set #ico_suffix_00 "inf")		;Icon suffixes (not all of these must exist)
 (set #ico_suffix_01 "magicwb")
@@ -39,20 +44,43 @@
 (set #ico_desc_11 "OS3.5 BoxIcon")
 
 ;---------------------------------------------------------------------
+; Which version does the user want to install? This routine doesn't need
+; to be changed UNLESS there are multiple versions.
 
-(procedure P_MakeImages
-  (set #version 0)
-  (set #version			;Comment this chunk out if there is only ONE version
-    (askchoice
-      (prompt ("Which version of %s would you like to install?" @app-name))
-      (default 0)
-      (choices "Original release (RawDIC)" "Alternate version (Patcher)" "Budget re-release (DIC)" "Hit-Squad version (Files)" "Defjam compact (Single File)")
-      (help @askchoice-help)
+(procedure P_SelectVersion
+  (if (= #multiple-versions "")
+    ("")
+    (
+      (set #version
+        (askchoice
+          (prompt ("Which version of %s would you like to install?" @app-name))
+          (default 0)
+          (choices "Original release (RawDIC)" "Alternate version (Patcher)" "Budget re-release (DIC)" "Hit-Squad version (Files)" "CD version (Files)" "Defjam compact (Single File)")
+          (help @askchoice-help)
+        )
+      )
+
+      ; Certain versions may use different slaves, so set that up here if
+      ; required. It will change the install directory and the slaves used.
+      ; 
+      ;(select #version
+      ;  ("")
+      ;  (set #version_suffix "AGA")		;Tack on AGA to the slave name(s)
+      ;  (set #version_suffix "CD32")		;Tack on CD32 to the slave name(s)
+      ;)
+
+      (set #prefix ("%s%s" #prefix #version_suffix))
     )
   )
+)
 
+;---------------------------------------------------------------------
+; Make the disk images for the install
+
+(procedure P_MakeImages
   (select #version
     (				;----- RawDIC -----
+      (set #last-file "Disk.1")		;last file the imager should create
       (copyfiles
         (help @copyfiles-help)
         (source ("%s.ISlave" #prefix))
@@ -68,6 +96,7 @@
     )
 
     (				;----- Patcher -----
+      (set #last-file "Disk.1")		;last file the imager should create
       (copyfiles
         (help @copyfiles-help)
         (source ("%s.imager" #prefix))
@@ -116,11 +145,36 @@
         (dest #dest)
         (pattern "~(#?.info)")
       )
+
+      ;				;----- XFDDecrunch support (uncomment if required) -----
+      ;(set #program "xfddecrunch")
+      ;(P_ChkRun_XFD)
+      ;(if
+      ;  (= 0 (run ("xfddecrunch \"%s:Enemy\" >CON:///1000//CLOSE" #dest)))
+      ;  ("")
+      ;  (abort "\"xfddecrunch\" has failed to decompress the file")
+      ;)
+    )
+
+    (				;----- CD version (Files) -----
+      (message ("\nInsert your %s CD in any drive." @app-name))
+      (copyfiles
+        (help @copyfiles-help)
+        (source "HolidayMakerCDTV:")
+        (pattern "(fonts|[1-9hnp]#?|de|map|se)")
+        (dest #dest)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source "HolidayMakerCDTV:libs")
+        (pattern "diskfont.library")
+        (dest #dest)
+      )
     )
 
     (				;----- DOS version (Select a single file on an unknown disk) -----
-      (set #SF_prompt "Please select the xxxxx file (xxxxxx bytes)")
-      (set #SF_default_filename "xxxxxxx")
+      (set #SF_prompt "Please select the xxxxxx file (xxxxxx bytes)")
+      (set #SF_default_filename "xxxxxx")
       (set #SF_new_filename #SF_default_filename)
       (P_SelectFile)
       (if (= #SF_filename "")
@@ -136,19 +190,58 @@
   )
 )
 
+;----------------------------
+; Create all the icons for the install. If the game requires multiple icons
+; set them up here by calling P_SelectIcon multiple times, one for each
+; icon/slave that the game needs. For 99% of cases, you do not need to 
+; change this routine.
+;
+; If you have not setup the WHDLoad tooltypes in the icons, you should
+; change the line(s) below to (set #icon_set_slave_preload "true")
+
+(procedure P_MakeIcons
+  ; Uncomment the following lines if you have a separate intro slave/icon
+  ;(set #icon_desc "intro")
+  ;(set #icon_prefix ("%s%s" "Intro" #version_suffix))
+  ;(set #icon_slave #icon_prefix)
+  ;(set #icon_set_slave_preload "")
+  ;(set #icon_set_deftool_stack "true")
+  ;(P_CopySlave)
+  ;(P_SelectIcon)
+
+  (set #icon_desc "game")
+  (set #icon_prefix #prefix)
+  (set #icon_slave #icon_prefix)
+  (set #icon_set_slave_preload "")
+  (set #icon_set_deftool_stack "true")
+  (P_CopySlave)
+  (P_SelectIcon)
+)
+
+; ** ATTENTION! YOU SHOULD NOT HAVE TO CHANGE ANYTHING BEYOND THIS POINT! **
+
+
 ;****************************
 ;----------------------------
 ; checks if given program is installed, if not abort install
 ; #program - to check
 
 (procedure P_ChkRun
+  (set #package "WHDLoad")
+  (P_ChkRun_Package)
+)
+(procedure P_ChkRun_XFD
+  (set #package "XFD")
+  (P_ChkRun_Package)
+)
+(procedure P_ChkRun_Package
   (if (= 0 (run ("cd SYS:\nWhich %s >NIL:" #program)))
     ("")
     (abort
       (cat
 	"You must install \"" #program "\" first!\n"
 	"It must be accessible via the path.\n"
-	"You can find it in the WHDLoad package."
+	"You can find it in the " #package " package."
       )
     )
   )
@@ -168,7 +261,7 @@
 )
 
 ;----------------------------
-; ask for source drive
+; ask for source drive (DIC installs)
 
 (procedure P_AskSrcDrv
   (set #dcnt 0)
@@ -229,6 +322,9 @@
   )
   (run ("setenv WHDLSrcDrv \"%s\"\ncopy ENV:WHDLSrcDrv ENVARC:" #CI_drive))
 )
+
+;----------------------------
+; ask for source drive (RawDIC/Patcher installs)
 
 (procedure P_AskSrcDrvRaw
   (set #dcnt 0)
@@ -356,6 +452,144 @@
   ))
 )
 
+;----------------------------
+; copy a WHDLoad slave
+; #icon_slave - name of the slave to copy (without .Slave extension)
+
+(procedure P_CopySlave
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("%s.Slave" #icon_slave))
+    (dest #dest)
+  )
+)
+
+;----------------------------
+
+(procedure P_Icon
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("%s.%s" #icon_prefix #icon-suf))
+    (newname ("%s.info" #icon-name))
+    (dest #icon-dir)
+  )
+  (tooltype
+    (dest (tackon #icon-dir #icon-name))
+    (noposition)
+  )
+)
+
+;----------------------------
+; Select an icon by presenting the user with a list of all found icons
+; IN:  #icon_prefix - filename prefix for this icon (eg. intro, game)
+;      #icon_desc   - description of the icon (eg. intro, game)
+;      #icon_slave  - name of the slave the tooltype Slave= should be set 
+;                     to (without the .slave suffix)
+
+(procedure P_SelectIcon
+  (set #icon 0)
+  (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_10)) ((set #icon 10)(set #icnt (+ 1 #icnt))(set #icon_10 #ico_desc_10)) (set #icon_10 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_09)) ((set #icon 9) (set #icnt (+ 1 #icnt))(set #icon_09 #ico_desc_09)) (set #icon_09 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_08)) ((set #icon 8) (set #icnt (+ 1 #icnt))(set #icon_08 #ico_desc_08)) (set #icon_08 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_07)) ((set #icon 7) (set #icnt (+ 1 #icnt))(set #icon_07 #ico_desc_07)) (set #icon_07 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_06)) ((set #icon 6) (set #icnt (+ 1 #icnt))(set #icon_06 #ico_desc_06)) (set #icon_06 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_05)) ((set #icon 5) (set #icnt (+ 1 #icnt))(set #icon_05 #ico_desc_05)) (set #icon_05 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_04)) ((set #icon 4) (set #icnt (+ 1 #icnt))(set #icon_04 #ico_desc_04)) (set #icon_04 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_03)) ((set #icon 3) (set #icnt (+ 1 #icnt))(set #icon_03 #ico_desc_03)) (set #icon_03 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_02)) ((set #icon 2) (set #icnt (+ 1 #icnt))(set #icon_02 #ico_desc_02)) (set #icon_02 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_01)) ((set #icon 1) (set #icnt (+ 1 #icnt))(set #icon_01 #ico_desc_01)) (set #icon_01 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_00)) ((set #icon 0) (set #icnt (+ 1 #icnt))(set #icon_00 #ico_desc_00)) (set #icon_00 ""))
+  (if (> #icnt 1) (
+    (if (= #newstuff 1) (
+      (set #icon-dir ("T:%s Icons" #icon_prefix))
+      (makedir #icon-dir
+        (help @makedir-help)
+      )
+      (if #icon_00 ((set #icon-suf #ico_suffix_00) (set #icon-name #ico_desc_00) (P_Icon)))
+      (if #icon_01 ((set #icon-suf #ico_suffix_01) (set #icon-name #ico_desc_01) (P_Icon)))
+      (if #icon_02 ((set #icon-suf #ico_suffix_02) (set #icon-name #ico_desc_02) (P_Icon)))
+      (if #icon_03 ((set #icon-suf #ico_suffix_03) (set #icon-name #ico_desc_03) (P_Icon)))
+      (if #icon_04 ((set #icon-suf #ico_suffix_04) (set #icon-name #ico_desc_04) (P_Icon)))
+      (if #icon_05 ((set #icon-suf #ico_suffix_05) (set #icon-name #ico_desc_05) (P_Icon)))
+      (if #icon_06 ((set #icon-suf #ico_suffix_06) (set #icon-name #ico_desc_06) (P_Icon)))
+      (if #icon_07 ((set #icon-suf #ico_suffix_07) (set #icon-name #ico_desc_07) (P_Icon)))
+      (if #icon_08 ((set #icon-suf #ico_suffix_08) (set #icon-name #ico_desc_08) (P_Icon)))
+      (if #icon_09 ((set #icon-suf #ico_suffix_09) (set #icon-name #ico_desc_09) (P_Icon)))
+      (if #icon_10 ((set #icon-suf #ico_suffix_10) (set #icon-name #ico_desc_10) (P_Icon)))
+      (if #icon_11 ((set #icon-suf #ico_suffix_11) (set #icon-name #ico_desc_11) (P_Icon)))
+      (openwbobject #icon-dir)
+    ))
+    (set #icon
+      (askchoice
+        (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
+        (choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11)
+        (default #icon)
+        (help @askchoice-help)
+      )
+    )
+    (if (= #newstuff 1) (
+      (closewbobject #icon-dir)
+      (run ("Delete \"%s\" All Quiet Force" #icon-dir))
+    ))
+  ))
+  (if (> #icnt 0) (
+    (select #icon
+      (set #icon #ico_suffix_00)
+      (set #icon #ico_suffix_01)
+      (set #icon #ico_suffix_02)
+      (set #icon #ico_suffix_03)
+      (set #icon #ico_suffix_04)
+      (set #icon #ico_suffix_05)
+      (set #icon #ico_suffix_06)
+      (set #icon #ico_suffix_07)
+      (set #icon #ico_suffix_08)
+      (set #icon #ico_suffix_09)
+      (set #icon #ico_suffix_10)
+      (set #icon #ico_suffix_11)
+    )
+    (copyfiles
+      (help @copyfiles-help)
+      (source ("%s.%s" #icon_prefix #icon))
+      (newname ("%s.info" #icon_prefix))
+      (dest #dest)
+    )
+
+    ; Check if we should set Slave=xxxxxx.slave and PreLoad tooltypes
+    (if (= #icon_set_slave_preload "")
+      ("")
+      (
+        ;installer has problems on deleting with newicons
+        ;(tooltype
+        ;  (dest (tackon #dest #icon_prefix))
+        ;  (settooltype "Slave")
+        ;  (settooltype "PreLoad")
+        ;)
+        (tooltype
+          (dest (tackon #dest #icon_prefix))
+          (settooltype "PreLoad" "")
+          (settooltype "Slave" ("%s.Slave" #icon_slave))
+        )
+      )
+    )
+
+    ; Check if we should set the default tool to "WHDLoad" and the stack
+    ; to 10240 bytes
+    (if (= #icon_set_deftool_stack "")
+      ("")
+      (
+        (tooltype
+          (dest (tackon #dest #icon_prefix))
+          (setdefaulttool "WHDLoad")
+          (setstack 10240)
+          (noposition)
+        )
+      )
+    )
+  ))
+)
+
 ;****************************
 
 (if (< @installer-version (+ (* 44 65536) 10))
@@ -368,7 +602,7 @@
         "You have version " (/ @installer-version 65536) "." 
         (BITAND @installer-version 65535) ", recommended is version 44.10. "
         "The 'installer' 44.10 comes with OS 3.5 but is also contained in the NDK 3.9. "
-        "You may also use the InstallerNG by Jens Tröger."
+        "You may also use InstallerNG by Jens Tröger."
         "\n\n"
         "The installers can be obtained from the net:\n"
         "http://www.amiga.com/3.9/download/NDK3.9.lha\n"
@@ -402,6 +636,10 @@
 (if (getenv "WHDLInstPath")
   (set @default-dest (getenv "WHDLInstPath"))
 )
+
+(set #version 0)
+(P_SelectVersion)
+
 (set #dest
   (askdir
     (prompt
@@ -441,109 +679,7 @@
 
 ;----------------------------
 
-(copyfiles
-  (help @copyfiles-help)
-  (source ("%s.Slave" #prefix))
-  (dest #dest)
-)
-(set #icon 0)
-(set #icnt 0)
-(if (exists ("%s.%s" #prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_10)) ((set #icon 10)(set #icnt (+ 1 #icnt))(set #icon_10 #ico_desc_10)) (set #icon_10 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_09)) ((set #icon 9) (set #icnt (+ 1 #icnt))(set #icon_09 #ico_desc_09)) (set #icon_09 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_08)) ((set #icon 8) (set #icnt (+ 1 #icnt))(set #icon_08 #ico_desc_08)) (set #icon_08 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_07)) ((set #icon 7) (set #icnt (+ 1 #icnt))(set #icon_07 #ico_desc_07)) (set #icon_07 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_06)) ((set #icon 6) (set #icnt (+ 1 #icnt))(set #icon_06 #ico_desc_06)) (set #icon_06 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_05)) ((set #icon 5) (set #icnt (+ 1 #icnt))(set #icon_05 #ico_desc_05)) (set #icon_05 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_04)) ((set #icon 4) (set #icnt (+ 1 #icnt))(set #icon_04 #ico_desc_04)) (set #icon_04 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_03)) ((set #icon 3) (set #icnt (+ 1 #icnt))(set #icon_03 #ico_desc_03)) (set #icon_03 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_02)) ((set #icon 2) (set #icnt (+ 1 #icnt))(set #icon_02 #ico_desc_02)) (set #icon_02 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_01)) ((set #icon 1) (set #icnt (+ 1 #icnt))(set #icon_01 #ico_desc_01)) (set #icon_01 ""))
-(if (exists ("%s.%s" #prefix #ico_suffix_00)) ((set #icon 0) (set #icnt (+ 1 #icnt))(set #icon_00 #ico_desc_00)) (set #icon_00 ""))
-(procedure P_Icon
-  (copyfiles
-    (help @copyfiles-help)
-    (source ("%s.%s" #prefix #icon-suf))
-    (newname ("%s.info" #icon-name))
-    (dest #icon-dir)
-  )
-  (tooltype
-    (dest (tackon #icon-dir #icon-name))
-    (noposition)
-  )
-)
-(if (> #icnt 1) (
-  (if (= #newstuff 1) (
-    (set #icon-dir ("T:%s Icons" #prefix))
-    (makedir #icon-dir
-      (help @makedir-help)
-    )
-    (if #icon_00 ((set #icon-suf #ico_suffix_00) (set #icon-name #ico_desc_00) (P_Icon)))
-    (if #icon_01 ((set #icon-suf #ico_suffix_01) (set #icon-name #ico_desc_01) (P_Icon)))
-    (if #icon_02 ((set #icon-suf #ico_suffix_02) (set #icon-name #ico_desc_02) (P_Icon)))
-    (if #icon_03 ((set #icon-suf #ico_suffix_03) (set #icon-name #ico_desc_03) (P_Icon)))
-    (if #icon_04 ((set #icon-suf #ico_suffix_04) (set #icon-name #ico_desc_04) (P_Icon)))
-    (if #icon_05 ((set #icon-suf #ico_suffix_05) (set #icon-name #ico_desc_05) (P_Icon)))
-    (if #icon_06 ((set #icon-suf #ico_suffix_06) (set #icon-name #ico_desc_06) (P_Icon)))
-    (if #icon_07 ((set #icon-suf #ico_suffix_07) (set #icon-name #ico_desc_07) (P_Icon)))
-    (if #icon_08 ((set #icon-suf #ico_suffix_08) (set #icon-name #ico_desc_08) (P_Icon)))
-    (if #icon_09 ((set #icon-suf #ico_suffix_09) (set #icon-name #ico_desc_09) (P_Icon)))
-    (if #icon_10 ((set #icon-suf #ico_suffix_10) (set #icon-name #ico_desc_10) (P_Icon)))
-    (if #icon_11 ((set #icon-suf #ico_suffix_11) (set #icon-name #ico_desc_11) (P_Icon)))
-    (openwbobject #icon-dir)
-  ))
-  (set #icon
-    (askchoice
-      (prompt "\nWhich icon would you like to install?\n")
-      (choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11)
-      (default #icon)
-      (help @askchoice-help)
-    )
-  )
-  (if (= #newstuff 1) (
-    (closewbobject #icon-dir)
-    (run ("Delete \"%s\" All Quiet Force" #icon-dir))
-  ))
-))
-(if (> #icnt 0) (
-  (select #icon
-    (set #icon #ico_suffix_00)
-    (set #icon #ico_suffix_01)
-    (set #icon #ico_suffix_02)
-    (set #icon #ico_suffix_03)
-    (set #icon #ico_suffix_04)
-    (set #icon #ico_suffix_05)
-    (set #icon #ico_suffix_06)
-    (set #icon #ico_suffix_07)
-    (set #icon #ico_suffix_08)
-    (set #icon #ico_suffix_09)
-    (set #icon #ico_suffix_10)
-    (set #icon #ico_suffix_11)
-  )
-  (copyfiles
-    (help @copyfiles-help)
-    (source ("%s.%s" #prefix #icon))
-    (newname ("%s.info" #prefix))
-    (dest #dest)
-  )
-  ;installer has problems on deleting with newicons
-  ;(tooltype
-  ;  (dest (tackon #dest #prefix))
-  ;  (settooltype "Slave")
-  ;  (settooltype "PreLoad")
-  ;)
-  (tooltype
-    (dest (tackon #dest #prefix))
-    (settooltype "PreLoad" "")
-    (settooltype "Slave" ("%s.Slave" #prefix))
-  )
-  (tooltype
-    (dest (tackon #dest #prefix))
-    (setdefaulttool "WHDLoad")
-    (setstack 10240)
-    (noposition)
-  )
-))
+(P_MakeIcons)
 (set #copy-file #readme-file)
 (P_CopyFile)
 (set #copy-file #man-file)
@@ -551,6 +687,12 @@
 (set #copy-file #hint-file)
 (P_CopyFile)
 (set #copy-file #sol-file)
+(P_CopyFile)
+(set #copy-file #extra-file)
+(P_CopyFile)
+(set #copy-file #extra2-file)
+(P_CopyFile)
+(set #copy-file #extra3-file)
 (P_CopyFile)
 (set #dest-org #dest)
 (if (= #sub-dir "")
