@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.2 2003/04/06 20:30:52 wepl Exp $
+;  :Version.	$Id: kick12.asm 1.3 2003/12/09 11:15:39 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;  :Requires.	-
@@ -31,7 +31,7 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
+FASTMEMSIZE	= $0000
 NUMDRIVES	= 1
 WPDRIVES	= %1111
 

@@ -3,11 +3,12 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.4 2004/03/05 07:44:16 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.5 2004/10/16 14:44:12 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;		02.05.04 lowlevel added, error msg on program loading
+;		16.10.04 saving d7 for UnLoadSeg in _bootdos
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -33,8 +34,8 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
+CHIPMEMSIZE	= $100000
+FASTMEMSIZE	= $100000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
@@ -86,7 +87,7 @@ slv_CurrentDir		dc.b	"wb31",0
 slv_name		dc.b	"Kickstarter for 40.068",0
 slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.2 "
+		dc.b	"Version 0.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -192,6 +193,10 @@ _bootdos	lea	(_saveregs,pc),a0
 	ENDC
 
 	;call
+	IFND QUIT_AFTER_PROGRAM_EXIT
+		lea	(_saveseg,pc),a0
+		move.l	d7,(a0)
+	ENDC
 		move.l	d7,a1
 		add.l	a1,a1
 		add.l	a1,a1
@@ -206,7 +211,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		jmp	(resload_Abort,a2)
 	ELSE
 	;remove exe
-		move.l	d7,d1
+		move.l	(_saveseg,pc),d1
 		move.l	(_dosbase,pc),a6
 		jsr	(_LVOUnLoadSeg,a6)
 
@@ -232,6 +237,9 @@ _args_end	dc.b	0
 
 _saveregs	ds.l	11
 _saverts	dc.l	0
+	IFND QUIT_AFTER_PROGRAM_EXIT
+_saveseg	dc.l	0
+	ENDC
 _dosbase	dc.l	0
 
 	ENDC
