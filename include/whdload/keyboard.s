@@ -1,17 +1,19 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.3 1999/01/03 23:41:17 jah Exp $
+;  :Version.	$Id: keyboard.s 1.4 1999/10/07 22:49:16 jah Exp jah $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
 ;		07.10.99 some cosmetic changes, documentation improved
+;		24.10.99 _keycode added
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
 ;		_key_help	function to execute on help pressed
 ;		_debug		function to quit with debug
 ;		_exit		function to quit
+;		_keycode
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9
@@ -24,14 +26,20 @@
 ;	_keydebug
 ; the labels should refer to the Slave structure, so user definable quit- and
 ; debug-key will be supported
+;
 ; the optional variable:
 ;	_keyexit2
 ; can be used to specify a second quit-key, if a quit by two different keys
 ; should be supported
+;
 ; the optional function:
 ;	_key_help
 ; will be called when the 'help' key is pressed, the fuction must return via
 ; 'rts' and must not change any registers
+;
+; the optional variable:
+;	 _keycode
+; will be filled with the last rawkeycode
 ;
 ; IN:	-
 ; OUT:	-
@@ -66,7 +74,7 @@ _SetupKeyboard
 		not.b	d0
 		ror.b	#1,d0
 
-		cmp.b	(_keydebug),d0
+		cmp.b	(_keydebug,pc),d0
 		bne	.1
 		movem.l	(a7)+,d0-d1/a1
 		move.w	(a7),(6,a7)			;sr
@@ -78,7 +86,7 @@ _SetupKeyboard
 		bra	.debug
 	ENDC
 
-.1		cmp.b	(_keyexit),d0
+.1		cmp.b	(_keyexit,pc),d0
 	IFD _exit
 		beq	_exit
 	ELSE
@@ -86,7 +94,7 @@ _SetupKeyboard
 	ENDC
 
 	IFD _keyexit2
-		cmp.b	(_keyexit2),d0
+		cmp.b	(_keyexit2,pc),d0
 	IFD _exit
 		beq	_exit
 	ELSE
@@ -99,6 +107,13 @@ _SetupKeyboard
 		bne	.2
 		bsr	_key_help
 .2
+	ENDC
+
+	IFD _keycode
+		move.l	a0,-(a7)
+		lea	(_keycode),a0
+		move.b	d0,(a0)
+		move.l	(a7)+,a0
 	ENDC
 
 	;better would be to use the cia-timer to wait, but we arn't know if
