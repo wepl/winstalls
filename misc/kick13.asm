@@ -3,14 +3,15 @@
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.8 2004/01/18 13:29:40 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.9 2004/03/05 07:44:10 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
 ;		04.03.03 full caches
 ;		20.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
-;  :Requires.	-
+;		25.05.04 error msg on program loading
+;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
@@ -37,8 +38,8 @@
 
 CHIPMEMSIZE	= $80000
 FASTMEMSIZE	= $80000
-NUMDRIVES	= 2
-WPDRIVES	= %1111
+NUMDRIVES	= 1
+WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
@@ -54,7 +55,7 @@ DEBUG
 HDINIT
 HRTMON
 IOCACHE		= 1024
-;MEMFREE	= $100
+;MEMFREE	= $200
 ;NEEDFPU
 ;POINTERTICKS	= 1
 SETPATCH
@@ -130,6 +131,7 @@ _bootblock	blitz
 _bootdos	lea	(_saveregs,pc),a0
 		movem.l	d1-d6/a2-a6,(a0)
 		move.l	(a7)+,(44,a0)
+		move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
 		lea	(_dosname,pc),a1
@@ -150,14 +152,13 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	#MODE_OLDFILE,d2
 		jsr	(_LVOOpen,a6)
 		move.l	d0,d1
-		beq	.end
+		beq	.program_err
 		move.l	#300,d3
 		sub.l	d3,a7
 		move.l	a7,d2
 		jsr	(_LVORead,a6)
 		move.l	d3,d0
 		move.l	a7,a0
-		move.l	(_resload,pc),a2
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 		
@@ -172,7 +173,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	a0,d1
 		jsr	(_LVOLoadSeg,a6)
 		move.l	d0,d7			;D7 = segment
-		beq	.end
+		beq	.program_err
 
 	;patch
 		lea	(_pl_program,pc),a0
@@ -200,17 +201,25 @@ _bootdos	lea	(_saveregs,pc),a0
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
+		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
 	ELSE
 	;remove exe
 		move.l	d7,d1
 		move.l	(_dosbase,pc),a6
 		jsr	(_LVOUnLoadSeg,a6)
-	ENDC
 
-.end		moveq	#0,d0
+	;return to CLI
+		moveq	#0,d0
 		move.l	(_saverts,pc),-(a7)
 		rts
+	ENDC
+
+.program_err	jsr	(_LVOIoErr,a6)
+		pea	(_program,pc)
+		move.l	d0,-(a7)
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a2)
 
 _pl_program	PL_START
 		PL_END

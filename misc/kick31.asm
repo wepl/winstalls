@@ -1,11 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick31.asm
-;  :Contents.	kickstart 3.1 booter
+;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
-;  :Version.	$Id: kick31.asm 1.3 2003/12/09 11:18:09 wepl Exp wepl $
+;  :Original.
+;  :Version.	$Id: kick31.asm 1.4 2004/03/05 07:44:16 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
+;		02.05.04 lowlevel added, error msg on program loading
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -33,27 +35,28 @@
 
 CHIPMEMSIZE	= $80000
 FASTMEMSIZE	= $80000
-NUMDRIVES	= 5
-WPDRIVES	= %1111
+NUMDRIVES	= 1
+WPDRIVES	= %0000
 
 ;BLACKSCREEN
-BOOTBLOCK
-BOOTDOS
+;BOOTBLOCK
+;BOOTDOS
 ;BOOTEARLY
-CBDOSLOADSEG
-CBDOSREAD
+;CBDOSLOADSEG
+;CBDOSREAD
 CACHE
 DEBUG
-DOSASSIGN
 ;DISKSONBOOT
+;DOSASSIGN
 ;FONTHEIGHT	= 8
 HDINIT
 ;INITAGA
 ;INIT_AUDIO
 ;INIT_GADTOOLS
+;INIT_LOWLEVEL
 ;INIT_MATHFFP
 HRTMON
-;IOCACHE	= 1024
+IOCACHE		= 1024
 ;MEMFREE	= $200
 ;NEEDFPU
 ;POINTERTICKS	= 1
@@ -129,6 +132,7 @@ _bootblock	blitz
 _bootdos	lea	(_saveregs,pc),a0
 		movem.l	d1-d6/a2-a6,(a0)
 		move.l	(a7)+,(44,a0)
+		move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
 		lea	(_dosname,pc),a1
@@ -149,14 +153,13 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	#MODE_OLDFILE,d2
 		jsr	(_LVOOpen,a6)
 		move.l	d0,d1
-		beq	.end
+		beq	.program_err
 		move.l	#300,d3
 		sub.l	d3,a7
 		move.l	a7,d2
 		jsr	(_LVORead,a6)
 		move.l	d3,d0
 		move.l	a7,a0
-		move.l	(_resload,pc),a2
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 		
@@ -171,7 +174,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	a0,d1
 		jsr	(_LVOLoadSeg,a6)
 		move.l	d0,d7			;D7 = segment
-		beq	.end
+		beq	.program_err
 
 	;patch
 		lea	(_pl_program,pc),a0
@@ -197,24 +200,26 @@ _bootdos	lea	(_saveregs,pc),a0
 		movem.l	(_saveregs,pc),d1-d6/a2-a6
 		jsr	(4,a1)
 
-	;remove exe
-		move.l	d7,d1
-		move.l	(_dosbase,pc),a6
-		jsr	(_LVOUnLoadSeg,a6)
-
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
+		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
 	ELSE
 	;remove exe
 		move.l	d7,d1
 		move.l	(_dosbase,pc),a6
 		jsr	(_LVOUnLoadSeg,a6)
-	ENDC
 
-.end		moveq	#0,d0
+		moveq	#0,d0
 		move.l	(_saverts,pc),-(a7)
 		rts
+	ENDC
+
+.program_err	jsr	(_LVOIoErr,a6)
+		pea	(_program,pc)
+		move.l	d0,-(a7)
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a2)
 
 _pl_program	PL_START
 		PL_END
