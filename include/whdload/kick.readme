@@ -4,7 +4,7 @@ important changes:
 NOFPU changed to NEEDFPU
 no longer disk present in any drive by default, see DISKSONBOOT
 
-$Id$
+$Id: kick13.readme 1.1 2001/09/01 22:09:18 wepl Exp $
 
 Symbols in the Slave-Source
 ***************************
@@ -65,6 +65,11 @@ reads to much from the stackframe if entered. If the SSP is at the end of the
 memory that will cause an access fault. The symbol results in a decremented
 SSP.
 
+IOCACHE = 1024
+
+If the symbol is defined it enables a read cache in the emulated filesystem.
+Useful sizes are 96..2048.
+
 MEMFREE = $100
 
 If this symbol is defined the function exec.AllocMem will be patched. At each
@@ -116,8 +121,8 @@ _bootblock
 	
 _bootdos
 
-	* will be entered short before the S:Startup-Sequence will be loaded
-	  and executed
+	* will be entered short after a maybe existing Startup-Sequence has
+	  been executed
 
 	* dos.library is fully initialized and usable
 

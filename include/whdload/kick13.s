@@ -90,6 +90,7 @@ kick_patch	PL_START
 		PL_PS	$286,kick_hrtmon
 	ENDC
 		PL_P	$546,kick_detectcpu
+		PL_I	$5f0				;reboot (reset)
 		PL_P	$1354,exec_snoop1
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
@@ -138,7 +139,11 @@ kick_patch	PL_START
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3c9b6,dos_1
 		PL_PS	$36e4c,dos_LoadSeg
+	;	PL_B	$38795,cli_StandardOutput	;probably a bug in the initial code
 	ENDC
+	ENDC
+	IFD  _bootdos
+		PL_PS	$38748,dos_bootdos
 	ENDC
 	;the following stuff is from SetPatch 1.38
 	IFD SETPATCH
@@ -645,9 +650,37 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 	ENDC
 	ENDC
 
+	IFD  _bootdos
+dos_bootdos
+
+	;init boot exe
+		lea	(_bootdos,pc),a3
+		lea	(bootfile_exe+34,pc),a4
+		move.l	a3,(a4)
+
+	;fake startup-sequence
+		lea	(bootname_ss_b,pc),a3	;bstr
+		move.l	a3,d1
+
+	;return
+		rts
+
+	CNOP 0,4
+bootname_ss_b	dc.b	12
+bootname_ss	dc.b	"WHDBoot.ss",0
+bootfile_ss	dc.b	"WHDBoot.exe",10
+bootfile_ss_e
+bootname_exe	dc.b	"WHDBoot.exe",0
+bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
+		jmp	$99999999
+		dc.w	0
+		dc.l	$3f2
+bootfile_exe_e
+	ENDC
+
 ;---------------
 ; performs a C:Assign
-; IN:	A0 = BSTR destination name (null terminated BCPL string!)
+; IN:	A0 = BSTR destination name (null terminated BCPL string, at long word address!)
 ;	A1 = CPTR directory (could be 0 meaning SYS:)
 ; OUT:	-
 
@@ -666,16 +699,21 @@ dos_assign	movem.l	d2/a3-a6,-(a7)
 		beq	.error
 		move.l	d0,a5			;A5 = DosList
 
+	;open doslib
+		lea	(_dosname,pc),a1
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a6
+
 	;lock directory
 		move.l	a4,d1
 		move.l	#ACCESS_READ,d2
-		move.l	(_dosbase,pc),a6
 		jsr	(_LVOLock,a6)
-		tst.l	d0
+		move.l	d0,d1
 		beq	.error
-		move.l	d0,(dol_Lock,a5)
-		move.l	d0,a0
+		lsl.l	#2,d1
+		move.l	d1,a0
 		move.l	(fl_Task,a0),(dol_Task,a5)
+		move.l	d0,(dol_Lock,a5)
 
 	;init structure
 		move.l	#DLT_DIRECTORY,(dol_Type,a5)
@@ -809,7 +847,7 @@ HD_BytesPerBlock	= 512
 		jmp	(a0)			;init dos.library
 
 	CNOP 0,4
-		dc.l	4			;segment length
+		dc.l	16			;segment length
 .seglist	dc.l	0			;next segment
 
 	;get own message port
@@ -1157,6 +1195,22 @@ HD_BytesPerBlock	= 512
 .read_ok	tst.l	d3
 		beq	.read_end		;eof
 		add.l	d3,(mfl_pos,a0)
+	IFD _bootdos
+	;special
+		move.l	(fl_Key,a0),a0		;name
+		bsr	.specialfile
+		tst.l	d0
+		beq	.read_nospec
+		move.l	d0,a0
+		add.l	d5,a0			;source
+		move.l	(dp_Arg2,a4),a1		;destination
+		move.l	d3,d0
+.read_spec	move.b	(a0)+,(a1)+
+		subq.l	#1,d0
+		bne	.read_spec
+		bra	.read_end
+.read_nospec	move.l	(dp_Arg1,a4),a0
+	ENDC
 	;try from cache
 		tst.l	(mfl_iocache,a0)	;buffer allocated?
 		beq	.read_1
@@ -1374,12 +1428,23 @@ HD_BytesPerBlock	= 512
 		tst.l	d0
 		beq	.lock_nomem
 		move.l	d0,a4			;A4 = myfilelock
+	;special
+	IFD _bootdos
+		move.l	d4,a0
+		bsr	.specialfile
+		tst.l	d0
+		beq	.lock_nospec
+		move.l	d1,(mfl_fib+fib_Size,a4)
+		bra	.lock_spec
+.lock_nospec
+	ENDC
 	;examine
 		move.l	d4,a0			;name
 		lea	(mfl_fib,a4),a1		;fib
 		jsr	(resload_Examine,a2)
 		tst.l	d0
 		beq	.lock_notfound
+.lock_spec
 	;set return values
 		move.l	a4,d0
 		moveq	#0,d1
@@ -1508,6 +1573,42 @@ HD_BytesPerBlock	= 512
 		moveq	#DOSFALSE,d0
 		move.l	#ERROR_NO_FREE_STORE,d1
 		bra	.buildname_quit
+
+;---------------
+; check for special internal files
+; IN:	a0 = CSTR name
+; OUT:	d0 = APTR filedata
+;	d1 = LONG filelength
+
+	IFD _bootdos
+.specialfile
+		lea	(bootfile_ss,pc),a1
+		move.l	a1,d0
+		move.l	#bootfile_ss_e-bootfile_ss,d1
+		lea	(bootname_ss,pc),a1
+		bsr	.specfile_chk
+		beq	.specfile_rts
+
+		lea	(bootfile_exe,pc),a1
+		move.l	a1,d0
+		move.l	#bootfile_exe_e-bootfile_exe,d1
+		lea	(bootname_exe,pc),a1
+		bsr	.specfile_chk
+		beq	.specfile_rts
+	
+		moveq	#0,d0
+		rts
+
+.specfile_chk	move.l	a0,-(a7)
+
+.specfile_cmp	cmp.b	(a0)+,(a1)+
+		bne	.specfile_end
+		tst.b	(-1,a0)
+		bne	.specfile_cmp
+
+.specfile_end	move.l	(a7)+,a0
+.specfile_rts	rts
+	ENDC
 
 	ENDC
 
