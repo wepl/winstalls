@@ -1,132 +1,190 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	Flink.asm
 ;  :Contents.	Slave for "Flink" from Psygnosis
-;  :Author.	Mr.Larmer of Wanted Team
+;  :Author.	Mr.Larmer of Wanted Team, Harry, Wepl
+;  :Version.	$Id: kick31.asm 1.4 2004/03/05 07:44:16 wepl Exp wepl $
 ;  :History.	22.03.99/2.7.2000
-;  :Requires.	-
+;		08.04.04 rework for kickemu
+;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Devpac 3.14
+;  :Translator.	Barfly V2.9
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	asm-one:Include2.0/
-	INCLUDE LIBRARIES/DOS_LIB.I
-	INCLUDE	LIBRARIES/DOS.I
-	INCLUDE EXEC/EXEC_LIB.I
-	INCLUDE	EXEC/MEMORY.I
-	INCLUDE	GRAPHICS/GRAPHICS_LIB.I
-	INCLUDE INTUITION/INTUITION_LIB.I
-	INCLUDE INTUITION/INTUITION.I
-	INCLUDE	OWN/CCRMAKRO
-	INCLUDE	own/whdload.i
-
-	ifeq	1
-	INCDIR	asm-one:include2.0/
-	INCLUDE	lvo/exec_lib.i
-	INCLUDE	lvo/dos_lib.i
-	INCLUDE	lvo/graphics_lib.i
-	INCLUDE	lvo/intuition_lib.i
-	INCLUDE	devices/trackdisk.i
-	INCLUDE	whdload.i
-	endc
-
-;	OUTPUT	dh2:flink/Flink.slave
-;	OPT	O+ OG+			;enable optimizing
-
 Trainer		=	0	; 0-off, 1-on
-Decruncher	=	0
 
-;======================================================================
-SLBASE
-_base
-		SLAVE_HEADER		;ws_Security + ws_ID
-		dc.w	10		;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_ReqAGA|WHDLF_Req68020	;ws_flags
-		dc.l	$200000		;ws_BaseMemSize
-		dc.l	0		;ws_ExecInstall
-		dc.w	Start-_base	;ws_GameLoader
-		dc.w	dir-_base	;ws_CurrentDir
-		dc.w	0		;ws_DontCache
-_keydebug	dc.b	$00		;ws_keydebug = F9
-_keyexit	dc.b	$5D		;ws_keyexit = F10
-		DC.L	0		;no fastmem
-		dc.w	slname-SLBASE
-		dc.w	slcr-SLBASE
-		dc.w	slinst-SLBASE
-***********************************************************************
-slname		dc.b	'Flink',0
-slcr		dc.b	'1994 Psygnosis',0
-slinst		dc.b	'HD-V1.3 July 2000 by Mr.Larmer and Harry',0
+	INCDIR	Includes:
+	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
+	INCLUDE	lvo/dos.i
 
+	IFD BARFLY
+	OUTPUT	"wart:fl/flink/Flink.Slave"
+	BOPT	O+				;enable optimizing
+	BOPT	OG+				;enable optimizing
+	BOPT	ODd-				;disable mul optimizing
+	BOPT	ODe-				;disable mul optimizing
+	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-				;disable optimize warnings
+	SUPER
+	MC68020
+	ENDC
 
+;============================================================================
 
-	dc.b	'$VER: Flink CD32 HD by Mr.Larmer/Wanted Team - V1.3 (01.04.2000)',0
-dir
-	dc.b	'data',0
-	CNOP 0,2
+CHIPMEMSIZE	= $200000-$55000
+FASTMEMSIZE	= $80000-$33000
+NUMDRIVES	= 1
+WPDRIVES	= %0000
 
-;======================================================================
-Start	;	A0 = resident loader
-;======================================================================
+;BLACKSCREEN
+;BOOTBLOCK
+BOOTDOS
+;BOOTEARLY
+;CBDOSLOADSEG
+;CBDOSREAD
+CACHE
+DEBUG
+;DOSASSIGN
+;DISKSONBOOT
+;FONTHEIGHT	= 8
+HDINIT
+;INITAGA
+;INIT_AUDIO
+;INIT_GADTOOLS
+;INIT_MATHFFP
+INIT_LOWLEVEL
+;HRTMON
+;IOCACHE	= 1024
+;MEMFREE	= $200
+;NEEDFPU
+;POINTERTICKS	= 1
+;STACKSIZE	= 6000
+;TRDCHANGEDISK
 
-		lea	_resload(pc),a1
-		move.l	a0,(a1)			;save for later use
+;============================================================================
 
-		move.l	A0,A2
-		moveq	#CACRF_EnableI,d1
-		move.l	d1,d0
-		jsr	resload_SetCACR(a2)
+slv_Version	= 16
+slv_Flags	= WHDLF_NoError|WHDLF_Examine|WHDLF_ReqAGA|WHDLF_Req68020
+slv_keyexit	= $5d
 
-;	ILLEGAL
-		lea	_OSEmu(pc),A0		;file name
-		lea	$5000.w,A1		;address
-		jsr	resload_LoadFileDecrunch(a2)
+;============================================================================
 
-		move.l	a2,a0
-		lea	_base(pc),a1
-		jsr	$5000.w
+	INCLUDE	Sources:whdload/kick31.s
 
-		move.w	#0,SR
+;============================================================================
 
-		move.l	4.w,A6
+	IFD BARFLY
+	IFND	.passchk
+	DOSCMD	"WDate  >T:date"
+.passchk
+	ENDC
+	ENDC
 
-		move.w	#$4EF9,D0
-		pea	Return(pc)
+slv_CurrentDir	dc.b	"data",0
+slv_name	dc.b	"Flink",0
+slv_copy	dc.b	"1994 Psygnosis",0
+slv_info	dc.b	"adapted by Mr.Larmer, Harry, Wepl",10
+		dc.b	"Version 2.0 "
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
+		dc.b	0
+_programreq	dc.b	"cannot loadseg "
+_program	dc.b	"flink",0
+	EVEN
 
-		move.w	D0,_LVOReplyMsg(a6)
-		move.l	(A7),_LVOReplyMsg+2(a6)
-;		move.w	D0,_LVOCheckIO(a6)
-;		move.l	(A7),_LVOCheckIO+2(a6)
-;		move.w	D0,_LVOWaitIO(a6)
-;		move.l	(A7),_LVOWaitIO+2(a6)
-;		move.w	D0,_LVOAbortIO(a6)
-;		move.l	(A7),_LVOAbortIO+2(a6)
-		move.w	D0,_LVORawDoFmt(a6)
-		move.l	(A7)+,_LVORawDoFmt+2(a6)
+;============================================================================
+; like a program from "startup-sequence" executed, full dos process,
+; HDINIT is required
 
-		moveq	#0,D0
-		lea	DosNam(pc),A1
-		move.l	4.w,A6
-		jsr	_LVOOpenLibrary(a6)
-		move.l	D0,A6
+	IFD BOOTDOS
 
-		lea	GameName(pc),A0
-		move.l	A0,D1
-		jsr	_LVOLoadSeg(a6)
+_bootdos	move.l	(_resload),a2		;A2 = _resload
 
-		lsl.l	#2,D0
-		addq.l	#4,D0
-		move.l	D0,A1
+	;alloc mem for blitter faults
+		move.l	4,a6
+		move.l	#$10000,d0
+		moveq	#MEMF_CHIP,d1
+		jsr	(_LVOAllocMem,a6)
 
-	MOVEM.L	a1/a6,-(A7)		;alloc mem for blitter faults
-	move.l	4,a6
-	move.l	#$10000,d0
-	moveq.l	#0,d1
-	jsr	-198(a6)
+	;open doslib
+		lea	(_dosname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a6			;A6 = dosbase
 
-	MOVEM.L	(A7)+,a1/a6
+	;load exe
+		lea	(_program,pc),a0
+		move.l	a0,d1
+		jsr	(_LVOLoadSeg,a6)
+		move.l	d0,d7			;D7 = segment
+		bne	.programok
+		pea	_program
+		pea	ERROR_OBJECT_NOT_FOUND
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a2)
+.programok
 
+	;patch
+		lea	(_pl_program,pc),a0
+		move.l	d7,a1
+		jsr	(resload_PatchSeg,a2)
+
+	IFD DEBUG
+	;set debug
+		clr.l	-(a7)
+		move.l	d7,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		add.w	#12,a7
+	ENDC
+
+	;call
+		sub.l	a0,a0			;basm bug
+		jmp	(4,d7.l*4)		;will be (4,a0,d7.l*4)
+
+_pl_program	PL_START
+		PL_S	$11a,$15e-$11a		;dont open cd.device
+		PL_S	$1d6,4			;skip reading vbr
+		PL_L	$40c,-1			;simulate error on opening cd.device to avoid further acesses
+		PL_S	$af2,$b0e-$af2		; dont force lowlevel port0 to GAMECTLR
+		PL_S	$b72,6			; skip set NTSC mode
+		PL_S	$c6c,6			; skip read DSKDATR
+		PL_R	$21ec0			; skip init disk drive (motor off)
+		PL_W	$221fe,$207B		; REMOVE CRASH IN SEVERAL SPELLS
+		PL_S	$21dba,$21f00-$21dba
+		PL_P	$21f26,.load
+	ifne	Trainer
+		PL_S	$78AE,6
+		PL_B	$7956,$4a
+		PL_B	$18144,$4a
+		PL_B	$19536,$4a
+		PL_B	$1BCD4,$4a
+		PL_B	$1BE62,$4a
+		PL_B	$1C35A,$4a
+		PL_B	$1C624,12
+		PL_B	$1C898,12
+		PL_B	$1C950,$4a
+		PL_B	$1CC0E,12
+		PL_B	$1CDD4,$4a
+		PL_B	$1CEE2,$4a
+		PL_B	$1D16E,$4a
+		PL_W	$20B56,$4e71
+	endc
+		PL_END
+
+.load		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	d1,a0			;name
+		move.l	d4,a1			;destination
+		move.l	_resload,a2
+		jsr	(resload_LoadFileDecrunch,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		rts
+
+	IFEQ 1
 ;		move.l	#$70004E71,$154(A1)	; open cd device
 		move.l	#$91C84E71,$37A(A1)	; skip read VBR
 
@@ -141,222 +199,13 @@ Start	;	A0 = resident loader
 		add.l	#$21EC0,A1
 		move.w	#$4E75,(A1)		; skip init disk drive
 		sub.l	#$21EC0,A1
-
-	ifne	Decruncher
-		add.l	#$22BBE,A1
-		move.w	#$4EF9,(A1)
-		pea	Decrunch(pc)
-		move.l	(a7)+,2(A1)
-		sub.l	#$22BBE,A1
-	endc
-
 	MOVE.L	A1,A0			;REMOVE CRASH IN  SEVERAL SPELLS
 	ADD.L	#$3C106-$19F08,A0
 	MOVE.W	#$207B,(A0)
+	ENDC
 
-	ifne	Trainer
+	ENDC
 
-		move.w	#$6004,$78AE(a1)
-		moveq	#$4A,d0
-		move.b	d0,$7956(a1)
-		move.l	a1,a0
-		add.l	#$20000,a0
-		move.b	d0,$18144-$20000(a0)
-		move.b	d0,$19536-$20000(a0)
-		move.b	d0,$1BCD4-$20000(a0)
-		move.b	d0,$1BE62-$20000(a0)
-		move.b	d0,$1C35A-$20000(a0)
-		move.b	#12,$1C624-$20000(a0)
-		move.b	#12,$1C898-$20000(a0)
-		move.b	d0,$1C950-$20000(a0)
-		move.b	#12,$1CC0E-$20000(a0)
-		move.b	d0,$1CDD4-$20000(a0)
-		move.b	d0,$1CEE2-$20000(a0)
-		move.b	d0,$1D16E-$20000(a0)
-		move.w	#$4E71,$20B56-$20000(a0)
-	endc
-		moveq	#0,D0
-		sub.l	a0,a0
-
-		jmp	(a1)
-Decrunch
-	ifne	Decruncher
-
-		incbin	'NUKE'
-	endc
-
-	ifne	0
-
-	movem.l	D2-D7/A3-A6,-(SP)
-	moveq	#0,D0
-	moveq	#0,D1
-	move.w	#$8000,D2
-	move.w	#$8000,D3
-	moveq	#0,D4
-	moveq	#0,D5
-	moveq	#0,D6
-	moveq	#0,D7
-	movea.w	#$10,A3
-	lea	lbW000178(PC),A6
-	bsr.b	lbC00008E
-	move.l	A0,D0
-	movem.l	(SP)+,D2-D7/A3-A6
-	rts
-
-lbC00002C:
-	dbra	D5,lbC000036
-	moveq	#7,D5
-	move.l	(A5)+,D4
-	add.l	D4,D4
-lbC000036:
-	moveq	#$1E,D0
-	and.w	D4,D0
-	roxr.l	#4,D4
-	move.w	0(A6,D0.W),D1
-	asl.l	D1,D6
-	sub.w	D1,D7
-	bcc.s	lbC000054
-	moveq	#0,D1
-	move.w	(A5)+,D1
-	neg.w	D7
-	asl.l	D7,D1
-	or.l	D1,D6
-	neg.w	D7
-	add.w	A3,D7
-lbC000054:
-	swap	D6
-	movea.l	A0,A1
-	add.w	$20(A6,D0.W),D6
-	suba.w	D6,A1
-	clr.w	D6
-	swap	D6
-	move.w	$40(A6,D0.W),D0
-	jmp	lbC00006A(PC,D0.W)
-
-lbC00006A:
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	moveq	#0,D0
-	add.w	D3,D3
-	bne.s	lbC00007A
-	move.w	(A5)+,D3
-	addx.w	D3,D3
-lbC00007A:
-	addx.w	D0,D0
-	add.w	D3,D3
-	addx.w	D0,D0
-	add.w	D0,D0
-	jmp	lbC000086(PC,D0.W)
-
-lbC000086:
-	bra.s	lbC0000F2
-
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-lbC00008E:
-	add.w	D2,D2
-	bne.s	lbC000096
-	move.w	(A5)+,D2
-	addx.w	D2,D2
-lbC000096:
-	bcs.s	lbC00002C
-	add.w	D2,D2
-	bne.s	lbC0000A0
-	move.w	(A5)+,D2
-	addx.w	D2,D2
-lbC0000A0:
-	bcc.s	lbC0000B0
-	move.b	-(A4),(A0)+
-	cmpa.l	A2,A0
-	blt.s	lbC00002C
-	rts
-
-lbC0000AA:
-	move.b	-(A4),(A0)+
-	move.b	-(A4),(A0)+
-	move.b	-(A4),(A0)+
-lbC0000B0:
-	moveq	#0,D0
-	add.w	D3,D3
-	bne.s	lbC0000BA
-	move.w	(A5)+,D3
-	addx.w	D3,D3
-lbC0000BA:
-	addx.w	D0,D0
-	add.w	D3,D3
-	addx.w	D0,D0
-	add.w	D0,D0
-	jmp	lbC0000C6(PC,D0.W)
-
-lbC0000C6:
-	bra.s	lbC0000AA
-
-	move.b	-(A4),(A0)+
-	move.b	-(A4),(A0)+
-	move.b	-(A4),(A0)+
-	move.b	-(A4),(A0)+
-	cmpa.l	A2,A0
-	blt.w	lbC00002C
-	rts
-
-lbC0000D8:
-	moveq	#0,D0
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-lbC0000F2:
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	move.b	(A1)+,(A0)+
-	tst.b	D0
-	bne.s	lbC00008E
-	dbra	D5,lbC000106
-	moveq	#7,D5
-	move.l	(A5)+,D4
-	add.l	D4,D4
-lbC000106:
-	moveq	#$1E,D0
-	and.w	D4,D0
-	roxr.l	#4,D4
-	jmp	lbC0000D8(PC,D0.W)
-
-	dc.w	0,0,4,10,$10,$40,$100,$200,$10,$80,$200,$800
-	dc.w	$2000,$4000,$20,$80,$200,$800,$2000,$4000,4,6,8,9
-	dc.w	4,7,9,11,13,14,5,7,9,11,13,14,0,1,2,3,4,5,6,7,8,9
-	dc.w	10,11,12,13,14,15
-lbW000178:
-	dc.w	4,6,8,9,4,7,9,11,13,14,5,7,9,11,13,14,0,$10,$50
-	dc.w	$150,0,$10,$90,$290,$A90,$2A90,0,$20,$A0,$2A0
-	dc.w	$AA0,$2AA0,$20,$20,$20,$20,$1E,$1E,$1E,$1E,$1E
-	dc.w	$1E,0,0,0,0,0,0,0
-
-	endc
-
-Return
-		moveq	#0,d0
-		rts
-DosNam
-		dc.b	'dos.library',0
-GameName
-		dc.b	'flink',0
-		even
-
-;--------------------------------
-
-_resload	dc.l	0		;address of resident loader
-_OSEmu		dc.b	'OSEmu.5000',0
-
-;======================================================================
+;============================================================================
 
 	END
