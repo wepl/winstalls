@@ -8,6 +8,7 @@
 ;		24.11.98 adapted for v8 (obsoletes novbrmove)
 ;		13.07.01 supports another version
 ;		01.08.01 highscore saving added
+;		29.08.01 some int stuff fixed, highscore saving fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -33,7 +34,7 @@
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	13			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_NoKbd	;ws_flags
+		dc.w	WHDLF_NoError|WHDLF_NoKbd	;ws_flags
 		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -53,9 +54,9 @@ _expmem		dc.l	$1000			;ws_ExpMem
 	ENDC
 
 _name		dc.b	"IK+",0
-_copy		dc.b	"1988 Archer Maclean",0
+_copy		dc.b	"1987/8 Archer Maclean",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 1.4 "
+		dc.b	"Version 1.5 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -114,6 +115,9 @@ _pl	PL_START
 	PL_P	$1aaa,_keyb
 	PL_PS	$12bc+$600,_loadhighs
 	PL_PS	$9cde+$600,_savehighs
+	PL_S	$11a0+$600,$ba-$a0	;trap stuff
+	PL_S	$c30+$600,4		;move #,sr
+	PL_S	$99a+$600,4		;move #,sr
 	PL_END
 
 _strt		move	#$2000,sr
@@ -137,6 +141,7 @@ _savehighs	bsr	_swaphighs
 		move.l	(_expmem),a1
 		move.l	_resload,a2
 		jsr	(resload_SaveFile,a2)
+		bsr	_swaphighs
 		moveq	#0,d0
 		moveq	#0,d1
 		moveq	#0,d2
