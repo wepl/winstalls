@@ -1,11 +1,12 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	ik+.asm
 ;  :Contents.	Slave for "IK+"
-;  :Author.	WEPL
-;  :Version.	$Id: ik+.asm 1.1 1998/03/16 16:58:59 jah Exp $
+;  :Author.	Wepl
+;  :Version.	$Id: ik+.asm 1.2 1998/11/24 23:33:09 jah Exp jah $
 ;  :History.	22.09.97 initial
 ;		01.10.97 debug key changed because F9 is used in game
 ;		24.11.98 adapted for v8 (obsoletes novbrmove)
+;		13.07.01 supports another version
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -15,47 +16,65 @@
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
 
-	OUTPUT	wart:h-j/ik+/IK+.Slave
-	BOPT	O+ OG+				;enable optimizing
+	IFD	BARFLY
+	OUTPUT	"wart:i/ik+/IK+.Slave"
+	BOPT	O+				;enable optimizing
+	BOPT	OG+				;enable optimizing
+	BOPT	ODd-				;disable mul optimizing
+	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
 	SUPER
+	ENDC
 
-;======================================================================
+;============================================================================
 
-.base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	8			;ws_Version
+_base		SLAVE_HEADER			;ws_Security + ws_ID
+		dc.w	13			;ws_Version
 		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_NoKbd	;ws_flags
 		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
-		dc.w	_Start-.base		;ws_GameLoader
+		dc.w	_start-_base		;ws_GameLoader
 		dc.w	0			;ws_CurrentDir
 		dc.w	0			;ws_DontCache
-		dc.b	0			;ws_keydebug
+_keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
-		dc.l	0			;ws_ExpMem
+_expmem		dc.l	0			;ws_ExpMem
+		dc.w	_name-_base		;ws_name
+		dc.w	_copy-_base		;ws_copy
+		dc.w	_info-_base		;ws_info
 
-;======================================================================
+;============================================================================
 
-	DOSCMD	"WDate >T:date"
-		dc.b	"$VER: IK+.Slave 1.2 by Wepl "
-	INCBIN	"T:date"
+	IFD BARFLY
+	DOSCMD	"WDate  >T:date"
+	ENDC
+
+_name		dc.b	"IK+",0
+_copy		dc.b	"1988 Archer Maclean",0
+_info		dc.b	"installed and fixed by Wepl",10
+		dc.b	"Version 1.3 "
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
 		dc.b	0
+_file		dc.b	"IK+.Image",0
 	EVEN
 
-;======================================================================
-_Start	;	A0 = resident loader
-;======================================================================
+;============================================================================
+_start	;	A0 = resident loader
+;============================================================================
 
 		lea	(_resload,pc),a1
 		move.l	a0,(a1)
+		move.l	a0,a2
 
 	IFEQ 1
 		moveq	#0,d0			;offset
 		move.l	#$400,d1		;size
 		lea	$1000,a0		;destination
 		sub.l	a1,a1			;tags
-		move.l	(_resload),a2
 		jsr	(resload_DiskLoadDev,a2)
 		skip	6*2,$100c+$1a
 		clr.w	$500			;stackframe format error
@@ -64,19 +83,24 @@ _Start	;	A0 = resident loader
 
 		lea	(_file),a0
 		lea	$600,a1
-		move.l	(_resload),a2
 		jsr	(resload_LoadFileDecrunch,a2)
+		
+		lea	(_pl),a0
+		sub.l	a1,a1
+		jsr	(resload_Patch,a2)
 
 		lea	(_ciaa),a1
 		or.b	#CIAICRF_SETCLR|CIAICRF_SP,(ciaicr,a1)	;allow ints and clear requests
 		and.b	#~(CIACRAF_SPMODE),(ciacra,a1)		;input mode
 
-		ret	$2475c			;copylock
-		clr.w	$500			;stackframe format error
-		ret	$1976			;preserve NMI
-		patch	$1aaa,_keyb
-
 		jmp	$600
+
+_pl	PL_START
+	PL_R	$2475c			;copylock
+	PL_W	$500,0			;stackframe format error
+	PL_R	$1976			;preserve NMI
+	PL_P	$1aaa,_keyb
+	PL_END
 
 _keyb		cmp.b	(_keyexit),d0
 		beq	_exit
@@ -99,7 +123,6 @@ _exit		move	#$2700,sr		;otherwise freeze inside whdload
 
 ;--------------------------------
 
-_file		dc.b	"IK+.Image",0
 _resload	dc.l	0			;address of resident loader
 
 ;======================================================================
