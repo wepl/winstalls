@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Feodorstraﬂe 8, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 15.1 2002/08/08 22:51:58 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 15.2 2002/08/20 19:38:27 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -16,6 +16,8 @@
 ;		29.04.01 resload_Relocate tags added
 ;		09.12.01 v15 stuff added
 ;		20.08.02 WHDLTAG_ALIGN added
+;		19.11.02 WHDLTAG_CHKCOPCON added
+;		03.06.03 EmulDivZero added
 ;  :Copyright.	© 1996-2002 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -137,6 +139,9 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_DBGADR_SET	;set debug base address
 ; version 15
  EITEM	WHDLTAG_DBGSEG_SET	;set debug base segment address (BPTR!)
+; version 15.2
+ EITEM	WHDLTAG_CHKCOPCON	;enable/disable copcon check
+ EITEM	WHDLTAG_Private5	;allows setting WCPU_Base_CB using SetCPU
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
@@ -245,6 +250,9 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	BITDEF WHDL,ClearMem,12	;initialize BaseMem and ExpMem with 0
 ; version 15
 	BITDEF WHDL,Examine,13	;preload cache for Examine/ExNext
+; version 16
+	BITDEF WHDL,EmulDivZero,14 ;forward "division by zero" exceptions to
+				;the handler of the installed program
 
 ;=============================================================================
 ; properties for resload_SetCPU
