@@ -2,12 +2,14 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Original.
-;  :Version.	$Id: kick13.s 0.4 1999/12/22 13:33:34 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.5 2000/01/25 22:01:46 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
 ;		24.01.00 reworked to assemble with Asm-Pro
+;		20.02.00 problems with Snoop/S on 68060 fixed
+;		21.02.00 cbswitch added (cop2lc)
+;		22.02.00 free memory count added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -17,6 +19,7 @@
 
 	INCLUDE	lvo/exec.i
 	INCLUDE	devices/trackdisk.i
+	INCLUDE	exec/memory.i
 
 ;============================================================================
 
@@ -24,6 +27,11 @@ _boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
 
+	;relocate some addresses
+		lea	(_cbswitch,pc),a0
+		lea	(_cbswitch_tag,pc),a1
+		move.l	a0,(a1)
+		
 	;get tags
 		lea	(_tags,pc),a0
 		jsr	(resload_Control,a5)
@@ -94,11 +102,16 @@ kick_patch	PL_START
 		PL_PS	$286,kick_hrtmon
 	ENDC
 		PL_P	$546,kick_detectcpu
+		PL_P	$1354,exec_snoop1
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$422,exec_Supervisor
+	IFD MEMFREE
+		PL_P	$1826,exec_AllocMem
+	ENDC
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
+		PL_PS	$6d70,gfx_vbserver
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
 		PL_W	$aece,0				;color00 $fff -> $000
@@ -162,6 +175,11 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 	ENDC
 		rts
 
+	;move.w (a7)+,($dff09c) does not work with Snoop/S on 68060
+exec_snoop1	move.w	(a7),($dff09c)
+		addq.l	#2,a7
+		rts
+
 exec_MakeFunctions
 		subq.l	#8,a7
 		move.l	(8,a7),(a7)
@@ -197,7 +215,36 @@ exec_Supervisor	lea	(.1,pc),a0
 		movem.l	(a1),a0-a1
 		jmp	(a5)
 
+	IFD MEMFREE
+exec_AllocMem	movem.l	d0-d1/a0-a1,-(a7)
+		move.l	#MEMF_LARGEST|MEMF_CHIP,d1
+		jsr	(_LVOAvailMem,a6)
+		move.l	(MEMFREE),d1
+		beq	.3
+		cmp.l	d1,d0
+		bhi	.1
+.3		move.l	d0,(MEMFREE)
+.1		move.l	#MEMF_LARGEST|MEMF_FAST,d1
+		jsr	(_LVOAvailMem,a6)
+		move.l	(MEMFREE+4),d1
+		beq	.4
+		cmp.l	d1,d0
+		bhi	.2
+.4		move.l	d0,(MEMFREE+4)
+.2		movem.l	(a7)+,d0-d1/a0-a1
+		movem.l	(a7)+,d2-d3/a2
+		rts
+	ENDC
+
 ;============================================================================
+
+gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
+		move.l	d0,(a6)
+		lea	($bfd000),a6		;original
+		rts
+
+_cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
+		jmp	(a0)
 
 gfx_detectgenlock
 		moveq	#0,d0
@@ -387,12 +434,15 @@ _waitvb
 
 ;============================================================================
 
-_tags		dc.l	WHDLTAG_ATTNFLAGS_GET
+_tags		dc.l	WHDLTAG_CBSWITCH_SET
+_cbswitch_tag	dc.l	0
+		dc.l	WHDLTAG_ATTNFLAGS_GET
 _attnflags	dc.l	0
 		dc.l	WHDLTAG_MONITOR_GET
 _monitor	dc.l	0
 		dc.l	0
 _resload	dc.l	0
+_cbswitch_cop2lc dc.l	0
 
 _kick		dc.b	"devs:kickstarts/kick34005.a500",0
 _rtb		dc.b	"devs:kickstarts/kick34005.a500.rtb",0
