@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.14 2003/12/09 16:32:47 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.15 2004/06/18 08:37:09 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -11,6 +11,7 @@
 ;		22.06.03 adapted for whdload v16
 ;		13.11.03 merged support for A4000 image into
 ;		02.05.04 lowlevel loading/joypad emulation integrated
+;		16.10.04 support for NUMDRIVES=0 added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -272,7 +273,7 @@ kick_patch4000	PL_START
 		PL_PS	$4006C,hd_init
 	ENDC
 	IFHI NUMDRIVES-4
-		PL_B	$40117,7				;allow 7 floppy drives
+		PL_B	$40117,7			;allow 7 floppy drives
 	ENDC
 	IFD BOOTEARLY
 		PL_PS	$40510,kick_bootearly
@@ -497,16 +498,19 @@ gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 ;============================================================================
 
 disk_getunitid
+	IFEQ NUMDRIVES
+		moveq	#-1,d0
+		rts
+	ELSE
 	IFLT NUMDRIVES
-		cmp.l	#1,d0			;at least one drive
-		bcs	.set
 		cmp.l	(_custom1,pc),d0
 	ELSE
 		subq.l	#NUMDRIVES,d0
 	ENDC
-.set		scc	d0
+		scc	d0
 		extb.l	d0
 		rts
+	ENDC
 
 ;============================================================================
 
