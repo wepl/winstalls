@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: Lotus2.asm 1.3 1999/09/16 22:31:47 jah Exp jah $
+;  :Version.	$Id: kick.asm 0.1 1999/11/29 16:17:28 jah Exp jah $
 ;  :History.	19.10.99 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -16,6 +16,7 @@
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/exec.i
+	INCLUDE	devices/trackdisk.i
 
 	;OUTPUT	"wart:k-l/lotus2/Lotus2.Slave"
 	BOPT	O+				;enable optimizing
@@ -25,9 +26,24 @@
 	BOPT	w4-				;disable 64k warnings
 	SUPER
 
-HRTMON					;enable debug support for hrtmon
-NOFPU					;disable fpu support
+; number of floppy drives:
+;	sets the number of floppy drives, valid values are 0-4.
+;	0 means that the number is specified via option Custom1/N
+NUMDRIVES=2
 
+; disable fpu support:
+;	results in a different task switching routine, if fpu is enabled also
+;	the fpu status will be saved and restored.
+;	for better compatibility and performance the fpu should be disabled
+NOFPU
+
+; enable debug support for hrtmon:
+;	hrtmon reads to much from the stackframe if entered, if the ssp is at
+;	the end hrtmon will create a access fault.
+;	for better compatibility this option should be disabled
+HRTMON
+
+; amount of
 BASEMEM		= $80000
 EXPMEM		= $80000
 
@@ -80,8 +96,12 @@ _start	;	A0 = resident loader
 	;set caches
 		move.l	#0,d0
 		move.l	#WCPUF_All,d1
-		jsr	(resload_SetCPU,a5)
+	;	jsr	(resload_SetCPU,a5)
 
+	;get tags
+		lea	(_tags),a0
+		jsr	(resload_Control,a5)
+	
 	;load kickstart
 		lea	(_kick),a0
 		move.l	(_expmem),a1
@@ -152,11 +172,29 @@ kick_patch	PL_START
 		PL_PS	$422,exec_Supervisor
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
-;	PL_I	$526
-;	PL_I	$ae12
-;	PL_I	$afba
-;	PL_I	$af28
+		PL_P	$af96,gfx_detectgenlock
+		PL_P	$b00c,gfx_detectdisplay
+	IFD _bootblock
+		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
+	ENDC
+		PL_P	$2a3b4,td_readwrite
+		PL_I	$2a5d8				;internal readwrite
+		PL_P	$2a0e2,td_motor
+		PL_I	$2a694				;td_seek
+		PL_P	$29cfa,td_format
+		PL_PS	$2a6d6,td_protstatus
+		PL_I	$2af68				;td_rawread
+		PL_I	$2af6e				;td_rawwrite
+		PL_I	$2a19c				;empty dbf-loop in trackdisk.device
+		PL_P	$2960c,td_task
+	;	PL_L	$29c54,-1			;disable asynchron io
+		PL_P	$4984,disk_getunitid
 		PL_END
+
+;DANGER:
+;	$3c9ae
+
+;============================================================================
 
 kick_detectfast
 	IFEQ FASTMEMSIZE
@@ -182,15 +220,7 @@ kick_hrtmon	move.l	a4,d0
 		rts
 	ENDC
 
-kick_detectcpu	clr.l	-(a7)
-		subq.l	#4,a7
-		pea	WHDLTAG_ATTNFLAGS_GET
-		move.l	a7,a0
-		move.l	(_resload),a1
-		jsr	(resload_Control,a1)
-		addq.l	#4,a7
-		move.l	(a7)+,d0
-		addq.l	#4,a7
+kick_detectcpu	move.l	(_attnflags),d0
 	IFD NOFPU
 		and.w	#~(AFF_68881|AFF_68882|AFF_FPU40),d0
 	ENDC
@@ -224,12 +254,182 @@ exec_Supervisor	lea	(.1),a0
 		movem.l	(a1),a0-a1
 		jmp	(a5)
 
+;============================================================================
+
+gfx_detectgenlock
+		moveq	#0,d0
+		rts
+
+gfx_detectdisplay
+		moveq	#4,d0			;pal
+		move.l	(_monitor),d1
+		cmp.l	#PAL_MONITOR_ID,d1
+		beq	.1
+		moveq	#1,d0			;ntsc
+.1		rts
+
+;============================================================================
+
+disk_getunitid
+	IFNE NUMDRIVES-4
+		lea	(12,a3),a3
+	IFEQ NUMDRIVES
+		clr.l	-(a7)
+		subq.l	#4,a7
+		pea	WHDLTAG_CUSTOM1_GET
+		move.l	a7,a0
+		move.l	(_resload),a1
+		jsr	(resload_Control,a1)
+		addq.l	#4,a7
+		move.l	(a7),d0
+		addq.l	#8,a7
+		neg.l	d0
+		addq.l	#3,d0
+		bmi	.q
+		cmp.w	#3,d0
+		blo	.ok
+		moveq	#2,d0
+.ok
+	ELSE
+		moveq	#3-NUMDRIVES,d0
+	ENDC
+		moveq	#-1,d1
+.0		move.l	d1,-(a3)
+		dbf	d0,.0
+	ENDC
+.q		rts
+
+;============================================================================
+
+td_format
+td_readwrite	moveq	#0,d1
+		move.b	($43,a3),d1		;unit number
+		clr.b	(IO_ERROR,a1)
+		btst	#1,($40,a3)		;disk inserted?
+		beq	.diskok
+		moveq	#TDERR_DiskChanged,d0
+		move.b	d0,(IO_ERROR,a1)
+		rts
+
+.diskok		cmp.b	#CMD_READ,(IO_COMMAND+1,a1)
+		bne	td_write
+		
+td_read		movem.l	d2/a1,-(a7)
+		moveq	#0,d2
+		move.b	(_td_disk,pc,d1.w),d2	;disk
+		move.l	(IO_OFFSET,a1),d0	;offset
+		move.l	(IO_LENGTH,a1),d1	;length
+		move.l	(IO_DATA,a1),a0		;destination
+		move.l	(_resload),a1
+		jsr	(resload_DiskLoad,a1)
+		movem.l	(a7),_MOVEMREGS
+		bsr	td_endio
+		movem.l	(a7)+,_MOVEMREGS
+		moveq	#0,d0
+		rts
+
+td_write	movem.l	a1-a2,-(a7)
+		move.b	(_td_prot,pc,d1.w),d0
+		beq	.prot
+		lea	(.disk),a0
+		move.b	(_td_disk,pc,d1.w),d0	;disk
+		add.b	#"1",d0
+		move.b	d0,(5,a0)		;name
+		move.l	(IO_LENGTH,a1),d0	;length
+		move.l	(IO_OFFSET,a1),d1	;offset
+		move.l	(IO_DATA,a1),a1		;destination
+		move.l	(_resload),a2
+		jsr	(resload_DiskLoad,a2)
+		movem.l	(a7),_MOVEMREGS
+		bsr	td_endio
+		movem.l	(a7)+,_MOVEMREGS
+		moveq	#0,d0
+		rts
+
+.prot		moveq	#TDERR_WriteProt,d0
+		move.b	d0,(IO_ERROR,a1)
+		rts
+
+.disk		dc.b	"Disk.",0,0,0
+
+_td_disk	dc.b	1,2,3,4			;number of diskimage in drive
+_td_prot	dc.b	0,0,0,0			;protection status (0=wp)
+_td_chg		dc.b	0,0,0,0			;diskchange
+
+td_motor	moveq	#0,d0
+		bchg	#7,($41,a3)		;motor status
+		seq	d0
+		rts
+
+td_protstatus	moveq	#0,d0
+		moveq	#0,d1
+		move.b	($43,a3),d1
+		move.b	(_td_prot,pc,d1.w),d1
+		seq	d0
+		move.l	d0,(IO_ACTUAL,a1)
+		add.l	#$708-$6d6-6,(a7)
+		rts
+
+td_endio	move.l	(_expmem),-(a7)
+		add.l	#$29e30,(a7)
+		rts
+
+tdtask_cause	move.l	(_expmem),-(a7)
+		add.l	#$296e8,(a7)
+		rts
+
+td_task		bclr	#1,($40,a3)		;set disk inserted
+		beq	.1
+		addq.l	#1,($126,a3)		;inc change count
+		bsr	tdtask_cause
+.1
+		moveq	#0,d0
+		move.b	($43,a3),d0		;unit number
+		lea	(_td_chg),a0
+		tst.b	(a0,d0.w)		
+		beq	.2
+		bset	#1,($40,a3)		;set no disk inserted
+		addq.l	#1,($126,a3)		;inc change count
+		bsr	tdtask_cause
+		bclr	#1,($40,a3)		;set disk inserted
+		addq.l	#1,($126,a3)		;inc change count
+		bsr	tdtask_cause
+
+.2		rts
+
+	;d0.b = unit
+	;d1.b = new disk image number
+_td_changedisk	movem.l	a6,-(a7)
+
+		and.w	#3,d0
+		lea	(_td_chg),a0
+.wait		tst.b	(a0,d0.w)
+		bne	.wait
+		
+		move.l	(4),a6
+		jsr	(_LVOForbid,a6)
+		
+		move.b	d1,(-8,a0,d0.w)
+		st	(a0,d0.w)
+		
+		jsr	(_LVOPermit,a6)
+		
+		movem.l	(a7)+,_MOVEMREGS
+		rts
+
+;============================================================================
+
 _flushcache	move.l	(_resload),-(a7)
 		add.l	#resload_FlushCache,(a7)
 		rts
 
 ;============================================================================
 
+_tags		dc.l	WHDLTAG_ATTNFLAGS_GET
+_attnflags	dc.l	0
+		dc.l	WHDLTAG_MONITOR_GET
+_monitor	dc.l	0
+		dc.l	0
 _resload	dc.l	0
 
 ;============================================================================
