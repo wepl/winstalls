@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.7 2003/04/07 06:51:54 wepl Exp $
+;  :Version.	$Id: kickfs.s 1.8 2003/07/12 17:26:21 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -227,7 +227,7 @@ HD_NumBuffers		= 5
 		tst.l	d0
 		beq	_debug1			;unknown packet
 	ENDC
-		cmp.l	d0,d2
+		cmp.w	d0,d2			;this should be cmp.l
 		bne	.next
 		jmp	(.action,pc,d1.w)
 
