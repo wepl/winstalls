@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Feodorstraﬂe 8, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 15.3 2003/06/03 06:38:08 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 16.0 2003/08/04 21:20:08 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -20,6 +20,8 @@
 ;		03.06.03 EmulDivZero added
 ;		16.06.03 new PL's added
 ;		18.07.03 EmulIllegal added
+;		05.06.04 macro PL_S improved
+;		27.06.04 WHDLTAG_LOADSEG added
 ;  :Copyright.	© 1996-2002 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -155,6 +157,16 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_FASTPTR		;relocate MEMF_FAST hunks to this address
 ; version 15.1
  EITEM	WHDLTAG_ALIGN		;round up hunk lengths to the given boundary
+; version 16.3
+ EITEM	WHDLTAG_LOADSEG		;create a segment list like dos.LoadSeg
+
+;=============================================================================
+; tagitems for the resload_DiskLoadDev function
+;=============================================================================
+
+; version 16.0
+ ENUM	TAG_USER+$8200000
+ EITEM	WHDLTAG_TDUNIT		;unit of trackdisk.device to use
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
@@ -586,6 +598,12 @@ PL_P		MACRO			;set "jmp"
 		ENDM
 
 PL_S		MACRO			;skip bytes, set "bra"
+	IFCS $8000-\1
+	FAIL PL_S distance too large (positive)
+	ENDC
+	IFCS -$7ffe-\1
+	FAIL PL_S distance too large (negative)
+	ENDC
 	PL_CMDADR PLCMD_S,\1
 	dc.w	\2-2			;distance
 		ENDM

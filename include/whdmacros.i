@@ -4,10 +4,11 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 14.0 2001/03/18 12:34:51 jah Exp jah $
+;  :Version.	$Id: whdmacros.i 15.1 2002/08/08 22:52:55 wepl Exp wepl $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
+;		04.06.04 macro 'blitz' improved
 ;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
@@ -256,24 +257,35 @@ waitbuttonup	MACRO
 ****************************************************************
 ***** flash the screen and wait for LMB
 blitz		MACRO
-	;	move	#DMAF_SETCLR!DMAF_RASTER,dmacon+_custom
-		move.l	d0,-(a7)
-.lpbl\@		move	#$4200,bplcon0+_custom
-		move.w	d0,$dff180
+		movem.l	d0/a0,-(a7)
+		lea	(_custom),a0
+	;	move	#DMAF_SETCLR!DMAF_RASTER,(dmacon,a0)
+.lpbl\@
+	IFNE NARG&1
+		move	#$4200,(bplcon0,a0)
+	ELSE
+		move.w	d0,(color,a0)
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		bne	.lpbl\@
-		waitvb					;entprellen
-		waitvb					;entprellen
-.lp2bl\@	move	#$4200,bplcon0+_custom
-		move.w	d0,$dff180
+		bsr	.waitvb\@			;entprellen
+		bsr	.waitvb\@			;entprellen
+.lp2bl\@
+	IFNE NARG&1
+		move	#$4200,(bplcon0,a0)
+	ELSE
+		move.w	d0,(color,a0)
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		beq	.lp2bl\@
-		waitvb					;entprellen
-		waitvb					;entprellen
-		clr.w	color+_custom
-		move.l	(a7)+,d0
+		bsr	.waitvb\@			;entprellen
+		bsr	.waitvb\@			;entprellen
+		clr.w	(color,a0)
+		movem.l	(a7)+,d0/a0
+		bra	.end\@
+.waitvb\@	waitvb	a0
+		rts
+.end\@
 		ENDM
 
 ****************************************************************
