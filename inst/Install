@@ -1,4 +1,4 @@
-; $Id: install 1.4 2003/06/03 05:37:03 wepl Exp wepl $
+; $Id: install 1.5 2003/10/24 20:00:10 wepl Exp wepl $
 
 (set #sub-dir "")			;sub directory containing data files
 (set #readme-file "ReadMe")		;name of readme file
@@ -60,26 +60,50 @@
 ; ask for source drive
 
 (procedure P_AskSrcDrv
+  (set #dcnt 0)
   (set #CI_cfg (getenv "WHDLSrcDrvRaw"))
-  (if (#CI_cfg) (if (getassign (substr #CI_cfg 0 (- (strlen #CI_cfg) 1)) "d") ("") (set #CI_cfg "")))
-  (set #CI_df0 (if (= "DF0:" #CI_cfg) ("") (if (getassign "DF0" "d") ("DF0:") (""))))
-  (set #CI_df1 (if (= "DF1:" #CI_cfg) ("") (if (getassign "DF1" "d") ("DF1:") (""))))
-  (set #CI_df2 (if (= "DF2:" #CI_cfg) ("") (if (getassign "DF2" "d") ("DF2:") (""))))
-  (set #CI_df3 (if (= "DF3:" #CI_cfg) ("") (if (getassign "DF3" "d") ("DF3:") (""))))
-  (set #CI_drive
-    (askchoice
-      (prompt "Select source drive for diskimages")
-      (default 0)
-      (choices #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3)
-      (help @askchoice-help)
+  (if (#CI_cfg)
+    (if (getassign (substr #CI_cfg 0 (- (strlen #CI_cfg) 1)) "d")
+      (set #dcnt (+ 1 #dcnt)) (set #CI_cfg "")
     )
   )
-  (select #CI_drive
-    (set #CI_drive #CI_cfg)
-    (set #CI_drive #CI_df0)
-    (set #CI_drive #CI_df1)
-    (set #CI_drive #CI_df2)
-    (set #CI_drive #CI_df3)
+  (set #CI_df0 "")
+  (if (<> "DF0:" #CI_cfg)
+    (if (getassign "DF0" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df0 "DF0:")))
+  )
+  (set #CI_df1 "")
+  (if (<> "DF1:" #CI_cfg)
+    (if (getassign "DF1" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df1 "DF1:")))
+  )
+  (set #CI_df2 "")
+  (if (<> "DF2:" #CI_cfg)
+    (if (getassign "DF2" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df2 "DF2:")))
+  )
+  (set #CI_df3 "")
+  (if (<> "DF3:" #CI_cfg)
+    (if (getassign "DF3" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df3 "DF3:")))
+  )
+  (if (< #dcnt 1)
+    (set #CI_drive "DF0:")
+    (if (> #dcnt 1)
+      (
+	(set #CI_drive
+	  (askchoice
+	    (prompt "Select source drive for diskimages")
+	    (choices #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3)
+	    (help @askchoice-help)
+	  )
+	)
+	(select #CI_drive
+	  (set #CI_drive #CI_cfg)
+	  (set #CI_drive #CI_df0)
+	  (set #CI_drive #CI_df1)
+	  (set #CI_drive #CI_df2)
+	  (set #CI_drive #CI_df3)
+	)
+      )
+      (set #CI_drive (cat #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3))
+    )
   )
   (run ("setenv WHDLSrcDrvRaw \"%s\"\ncopy ENV:WHDLSrcDrvRaw ENVARC:" #CI_drive))
 )
@@ -194,6 +218,7 @@
   (dest #dest)
 )
 (set #icon 0)
+(set #icnt 0)
 (if (exists ("%s.%s" #prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
 (if (exists ("%s.%s" #prefix #ico_suffix_10)) ((set #icon 10)(set #icnt (+ 1 #icnt))(set #icon_10 #ico_desc_10)) (set #icon_10 ""))
 (if (exists ("%s.%s" #prefix #ico_suffix_09)) ((set #icon 9) (set #icnt (+ 1 #icnt))(set #icon_09 #ico_desc_09)) (set #icon_09 ""))
