@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.22 2001/12/16 23:30:32 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.23 2001/12/21 12:06:07 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -29,6 +29,7 @@
 ;			 WHDLF_EmulPriv to be set
 ;		27.11.01 fs enhanced
 ;		17.12.01 beta finished for Elvira
+;		04.01.02 MAXFILENAME removed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -644,6 +645,61 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 	ENDC
 	ENDC
 
+;---------------
+; performs a C:Assign
+; IN:	A0 = BSTR destination name (null terminated BCPL string!)
+;	A1 = CPTR directory (could be 0 meaning SYS:)
+; OUT:	-
+
+	IFD	DOSASSIGN
+
+dos_assign	movem.l	d2/a3-a6,-(a7)
+		move.l	a0,a3			;A3 = name
+		move.l	a1,a4			;A4 = directory
+
+	;get memory for node
+		move.l	#DosList_SIZEOF,d0
+		move.l	#MEMF_CLEAR,d1
+		move.l	(4),a6
+		jsr	(_LVOAllocMem,a6)
+		tst.l	d0
+		beq	.error
+		move.l	d0,a5			;A5 = DosList
+
+	;lock directory
+		move.l	a4,d1
+		move.l	#ACCESS_READ,d2
+		move.l	(_dosbase,pc),a6
+		jsr	(_LVOLock,a6)
+		tst.l	d0
+		beq	.error
+		move.l	d0,(dol_Lock,a5)
+		move.l	d0,a0
+		move.l	(fl_Task,a0),(dol_Task,a5)
+
+	;init structure
+		move.l	#DLT_DIRECTORY,(dol_Type,a5)
+		move.l	a3,d0
+		lsr.l	#2,d0
+		move.l	d0,(dol_Name,a5)
+
+	;add to the system
+		move.l	(dl_Root,a6),a6
+		move.l	(rn_Info,a6),a6
+		add.l	a6,a6
+		add.l	a6,a6
+		move.l	(di_DevInfo,a6),(dol_Next,a5)
+		move.l	a5,d0
+		lsr.l	#2,d0
+		move.l	d0,(di_DevInfo,a6)
+
+		movem.l	(a7)+,d2/a3-a6
+		rts
+
+.error		illegal
+
+	ENDC
+
 ;============================================================================
 ;
 ; BootNode
@@ -746,11 +802,10 @@ HD_BytesPerBlock	= 512
 .volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
 .handlername	dc.b	"DH0",0
 .devicename	dc.b	"whdload.device",0
-.dosname	dc.b	"dos.library",0
 .expansionname	dc.b	"expansion.library",0
 	EVEN
 
-.bootcode	lea	(.dosname,pc),a1
+.bootcode	lea	(_dosname,pc),a1
 		jsr	(_LVOFindResident,a6)
 		move.l	d0,a0
 		move.l	(RT_INIT,a0),a0
@@ -782,10 +837,20 @@ HD_BytesPerBlock	= 512
 		move.l	a5,-(a7)		;dl_Task (MsgPort)
 		move.l	#DLT_VOLUME,-(a7)	;dl_Type
 		clr.l	-(a7)			;dl_Next
-
 		move.l	a7,d0
 		lsr.l	#2,d0
 		move.l	d0,a3			;A3 = Volume
+	;add to the system
+		lea	(_dosname,pc),a1
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a0
+		move.l	(dl_Root,a0),a0
+		move.l	(rn_Info,a0),a0
+		add.l	a0,a0
+		add.l	a0,a0
+		move.l	(di_DevInfo,a0),(dol_Next,a7)
+		move.l	a3,(di_DevInfo,a0)
+
 		move.l	(_resload,pc),a2	;A2 = resload
 
 	;fetch and reply startup message
@@ -817,7 +882,8 @@ HD_BytesPerBlock	= 512
 		bne	.next
 		jmp	(.action,pc,d1.w)
 
-.illegal	illegal
+.illegal	tst -1
+.illegal2	tst -2
 
 ;---------------
 ; reply dos-packet
@@ -847,6 +913,7 @@ HD_BytesPerBlock	= 512
 		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17
 		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18
 		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
+		dc.w	ACTION_INFO,.a_info-.action				;1a
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f
 		dc.w	ACTION_PARENT,.a_parent-.action				;29
 		dc.w	ACTION_READ,.a_read-.action				;52
@@ -865,8 +932,6 @@ HD_BytesPerBlock	= 512
 		LONG	mfl_pos			;position in file
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
 		LABEL	mfl_SIZEOF
-
-MAXFILENAME = 96	;maximum length including path!
 
 	; conventions for action functions:
 	; IN:	a2 = resload
@@ -908,8 +973,8 @@ MAXFILENAME = 96	;maximum length including path!
 		move.l	d0,d2
 		move.l	d0,a0
 		jsr	(resload_DeleteFile,a2)
-		move.l	#MAXFILENAME,d0
 		move.l	d2,a1
+		move.l	-(a1),d0
 		jsr	(_LVOFreeMem,a6)
 		moveq	#DOSTRUE,d0
 		bra	.reply1
@@ -917,7 +982,7 @@ MAXFILENAME = 96	;maximum length including path!
 ;---------------
 
 .a_copy_dir	bsr	.getarg1
-		beq	.illegal
+		beq	.illegal2
 		move.l	d7,a0
 		move.l	(fl_Key,a0),d1
 		moveq	#0,d0
@@ -953,7 +1018,7 @@ MAXFILENAME = 96	;maximum length including path!
 		bra	.reply1
 	;special handling of NULL lock
 .examine_root
-	illegal
+	jmp -5
 		move.l	a1,d7
 		clr.l	-(a7)
 		move.l	a7,a0
@@ -983,9 +1048,12 @@ MAXFILENAME = 96	;maximum length including path!
 
 ;---------------
 
-.a_disk_info	move.l	(dp_Arg1,a4),a0
-		add.l	a0,a0
-		add.l	a0,a0
+.a_info		move.l	(dp_Arg2,a4),(dp_Arg1,a4)
+
+;---------------
+
+.a_disk_info	bsr	.getarg1
+		move.l	d7,a0
 		clr.l	(a0)+			;id_NumSoftErrors
 		clr.l	(a0)+			;id_UnitNumber
 		move.l	#ID_VALIDATED,(a0)+	;id_DiskState
@@ -1123,7 +1191,7 @@ MAXFILENAME = 96	;maximum length including path!
 		jsr	(resload_SaveFile,a2)
 	;free the name
 		move.l	d2,a1
-		move.l	#MAXFILENAME,d0
+		move.l	-(a1),d0
 		jsr	(_LVOFreeMem,a6)
 		bra	.a_findupdate
 
@@ -1235,8 +1303,8 @@ MAXFILENAME = 96	;maximum length including path!
 		bra	.lock_err
 .lock_nomem	pea	ERROR_NO_FREE_STORE
 	;on error free the name
-.lock_err	move.l	#MAXFILENAME,d0
-		move.l	d4,a1
+.lock_err	move.l	d4,a1
+		move.l	-(a1),d0
 		jsr	(_LVOFreeMem,a6)
 		move.l	(a7)+,d1
 		moveq	#DOSFALSE,d0
@@ -1254,17 +1322,17 @@ MAXFILENAME = 96	;maximum length including path!
 		move.l	#mfl_SIZEOF,d0
 		jsr	(_LVOFreeMem,a6)
 		move.l	(a7)+,a1
-		move.l	#MAXFILENAME,d0
+		move.l	-(a1),d0
 		jmp	(_LVOFreeMem,a6)
 
 ;---------------
 ; build name for disk object
 ; IN:	d0 = APTR lock (can represent a directory or a file)
 ;	d1 = BSTR name (an object name relative to the lock, may contain assign or volume in front)
-; OUT:	d0 = APTR name (size=MAXFILENAME, must be freed via exec.FreeMem)
+; OUT:	d0 = APTR name (size=-(d0), must be freed via exec.FreeMem)
 ;	d1 = LONG errcode
 
-.buildname	movem.l	d4-d7,-(a7)
+.buildname	movem.l	d3-d7,-(a7)
 		moveq	#0,d6			;d6 = length path
 		moveq	#0,d7			;d7 = length name
 	;get length of lock
@@ -1294,19 +1362,18 @@ MAXFILENAME = 96	;maximum length including path!
 		add.l	a0,d7
 		move.l	a1,d5			;d5 = ptr name
 .buildname_noname
-	;check length
-		moveq	#1,d0			;the possible seperator "/"
+	;allocate memory for object name
+		moveq	#1+1+4,d0		;the possible seperator "/", 0 terminator, length
 		add.l	d6,d0
 		add.l	d7,d0
-		cmp.l	#MAXFILENAME,d0
-		bhs	.illegal
-	;allocate memory for object name
-		move.l	#MAXFILENAME,d0
-		move.l	#MEMF_PUBLIC,d1
+		move.l	d0,d3			;d3 = memlen
+		move.l	#MEMF_ANY,d1
 		jsr	(_LVOAllocMem,a6)
-		tst.l	d0			;d0 = new object memory
+		tst.l	d0
 		beq	.buildname_nomem
 		move.l	d0,a0
+		move.l	d3,(a0)+
+		move.l	a0,d0			;d0 = new object memory
 	;copy name
 		move.l	d4,a1
 		move.l	d6,d1
@@ -1328,7 +1395,7 @@ MAXFILENAME = 96	;maximum length including path!
 	;finish
 .buildname_ok	clr.b	(a0)			;terminate
 		moveq	#0,d1			;errorcode
-.buildname_quit	movem.l	(a7)+,d4-d7
+.buildname_quit	movem.l	(a7)+,d3-d7
 		rts
 
 .buildname_nomem
@@ -1353,6 +1420,9 @@ _waitvb
 
 ;============================================================================
 
+	IFD HDINIT
+_dosname	dc.b	"dos.library",0
+	ENDC
 _kick		dc.b	"34005.a500",0
 	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
