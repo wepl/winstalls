@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.6 2003/04/06 20:30:52 wepl Exp $
+;  :Version.	$Id: kick13.asm 1.7 2003/12/09 11:16:52 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -214,8 +214,7 @@ _bootdos	lea	(_saveregs,pc),a0
 _pl_program	PL_START
 		PL_END
 
-	CNOP 0,4
-_disk1		dc.b	3,"df0",0	;for Assign
+_disk1		dc.b	"df0",0		;for Assign
 _program	dc.b	"program to start",0
 _args		dc.b	10
 _args_end	dc.b	0
