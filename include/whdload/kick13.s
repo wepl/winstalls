@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.17 2001/08/05 00:45:12 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.18 2001/09/01 22:09:43 wepl Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -25,6 +25,8 @@
 ;		05.08.01 hd supported started
 ;		01.09.01 trap #15 to trap #14 changed in _Supervisor (debug rnc)
 ;			 BLACKSCREEN added
+;		08.11.01 Supervisor patch removed, slaves now require 
+;			 WHDLF_EmulPriv to be set
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -87,7 +89,7 @@ kick_patch	PL_START
 		PL_P	$1354,exec_snoop1
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
-		PL_PS	$422,exec_Supervisor
+		PL_PS	$422,exec_flush
 	IFD MEMFREE
 		PL_P	$1826,exec_AllocMem
 	ENDC
@@ -201,37 +203,8 @@ exec_SetFunction
 		bset	#1,(14,a1)		;original
 		rts
 
-exec_Supervisor	lea	(.supervisor,pc),a0
-		move.l	a0,(_LVOSupervisor+2,a6)
-		lea	(_custom),a0		;original
+exec_flush	lea	(_custom),a0		;original
 		bra	_flushcache
-.supervisor	movem.l	a0-a1,-(a7)
-		move.l	($b8),a0		;a0 = old $b8
-		lea	(.trap14,pc),a1
-		move.l	a1,($b8)
-		trap	#14
-.trap14		move.l	a0,($b8)
-		btst	#5,(a7)			;super?
-		bne	.super
-.user		move	usp,a1
-		move.l	(8,a1),(2,a7)		;set return
-		add.w	#12,a1
-		move	a1,usp
-		movem.l	(-12,a1),a0-a1
-		jmp	(a5)
-.super		btst	#AFB_68010,(AttnFlags+1,a6)
-		bne	.super10
-.super00	movem.l	(6,a7),a0-a1
-		move.w	(a7),(12,a7)		;sr
-		add.w	#12,a7
-		jmp	(a5)
-.super10	movem.l	(8,a7),a0-a1
-		move.w	(16,a7),(14,a7)
-		move.w	(18,a7),(16,a7)		;avoid move.l (16,a7),(14,a7) ! (problems with AF-Handler on 040/060)
-		clr.w	(18,a7)			;frame type
-		move.w	(a7),(12,a7)		;sr
-		add.w	#12,a7
-		jmp	(a5)
 
 	IFD MEMFREE
 exec_AllocMem	movem.l	d0-d1/a0-a1,-(a7)
