@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.32 2002/02/08 01:18:20 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.33 2002/02/26 23:58:54 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -34,6 +34,7 @@
 ;		30.01.02 write cache added
 ;		06.02.02 cleanup
 ;		27.02.02 trailing slash in .buildname removed
+;		05.03.02 modification of filter by kick disabled (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -93,6 +94,8 @@ kick_patch	PL_START
 	IFD HRTMON
 		PL_PS	$286,kick_hrtmon
 	ENDC
+		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
+		PL_S	$50C,$514-$50C			;skip LED power on
 		PL_P	$546,kick_detectcpu
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$1354,exec_snoop1
