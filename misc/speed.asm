@@ -1,5 +1,5 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: debug.asm 1.13 2000/11/04 21:25:05 jah Exp jah $
+;  :Version.	$Id: speed.asm 1.1 2000/11/22 20:09:41 jah Exp jah $
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
@@ -585,7 +585,7 @@ _top3		dc.b	"  Eclock=",0
 _top5		dc.b	"  whdload"
 _equ		dc.b	"=",0
 _dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.5  wepl "
+_quit		dc.b	"hold lmb to quit and save pic  v1.6  wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
