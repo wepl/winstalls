@@ -4,10 +4,11 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.4 2001/02/20 21:53:12 jah Exp jah $
+;  :Version.	$Id: speed.asm 1.5 2001/03/11 23:09:01 jah Exp jah $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
+;		17.02.03 WHDLTAG_Private5 added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -49,7 +50,7 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_info-_base		;ws_info
 
 _name		dc.b	"Memory Speed Benchmark Slave",0
-_copy		dc.b	"2000 Wepl",0
+_copy		dc.b	"2000-2003 Wepl",0
 _info		dc.b	"done by Wepl "
 	DOSCMD	"WDate  >T:date"
 	INCBIN	"T:date"
@@ -457,6 +458,8 @@ _rev		dc.l	0
 _build		dc.l	0
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
+		dc.l	WHDLTAG_Private5	;allowing free modifications using SetCPU
+		dc.l	-1
 		dc.l	TAG_DONE
 _read		dc.b	"read",0
 _writ		dc.b	"writ",0
@@ -599,7 +602,7 @@ _top3		dc.b	"  Eclock=",0
 _top5		dc.b	"  whdload"
 _equ		dc.b	"=",0
 _dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.8  wepl "
+_quit		dc.b	"hold lmb to quit and save pic  v1.9  wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
