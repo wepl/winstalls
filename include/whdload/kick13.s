@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.42 2003/03/30 11:16:16 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.43 2003/03/30 17:41:29 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -153,14 +153,10 @@ kick_patch	PL_START
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
 	ENDC
-	IFND _bootearly
-	IFND _bootblock
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3c9b6,dos_1
 		PL_PS	$36e4c,dos_LoadSeg
 	;	PL_B	$38795,cli_StandardOutput	;probably a bug in the initial code
-	ENDC
-	ENDC
 	IFD STACKSIZE
 		PL_L	$387be,STACKSIZE/4
 	ENDC
@@ -531,6 +527,12 @@ timer_init	move.l	(_time,pc),a0
 		rts
 
 ;============================================================================
+;  $34 execbase
+;  $40.1 0-disk in drive 1-no disk
+;  $40.4 0-readwrite 1-readonly
+;  $41.7 motor status
+;  $43 unit
+; $126 disk change count
 
 trd_format
 trd_readwrite	movem.l	d2/a1-a2,-(a7)
@@ -584,7 +586,11 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 
 _trd_disk	dc.b	1,2,3,4			;number of diskimage in drive
 _trd_prot	dc.b	WPDRIVES		;protection status
+	IFD DISKSONBOOT
+_trd_chg	dc.b	%1111			;diskchanged
+	ELSE
 _trd_chg	dc.b	0			;diskchanged
+	ENDC
 
 trd_motor	moveq	#0,d0
 		bchg	#7,($41,a3)		;motor status
@@ -608,15 +614,7 @@ tdtask_cause	move.l	(_expmem,pc),-(a7)	;jump into rom
 		add.l	#$296e8,(a7)
 		rts
 
-trd_task
-	IFD DISKSONBOOT
-		bclr	#1,($40,a3)		;set disk inserted
-		beq	.1
-		addq.l	#1,($126,a3)		;inc change count
-		bsr	tdtask_cause
-.1
-	ENDC
-		move.b	($43,a3),d1		;unit number
+trd_task	move.b	($43,a3),d1		;unit number
 		lea	(_trd_chg,pc),a0
 		bclr	d1,(a0)
 		beq	.2			;if not changed skip
@@ -654,9 +652,6 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
-	IFND _bootearly
-	IFND _bootblock
-
 dos_init	move.l	#$10001,d1
 		bra	_flushcache
 
@@ -687,9 +682,6 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 	ENDC
 		bsr	_flushcache
 		jmp	(a6)
-
-	ENDC
-	ENDC
 
 	IFD  _bootdos
 dos_bootdos

@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.3 2002/05/09 14:19:15 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.4 2003/03/30 11:16:16 wepl Exp $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -80,7 +80,12 @@ HD_NumBuffers		= 5
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a4				;A4 = expansionbase
 
-		lea	(.parameterPkt+4,pc),a0
+		lea	(.parameterPkt+8,pc),a0
+		lea	(.devicename,pc),a1
+		move.l	a1,d0
+		lsr.l	#2,d0
+	moveq #0,d0
+		move.l	d0,-(a0)
 		lea	(.handlername,pc),a1
 		move.l	a1,-(a0)
 		move.l	a4,a6
@@ -91,25 +96,6 @@ HD_NumBuffers		= 5
 		lsr.l	#2,d1
 		move.l	d1,(dn_SegList,a3)
 		move.l	a2,(dn_GlobalVec,a3)		;no BCPL shit (A2 = -1)
-
-	IFD FSSM
-		move.l	#FileSysStartupMsg_SIZEOF,d0
-		move.l	#MEMF_CLEAR,d1
-		move.l	(4),a6
-		jsr	(_LVOAllocMem,a6)
-		move.l	d0,a2
-		lsr.l	#2,d0
-		move.l	d0,(dn_Startup,a3)
-		clr.l	(a2)+				;fssm_Unit
-		lea	(.devicename,pc),a1
-		move.l	a1,d0
-		lsr.l	#2,d0
-		move.l	d0,(a2)+			;fssm_Device
-		lea	(.environ,pc),a1
-		move.l	a1,d0
-		lsr.l	#2,d0
-		move.l	d0,(a2)+			;fssm_Environ
-	ENDC
 
 		moveq	#BootNode_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
@@ -126,27 +112,6 @@ HD_NumBuffers		= 5
 		movem.l	(a7)+,d0-a6
 		rts
 
-	IFD FSSM
-.environ	dc.l	DE_DOSTYPE		; Size of Environment vector (in longwords)
-		dc.l	HD_BytesPerBlock/4	; in longwords: standard value is 128
-		dc.l	0			; not used; must be 0
-		dc.l	HD_Surfaces		; # of heads (surfaces). drive specific
-		dc.l	1			; not used; must be 1
-		dc.l	HD_BlocksPerTrack	; blocks per track. drive specific
-		dc.l	HD_NumBlocksRes		; DOS reserved blocks at start of partition.
-		dc.l	2			; DOS reserved blocks at end of partition
-		dc.l	0			; usually 0
-		dc.l	0			; starting cylinder. typically 0
-		dc.l	HD_Cyls-1		; max cylinder. drive specific
-		dc.l	HD_NumBuffers		; Initial # DOS of buffers.
-		dc.l	MEMF_PUBLIC		; type of mem to allocate for buffers
-		dc.l	$00100000		; Max number of bytes to transfer at a time
-		dc.l	$7ffffffe		; Address Mask to block out certain memory
-		dc.l	0			; Boot priority for autoboot (doesn't work)
-		dc.l	ID_DOS_DISK+1		; ASCII (HEX) string showing filesystem type
-.devicename	dc.b	14,"whdload.device",0
-	ENDC
-
 .diagarea	dc.b	DAC_CONFIGTIME		;da_Config
 		dc.b	0			;da_Flags
 		dc.w	0			;da_Size
@@ -160,18 +125,27 @@ HD_NumBuffers		= 5
 		dc.l	0			;name of exec device
 		dc.l	0			;unit number for OpenDevice
 		dc.l	0			;flags for OpenDevice
-		dc.l	11			;amount following longwords
-		dc.l	HD_BytesPerBlock/4	;longs per block
-		dc.l	0			;sector start, unused
-		dc.l	HD_Surfaces		;surfaces
-		dc.l	1			;sectors per block, unused
-		dc.l	HD_BlocksPerTrack	;blocks per track
-		dc.l	HD_NumBlocksRes		;reserved blocks
-		dc.l	0			;unused
-		dc.l	0			;interleave
-		dc.l	0			;lower cylinder
-		dc.l	HD_Cyls-1		;upper cylinder
-		dc.l	HD_NumBuffers		;buffers
+		dc.l	16			;de_TableSize count following longwords
+		dc.l	HD_BytesPerBlock/4	;de_SizeBlock longs per block
+		dc.l	0			;de_SecOrg sector start, unused
+		dc.l	HD_Surfaces		;de_Surfaces
+		dc.l	1			;de_SectorPerBlock unused
+		dc.l	HD_BlocksPerTrack	;de_BlocksPerTrack
+		dc.l	HD_NumBlocksRes		;de_Reserved reserved blocks
+		dc.l	0			;de_PreAlloc unused
+		dc.l	0			;de_Interleave
+		dc.l	0			;de_LowCyl
+		dc.l	HD_Cyls-1		;de_HighCyl
+		dc.l	HD_NumBuffers		;de_NumBuffers
+		dc.l	MEMF_PUBLIC		;de_BufMemType
+		dc.l	MAXINT			;de_MaxTransfer
+		dc.l	-1			;de_Mask
+		dc.l	0			;de_BootPri
+		dc.l	ID_DOS_DISK		;de_DosType
+	;	dc.l				;de_Baud
+	;	dc.l				;de_Control
+	;	dc.l				;de_BootBlocks
+	EVEN
 
 .bootcode	lea	(_dosname,pc),a1
 		jsr	(_LVOFindResident,a6)
@@ -1125,6 +1099,8 @@ HD_NumBuffers		= 5
 
 	CNOP 0,4
 .volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
+	CNOP 0,4
+.devicename	dc.b	14,"whdload.device",0	;BSTR (here with the exception that it must be 0-terminated!)
 .handlername	dc.b	"DH0",0
 .expansionname	dc.b	"expansion.library",0
 _dosname	dc.b	"dos.library",0

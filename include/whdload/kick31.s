@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
-;  :Author.	JOTD, Wepl, Psygore
-;  :Version.	$Id$
+;  :Author.	Wepl, JOTD, Psygore
+;  :Version.	$Id: kick31.s 1.2 2003/03/30 17:41:29 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -99,6 +99,9 @@ kick_patch	PL_START
 		PL_PS	$f7be,gfx_beamcon02
 		PL_PS	$f7e0,gfx_snoop1
 		PL_PS	$14b4e,gfx_readvpos		;patched to set NTSC/PAL
+	IFD	_cb_dosLoadSeg
+		PL_PS	$272b0,dos_LoadSeg
+	ENDC
 		PL_CB	$3504a				;dont init scsi.device
 	IFD	INIT_AUDIO				;audio.device
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
@@ -115,6 +118,7 @@ kick_patch	PL_START
 		PL_P	$4569C,trd_motor
 		PL_P	$4598C,trd_readwrite
 		PL_PS	$45D5A,trd_protstatus
+		PL_PS	$46230,trd_init
 	IFD FONTHEIGHT
 		PL_B	$68CB0,FONTHEIGHT
 	ENDC
@@ -134,10 +138,7 @@ kick_patch	PL_START
 		PL_PS	$22814,dos_bootdos		; 3.1
 	ENDC
 	IFD	HDINIT
-		PL_P	$42F4,hd_init			; 3.1
-	ENDC
-	IFD	_cb_dosLoadSeg
-		PL_PS	$2726A,dos_LoadSeg		; 3.1 loadseg entrypoint
+		PL_PS	$42F4,hd_init
 	ENDC
 		PL_END
 
@@ -353,10 +354,10 @@ trd_format
 trd_readwrite	movem.l	d2/a1-a2,-(a7)
 
 		moveq	#0,d1
-		move.b	(99,a3),d1		;unit number (67 in kick 1.3)
+		move.b	($63,a3),d1		;unit number
 		clr.b	(IO_ERROR,a1)
 
-		btst	#1,(96,a3)		;disk inserted? (64 in 1.3)
+		btst	#1,($60,a3)		;disk inserted?
 		beq	.diskok
 
 		move.b	#TDERR_DiskChanged,(IO_ERROR,a1)
@@ -401,53 +402,52 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 
 _trd_disk	dc.b	1,2,3,4			;number of diskimage in drive
 _trd_prot	dc.b	WPDRIVES		;protection status
+	IFD DISKSONBOOT
+_trd_chg	dc.b	%1111			;diskchanged
+	ELSE
 _trd_chg	dc.b	0			;diskchanged
+	ENDC
 
 trd_motor	moveq	#0,d0
-		bchg	#7,(97,a3)		;motor status (65 in 1.3)
+		bchg	#7,($61,a3)		;motor status
 		seq	d0
 		rts
 
 trd_protstatus	moveq	#0,d0
-		move.b	(99,a3),d1		;unit number
+		move.b	($63,a3),d1		;unit number
 		move.b	(_trd_prot,pc),d0
 		btst	d1,d0
 		seq	d0
 		move.l	d0,(IO_ACTUAL,a1)
-
 		add.l	#$d74-$d5a-6,(a7)	;skip unnecessary code
 		rts
 
 trd_endio	move.l	(_expmem,pc),-(a7)	;jump into rom
-
 		add.l	#$453A4,(a7)
 		rts
 
 tdtask_cause	move.l	(_expmem,pc),-(a7)	;jump into rom
-
 		add.l	#$44BDC,(a7)
 		rts
 
-trd_task
-	IFD DISKSONBOOT
-		bclr	#1,(96,a3)		;set disk inserted (40 in 1.3)
-		beq	.1
-		addq.l	#1,($126,a3)		;inc change count
-		bsr	tdtask_cause
-.1
-	ENDC
-		move.b	(67,a3),d1		;unit number
+trd_init	lea	($14c,a3),a0		;original
+		move.l	a0,($10,a3)		;original
+		bset	#1,($60,a3)		;no disk in drive
+		addq.l	#2,(a7)
+		rts
+
+trd_task	move.b	($63,a3),d1		;unit number
 		lea	(_trd_chg,pc),a0
 		bclr	d1,(a0)
 		beq	.2			;if not changed skip
 
-		bset	#1,(64,a3)		;set no disk inserted
+		bset	#1,($60,a3)		;set no disk inserted
 		bne	.3
-		addq.l	#1,($126,a3)		;inc change count
+		addq.l	#1,($3c,a3)		;inc change count
 		bsr	tdtask_cause
 .3
-		bclr	#1,(64,a3)		;set disk inserted
-		addq.l	#1,($126,a3)		;inc change count
+		bclr	#1,($60,a3)		;set disk inserted
+		addq.l	#1,($3c,a3)		;inc change count
 		bsr	tdtask_cause
 
 .2		rts
@@ -472,6 +472,45 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
+	IFD	_cb_dosLoadSeg
+dos_LoadSeg	move.l	d0,d1		;original
+		beq	.end		;successful?
+		tst.l	d7		;filename
+		beq	.end
+
+		movem.l	d0-a6,-(a7)
+		move.l	d7,a0
+.cnt		tst.b	(a0)+
+		bne	.cnt
+		subq.l	#1,a0
+		sub.l	d7,a0
+		move.l	a0,d0
+		
+		sub.w	#260,a7		;BSTR cannot be longer than 255
+		move.l	a7,d4
+		addq.l	#2,d4
+		and.w	#$fffc,d4	;longword aligned
+		move.l	d4,a0
+		move.b	d0,(a0)+
+		move.l	d7,a1
+.cpy		move.l	(a1)+,(a0)+	;mc68020+!
+		subq.b	#4,d0
+		bcc	.cpy
+
+		move.l	d4,d0
+		lsr.l	#2,d0
+		bsr	_cb_dosLoadSeg
+		bsr	_flushcache
+
+		add.w	#260,a7
+		movem.l	(a7)+,d0-a6
+
+.end		move.l	(a7)+,a0
+		lea	(12,a7),a7	;original
+		tst.l	d0
+		jmp	(a0)
+	ENDC
+
 	IFD  _bootdos
 dos_bootdos
 	;init boot exe
@@ -485,43 +524,6 @@ dos_bootdos
 
 	;return
 		rts
-	ENDC
-
-;============================================================================
-
-	IFD HDINIT
-
-hd_init:
-	movem.l	D2/A2-A6,-(A7)	
-	move.l	#-1,A2
-	bsr	.init
-	movem.l	(A7)+,D2/A2-A6
-;;	moveq	#0,D0		; original
-	rts
-
-.init
-	INCLUDE	Sources:whdload/kickfs.s
-
-	ENDC
-
-;============================================================================
-
-_flushcache	move.l	(_resload,pc),-(a7)
-		add.l	#resload_FlushCache,(a7)
-		rts
-
-_waitvb
-.1		btst	#0,(_custom+vposr+1)
-		beq	.1
-.2		btst	#0,(_custom+vposr+1)
-		bne	.2
-		rts
-
-	IFD DEBUG
-_debug1		tst	-1	;unknown packet (=d2) for dos handler
-_debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
-_debug3		tst	-3	;error in _dos_assign
-		illegal		;security if executed without mmu
 	ENDC
 
 ;---------------
@@ -584,64 +586,36 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 		rts
 	ENDC
 
-; not done as in kick13.s at all!
-; sorry Bert, but anyway doslib was completely rewritten after all :)
+;============================================================================
 
-	IFD	_cb_dosLoadSeg
-dos_LoadSeg
-	move.l	(A7)+,a0
-	movem.l	D2-D3,-(A7)
-	move.l	d1,d2			;save name
-	pea	.cont(pc)
-	MOVEM.L	D2/D7/A6,-(A7)		;original
-	MOVEA.L	4.W,A6	;code
-	jmp	(2,a0)
-.cont:
-	move.l	d0,d3			;save seglist
-	movem.l	d0/d1/d4-d6/a0-a6,-(A7)	; save rest of registers
+	IFD HDINIT
+hd_init		move.l	(a7)+,d0
+		movem.l	d0/d2/a2-a6,-(a7)	;original
+		moveq	#0,d0			;original
 
-	; allocate some stack space
+	INCLUDE	Sources:whdload/kickfs.s
+	ENDC
 
-	lea	-120(a7),a7
+;============================================================================
 
-	move.l	a7,d4
-	addq.l	#2,d4
-	and.l	#$FFFFFFFC,d4	; longword aligned
-	move.l	d4,a0
-	move.l	d2,a1
-	addq.l	#1,a0
-.copy
-	move.b	(a1)+,(a0)+
-	bne.b	.copy
-	sub.l	d4,a0
-	move.l	d4,a1
-	move.l	a0,d5
-	subq.l	#2,d5
-	move.b	d5,(a1)		; BSTR length
-	
-	move.l	d4,d0
-	lsr.l	#2,d0		; BSTR name
-	move.l	d3,d1		; seglist
+_flushcache	move.l	(_resload,pc),-(a7)
+		add.l	#resload_FlushCache,(a7)
+		rts
 
-	; call user routine
+_waitvb
+.1		btst	#0,(_custom+vposr+1)
+		beq	.1
+.2		btst	#0,(_custom+vposr+1)
+		bne	.2
+		rts
 
-	bsr	_cb_dosLoadSeg
+;============================================================================
 
-	; free the stack space
-
-	lea	120(a7),a7
-
-	; cache flush
-
-	bsr	_flushcache
-
-	; restore registers and return to caller
-
-	movem.l	(a7)+,d0/d1/d4-d6/a0-a6
-	movem.l	(a7)+,D2-D3
-	tst.l	d0
-	rts
-		
+	IFD DEBUG
+_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
+_debug3		tst	-3	;error in _dos_assign
+		illegal		;security if executed without mmu
 	ENDC
 
 ;============================================================================
@@ -665,4 +639,6 @@ _cbflag_beamcon0	dc.b	0
 _cbflag_vbstrt		dc.b	0
 
 ;============================================================================
+
+	END
 
