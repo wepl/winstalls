@@ -1,4 +1,4 @@
-; $Id: install 1.3 2002/10/06 16:46:21 wepl Exp wepl $
+; $Id: install 1.4 2003/06/03 05:37:03 wepl Exp wepl $
 
 (set #sub-dir "")			;sub directory containing data files
 (set #readme-file "ReadMe")		;name of readme file
@@ -54,6 +54,34 @@
       )
     )
   )
+)
+
+;----------------------------
+; ask for source drive
+
+(procedure P_AskSrcDrv
+  (set #CI_cfg (getenv "WHDLSrcDrvRaw"))
+  (if (#CI_cfg) (if (getassign (substr #CI_cfg 0 (- (strlen #CI_cfg) 1)) "d") ("") (set #CI_cfg "")))
+  (set #CI_df0 (if (= "DF0:" #CI_cfg) ("") (if (getassign "DF0" "d") ("DF0:") (""))))
+  (set #CI_df1 (if (= "DF1:" #CI_cfg) ("") (if (getassign "DF1" "d") ("DF1:") (""))))
+  (set #CI_df2 (if (= "DF2:" #CI_cfg) ("") (if (getassign "DF2" "d") ("DF2:") (""))))
+  (set #CI_df3 (if (= "DF3:" #CI_cfg) ("") (if (getassign "DF3" "d") ("DF3:") (""))))
+  (set #CI_drive
+    (askchoice
+      (prompt "Select source drive for diskimages")
+      (default 0)
+      (choices #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3)
+      (help @askchoice-help)
+    )
+  )
+  (select #CI_drive
+    (set #CI_drive #CI_cfg)
+    (set #CI_drive #CI_df0)
+    (set #CI_drive #CI_df1)
+    (set #CI_drive #CI_df2)
+    (set #CI_drive #CI_df3)
+  )
+  (run ("setenv WHDLSrcDrvRaw \"%s\"\ncopy ENV:WHDLSrcDrvRaw ENVARC:" #CI_drive))
 )
 
 ;----------------------------
@@ -117,26 +145,6 @@
 
 (set #program "Patcher")
 (P_ChkRun)
-
-(if (= @user-level 2)
-  (
-    (set #CI_drive
-      (askchoice
-	(prompt "Select source drive for diskimages")
-	(default 0)
-	(choices "DF0:" "DF1:" "DF2:" "DF3:")
-	(help @askchoice-help)
-      )
-    )
-    (select #CI_drive
-      (set #CI_drive "DF0:")
-      (set #CI_drive "DF1:")
-      (set #CI_drive "DF2:")
-      (set #CI_drive "DF3:")
-    )
-  )
-  (set #CI_drive "DF0:")
-)
 
 (if (getenv "WHDLInstPath")
   (set @default-dest (getenv "WHDLInstPath"))
@@ -307,6 +315,7 @@
   (source ("%s.imager" #prefix))
   (dest #dest)
 )
+(P_AskSrcDrv)
 (working "calling Patcher...")
 (run ("CD \"%s\"\nPatcher -p%s.imager -s%s\nDelete %s.imager Quiet" #dest @app-name #CI_drive @app-name))
 (if (exists (tackon #dest #last-file))
