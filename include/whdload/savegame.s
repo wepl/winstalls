@@ -7,15 +7,16 @@
 ;		grows dynamically
 ;		the savegames must have always the same size
 ;  :Author.	Wepl
-;  :Version.	$Id: savegame.s 1.1 1998/06/27 23:53:54 jah Exp $
+;  :Version.	$Id: savegame.s 1.2 1998/11/22 14:29:48 jah Exp $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed
+;		23.01.00 better selection on loading
 ;  :Requires.	_keyexit	byte variable containing rawkey code
 ;		_exit		function to quit
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	Barfly 2.9, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 ; this is a example sequence to use the savegame routine
@@ -111,13 +112,13 @@ _sg_save	moveq	#0,d1
 _sg_save_in	bsr	_sg_loaddir
 
 .start		moveq	#7,d1
-		lea	_save,a0
+		lea	(_save,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_saveselect,a0
+		lea	(_saveselect,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_esc,a0
+		lea	(_esc,pc),a0
 		bsr	_psc
 
 		bsr	_sg_printdir
@@ -125,14 +126,11 @@ _sg_save_in	bsr	_sg_loaddir
 .keyloop	bsr	_sg_get_key
 		cmp.b	#$45,d0
 		beq	_sg_restore
-		
-		lea	(_keytrans),a0
-		move.b	(a0,d0.w),d1
 		cmp.b	#'1',d1
 		blo	.keyloop
 		cmp.b	#'9',d1
 		bhi	.keyloop
-		
+
 		moveq	#XBASE+9,d0
 		sub.w	#'1',d1
 		move.w	d1,d6			;D6 = save no.
@@ -143,12 +141,12 @@ _sg_save_in	bsr	_sg_loaddir
 		move.w	d1,d3
 		add.w	#YSKIP-1,d3
 		bsr	_sg_rect
-		
+
 		move.w	d6,d0
 		mulu.w	#MAXNAMELEN,d0
 		lea	(sg_save_names,a5),a3
 		add.w	d0,a3			;A3 = save name
-		
+
 		move.l	a3,a0
 		lea	(sg_tmpname,a5),a1
 .cpy		move.b	(a0)+,(a1)+
@@ -159,7 +157,7 @@ _sg_save_in	bsr	_sg_loaddir
 .cnt		addq.w	#1,d5			;D5 = charpos in save name
 		tst.b	(a0)+
 		bne	.cnt
-		
+
 		move.w	d5,d0
 		mulu	#CHARWIDTH,d0
 		add.w	#XBASE+15,d0
@@ -171,9 +169,9 @@ _sg_save_in	bsr	_sg_loaddir
 		st	(sg_c_on,a5)
 
 		moveq	#15,d1
-		lea	_saveinsert,a0
+		lea	(_saveinsert,pc),a0
 		bsr	_psc
-		
+
 .nextkey	bsr	_sg_get_key
 		cmp.b	#$43,d0			;enter
 		beq	.return
@@ -187,11 +185,10 @@ _sg_save_in	bsr	_sg_loaddir
 		beq	.esc
 		cmp.w	#MAXNAMELEN-1,d5
 		beq	.nextkey
-		lea	(_keytrans),a0
-		move.b	(a0,d0.w),d2
+		move.b	d1,(a3,d5.w)
 		beq	.nextkey
-		move.b	d2,(a3,d5.w)
 		addq.w	#1,d5
+		move.l	d1,d2
 		move.w	(sg_c_x,a5),d0
 		move.w	(sg_c_y,a5),d1
 		add.w	#CHARWIDTH,(sg_c_x,a5)
@@ -212,15 +209,15 @@ _sg_save_in	bsr	_sg_loaddir
 		bne	.cpy2
 		bsr	_sg_initscr
 		bra	.start
-		
+
 .return		tst.w	d5			;a name specified ?
 		beq	.esc
 		bsr	_sg_cursoroff
 
 		moveq	#15,d1
-		lea	_saveconfirm,a0
+		lea	(_saveconfirm,pc),a0
 		bsr	_psc
-		
+
 .nextkey2	bsr	_sg_get_key
 		cmp.b	#$45,d0			;escape
 		beq	.esc
@@ -234,7 +231,7 @@ _sg_save_in	bsr	_sg_loaddir
 
 		move.l	#SAVEDIRLEN,d0		;size
 		moveq	#0,d1			;offset
-		lea	(_sg_name),a0		;filename
+		lea	(_sg_name,pc),a0	;filename
 		lea	(sg_save_id,a5),a1	;address
 		move.w	#resload_SaveFileOffset,a2
 		bsr	_sg_exec_resload
@@ -245,7 +242,7 @@ _sg_save_in	bsr	_sg_loaddir
 .loop		add.l	d0,d1			;offset
 .loopin		subq.w	#1,d6
 		bpl	.loop
-		lea	(_sg_name),a0		;filename
+		lea	(_sg_name,pc),a0	;filename
 		move.l	(sg_address,a5),a1	;address
 		move.w	#resload_SaveFileOffset,a2
 		bsr	_sg_exec_resload
@@ -296,10 +293,10 @@ _sg_initscr	movem.l	d0-d3/a0,-(a7)
 	;	bsr	_sg_rect
 	;print info
 		move.w	#180,d1
-		lea	_info1,a0
+		lea	(_info1,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_info2,a0
+		lea	(_info2,pc),a0
 		bsr	_psc
 
 		movem.l	(a7)+,d0-d3/a0
@@ -317,60 +314,71 @@ _sg_load_in	bsr	_sg_loaddir
 		beq	.nosavegame
 
 .start		moveq	#7,d1
-		lea	_load,a0
+		lea	(_load,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_loadselect,a0
+		lea	(_loadselect,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_esc,a0
+		lea	(_esc,pc),a0
 		bsr	_psc
-		
+
 		bsr	_sg_printdir
-		
+
 		lea	(sg_save_names,a5),a0
 		moveq	#0,d0
-		
 
 .keyloop	bsr	_sg_get_key
 		cmp.b	#$45,d0
 		beq	_sg_restore
-		
-		lea	(_keytrans),a0
-		moveq	#0,d1
-		move.b	(a0,d0.w),d1
 		cmp.b	#'1',d1
 		blo	.keyloop
 		cmp.b	#'9',d1
 		bhi	.keyloop
-		
+
 		lea	(sg_save_flags,a5),a0
 		tst.b	(-'1',a0,d1.w)
 		beq	.keyloop
-		
-		moveq	#XBASE+9,d0
+
+.drawbox	moveq	#XBASE+9,d0
 		sub.w	#'1',d1
 		move.w	d1,d6			;D6 = save no.
 		mulu	#YSKIP,d1
 		add.w	#YBASE-5,d1
 		move.w	d0,d2
-		add.w	#210,d2
+		add.w	#210,d2			;D2 = x2
 		move.w	d1,d3
-		add.w	#YSKIP-1,d3
+		add.w	#YSKIP-1,d3		;D3 = y2
+		move.l	d0,d4			;D4 = x1
+		move.l	d1,d5			;D5 = y1
 		bsr	_sg_rect
-		
+
 		moveq	#15,d1
-		lea	_loadconfirm,a0
+		lea	(_loadconfirm,pc),a0
 		bsr	_psc
-		
+
 .nextkey2	bsr	_sg_get_key
 		cmp.b	#$43,d0			;enter
 		beq	.confirmed
 		cmp.b	#$44,d0			;return
 		beq	.confirmed
 		cmp.b	#$45,d0			;escape
-		bne	.nextkey2
-		bsr	_sg_initscr
+		beq	.canceled
+		cmp.b	#'1',d1
+		blo	.nextkey2
+		cmp.b	#'9',d1
+		bhi	.nextkey2
+		lea	(sg_save_flags,a5),a0
+		tst.b	(-'1',a0,d1.w)
+		beq	.nextkey2
+		move.l	d1,d6
+		move.l	d4,d0
+		move.l	d5,d1
+		bsr	_sg_rect
+		move.l	d6,d1
+		bra	.drawbox
+
+.canceled	bsr	_sg_initscr
 		bra	.start
 
 .confirmed	move.l	(sg_size,a5),d0		;size
@@ -379,7 +387,7 @@ _sg_load_in	bsr	_sg_loaddir
 .loop		add.l	d0,d1			;offset
 .loopin		subq.w	#1,d6
 		bpl	.loop
-		lea	(_sg_name),a0		;filename
+		lea	(_sg_name,pc),a0	;filename
 		move.l	(sg_address,a5),a1	;address
 		move.w	#resload_LoadFileOffset,a2
 		bsr	_sg_exec_resload
@@ -388,10 +396,10 @@ _sg_load_in	bsr	_sg_loaddir
 		bra	_sg_restore
 
 .nosavegame	moveq	#60,d1
-		lea	_loadno1,a0
+		lea	(_loadno1,pc),a0
 		bsr	_psc
 		add.w	#8,d1
-		lea	_loadno2,a0
+		lea	(_loadno2,pc),a0
 		bsr	_psc
 		bsr	_sg_get_key
 		bra	_sg_restore
@@ -402,7 +410,7 @@ _sg_load_in	bsr	_sg_loaddir
 ; OUT:	D0 = BOOL success
 ;	flags on D0
 
-_sg_loaddir	lea	(_sg_name),a0
+_sg_loaddir	lea	(_sg_name,pc),a0
 		move.w	#resload_GetFileSize,a2
 		bsr	_sg_exec_resload
 		tst.l	d0
@@ -410,7 +418,7 @@ _sg_loaddir	lea	(_sg_name),a0
 
 		move.l	#SAVEDIRLEN,d0		;size
 		moveq	#0,d1			;offset
-		lea	(_sg_name),a0		;filename
+		lea	(_sg_name,pc),a0	;filename
 		lea	(sg_save_id,a5),a1	;address
 		move.w	#resload_LoadFileOffset,a2
 		bsr	_sg_exec_resload
@@ -432,7 +440,7 @@ _sg_loaddir	lea	(_sg_name),a0
 
 _sg_exec_resload
 		move.w	#INTF_INTEN,(intena,a6)
-		add.l	(_resload),a2
+		add.l	(_resload,pc),a2
 		jsr	(a2)
 		move.w	#INTF_SETCLR!INTF_INTEN,(intena,a6)
 		clr.l	($144,a6)
@@ -440,6 +448,9 @@ _sg_exec_resload
 		rts
 
 ;--------------------------------
+; IN:
+; OUT:	D0 = LONG rawkey
+;	D1 = LONG translated key
 
 _sg_get_key	clr.b	(sg_key,a5)
 		moveq	#0,d0
@@ -449,6 +460,9 @@ _sg_get_key	clr.b	(sg_key,a5)
 .waitup		cmp.b	(sg_key,a5),d0
 		bne	.waitup
 		bclr	#7,d0
+		lea	(_keytrans,pc),a0
+		moveq	#0,d1
+		move.b	(a0,d0.w),d1
 		rts
 
 ;--------------------------------
@@ -467,10 +481,10 @@ _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		move.w	(dmaconr,a6),(sg_olddmacon,a5)
 		move.w	#$7fff,(dmacon,a6)
 		bsr	_sg_initscr
-		lea	(_sg_int68),a0
+		lea	(_sg_int68,pc),a0
 		move.l	$68,(sg_old68,a5)
 		move.l	a0,$68
-		lea	(_sg_int6c),a0
+		lea	(_sg_int6c,pc),a0
 		move.l	$6c,(sg_old6c,a5)
 		move.l	a0,$6c
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB|INTF_PORTS,(intena,a6)
@@ -519,7 +533,7 @@ _sg_int68	movem.l	d0-d1,-(a7)
 		or.b	#CIACRAF_SPMODE,(ciacra+_ciaa)	;to output
 		not.b	d0
 		ror.b	#1,d0
-		cmp.b	(_keyexit),d0
+		cmp.b	(_keyexit,pc),d0
 		beq	_exit
 		move.b	d0,(sg_key,a5)
 		moveq	#3-1,d1				;wait because handshake min 75 µs
@@ -569,7 +583,10 @@ _sg_rect	bsr	_sg_xline
 		exg	d1,d3
 		bsr	_sg_yline
 		exg	d0,d3
-		bra	_sg_yline
+		bsr	_sg_yline
+		exg	d0,d3
+		exg	d2,d3
+		rts
 
 ;--------------------------------
 ; line in x axis
@@ -612,7 +629,7 @@ _sg_yline	movem.l	d1/d2,-(a7)
 		rts
 
 ;--------------------------------
-; set a pixel
+; change a pixel
 ; IN:	d0 = word x start
 ;	d1 = word y start
 ; OUT:	-
@@ -626,7 +643,7 @@ _sg_pset	move.l	d1,-(a7)
 		and.w	d0,d1
 		neg.w	d1
 		addq.w	#7,d1
-		bset	d1,(a0)
+		bchg	d1,(a0)
 		move.l	(a7)+,d1
 		rts
 
@@ -638,7 +655,7 @@ _getscrptr	move.l	(sg_screen,a5),a0
 		mulu	#LINE,d1
 		add.l	d1,a0
 		rts
-		
+
 ;--------------------------------
 ; print string centered
 ; IN:	d1 = word y
@@ -683,7 +700,7 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		bsr	_getscrptr
 		sub.w	#32,d2
 		mulu	#CHARWIDTH,d2
-		lea	(_font),a1
+		lea	(_font,pc),a1
 		moveq	#CHARHEIGHT-1,d3
 .cp
 	IFD _68020_
@@ -698,7 +715,8 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		and.w	#%1111,d4
 		lsl.l	d4,d1
 		and.l	#$ffffffff<<(32-CHARWIDTH),d1
-		move.l	#$ffffffff>>CHARWIDTH,d5
+	;	move.l	#$ffffffff>>CHARWIDTH,d5	;PhxAss optimize bug!
+		move.l	#$07ffffff,d5
 		move.l	d0,d4
 		and.w	#%1111,d4
 		lsr.l	d4,d1
@@ -709,13 +727,14 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		and.l	d5,(a0,d4.l)
 		or.l	d1,(a0,d4.l)
 	ENDC
-		add.l	#(_font_-_font)*8/CHARHEIGHT,d2
+	;	add.l	#(_font_-_font)*8/CHARHEIGHT,d2	;PhxAss unable to calculate!
+		add.l	#300*8/CHARHEIGHT,d2
 		add.l	#LINE*8,d0
 		dbf	d3,.cp
 		movem.l	(a7)+,d0-d5/a0-a1
 		rts
 
-_font		INCBIN	pics/pic_font_5x6_br.bin
+_font		INCBIN	Sources:pics/pic_font_5x6_br.bin
 _font_
 
 ;--------------------------------
@@ -742,4 +761,3 @@ _keytrans	dc.b	0,"1234567890",0,0,"0",0,0
 		dc.b	"123456789",0,0,0,0,0,0,0
 		ds.b	16
 		ds.b	16
-
