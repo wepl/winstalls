@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.49 2003/06/14 20:34:32 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.50 2003/07/12 19:17:25 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -873,6 +873,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 _debug1		tst	-1	;unknown packet (=d2) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
+_debug4		tst	-4	;invalid lock specified
 		illegal		;security if executed without mmu
 	ENDC
 

@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.8 2003/07/12 17:26:21 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.9 2003/08/01 15:25:43 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -11,6 +11,7 @@
 ;			 changes by JOTD merged
 ;		04.04.03 various changes for kick31
 ;		11.07.03 relative object names now supported (e.g. "dh0:s//c/info")
+;		06.08.03 sanity check for provided locks added (DEBUG)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -348,6 +349,10 @@ HD_NumBuffers		= 5
 	ENDC
 	;copy name
 		move.l	d7,a0			;a0 = APTR lock
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 		move.l	(fl_Key,a0),a0		;name
 		move.l	-(a0),d0
 		moveq	#0,d1
@@ -484,6 +489,10 @@ HD_NumBuffers		= 5
 .a_parent	bsr	.getarg1
 		beq	.parent_root
 		move.l	d7,a0			;d7 = lock
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 		move.l	(fl_Key,a0),a0
 		tst.b	(a0)
 		beq	.parent_root
@@ -538,11 +547,19 @@ HD_NumBuffers		= 5
 		move.l	d7,a1
 		move.l	a0,d0
 		beq	.samelock_zero
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 		move.l	(fl_Key,a0),a0
 		tst.b	(a0)
 		beq	.samelock_zero
 		move.l	a1,d0
 		beq	.samelock_neq
+	IFD DEBUG
+		cmp.l	(fl_Task,a1),a5
+		bne	_debug4
+	ENDC
 		move.l	(fl_Key,a1),a1
 .samelock_cmp	move.b	(a0)+,d0
 		cmp.b	(a1)+,d0
@@ -565,6 +582,10 @@ HD_NumBuffers		= 5
 ;---------------
 
 .a_read		move.l	(dp_Arg1,a4),a0			;a0 = APTR lock
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 		move.l	(dp_Arg3,a4),d3			;d3 = readsize
 	IFD IOCACHE
 		moveq	#0,d4				;d4 = readcachesize
@@ -708,6 +729,10 @@ HD_NumBuffers		= 5
 ;---------------
 
 .a_write	move.l	(dp_Arg1,a4),a0			;APTR lock
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 	IFND IOCACHE
 		move.l	(dp_Arg3,a4),d0			;len
 		move.l	(mfl_pos,a0),d1			;offset
@@ -845,14 +870,19 @@ HD_NumBuffers		= 5
 ;---------------
 
 .a_end
+	IFD DEBUG
+		move.l	(dp_Arg1,a4),a0		;APTR lock
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 	IFD IOCACHE
 	;flush write buffer
-		move.l	(dp_Arg1,a4),a0			;lock
-		move.l	(mfl_clen,a0),d0		;len
+		move.l	(dp_Arg1,a4),a0		;lock
+		move.l	(mfl_clen,a0),d0	;len
 		beq	.end_nocache
-		move.l	(mfl_cpos,a0),d1		;offset
-		move.l	(mfl_iocache,a0),a1		;buffer
-		move.l	(fl_Key,a0),a0			;name
+		move.l	(mfl_cpos,a0),d1	;offset
+		move.l	(mfl_iocache,a0),a1	;buffer
+		move.l	(fl_Key,a0),a0		;name
 		jsr	(resload_SaveFileOffset,a2)
 .end_nocache
 	ENDC
@@ -1007,6 +1037,11 @@ HD_NumBuffers		= 5
 .unlock		tst.l	d0
 		beq	.rts
 		move.l	d0,a1
+	IFD DEBUG
+		cmp.l	(fl_Task,a1),a5
+		bne	_debug4
+		clr.l	(fl_Task,a1)
+	ENDC
 		move.l	(fl_Key,a1),-(a7)	;name
 	IFD IOCACHE
 		move.l	(mfl_iocache,a1),-(a7)
@@ -1039,6 +1074,10 @@ HD_NumBuffers		= 5
 		tst.l	d0
 		beq	.buildname_nolock
 		move.l	d0,a0
+	IFD DEBUG
+		cmp.l	(fl_Task,a0),a5
+		bne	_debug4
+	ENDC
 		move.l	(fl_Key,a0),a0
 		move.l	a0,d4			;d4 = ptr path
 		moveq	#-1,d6

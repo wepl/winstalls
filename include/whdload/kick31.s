@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.8 2003/06/07 13:25:23 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.9 2003/07/12 19:17:30 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -648,6 +648,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 _debug1		tst	-1	;unknown packet (=d2) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
+_debug4		tst	-4	;invalid lock specified
 		illegal		;security if executed without mmu
 	ENDC
 
