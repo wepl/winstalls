@@ -2,9 +2,9 @@
 ;  :Module.	whdmacros.i
 ;  :Contens.	useful macros for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@whdload.org
+;  :EMail.	wepl@whdload.de
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 13.0 2000/12/08 14:37:55 jah Exp jah $
+;  :Version.	$Id: whdmacros.i 14.0 2001/03/18 12:34:51 jah Exp jah $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix

@@ -2,9 +2,9 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@whdload.org
-;  :Address.	Franz-Liszt-Straße 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 14.1 2001/04/29 19:26:17 jah Exp jah $
+;  :EMail.	wepl@whdload.de
+;  :Address.	Feodorstraße 8, Zwickau, 08058, Germany
+;  :Version.	$Id: whdload.i 14.5 2001/09/23 09:55:05 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -14,6 +14,7 @@
 ;		15.03.01 v14 stuff added
 ;		15.04.01 FAILMSG added
 ;		29.04.01 resload_Relocate tags added
+;		09.12.01 v15 stuff added
 ;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -133,6 +134,8 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_LANG_GET	;GetLanguageSelection like lowlevel.library
 ; version 14.5
  EITEM	WHDLTAG_DBGADR_SET	;set debug base address
+; version 15
+ EITEM	WHDLTAG_DBGSEG_SET	;set debug base segment address (BPTR!)
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
@@ -237,6 +240,8 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 				;of the installed program
 ; version 13
 	BITDEF WHDL,ClearMem,12	;initialize BaseMem and ExpMem with 0
+; version 15
+	BITDEF WHDL,Examine,13	;preload cache for Examine/ExNext
 
 ;=============================================================================
 ; properties for resload_SetCPU
@@ -284,14 +289,14 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; ATTENTION this routine must called via JMP! (not JSR)
 	ULONG	resload_LoadFile
 		; load file to memory
-		; IN :	a0 = CPTR   filename
+		; IN :	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = ULONG  success (size of file)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_SaveFile
 		; write memory to file
-		; IN :	d0 = LONG   size
-		;	a0 = CPTR   filename
+		; IN :	d0 = ULONG  size
+		;	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
@@ -303,7 +308,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 	ULONG	resload_ListFiles
 		; list filenames of directory
 		; IN :	d0 = ULONG  buffer size
-		;	a0 = CPTR   name of directory to scan
+		;	a0 = CSTR   name of directory to scan
 		;	a1 = APTR   buffer (must be located in Slave)
 		; OUT :	d0 = ULONG  amount of names in buffer
 		;	d1 = ULONG  dos errorcode
@@ -314,7 +319,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	d0 = ULONG  uncompressed size
 	ULONG	resload_LoadFileDecrunch
 		; load file and uncompress
-		; IN :	a0 = CPTR   filename
+		; IN :	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = ULONG  success (size of file)
 		;	d1 = ULONG  dos errorcode
@@ -324,7 +329,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	-
 	ULONG	resload_GetFileSize
 		; get size of a file
-		; IN :	a0 = CPTR   filename
+		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = ULONG  size of file
 	ULONG	resload_DiskLoad
 		; load part from diskimage
@@ -362,7 +367,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; write memory to file at offset
 		; IN :	d0 = ULONG  size
 		;	d1 = ULONG  offset
-		;	a0 = CPTR   filename
+		;	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errcode
@@ -372,28 +377,28 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 	ULONG	resload_ProtectRead
 		; mark memory as read protected
 		; IN :	d0 = ULONG  length
-		;	a0 = CPTR   address
+		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectReadWrite
 		; mark memory as read and write protected
 		; IN :	d0 = ULONG  length
-		;	a0 = CPTR   address
+		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectWrite
 		; mark memory as write protected
 		; IN :	d0 = ULONG  length
-		;	a0 = CPTR   address
+		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectRemove
 		; remove memory protection
 		; IN :	d0 = ULONG  length
-		;	a0 = CPTR   address
+		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_LoadFileOffset
 		; load part of file to memory
 		; IN :	d0 = ULONG  size
 		;	d1 = ULONG  offset
-		;	a0 = CPTR   name of file
+		;	a0 = CSTR   name of file
 		;	a1 = APTR   destination
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
@@ -411,7 +416,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	-
 	ULONG	resload_DeleteFile
 		; delete file
-		; IN :	a0 = CPTR   filename
+		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
@@ -420,7 +425,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 	ULONG	resload_ProtectSMC
 		; detect self modifying code
 		; IN :	d0 = ULONG  length
-		;	a0 = CPTR   address
+		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_SetCPU
 		; control CPU setup
@@ -439,7 +444,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; load kickstart image
 		; IN :	d0 = ULONG  length of image
 		;	d1 = UWORD  crc16 of image
-		;	a0 = CPTR   basename of image
+		;	a0 = CSTR   basename of image
 		; OUT :	-
 	ULONG	resload_Delta
 		; apply wdelta
@@ -449,8 +454,36 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	-
 	ULONG	resload_GetFileSizeDec
 		; get size of a packed file
-		; IN :	a0 = CPTR   filename
+		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = ULONG  size of file
+
+******* the following functions require ws_Version >= 15
+
+	ULONG	resload_PatchSeg
+		; apply patchlist to a segment list
+		; IN :	a0 = APTR   patchlist
+		;	a1 = BPTR   segment list
+		; OUT :	-
+
+	ULONG	resload_Examine
+		; apply patchlist to a segment list
+		; IN :	a0 = CSTR   name
+		;	a1 = APTR   struct FileInfoBlock (260 bytes)
+		; OUT :	d0 = BOOL   success
+		;	d1 = ULONG  dos errorcode
+
+	ULONG	resload_ExNext
+		; apply patchlist to a segment list
+		; IN :	a0 = APTR   struct FileInfoBlock (260 bytes)
+		; OUT :	d0 = BOOL   success
+		;	d1 = ULONG  dos errorcode
+
+	ULONG	resload_GetCustom
+		; get Custom argument
+		; IN :	d0 = ULONG  length of buffer
+		;	d1 = ULONG  reserved, must be 0
+		;	a0 = APTR   buffer
+		; OUT :	d0 = BOOL   true if Custom has fit into buffer
 
 	LABEL	resload_SIZEOF
 
@@ -481,6 +514,11 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_PA		;write address given by argument to
 					;specified address
 	EITEM	PLCMD_NOP		;fill given area with nop instructions
+; version 15
+	EITEM	PLCMD_C			;clear n bytes
+	EITEM	PLCMD_CB		;clear one byte
+	EITEM	PLCMD_CW		;clear one word
+	EITEM	PLCMD_CL		;clear one long
 
 ;=============================================================================
 ; macros to build patchlist
@@ -507,12 +545,12 @@ PL_R		MACRO			;set "rts"
 	PL_CMDADR PLCMD_R,\1
 		ENDM
 
-PL_PS		MACRO			;set "jmp"
+PL_PS		MACRO			;set "jsr"
 	PL_CMDADR PLCMD_PS,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
 
-PL_P		MACRO			;set "jsr"
+PL_P		MACRO			;set "jmp"
 	PL_CMDADR PLCMD_P,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
@@ -558,6 +596,25 @@ PL_PA		MACRO			;write address
 PL_NOP		MACRO			;fill area with nop's
 	PL_CMDADR PLCMD_NOP,\1
 	dc.w	\2			;distance
+		ENDM
+
+; version 15
+
+PL_C		MACRO			;clear area
+	PL_CMDADR PLCMD_C,\1
+	dc.w	\2			;length
+		ENDM
+
+PL_CB		MACRO			;clear one byte
+	PL_CMDADR PLCMD_CB,\1
+		ENDM
+
+PL_CW		MACRO			;clear one word
+	PL_CMDADR PLCMD_CW,\1
+		ENDM
+
+PL_CL		MACRO			;clear one long
+	PL_CMDADR PLCMD_CL,\1
 		ENDM
 
 ;=============================================================================
