@@ -1,251 +1,414 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
-;  :Author.	WEPL
-;  :Version.	$Id$
+;  :Author.	Wepl
+;  :Version.	$Id: xenon2.asm 1.1 1998/03/16 16:58:59 jah Exp $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
+;		20.12.98 work on CDTV version started
+;		24.12.98 work on disk version started
+;		25.12.98 disk version finished
+;		07.01.98 support for second disk version started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
+;  :Translator.	Barfly V2.9
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
+CDTV		;if defined Slave for CDTV version will be created
+
 	INCDIR	Includes:
 	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
 
-	OUTPUT	wart:xenon2/xenon2.slave
+	IFD CDTV
+	OUTPUT	"wart:v-x/xenon2 cdtv/Xenon2.Slave"
+	ELSE
+	OUTPUT	"wart:v-x/xenon2/Xenon2.Slave"
+	ENDC
 	BOPT	O+ OG+			;enable optimizing
 	BOPT	w4-			;disable 64k warnings
 	SUPER
 
-CopyLockId = $7670CF6B
+	STRUCTURE	globals,$100
+		LONG	RESLOAD
 
 ;======================================================================
 
-.base		SLAVE_HEADER		;ws_Security + ws_ID
-		dc.w	2		;ws_Version
-		dc.w	WHDLF_Disk|WHDLF_NoError	;ws_flags
-		dc.l	$80000		;ws_BaseMemSize
-		dc.l	$100		;ws_ExecInstall
-		dc.w	.Start-.base	;ws_GameLoader
-		dc.w	0		;ws_CurrentDir
-		dc.w	0		;ws_DontCache
 
-;======================================================================
-.Start	;	A0 = resident loader
-;======================================================================
+_base		SLAVE_HEADER			;ws_Security + ws_ID
+		dc.w	10			;ws_Version
+		dc.w	WHDLF_NoError		;ws_flags
+	IFD CDTV
+		dc.l	$c6000			;ws_BaseMemSize
+	ELSE
+		dc.l	$80000			;ws_BaseMemSize
+	ENDC
+		dc.l	0			;ws_ExecInstall
+		dc.w	_start-_base		;ws_GameLoader
+	IFD CDTV
+		dc.w	_data-_base		;ws_CurrentDir
+	ELSE
+		dc.w	0			;ws_CurrentDir
+	ENDC
+		dc.w	0			;ws_DontCache
+_keydebug	dc.b	0			;ws_keydebug
+_keyexit	dc.b	$59			;ws_keyexit = F10
+		dc.l	0			;ws_ExpMem
+		dc.w	_name-_base		;ws_name
+		dc.w	_copy-_base		;ws_copy
+		dc.w	_info-_base		;ws_info
 
-		lea	(_resload,pc),a1
-		move.l	a0,(a1)
+;============================================================================
 
-	;cache
-	;	move.l	#CACRF_EnableI,d0
-	;	move.l	d0,d1
-	;	jsr	(resload_SetCACR,a0)
-	
-	;bootblock
-	IFEQ 1
-		move.l	#0,d0		;offset
-		move.l	#$400,d1	;size
-		moveq	#1,d2		;disk
-		lea	$1000,a0	;address
-		lea	(12,a0),a5
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-		ill	$fe(a5)
-		jmp	(a5)
+	IFND	.passchk
+	DOSCMD	"WDate  >T:date"
+.passchk
 	ENDC
 
-	;JFFabre adaption start ==========================
-	;load main
-		move.l	#$2c00,d0	;offset
-		move.l	#$6ca00,d1	;size
-		moveq	#1,d2		;disk
-		lea	$400,a0		;address
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-	;check version
-		lea	_version,a0
-		move.w	#2,(a0)
-		cmp.l	#$4FF90000,$404
-		beq	.verok
-		cmp.l	#$41FAFFFA,$404
-		bne	_exit		;unknown version
-		move.w	#1,(a0)
-	;uniform 2 different versions
-		move.l	#$4e526000,$2C14-$2c00+$400
-		move.l	#$4bb619cf,$3228-$2c00+$400
-		lea	_xenbin,a0
-		lea	_xenbin_end,a1
-		lea	$66fc8-$2c00+$400,a2
-.vercp		move.b	(a0)+,(a2)+
-		cmp.l	a0,a1
-		bne	.vercp
-.verok
-	;prepare intro
-		move.w	_version,d0
-		cmp.w	#2,d0
-		beq	.pi_1
-		patch	$4d6,_v1	;version 1
-		jmp	$400
-.pi_1		patchs	$5e6,_v2_kbint1	;version 2
-		patch	$63f62,_v2
-		jmp	$400
+	IFND CDTV
+_name		dc.b	"Xenon 2 - Megablast",0
+_copy		dc.b	"1988 The Bitmap Brothers",0
+_info		dc.b	"installed & fixed by Wepl",10
+		dc.b	"Version 1.2 (Floppy)"
+		INCBIN	"T:date"
+		dc.b	0
+	ELSE
+_data		dc.b	"data",0
+_name		dc.b	"Xenon 2 - Megablast",0
+_copy		dc.b	"1991 The Bitmap Brothers",0
+_info		dc.b	"installed & fixed by Wepl",10
+		dc.b	"Version 1.2 (CDTV)"
+		INCBIN	"T:date"
+		dc.b	0
+	ENDC
+	EVEN
 
-	;version 1 ---------------------------------------
-_v1		patchs	$64bc6,_v1_a5init
-		move.w	#$4ed5,$64bf6		;jmp (a5)
-		move.l	#CopyLockId,D0
-	illegal
-		jmp	$a1a
+;======================================================================
+_start	;	A0 = resident loader
+;======================================================================
 
-_v1_a5init	lea	_v1_load,a5
-		moveq	#2,d1
-		rts
+		move.l	a0,(RESLOAD)
+		move.l	a0,a5			;A5 = resload
+		lea	(_custom),a6		;A6 = _custom
 
-	;after intro
-_v1_load	MOVE.L	#$203C7670,$063E.W	;copylock
-		MOVE.L	#$CF6B6000,$0642.W	;
-		MOVE.W	#$053C,$0646.W		;
-		patch	$641d8,_v1_loadgame
-		patch	$64276,_v1_load2
-		patchs	$bb4,_v1_kbint1
-		jmp	$400
+	;get tags
+		lea	(_control),a0
+		jsr	(resload_Control,a5)
 
-_v1_loadgame	movem.l	d0-d2/a0-a2,-(a7)
-		move.l	#$70c00,d0	;offset
-		move.l	#$3fc00,d1	;size
-		moveq	#1,d2		;disk
-		lea	$400,a0		;address
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-		movem.l	(a7)+,d0-d2/a0-a2
-		lea	$bfd000,a4
-		move.l	#$400,$24
-		jmp	$6424e
+	IFD CDTV
+
+	;install keyboard quitter
+		bsr	_SetupKeyboard
+	;load exe
+		lea	(_x2),a0
+		lea	($400),a1
+		move.l	a1,a4			;A4 = address
+		jsr	(resload_LoadFileDecrunch,a5)
+		move.l	a4,a0
+		sub.l	a1,a1
+		jsr	(resload_Relocate,a5)
+
+		skip	$3aae8-$3aa4a,$3aa4a	;os stuff
+
+		skip	$3ab40-$3ab2c,$3ab2c	;asking exec.VBlankFrequency
+		move.l	#NTSC_MONITOR_ID,d0
+		cmp.l	(_monitor),d0
+		bne	.1
+		move.w	#4,($12,a4)		;3=pal 4=ntsc
+.1
+		patch	$4fd78,_load_sounds
+		patch	$3c7de,_load_speech
+		patch	$33930,_load_level
+		patch	$3d86e,_load_intro
+		patch	$411a8,_load_speech2
+		patch	$50fce,_load_piccode
+		patch	$50f68,_load_pics
+		patch	$3e09a,_load_intro2
+		patch	$3d2a4,_load_level2
+		patch	$4fd28,_load_sounds2
+
+		ret	$3a924			;cdtv.device stuff
+		ret	$3a9ba			;cdtv.device stuff
 		
-	;after whole game loaded
-_v1_load2	patch	$70f6,_v1_cl2		;copylock
-		patchs	$47ce,_32bit		;24 bit jmp
-		patch	$921a,_readdisk2
-	;orginal
-		pea	$64252
-		move.w	(a7),-(a7)
-		eor.w	#$e552,(a7)
+		patch	$37a98,_32bit
+		
+		patch	$410b2,$34fb2		;strange sound problem (does not help)
+		
+		move.l	(_custom1),d0
+		beq	.notrainer
+		patchs	$3a742,_trainer1
+		bra	.ash
+.notrainer
+		patch	$3c54c,_savehighs
+.ash
+		lea	(_highs),a0
+		jsr	(resload_GetFileSize,a5)
+		tst.l	d0
+		beq	.nohighs
+		lea	(_highs),a0
+		lea	$3c366,a1
+		pea	(a1)
+		jsr	(resload_LoadFileDecrunch,a5)
+		move.l	(a7)+,a0
+		bsr	_crypt
+.nohighs
+		move.l	(_custom2),d0
+		beq	.nolmb
+		move.l	#$bfe001,$35092+4	;second fire button -> LMB
+.nolmb
+		lea	(_vbi),a0
+		move.l	a0,($6c)
+		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,(intena,a6)
+		move.w	#INTF_VERTB,(intreq,a6)
+
+		jmp	(a4)
+
+_vbi		move.w	#INTF_VERTB,(_custom+intreq)
 		rte
 
-_v1_cl2		patchs	$ffc,_v1_kbint2
-		move.w	#$4e71,$fd2
-		move.l	#CopyLockId,d0
-		jmp	$763a
+_load_sounds
+_load_sounds2	lea	($88a48),a1		;186900 bytes
 
-_v1_kbint1	move.b	d0,$bdc
-_v1_kbint2	cmp.b	#$59,d0		;F10
-		beq	_exit
-		cmp.b	#$58,d0		;F9
-		beq	_debug
-		cmp.b	#$5f,d0		;HELP
-		bne	.1
-		move.l	a0,-(a7)
-		lea	_version,a0
-		cmp.w	#1,(a0)
-		bne	.11
-		move.l	$c9a,a0
-		add.l	a0,a0
-		move.l	a0,$c9a
-.11		move.l	(a7)+,a0
-.1		bset	#6,$bfee01
+_load		move.l	d1,a0
+		addq.l	#4,a0
+		move.l	(RESLOAD),a2
+		jsr	(resload_LoadFileDecrunch,a2)
+;	waitvb
+	rts
+
+_load_speech	move.l	($411e4),a1		;107800 bytes
+		pea	($3c80c)
+		bra	_load
+
+_load_level	lea	($4e26),a1		;180000 bytes
+		pea	($3395e)
+		bra	_load
+
+_load_intro	lea	($4e26),a1
+		pea	($3d89c)
+		bra	_load
+
+_load_speech2	move.l	($411e4),a1		;107800 bytes
+		pea	($411d6)
+		bra	_load
+
+_load_piccode	lea	($4e26),a1
+		pea	($3d2ee)
+		bra	_load
+
+_load_pics	move.l	($4e42),a1
+		pea	($50f96)
+		bra	_load
+
+_load_intro2	lea	($4e26),a1
+		pea	($3e0c8)
+		bra	_load
+
+_load_level2	lea	($4e26),a1		;180000 bytes
+		pea	($3d2d2)
+		bra	_load
+
+_savehighs	jsr	$3ca02			;original
+		move.l	#$fc-$66,d0
+		lea	$3c366,a0
+		movem.l	d0/a0,-(a7)
+		bsr	_crypt
+		move.l	a0,a1
+		lea	(_highs),a0
+		move.l	(RESLOAD),a2
+		jsr	(resload_SaveFile,a2)
+		movem.l	(a7)+,d0/a0
+
+_crypt		movem.l	d0/a0,-(a7)
+		subq.w	#1,d0
+.lp		eor.b	d0,(a0)+
+		dbf	d0,.lp
+		movem.l	(a7)+,d0/a0
 		rts
 
-_v2_kbint1	move.b	d0,$60e
-		bra	_v1_kbint2
+	;trainer
+ IFEQ 1
+_key_help	movem.l	d0-a6,-(a7)
+		move.l	#999999,($ca0)		;cash
+		jsr	$40ffc			;refresh display
+		movem.l	(a7)+,d0-a6
+		rts
+ ENDC
+_trainer1	move.l	#100000,($ca0)		;cash
+		move.l	#100000,($cac)		;cash (in level?)
+		move.w	#9,($cd0)		;credits
+		rts
 
-	;version 2 ---------------------------------------
-_v2		move.l	#$70c00,d0	;offset
-		move.l	#$3fc00,d1	;size
-		moveq	#1,d2		;disk
-		lea	$400,a0		;address
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-		
-		patchs	$47d8,_32bit
-		patchs	$ffc,_v1_kbint2
-		move.w	#$4e71,$fd2
-		patch	$9012,_readdisk2
-		
+_x2		dc.b	"x2",0
+	EVEN
+
+	INCLUDE	Sources:whdload/keyboard.s
+
+;======================================================================
+
+	ELSE
+	
+;======================================================================
+
+	;enable cache
+		move.l	#CACRF_EnableI,d0
+		move.l	d0,d1
+		jsr	(resload_SetCACR,a5)
+
+	;bootblock
+		move.l	#0,d0			;offset
+		move.l	#$400,d1		;size
+		moveq	#1,d2			;disk
+		lea	$1000,a0		;address
+		movem.l	d1/a0,-(a7)
+		jsr	(resload_DiskLoad,a5)
+		movem.l	(a7)+,d0/a0
+		jsr	(resload_CRC16,a5)
+		cmp.w	#$7f8f,d0
+		beq	_v1
+		cmp.w	#$c0fb,d0
+		bne	_wrongver
+
+_v2		patch	$10b0,_1
+		jmp	($1018)
+
+_v1		patch	$10b0,_1
+		jmp	($1016)
+
+_1		move.l	#$2c00,d0		;offset
+		move.l	#$6b6c0,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		jsr	(resload_DiskLoad,a5)
+ blitz
+
+		lea	$64de4,a7		;$410
+		move.l	#$7670CF6B,d0		;CopyLock
+		rol.l	#8,d0			;$a1a
+		eor.l	#$400,d0		;$a20
+		ror.l	#8,d0			;$a22
+		patch	$64b84,_2
+		jmp	$64b48			;$a24
+
+_2		patch	$63e,_3			;second copylock
 		jmp	$400
 
-	;all versions ------------------------------------
+_3		move.l	#$7670CF6B,d0		;CopyLock
+		patch	$641d2,_4
+		jmp	$b82
+
+	;after intro
+_4		move.l	#$70c00,d0		;offset
+		move.l	#$3fc00,d1		;size
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		move.l	(RESLOAD),a2
+		jsr	(resload_DiskLoad,a2)
+		patch	$64260,_5
+		jmp	$6423c
+
+	;main loaded and decrypted
+_5		patch	$70f6,$763a		;third copylock
+		skip	$7654-$7642,$7642	;vector init
+		patch	$47ce,_32bit
+		patch	$921a,_load
+
+		move.l	(_custom1),d0
+		beq	.notrainer
+		patch	$6f8e,_trainer1
+		bra	.ash
+.notrainer
+		patch	$8b1a,_savehighs
+.ash
+		lea	(_highs),a0
+		move.l	(RESLOAD),a5
+		jsr	(resload_GetFileSize,a5)
+		tst.l	d0
+		beq	.nohighs
+		lea	(_highs),a0
+		lea	$8946,a1
+		pea	(a1)
+		jsr	(resload_LoadFileDecrunch,a5)
+		move.l	(a7)+,a0
+		bsr	_crypt
+.nohighs
+		move.l	#$e841c3fc,$2f84	;access fault (lsr->asr,mulu->muls)
+
+		move.l	#$7670CF6B,d0		;CopyLock
+		jmp	$400
+
+_load		mulu	#512,d0			;offset
+		mulu	#512,d1			;size
+		moveq	#2,d2			;disk
+		move.l	a0,-(a7)
+		add.l	d1,(a7)
+		move.l	(RESLOAD),a2
+		jsr	(resload_DiskLoad,a2)
+		move.l	(a7)+,a0
+		moveq	#0,d0
+		rts
+
+_trainer1	move.l	#100000,($c9a)		;cash
+		move.l	#100000,($ca6)		;cash (in level?)
+		move.w	#9,($cca)		;credits
+		clr.w	$cf2			;original
+		rts
+
+_savehighs	jsr	$8c88			;original
+		move.l	#$fc-$66,d0
+		lea	$8946,a0
+		movem.l	d0/a0,-(a7)
+		bsr	_crypt
+		move.l	a0,a1
+		lea	(_highs),a0
+		move.l	(RESLOAD),a2
+		jsr	(resload_SaveFile,a2)
+		movem.l	(a7)+,d0/a0
+
+_crypt		movem.l	d0/a0,-(a7)
+		subq.w	#1,d0
+.lp		eor.b	d0,(a0)+
+		dbf	d0,.lp
+		movem.l	(a7)+,d0/a0
+		rts
+
+	ENDC
+
+;======================================================================
 
 _32bit		move.l	a0,-(a7)
-		move.l	d5,-(a7)
-		move.l	a1,d5
-		and.l	#$00ffffff,d5
-		move.l	d5,a1
-		move.l	(a7)+,d5
+		exg.l	d1,a1
+		and.l	#$00ffffff,d1
+		exg.l	d1,a1
 		jsr	(a1)
 		move.l	(a7)+,a0
 		rts
 
-_readdisk2	movem.l	d2/a1-a2,-(a7)
-		mulu	#512,d0		;offset
-		mulu	#512,d1		;size
-		moveq	#2,d2		;disk
-		move.l	a0,-(a7)
-		add.l	d1,(a7)
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-		move.l	(a7)+,a0
-		movem.l	(a7)+,d2/a1-a2
-		moveq	#0,d0
-		rts
-
-;======================================================================
-		
-	IFEQ 1
-		
-		move.l	#$2c00,d0	;offset
-		move.l	#$6ce00-$2c00,d1	;size
-		moveq	#1,d2		;disk
-		lea	$400,a0		;address
-		move.l	a0,a5
-		move.l	(_resload),a2
-		jsr	(resload_DiskLoad,a2)
-		
-		move.l	#CopyLockId,d0
-
-		patch	$16(a5),$61a(a5)
-	patch	$16(a5),_debug
-		jmp	(a5)
-		
-		lea	$64de4,a7
-		move.l	d0,$24
-		ill	$64b8e+$3c
-		jmp	($61a,a5)
-		
-	ENDC
-
-;======================================================================
-
-_resload	dc.l	0	;address of resident loader
-_version	dc.w	0	;version of xenon-2
-
-;--------------------------------
-
-_exit		pea	TDREASON_OK
+_wrongver	subq.l	#8,a7
+		pea	TDREASON_WRONGVER
+		bra	_end
+_exit		subq.l	#8,a7
+		pea	TDREASON_OK
 		bra	_end
 _debug		pea	TDREASON_DEBUG
-_end		move.l	(_resload),-(a7)
+_end		move.l	(RESLOAD),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
 ;======================================================================
 
-_xenbin		INCBIN	"slaves/xen66fc8.bin"
-_xenbin_end
+_control	dc.l	WHDLTAG_MONITOR_GET
+_monitor	dc.l	0
+		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+		dc.l	WHDLTAG_CUSTOM2_GET
+_custom2	dc.l	0
+		dc.l	TAG_DONE
+_highs		dc.b	"highs",0
 
 ;======================================================================
 
 	END
+
