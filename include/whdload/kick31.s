@@ -2,13 +2,14 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31_A1200.s 1.11 2003/10/20 10:00:58 wepl Exp wepl $
+;  :Version.	$Id: kick31_A1200.s 1.12 2003/10/20 10:06:49 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
 ;			 cache option added
 ;		15.05.03 patch for exec.ExitIntr to avoid double ints
 ;		22.06.03 adapted for whdload v16
+;		13.11.03 merged support for A4000 image into
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -24,8 +25,9 @@
 	INCLUDE	graphics/gfxbase.i
 
 KICKVERSION	= 40
-KICKCRC		= $9ff5				;40.068 A1200
-
+KICKCRC1200	= $9ff5				;40.068 A1200
+KICKCRC4000	= $75D3				;40.068 A4000
+KICKCRC		= KICKCRC1200
 	MC68020
 
 ;============================================================================
@@ -55,7 +57,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_info-slv_base	;ws_info
 		dc.w	slv_kickname-slv_base	;ws_kickname
 		dc.l	KICKSIZE		;ws_kicksize
-		dc.w	KICKCRC			;ws_kickcrc
+_kickcrc	dc.w	-1			;ws_kickcrc
 	ENDC
 
 ;============================================================================
@@ -119,7 +121,14 @@ _boot		lea	(_resload,pc),a1
 	ENDC
 
 	;patch the kickstart
-		lea	(kick_patch,pc),a0
+		lea	(kick_patch1200,pc),a0
+	IFD slv_Version
+		move.w	(_kickcrc,pc),d0
+		cmp.w	#KICKCRC1200,d0
+		beq	.patch
+		lea	(kick_patch4000,pc),a0
+.patch
+	ENDC
 		move.l	(_expmem,pc),a1
 		jsr	(resload_Patch,a5)
 
@@ -127,7 +136,7 @@ _boot		lea	(_resload,pc),a1
 kick_reboot	move.l	(_expmem,pc),a0
 		jmp	(2,a0)				;original entry
 
-kick_patch	PL_START
+kick_patch1200	PL_START
 		PL_S	$d6,$166-$d6
 		PL_PS	$166,kick_leaveled
 		PL_S	$1a6,$1ac-$1a6			;kick chksum
@@ -224,6 +233,112 @@ kick_patch	PL_START
 		PL_B	$68e1e,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
 		PL_END
+
+	IFD slv_Version
+
+kick_patch4000	PL_START
+		PL_S	$d6,$10A-$d6
+		PL_PS	$10A,kick_leaveled
+		PL_S	$146,$16C-$146			;A4000 DTack/bus stuff
+		PL_S	$174,$17C-$174			;A4000 DTack/bus stuff
+		PL_S	$180,$186-$180			;kick chksum
+		PL_PS	$21A,kick_detectchip
+		PL_S	$220,$244-$220			;kick_detectchip
+		PL_S	$30E,6				;kick_detectfast
+		PL_L	$350,-1				;disable search for residents at $f00000
+		PL_P	$368,kick_detectfast
+	;	PL_S	$422,6				;LED, reboot unexpected int
+	;	PL_S	$430,6				;LED, reboot unexpected int
+		PL_R	$43A				;check Fat Gary, RAMSEY, Gayle $de1000
+	IFEQ FASTMEMSIZE
+	IFD HRTMON
+		PL_PS	$582,kick_hrtmon
+	ENDC
+	ENDC
+		PL_P	$c24,kick_detectcpu
+		PL_P	$d3e,_flushcache		;exec.CacheControl
+		PL_P	$dc0,kick_reboot		;exec.ColdReboot
+		PL_P	$139c,exec_ExitIntr
+		PL_PS	$1c74,_flushcache		;exec.MakeFunctions using exec.CacheClearU without
+							;proper init for cpu's providing CopyBack
+	IFD MEMFREE
+		PL_P	$1e8e,exec_AllocMem
+	ENDC
+	;	PL_L	$329a,$70004e71			;SAD, movec vbr,d0 -> moveq #0,d0
+		PL_S	$49F44,$4a068-$49f44		;autoconfiguration at $e80000
+	IFD HDINIT
+		PL_PS	$4006C,hd_init
+	ENDC
+	IFHI NUMDRIVES-4
+		PL_B	$40117,7				;allow 7 floppy drives
+	ENDC
+	IFD BOOTEARLY
+		PL_PS	$40510,kick_bootearly
+	ENDC
+	IFD BOOTBLOCK
+		PL_PS	$4060E,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
+	ENDC
+		PL_PS	$2A9DC,gfx_readvpos		;patched to set NTSC/PAL
+		PL_S	$2A9F8,$10			;snoop, byte writes to bpl1dat-bpl6dat, strange?
+		PL_S	$2AC94,6			;blit wait, graphics init
+		PL_S	$2ACB0,6			;blit wait, graphics init
+	IFD INITAGA
+		PL_PS	$2AF50,gfx_initaga
+	ENDC
+		PL_P	$2B0D6,gfx_detectgenlock
+		PL_PS	$2EC30,gfx_beamcon01
+		PL_PS	$2EC86,gfx_vbstrt1
+		PL_PS	$2ECA0,gfx_vbstrt2
+		PL_PS	$2ECEE,gfx_vbstrt2
+		PL_PS	$2ED16,gfx_beamcon02
+		PL_PS	$2ED38,gfx_snoop1
+		PL_PS	$340A6,gfx_readvpos		;patched to set NTSC/PAL
+	IFD STACKSIZE
+		PL_L	$18B9A,STACKSIZE/4
+	ENDC
+	IFD BOOTDOS
+		PL_PS	$18C3C,dos_bootdos
+	ENDC
+	IFD CBDOSLOADSEG
+		PL_PS	$1D6D8,dos_LoadSeg
+	ENDC
+		PL_CB	$7E3E				;dont init scsi.device
+	IFD INIT_AUDIO					;audio.device
+		PL_B	$6D6C,RTF_COLDSTART|RTF_AUTOINIT
+	ENDC
+		PL_CB	$44FC6				;dont init battclock.ressource
+		PL_S	$41A10,$41A32-$41A10		;skip disk unit detect
+		PL_P	$41B62,disk_getunitid
+		PL_P	$41B6A,disk_getunitid
+	IFD INIT_MATHFFP				;mathffp.library
+		PL_B	$42102,RTF_COLDSTART|RTF_AUTOINIT
+	ENDC
+		PL_P	$C01A,timer_init
+	;	PL_NOP	$44294,2			;skip rom menu
+		PL_P	$4B84E,trd_task
+		PL_P	$4C04C,trd_format
+		PL_P	$4C490,trd_motor
+		PL_P	$4C780,trd_readwrite
+		PL_PS	$4CB4E,trd_protstatus
+		PL_PS	$4D024,trd_init
+	IFD FONTHEIGHT
+		PL_B	$6799C,FONTHEIGHT
+	ENDC
+	IFD BLACKSCREEN
+		PL_C	$67A02,6			;color17,18,19
+		PL_C	$67A0A,8			;color0,1,2,3
+	ENDC
+	IFD POINTERTICKS
+		PL_W	$67A08,POINTERTICKS
+	ENDC
+	IFD INIT_GADTOOLS				;gadtools.library
+		PL_B	$67B0A,RTF_COLDSTART|RTF_AUTOINIT
+	ENDC
+		PL_S	$4A024,$4A02C-$4A024	; write to $de0000
+		PL_L	$1E67A,$70004E75	; installs some strange A4000 "bonus"
+		PL_END
+
+	ENDC
 
 ;============================================================================
 
@@ -654,8 +769,15 @@ _debug4		tst	-4	;invalid lock specified
 
 ;============================================================================
 
+	IFND slv_Version
 slv_kickname	dc.b	"40068.a1200",0
-	EVEN
+	ELSE
+slv_kickname	dc.w	KICKCRC1200,.a1200-slv_base
+		dc.w	KICKCRC4000,.a4000-slv_base
+		dc.w	0
+.a1200		dc.b	"40068.a1200",0
+.a4000		dc.b	"40068.a4000",0
+	ENDC
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
