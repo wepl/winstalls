@@ -36,6 +36,7 @@ FASTMEMSIZE	= $100000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
+DEBUG
 ;DISKSONBOOT
 HDINIT
 ;HRTMON
@@ -170,7 +171,7 @@ _bootdos
 
 _plde	PL_START
 	PL_S	$20b2,$c8-$b2	;disable DeleteFile
-	PL_W	$168b6,21780	;io buffer size
+	;PL_W	$168b6,21780	;io buffer size
 	;PL_R	$192ec		;check if hd installed
 	;PL_I	$1984c		;largest chip mem
 	;PL_I	$19882		;largest fast mem
@@ -186,7 +187,7 @@ _plde	PL_START
 
 _plen	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
-	PL_W	$16cea,21780	;io buffer size
+	;PL_W	$16cea,21780	;io buffer size
 	PL_PS	$1a10c,_dbffix
 	PL_W	$1a10c+6,$1f4
 	PL_PS	$1a1be,_dbffix
@@ -199,7 +200,7 @@ _plen	PL_START
 
 _plfr	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
-	PL_W	$16cea,21780	;io buffer size
+	;PL_W	$16cea,21780	;io buffer size
 	PL_PS	$1a15e,_dbffix
 	PL_W	$1a15e+6,$1f4
 	PL_PS	$1a210,_dbffix
