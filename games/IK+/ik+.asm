@@ -2,7 +2,7 @@
 ;  :Program.	ik+.asm
 ;  :Contents.	Slave for "IK+"
 ;  :Author.	Wepl
-;  :Version.	$Id: ik+.asm 1.3 2001/07/14 10:14:47 jah Exp jah $
+;  :Version.	$Id: ik+.asm 1.4 2001/08/01 20:50:07 jah Exp jah $
 ;  :History.	22.09.97 initial
 ;		01.10.97 debug key changed because F9 is used in game
 ;		24.11.98 adapted for v8 (obsoletes novbrmove)
@@ -108,12 +108,16 @@ _start	;	A0 = resident loader
 
 _pl	PL_START
 	PL_R	$2475c			;copylock
-	PL_W	$500,0			;stackframe format error
+;	PL_W	$500,0			;stackframe format error
+	PL_P	$1098,_strt
 	PL_R	$1976			;preserve NMI
 	PL_P	$1aaa,_keyb
 	PL_PS	$12bc+$600,_loadhighs
 	PL_PS	$9cde+$600,_savehighs
 	PL_END
+
+_strt		move	#$2000,sr
+		jmp	$ad4
 
 _loadhighs	lea	_savename,a0
 		move.l	_resload,a2
