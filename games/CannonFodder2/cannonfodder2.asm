@@ -2,7 +2,7 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: cf2.asm 1.6 2001/01/10 22:47:58 jah Exp jah $
+;  :Version.	$Id: cf2.asm 1.7 2001/04/28 11:44:03 jah Exp jah $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -17,6 +17,7 @@
 ;		10.01.01 bplcon0 and aga accesses fixed
 ;		20.02.01 support for english crack version reenabled (wrong crc???)
 ;			 one access fault fixed
+;		20.07.03 keyboard fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,7 +74,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.7 "
+		dc.b	"Version 1.8 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -144,7 +145,7 @@ _pl		PL_START
 		PL_L	$77d0,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
 
 		PL_R	$9ec8			;copylock
-		PL_P	$990a,_keyboard		;keyboard int umleiten
+		PL_P	$98a6,_keyboard		;keyboard int umleiten
 		PL_P	$afd6,_Loader
 
 		PL_S	$5fd2,4			;move #$2000,sr
@@ -263,30 +264,50 @@ _spfuck	;	move.w	#-1,$a25ca
 
 ;======================================================================
 
-_keyboard	cmp.b	(_keyexit),d0
+_keyboard	movem.l	d0-d1/a0-a1,-(a7)
+		lea	_ciaa,a0
+		lea	$814e9,a1
+		move.b	(ciasdr,a0),d0
+		move.b	#CIACRAF_RUNMODE|CIACRAF_SPMODE,(ciacra,a0)
+		moveq	#0,d1
+		move.b	d1,(ciasdr,a0)
+		move.b	#$4b,(ciatalo,a0)
+		move.b	d1,(ciatahi,a0)
+		ror.b	#1,d0
+		not.b	d0
+		bpl	.down
+		move.b	(a1),d1
+		eor.b	d0,d1
+		and.b	#$7f,d1
+		bne	.down
+		moveq	#0,d0
+.down		move.b	d0,(a1)
+
+		cmp.b	(_keyexit),d0
 		beq	.exit
 		cmp.b	#$5f,d0			;HELP ?
-		bne	.ret
+		bne	.wait
+	;	move.w	#$4a79,$a2a2e		;enable sound (version 2)
+		move.w	$8155a,d0		;aktuelles team
+		lea	$821c4,a1
+		st	(a1,d0.w)
+		lea	$821ca,a1
+		st	(a1,d0.w)
+		lea	$81f50,a1
+		add.w	d0,a1
+		add.w	d0,a1
+		move.w	#42,(a1)		;grenades
+		move.w	#42,(6,a1)		;bazookas
 
-	;	move.w	#$4a79,$a2a2e	;enable sound (version 2)
-		move.l	a0,-(a7)
-		move.w	$8155a,d0	;aktuelles team
-		lea	$821c4,a0
-		st	(a0,d0.w)
-		lea	$821ca,a0
-		st	(a0,d0.w)
-		lea	$81f50,a0
-		add.w	d0,a0
-		add.w	d0,a0
-		move.w	#42,(a0)	;grenades
-		move.w	#42,(6,a0)	;bazookas
-		move.l	(a7)+,a0
+.wait		btst	#CIAICRB_TA,(ciaicr,a0)
+		bne	.wait
+		clr.b	(ciacra,a0)
+		move.w	#INTF_PORTS,(_custom+intreq)
+		tst.w	(_custom+intreqr)
+		movem.l	(a7)+,_MOVEMREGS
+		rte
 
-.ret		movem.l	(a7)+,d0-d1
-		rte	
-
-.exit		subq.l	#8,a7
-		pea	TDREASON_OK
+.exit		pea	TDREASON_OK
 		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
@@ -414,6 +435,7 @@ _Loader		cmp.w	#3,d0		;list
 ;======================================================================
 
 _buffer		dsb	BUFLEN
+		dc.b	0			;avoid 'illegal args' with whdload prior v16
 
 ;======================================================================
 
