@@ -4,9 +4,10 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: battleisle.asm 0.5 2000/11/26 21:13:41 jah Exp $
+;  :Version.	$Id: speed.asm 1.3 2000/12/12 21:43:04 jah Exp $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
+;		20.02.01 slave is also cacheable, more clear results with NoMMU
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -77,11 +78,11 @@ MEMCOPPER	= $e000
 MEMCHIP		= $f000
 MEMSCREEN	= $10000
 
-nc=WCPUF_Base_NCS|WCPUF_Exp_NCS
-ic=WCPUF_Base_WT|WCPUF_Exp_WT|WCPUF_IC
+nc=WCPUF_Slave_NCS|WCPUF_Base_NCS|WCPUF_Exp_NCS
+ic=WCPUF_Slave_WT|WCPUF_Base_WT|WCPUF_Exp_WT|WCPUF_IC
 bc=ic|WCPUF_BC|WCPUF_SS
 wt=bc|WCPUF_DC
-cb=WCPUF_Base_CB|WCPUF_Exp_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS
+cb=WCPUF_Slave_CB|WCPUF_Base_CB|WCPUF_Exp_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS
 sb=cb|WCPUF_SB|WCPUF_NWA
 
 setcpu	MACRO
