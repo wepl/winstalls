@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.5 2000/01/25 22:01:46 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.6 2000/02/22 22:41:15 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -10,6 +10,7 @@
 ;		20.02.00 problems with Snoop/S on 68060 fixed
 ;		21.02.00 cbswitch added (cop2lc)
 ;		22.02.00 free memory count added
+;		01.03.00 wait in _trd_changedisk removed because deadlocks
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -349,7 +350,7 @@ trd_write	move.b	(_trd_prot,pc),d0
 
 _trd_disk	dc.b	1,2,3,4			;number of diskimage in drive
 _trd_prot	dc.b	WPDRIVES		;protection status
-_trd_chg		dc.b	0			;diskchanged
+_trd_chg	dc.b	0			;diskchanged
 
 trd_motor	moveq	#0,d0
 		bchg	#7,($41,a3)		;motor status
@@ -397,16 +398,14 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 		and.w	#3,d0
 		lea	(_trd_chg,pc),a0
-.wait		btst	d0,(a0)
-		bne	.wait
 		
 		move.l	(4),a6
-		jsr	(_LVOForbid,a6)
+		jsr	(_LVODisable,a6)
 		
 		move.b	d1,(-5,a0,d0.w)
 		bset	d0,(a0)
 		
-		jsr	(_LVOPermit,a6)
+		jsr	(_LVOEnable,a6)
 		
 		movem.l	(a7)+,a6
 		rts
