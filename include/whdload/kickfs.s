@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.11 2003/08/10 14:59:07 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.12 2003/09/01 21:13:57 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -14,6 +14,7 @@
 ;		06.08.03 sanity check for provided locks added (DEBUG)
 ;		09.08.03 ACTION_CURRENT_VOLUME added (JOTD)
 ;		01.09.03 ACTION_EXAMINE_FH fixed (Psygore)
+;		29.04.04 ACTION_CREATE_DIR returns ERROR_OBJECT_EXISTS if exists
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -404,8 +405,19 @@ HD_NumBuffers		= 5
 
 ;---------------
 
-.a_create_dir	moveq	#0,d0
-		move.l	#ERROR_DISK_FULL,d1
+.a_create_dir	bsr	.getarg1
+		move.l	d7,d0			;APTR lock
+		bsr	.getarg2
+		move.l	d7,d1			;BSTR name
+		moveq	#ACCESS_READ,d2		;mode
+		bsr	.lock
+		tst.l	d0
+		beq	.createdir_full
+		bsr	.unlock
+		moveq	#0,d0
+		move.l	#ERROR_OBJECT_EXISTS,d1
+		bra	.reply2
+.createdir_full move.l	#ERROR_DISK_FULL,d1
 		bra	.reply2
 
 ;---------------
