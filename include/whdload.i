@@ -4,12 +4,13 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 12.0 2000/08/07 22:30:54 jah Exp jah $
+;  :Version.	$Id: whdload.i 13.0 2000/12/08 14:36:34 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
 ;		10.07.00 new stuff for whdload v12
 ;		25.11.00 new stuff for whdload v13
+;		13.01.01 some comments spelling errors fixed
 ;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -225,17 +226,17 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 WCPUF_Base	= 3		;BaseMem mask
 WCPUF_Base_NCS	= 0		;BaseMem = non cacheable serialized
 WCPUF_Base_NC	= 1		;BaseMem = non cacheable
-WCPUF_Base_WT	= 2		;BaseMem = cacheable write trough
+WCPUF_Base_WT	= 2		;BaseMem = cacheable write through
 WCPUF_Base_CB	= 3		;BaseMem = cacheable copyback
 WCPUF_Exp	= 12		;ExpMem mask
 WCPUF_Exp_NCS	= 0		;ExpMem = non cacheable serialized
 WCPUF_Exp_NC	= 4		;ExpMem = non cacheable
-WCPUF_Exp_WT	= 8		;ExpMem = cacheable write trough
+WCPUF_Exp_WT	= 8		;ExpMem = cacheable write through
 WCPUF_Exp_CB	= 12		;ExpMem = cacheable copyback
 WCPUF_Slave	= 48		;Slave mask
 WCPUF_Slave_NCS	= 0		;Slave = non cacheable serialized
 WCPUF_Slave_NC	= 16		;Slave = non cacheable
-WCPUF_Slave_WT	= 32		;Slave = cacheable write trough
+WCPUF_Slave_WT	= 32		;Slave = cacheable write through
 WCPUF_Slave_CB	= 48		;Slave = cacheable copyback
 
 	BITDEF WCPU,IC,8	;instruction cache (20-60)
