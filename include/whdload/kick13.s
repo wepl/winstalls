@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.7 2000/03/01 22:14:03 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.9 2000/04/16 16:46:17 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -78,20 +78,13 @@ kick_patch	PL_START
 	ENDC
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
-		PL_PS	$6d86,gfx_snoop1
 		PL_PS	$6d70,gfx_vbserver
+		PL_PS	$6d86,gfx_snoop1
+		PL_PS	$ad5e,gfx_setcoplc
+		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
-		PL_W	$ad60,$180			;strange copperlist stuff
-		PL_W	$ad64,$0			;strange copperlist stuff
-		PL_PS	$ad62,gfx_setcoplc
-	;	PL_W	$aece,0				;color00 $fff -> $000
-	;	PL_W	$aed4,0				;color01 $fff -> $000
-		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
-	;	PL_PS	$aec6,gfx_fix1
-	;	PL_B	$d57a,$66
-	;	PL_I	$d5c2				;gfx_LoadView
-		PL_PS	$d5be,gfx_fix2			;gfx_LoadView
+		PL_PS	$d5be,gfx_fix1			;gfx_LoadView
 	IFD _bootearly
 		PL_P	$284ee,_bootearly
 	ENDC
@@ -122,7 +115,7 @@ kick_patch	PL_START
 		PL_P	$11b0,exec_UserState
 		PL_P	$1696,exec_FindName
 
-		PL_END		
+		PL_END
 
 ;DANGER:
 ;	$3c9ae
@@ -149,7 +142,7 @@ kick_detectchip	move.l	#CHIPMEMSIZE,a3
 kick_hrtmon	move.l	a4,d0
 		bne	.1
 		move.l	a3,d0
-.1		sub.l	#8,d0
+.1		sub.l	#8,d0			;hrt reads too many from stack -> avoid af
 		rts
 	ENDC
 
@@ -332,18 +325,18 @@ gfx_detectdisplay
 		moveq	#1,d0			;ntsc
 .1		rts
 
-gfx_setcoplc	move.w	#-1,(a3)+		;original
+gfx_setcoplc	moveq	#-2,d0
+		move.l	d0,(a3)+
 		move.l	a3,(cop2lc,a4)		;original
 		move.l	a3,(gb_LOFlist,a2)
 		move.l	a3,(gb_SHFlist,a2)
-		addq.l	#2,(a7)
+		move.l	d0,(a3)+
+		clr.w	(color+2,a4)
+		add.l	#$ad72-$ad5e-6,(a7)
 		rts
 
-gfx_fix1	bsr	_waitvb
-		move.w	#DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR,(dmacon,a3)
-		rts
-
-gfx_fix2	move.l	(v_LOFCprList,a1),d0
+	;somewhere there will used a empty view, too stupid
+gfx_fix1	move.l	(v_LOFCprList,a1),d0
 		beq	.s1
 		move.l	d0,a0
 		move.l	(4,a0),(gb_LOFlist,a3)
