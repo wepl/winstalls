@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.23 2001/12/21 12:06:07 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.24 2002/01/05 10:13:50 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -735,9 +735,7 @@ hd_init		lea	-1,a2				;original
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a4				;A4 = expansionbase
 		
-		lea	(.parameterPkt+8,pc),a0
-		lea	(.devicename,pc),a1
-		move.l	a1,-(a0)
+		lea	(.parameterPkt+4,pc),a0
 		lea	(.handlername,pc),a1
 		move.l	a1,-(a0)
 		move.l	a4,a6
@@ -801,7 +799,6 @@ HD_BytesPerBlock	= 512
 	CNOP 0,4
 .volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
 .handlername	dc.b	"DH0",0
-.devicename	dc.b	"whdload.device",0
 .expansionname	dc.b	"expansion.library",0
 	EVEN
 
@@ -931,6 +928,10 @@ HD_BytesPerBlock	= 512
 	STRUCTURE MyLock,fl_SIZEOF
 		LONG	mfl_pos			;position in file
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
+	IFD IOCACHE
+		LONG	mfl_cpos		;fileoffset cache points to
+		LONG	mfl_iocache
+	ENDC
 		LABEL	mfl_SIZEOF
 
 	; conventions for action functions:
@@ -1019,6 +1020,7 @@ HD_BytesPerBlock	= 512
 	;special handling of NULL lock
 .examine_root
 	jmp -5
+	IFEQ 1
 		move.l	a1,d7
 		clr.l	-(a7)
 		move.l	a7,a0
@@ -1031,6 +1033,7 @@ HD_BytesPerBlock	= 512
 		bne	.examine_root2
 		move.l	d7,a1
 		bra	.examine_adj
+	ENDC
 
 ;---------------
 
@@ -1121,14 +1124,16 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_read		move.l	(dp_Arg1,a4),a0		;APTR lock
+.a_read		move.l	(dp_Arg1,a4),a0		;a0 = APTR lock
+	IFND IOCACHE
+	;correct readsize if necessary
 		move.l	(mfl_fib+fib_Size,a0),d0
 		move.l	(mfl_pos,a0),d1		;offset
 		sub.l	d1,d0			;bytes left in file
 		move.l	(dp_Arg3,a4),d3		;bytes to read
 		cmp.l	d0,d3
 		bls	.read_ok
-		move.l	d0,d3
+		move.l	d0,d3			;d3 = readsize
 .read_ok	move.l	d3,d0
 		beq	.reply1			;eof
 		add.l	d0,(mfl_pos,a0)
@@ -1137,6 +1142,97 @@ HD_BytesPerBlock	= 512
 		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0			;bytes read
 		bra	.reply1
+	ELSE
+		move.l	(dp_Arg3,a4),d3		;d3 = readsize
+		moveq	#0,d4			;d4 = readcachesize
+		move.l	(mfl_pos,a0),d5		;d5 = pos
+		move.l	(mfl_cpos,a0),d6	;d6 = cachepos
+		move.l	#IOCACHE,d7		;d7 = IOCACHE
+	;correct readsize if necessary
+		move.l	(mfl_fib+fib_Size,a0),d2
+		sub.l	d5,d2			;d2 = bytes left in file
+		cmp.l	d2,d3
+		bls	.read_ok
+		move.l	d2,d3			;d3 = readsize
+.read_ok	tst.l	d3
+		beq	.read_end		;eof
+		add.l	d3,(mfl_pos,a0)
+	;try from cache
+		tst.l	(mfl_iocache,a0)	;buffer allocated?
+		beq	.read_1
+		cmp.l	d5,d6
+		bhi	.read_1
+		move.l	d7,d0
+		add.l	d6,d0
+		sub.l	d5,d0
+		bls	.read_1
+		move.l	d0,d4			;d4 = readcachesize
+		cmp.l	d4,d3
+		bhi	.read_2
+		move.l	d3,d4
+.read_2		move.l	(mfl_iocache,a0),a0
+		add.l	d5,a0
+		sub.l	d6,a0			;source
+		move.l	(dp_Arg2,a4),a1		;destination
+		move.l	d4,d0
+.read_3		move.b	(a0)+,(a1)+
+		subq.l	#1,d0
+		bne	.read_3
+		add.l	d4,d5
+		sub.l	d4,d2
+		sub.l	d4,d3
+		beq	.read_end
+	;decide if read through cache or direct
+.read_1		cmp.l	d2,d3
+		beq	.read_d			;read remaining/complete file -> doesn't make sense to cache it
+		cmp.l	d7,d3
+		blo	.read_c
+	;read direct
+.read_d		move.l	d3,d0			;length
+		move.l	d5,d1			;offset
+		move.l	(dp_Arg1,a4),a0
+		move.l	(fl_Key,a0),a0		;name
+		move.l	(dp_Arg2,a4),a1		;buffer
+		add.l	d4,a1
+		jsr	(resload_LoadFileOffset,a2)
+		bra	.read_end
+	;read through cache
+.read_c
+	;get memory if necessary
+		move.l	(dp_Arg1,a4),a0
+		move.l	(mfl_iocache,a0),d0
+		bne	.read_c1
+		move.l	d7,d0
+		moveq	#MEMF_ANY,d1
+		jsr	(_LVOAllocMem,a6)
+		move.l	(dp_Arg1,a4),a0
+		move.l	d0,(mfl_iocache,a0)
+		beq	.read_d
+	;read into cache
+.read_c1	move.l	d0,a1			;buffer
+		move.l	(mfl_fib+fib_Size,a0),d0
+		sub.l	d5,d0			;length
+		cmp.l	d7,d0
+		bls	.read_c2
+		move.l	d7,d0			;length
+.read_c2	move.l	d5,d1			;offset
+		move.l	(fl_Key,a0),a0		;name
+		jsr	(resload_LoadFileOffset,a2)
+		move.l	(dp_Arg1,a4),a0
+		move.l	d5,(mfl_cpos,a0)
+	;copy from cache
+		move.l	(mfl_iocache,a0),a0	;source
+		move.l	(dp_Arg2,a4),a1
+		add.l	d4,a1			;destination
+		move.l	d3,d0
+.read_c3	move.b	(a0)+,(a1)+
+		subq.l	#1,d0
+		bne	.read_c3
+	;finish
+.read_end	move.l	d3,d0
+		add.l	d4,d0
+		bra	.reply1
+	ENDC
 
 ;---------------
 
@@ -1273,7 +1369,7 @@ HD_BytesPerBlock	= 512
 		move.l	d0,d4			;D4 = name
 	;get memory for lock
 		move.l	#mfl_SIZEOF,d0
-		move.l	#MEMF_PUBLIC,d1
+		move.l	#MEMF_CLEAR,d1
 		jsr	(_LVOAllocMem,a6)
 		tst.l	d0
 		beq	.lock_nomem
@@ -1288,12 +1384,11 @@ HD_BytesPerBlock	= 512
 		move.l	a4,d0
 		moveq	#0,d1
 	;fill lock structure
-		clr.l	(a4)+			;fl_Link
+		addq.l	#4,a4			;fl_Link
 		move.l	d4,(a4)+		;fl_Key (name)
 		move.l	d2,(a4)+		;fl_Access
 		move.l	a5,(a4)+		;fl_Task (MsgPort)
 		move.l	a3,(a4)+		;fl_Volume
-		clr.l	(a4)+			;mfl_pos
 .lock_quit	movem.l	(a7)+,d4/a4
 .rts		rts
 .lock_notfound	move.l	#mfl_SIZEOF,d0
@@ -1319,8 +1414,19 @@ HD_BytesPerBlock	= 512
 		beq	.rts
 		move.l	d0,a1
 		move.l	(fl_Key,a1),-(a7)	;name
+	IFD IOCACHE
+		move.l	(mfl_iocache,a1),-(a7)
+	ENDC
 		move.l	#mfl_SIZEOF,d0
 		jsr	(_LVOFreeMem,a6)
+	IFD IOCACHE
+		move.l	(a7)+,d0
+		beq	.unlock1
+		move.l	d0,a1
+		move.l	#IOCACHE,d0
+		jsr	(_LVOFreeMem,a6)
+.unlock1
+	ENDC
 		move.l	(a7)+,a1
 		move.l	-(a1),d0
 		jmp	(_LVOFreeMem,a6)
