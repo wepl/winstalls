@@ -1,12 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	powermonger.asm
 ;  :Contents.	Slave for "PowerMonger"
-;  :Author.	BJ
-;  :Version.	$Id: powermonger.asm 1.1 1998/03/16 16:58:59 jah Exp $
+;  :Author.	Wepl
+;  :Version.	$Id: powermonger.asm 1.2 1998/04/23 14:45:17 jah Exp $
 ;  :History.	20.05.96
 ;		09.12.96 reworked for diskimages and clean media
 ;		30.12.96 ws_DontCache removed (WARNING ws_Version is only 1)
 ;		22.04.98 keyboard changed, adapted for new whdload, rework
+;		17.07.02 rework, intro sound fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -16,36 +17,57 @@
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	wart:powermonger/powermonger.slave
-	BOPT	O+ OG+					;enable optimizing
-	BOPT	ODd- ODe-				;disable mul optimizing
-	BOPT	w4-					;disable 64k warnings
-	SUPER
+	OUTPUT	wart:po/powermonger/powermonger.slave
+	BOPT	O+				;enable optimizing
+	BOPT	OG+				;enable optimizing
+	BOPT	ODd-				;disable mul optimizing
+	BOPT	ODe-				;disable mul optimizing
+	BOPT	w4-				;disable 64k warnings
+	SUPER					;disable supervisor warnings
 	ENDC
+
+;DEBUG
 
 ;======================================================================
 
-.base		SLAVE_HEADER				;ws_Security + ws_ID
-		dc.w	6				;ws_Version
+_base		SLAVE_HEADER				;ws_Security + ws_ID
+		dc.w	10				;ws_Version
 		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_NoDivZero	;ws_flags
 		dc.l	$80000				;ws_BaseMemSize
 		dc.l	$4e800				;ws_ExecInstall
-		dc.w	_Start-.base			;ws_GameLoader
+		dc.w	_Start-_base			;ws_GameLoader
 		dc.w	0				;ws_CurrentDir
 		dc.w	0				;ws_DontCache
 _keydebug	dc.b	$58				;ws_keydebug = F9
 _keyexit	dc.b	$59				;ws_keyexit = F10
-_keyexit2	dc.b	$45				;ws_keyexit = ESC
+_expmem		dc.l	0				;ws_ExpMem
+		dc.w	_name-_base			;ws_name
+		dc.w	_copy-_base			;ws_copy
+		dc.w	_info-_base			;ws_info
 
-;======================================================================
+;============================================================================
 
-	IFD	BARFLY
-	DOSCMD	"WDate >T:date"
-		dc.b	"$VER: Powermonger.Slave by Wepl "
-	INCBIN	"T:date"
+	IFD BARFLY
+	IFND	.passchk
+	DOSCMD	"WDate  >T:date"
+.passchk
+	ENDC
+	ENDC
+
+_name		dc.b	"Powermonger",0
+_copy		dc.b	"1990 Bullfrog Productions",0
+_info		dc.b	"installed & fixed by Wepl",10
+		dc.b	"version 1.3 "
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
 		dc.b	0
+_keyexit2	dc.b	$45				;ws_keyexit = ESC
+	IFD DEBUG
+_run_prog_dec	DC.B	'RUN_PROG.dec',0
 	ENDC
 	EVEN
 
@@ -82,6 +104,7 @@ DIR = $400
 		and.w	#~(INTF_INTEN|INTF_PORTS),($a,a1)
 		and.w	#~(INTF_INTEN|INTF_PORTS),($2c2,a1)
 		and.w	#~(INTF_INTEN|INTF_PORTS),($2f4,a1)
+		addq.w	#1,($c16,a1)			;aud1vol
 		jsr	(a1)
 
 	;enable caches
@@ -102,7 +125,6 @@ DIR = $400
 		
 	;load main
 		LEA	(_run_prog),A0
-	;	MOVEA.L	#$00001400,A1
 		MOVEA.L	#$00001000,A1
 		JSR	_Loader
 
@@ -116,6 +138,13 @@ DIR = $400
 .o		ret	$14(a1)
 		jsr	(4,a1)				;decrunch the shit
 .ad
+	IFD DEBUG
+		move.l	#110804,d0
+		lea	$1400,a1
+		lea	_run_prog_dec,a0
+		move.l	_resload,a2
+		jsr	(resload_SaveFile,a2)
+	ENDC
 
 	;keyboard stuff
 		and.w	#~(INTF_INTEN|INTF_PORTS),$142a
@@ -141,7 +170,9 @@ DIR = $400
 	;	ill	$e148				;endlos loop wenn error in decrunching
 	;	bad because will entered in extro
 
-		patch	$1a2d0+$1400,$1a36e+$1400	;insert powermonger-disk
+	;	patch	$1a2d0+$1400,$1a36e+$1400	;insert powermonger-disk
+		move.w	#$4ef9,$1a2d0+$1400
+		move.l	#$1a36e+$1400,$1a2d0+$1400	;insert powermonger-disk
 
 		ret	$1bdfa				;format save-disk
 		ill	$1ac02+$1400
@@ -153,6 +184,8 @@ DIR = $400
 	;	ret	$1ba7e				;loader ??
 	;	ret	$1b910				;init bfd100
 	;	ret	$1a67e+$1400			;check dirlist
+	
+		ret	$1a510+$1400
 
 		Jsr	$1400.W
 		bra	_exit
@@ -260,26 +293,34 @@ _load_dd94	movem.l	d0-a6,-(a7)
 		
 ;--------------------------------
 
-_Loader		movem.l	d1-d2/a0-a1,-(a7)
+_Loader		movem.l	d1-d2/a0-a2,-(a7)
 
 		move.l	(a0)+,d0
 		move.l	(a0),d1
 		move.l	a1,a0				;destination
-		lea	DIR,a1
-.find		add.w	#16,a1
-		cmp.l	(a1),d0
+		lea	DIR,a2
+.find		add.w	#16,a2
+		cmp.l	(a2),d0
 		bne	.find
-		cmp.l	(4,a1),d1
+		cmp.l	(4,a2),d1
 		bne	.find
-		move.w	(8,a1),d0
+		move.w	(8,a2),d0
 		mulu.w	#11*512,d0			;offset
-		move.l	(12,a1),d1			;size
+		move.l	(12,a2),d1			;size
 		move.l	d1,-(a7)
 		moveq	#1,d2				;disk
 		move.l	(_resload),a1
 		jsr	(resload_DiskLoad,a1)
 
-		movem.l	(a7)+,d0-d2/a0-a1		;size returned in d0 !!!
+	IFD DEBUG
+		move.l	a2,a0
+		move.l	(a7),d0
+		move.l	(16,a7),a1
+		move.l	(_resload),a2
+		jsr	(resload_SaveFile,a2)
+	ENDC
+
+		movem.l	(a7)+,d0-d2/a0-a2		;size returned in d0 !!!
 		rts
 ;		bra	_kinit
 
