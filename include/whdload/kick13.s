@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.19 2001/11/10 16:18:48 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.20 2001/11/28 22:57:42 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -763,6 +763,8 @@ HD_BytesPerBlock	= 512
 		dc.l	HD_Cyls-1		;upper cylinder
 		dc.l	5			;buffers
 
+	CNOP 0,4
+.volumename	dc.b	7,"WHDLoad",0		;BSTR (here with the exception that it must be 0-terminated!)
 .handlername	dc.b	"DH0",0
 .devicename	dc.b	"whdload.device",0
 .dosname	dc.b	"dos.library",0
@@ -770,7 +772,7 @@ HD_BytesPerBlock	= 512
 	EVEN
 
 .bootcode	lea	(.dosname,pc),a1
-	illegal
+	;illegal
 		jsr	(_LVOFindResident,a6)
 		move.l	d0,a0
 		move.l	(RT_INIT,a0),a0
@@ -784,8 +786,27 @@ HD_BytesPerBlock	= 512
 		move.l	(4),a6			;A6 = execbase
 		sub.l	a1,a1
 		jsr	(_LVOFindTask,a6)
-		move.l	d0,a0
-		lea	(pr_MsgPort,a0),a5	;A5 = MsgPort
+		move.l	d0,a1
+		lea	(pr_MsgPort,a1),a5	;A5 = MsgPort
+
+	;init volume structure
+		lea	(.volumename,pc),a0
+		move.l	a0,d0
+		lsr.l	#2,d0
+		move.l	d0,-(a7)		;dl_Name
+		clr.l	-(a7)			;dl_unused
+		move.l	#ID_DOS_DISK,-(a7)	;dl_DiskType (is normally 0!)
+		clr.l	-(a7)			;dl_LockList
+		clr.l	-(a7)			;dl_VolumeDate
+		clr.l	-(a7)			;dl_VolumeDate
+		clr.l	-(a7)			;dl_VolumeDate
+		clr.l	-(a7)			;dl_Lock
+		move.l	a5,-(a7)		;dl_Task (MsgPort)
+		move.l	#DLT_VOLUME,-(a7)	;dl_Type
+		clr.l	-(a7)			;dl_Next
+
+		move.l	a7,a3			;A3 = Volume
+		move.l	(_resload,pc),a2	;A2 = resload
 
 	;fetch and reply startup message
 		move.l	a5,a0
@@ -811,12 +832,12 @@ HD_BytesPerBlock	= 512
 		lea	(.action,pc),a0
 .next		movem.w	(a0)+,d0-d1
 		tst.l	d0
-		beq	.notfound
+		beq	.illegal		;unknown packet
 		cmp.l	d0,d2
 		bne	.next
 		jmp	(.action,pc,d1.w)
 
-.notfound	illegal
+.illegal	illegal
 
 ;---------------
 ; reply dos-packet
@@ -838,36 +859,87 @@ HD_BytesPerBlock	= 512
 		jsr	(_LVOPutMsg,a6)
 		bra	.mainloop
 
-.action		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
+.action		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8
+		dc.w	ACTION_FREE_LOCK,.a_free_lock-.action			;f
+		dc.w	ACTION_SET_PROTECT,.a_set_protect-.action		;15
+		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17
+		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f
+		dc.w	ACTION_READ,.a_read-.action				;52
+		dc.w	ACTION_WRITE,.a_write-.action				;57
+		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec
 		dc.w	ACTION_FINDINPUT,.a_findinput-.action			;3ed
+		dc.w	ACTION_FINDOUTPUT,.a_findoutput-.action			;3ee
+		dc.w	ACTION_END,.a_end-.action				;3ef
 		dc.w	0
-		dc.w	ACTION_CURRENT_VOLUME,_a_current_volume-.action
-		dc.w	ACTION_LOCATE_OBJECT,_a_locate_object-.action
-		dc.w	ACTION_RENAME_DISK,_a_rename_disk-.action
-		dc.w	ACTION_FREE_LOCK,_a_free_lock-.action
-		dc.w	ACTION_DELETE_OBJECT,_a_delete_object-.action
-		dc.w	ACTION_RENAME_OBJECT,_a_rename_object-.action
-		dc.w	ACTION_COPY_DIR,_a_copy_dir-.action
-		dc.w	ACTION_SET_PROTECT,_a_set_protect-.action
-		dc.w	ACTION_CREATE_DIR,_a_create_dir-.action
-		dc.w	ACTION_EXAMINE_OBJECT,_a_examine_object-.action
-		dc.w	ACTION_EXAMINE_NEXT,_a_examine_next-.action
-		dc.w	ACTION_INFO,_a_info-.action
-		dc.w	ACTION_FLUSH,_a_flush-.action
-		dc.w	ACTION_SET_COMMENT,_a_set_comment-.action
-		dc.w	ACTION_PARENT,_a_parent-.action
-		dc.w	ACTION_SET_DATE,_a_set_date-.action
-		dc.w	ACTION_FINDUPDATE,_a_find_update-.action
-		dc.w	ACTION_FINDOUTPUT,_a_find_output-.action
-		dc.w	ACTION_END,_a_end-.action
-		dc.w	ACTION_SEEK,_a_seek-.action
-		dc.w	ACTION_IS_FILESYSTEM,_a_is_filesystem-.action
-		dc.w	ACTION_READ,_a_read-.action
-		dc.w	ACTION_WRITE,_a_write-.action
 
-; conventions for action functions:
-; IN:	a4 = packet
+	;file locking is not implemented! no locklist is used
+	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
+	
+	STRUCTURE MyLock,fl_SIZEOF
+		LONG	mfl_pos		;position in file
+		LONG	mfl_len		;length of file
+		LABEL	mfl_SIZEOF
+
+MAXFILENAME = 96	;maximum length including path!
+
+	; conventions for action functions:
+	; IN:	a2 = resload
+	;	a3 = volume node
+	;	a4 = packet
+	;	a5 = MsgPort
+	;	a6 = execbase
+
+.a_locate_object
+		bsr	.getarg1
+		move.l	d7,d0
+		bsr	.getarg2
+		move.l	d7,d1
+		move.l	(dp_Arg3,a4),d2
+		bsr	.lock
+		lsr.l	#2,d0			;APTR > BPTR
+		bra	.reply2
+
+.a_free_lock	bsr	.getarg1
+		move.l	d7,d0
+		bsr	.unlock
+		moveq	#DOSTRUE,d0
+		bra	.reply1
+
+.a_examine_object
+		bsr	.getarg1
+		move.l	d7,a0			;a0 = APTR lock
+		bsr	.getarg2
+		move.l	d7,a1			;a1 = APTR fib
+		move.l	a0,d0
+		beq	.examine_root
+		moveq	#ST_FILE,d0
+		move.l	d0,(fib_DirEntryType,a1)
+		move.l	d0,(fib_EntryType,a1)
+		clr.l	(fib_Protection,a1)
+		move.l	(mfl_len,a0),(fib_Size,a1)
+		clr.b	(fib_Comment,a1)
+		move.l	(fl_Key,a0),a0
+.examine_reset	moveq	#-1,d1
+.examine_cnt	cmp.b	#"/",(a0)
+		beq	.examine_reset
+		addq.l	#1,d1
+		tst.b	(a0)+
+		bne	.examine_cnt
+		sub.l	d1,a0
+		subq.l	#1,a0
+		move.b	d1,(a1)+
+.examine_name	lea	(fib_FileName,a1),a1
+.examine_copy	move.b	(a0)+,(a1)+
+		bne	.examine_copy
+		moveq	#DOSTRUE,d0
+		bra	.reply1
+.examine_root	moveq	#ST_USERDIR,d0
+		move.l	d0,(fib_DirEntryType,a1)
+		move.l	d0,(fib_EntryType,a1)
+		clr.b	(fib_Comment,a1)
+		lea	(.volumename,pc),a0
+		bra	.examine_name
 
 .a_disk_info	move.l	(dp_Arg1,a4),a0
 		add.l	a0,a0
@@ -879,40 +951,256 @@ HD_BytesPerBlock	= 512
 		move.l	#HD_NumBlocksUsed,(a0)+	;id_NumBlocksUsed
 		move.l	#HD_BytesPerBlock,(a0)+	;id_BytesPerBlock
 		move.l	#ID_DOS_DISK,(a0)+	;id_DiskType
-		clr.l	(a0)+			;id_VolumeNode
+		move.l	a3,d0
+		lsr.l	#2,d0
+		move.l	d0,(a0)+		;id_VolumeNode
 		clr.l	(a0)+			;id_InUse
 
+.a_set_protect
 .a_inhibit	moveq	#-1,d0
 		bra	.reply1
 
-_a_findinput
+;---------------
 
-_a_current_volume
-_a_rename_disk
-_a_is_filesystem
-_a_locate_object
-_a_free_lock
-_a_delete_object
-_a_rename_object
-_a_copy_dir
-_a_set_protect
-_a_create_dir
-_a_examine_object
-_a_examine_next
-_a_info
-_a_flush
-_a_set_comment
-_a_parent
-_a_set_date
-_a_find_update
-_a_find_output
-_a_end
-_a_seek
-_a_read
-_a_write
-		move.l	#DOSFALSE,(dp_Res1,a0)
-		move.l	#ERROR_NOT_IMPLEMENTED,(dp_Res2,a0)
+.a_read		move.l	(dp_Arg1,a4),a0		;APTR lock
+		move.l	(mfl_len,a0),d0
+		move.l	(mfl_pos,a0),d1		;offset
+		sub.l	d1,d0			;bytes left in file
+		move.l	(dp_Arg3,a4),d3		;bytes to read
+		cmp.l	d0,d3
+		bls	.read_ok
+		move.l	d0,d3
+.read_ok	move.l	d3,d0
+		beq	.reply1			;eof
+		add.l	d0,(mfl_pos,a0)
+		move.l	(fl_Key,a0),a0		;name
+		move.l	(dp_Arg2,a4),a1		;buffer
+		jsr	(resload_LoadFileOffset,a2)
+		move.l	d3,d0			;bytes read
+		bra	.reply1
+
+;---------------
+
+.a_write	move.l	(dp_Arg1,a4),a0		;APTR lock
+		move.l	(dp_Arg3,a4),d0		;len
+		move.l	(mfl_pos,a0),d1		;offset
+		move.l	d1,d2
+		add.l	d0,d2
+		move.l	d2,(mfl_pos,a0)
+		cmp.l	(mfl_len,a0),d2
+		bls	.write1
+		move.l	d2,(mfl_len,a0)		;new length
+.write1		move.l	d0,d3
+		move.l	(fl_Key,a0),a0		;name
+		move.l	(dp_Arg2,a4),a1		;buffer
+		jsr	(resload_SaveFileOffset,a2)
+		move.l	d3,d0			;bytes written
+		bra	.reply1
+
+;---------------
+
+.a_findinput
+.a_findupdate
+	;check exist and lock it
+		bsr	.getarg2
+		move.l	d7,d0			;APTR lock
+		bsr	.getarg3
+		move.l	d7,d1			;BSTR name
+		moveq	#ACCESS_READ,d2		;mode
+		bsr	.lock
+		tst.l	d0			;APTR lock
+		beq	.reply2
+	;init fh
+		bsr	.getarg1
+		move.l	d7,a0			;fh
+		move.l	d0,(fh_Arg1,a0)		;using the lock we refer the filename later
+	;return
+		moveq	#DOSTRUE,d0
+		bra	.reply1
+		
+.a_findoutput	bsr	.getarg2
+		move.l	d7,d0			;APTR lock
+		bsr	.getarg3
+		move.l	d7,d1			;BSTR name
+		bsr	.buildname
+		move.l	d0,d2			;d2 = name
+		beq	.reply2
+	;create an empty file
+		move.l	d2,a0
+		sub.l	a1,a1
+		moveq	#0,d0
+		jsr	(resload_SaveFile,a2)
+	;free the name
+		move.l	d2,a1
+		move.l	#MAXFILENAME,d0
+		jsr	(_LVOFreeMem,a6)
+		bra	.a_findupdate
+
+;---------------
+
+.a_end		move.l	(dp_Arg1,a4),d0		;APTR lock
+		bsr	.unlock
+		moveq	#DOSTRUE,d0
+		bra	.reply1
+
+;---------------
+; these functions get the respective arg converted from a BPTR to a APTR in D7
+
+.getarg1	move.l	(dp_Arg1,a4),d7
+		lsl.l	#2,d7
 		rts
+.getarg2	move.l	(dp_Arg2,a4),d7
+		lsl.l	#2,d7
+		rts
+.getarg3	move.l	(dp_Arg3,a4),d7
+		lsl.l	#2,d7
+		rts
+
+;---------------
+; lock a disk object
+; IN:	d0 = APTR lock
+;	d1 = BSTR name
+;	d2 = LONG mode
+; OUT:	d0 = APTR lock
+;	d1 = LONG errcode
+
+.lock		movem.l	d3-d4,-(a7)
+	;get name
+		bsr	.buildname
+		tst.l	d0
+		beq	.lock_quit
+		move.l	d0,d4			;D4 = name
+	;check exist
+		move.l	d4,a0
+		jsr	(resload_GetFileSize,a2)
+		move.l	d0,d3			;D3 = length
+		clr.l	-(a7)
+		clr.l	-(a7)
+		pea	WHDLTAG_IOERR_GET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		addq.l	#4,a7
+		tst.l	(a7)
+		addq.l	#8,a7
+		bne	.lock_notfound
+	;get memory for lock
+		move.l	#mfl_SIZEOF,d0
+		move.l	#MEMF_PUBLIC,d1
+		jsr	(_LVOAllocMem,a6)
+		tst.l	d0
+		beq	.lock_nomem
+	;fill lock structure
+		move.l	d0,a0
+		clr.l	(a0)+			;fl_Link
+		move.l	d4,(a0)+		;fl_Key (name)
+		move.l	d2,(a0)+		;fl_Access
+		move.l	a5,(a0)+		;fl_Task (MsgPort)
+		move.l	a3,(a0)+		;fl_Volume
+		clr.l	(a0)+			;mfl_pos
+		move.l	d3,(a0)+		;mfl_len
+.lock_quit	movem.l	(a7)+,d3-d4
+.rts		rts
+.lock_notfound	move.l	#ERROR_OBJECT_NOT_FOUND,d1
+		bra	.lock_err
+.lock_nomem	move.l	#ERROR_NO_FREE_STORE,d1
+	;on error free the name
+.lock_err	move.l	d1,-(a7)
+		move.l	#MAXFILENAME,d0
+		move.l	d4,a1
+		jsr	(_LVOFreeMem,a6)
+		move.l	(a7)+,d1
+		moveq	#DOSFALSE,d0
+		bra	.lock_quit
+
+;---------------
+; free a lock
+; IN:	d0 = APTR lock
+; OUT:	-
+
+.unlock		tst.l	d0
+		beq	.rts
+		move.l	d0,a1
+		move.l	(fl_Key,a1),-(a7)	;name
+		move.l	#mfl_SIZEOF,d0
+		jsr	(_LVOFreeMem,a6)
+		move.l	(a7)+,a1
+		move.l	#MAXFILENAME,d0
+		jmp	(_LVOFreeMem,a6)
+
+;---------------
+; build name for disk object
+; IN:	d0 = APTR lock (can represent a directory or a file)
+;	d1 = BSTR name (an object name relative to the lock, may contain assign or volume in front)
+; OUT:	d0 = APTR name (size=MAXFILENAME, must be freed via exec.FreeMem)
+;	d1 = LONG errcode
+
+.buildname	movem.l	d2-d4/a2,-(a7)
+		move.l	d0,d3			;d3 = lock
+		move.l	d1,d4			;d4 = name
+	;allocate memory for object name
+		move.l	#MAXFILENAME,d0
+		move.l	#MEMF_PUBLIC,d1
+		jsr	(_LVOAllocMem,a6)
+		tst.l	d0			;d0 = new object memory
+		beq	.buildname_nomem
+		move.l	d0,a0			;a0 = new object name
+		move.l	#MAXFILENAME,d2		;d2 = space left
+	;copy path/object from lock
+		tst.l	d3
+		beq	.buildname_nolock
+		move.l	d3,a1
+		move.l	(fl_Key,a1),a1		;fl_Key points to the object name
+		IFD DEBUG
+		cmp.l	#$400,a1
+		blo	.illegal
+		ENDC
+.buildname_cp1	move.b	(a1)+,(a0)+		;no size check necessary!
+		bne	.buildname_cp1
+		subq.l	#1,a0			;terminator
+		sub.l	a0,d2
+		add.l	d0,d2			;update space left
+	;append component seperator
+		tst.l	d4			;is there a name component?
+		beq	.buildname_nolock
+		move.b	#"/",(a0)+
+		subq.l	#1,d2
+.buildname_nolock
+	;append name
+		tst.l	d4
+		beq	.buildname_ok
+		move.l	d4,a1			;BSTR
+		moveq	#0,d1
+		move.b	(a1)+,d1		;length
+		IFD DEBUG
+		beq	.illegal
+		ENDC
+	;remove any "xxx:"
+		lea	(a1,d1.l),a2		;end
+.buildname_col	cmp.b	#":",-(a2)
+		beq	.buildname_fc
+		cmp.l	a1,a2
+		bne	.buildname_col
+		subq.l	#1,a2
+.buildname_fc	addq.l	#1,a2
+		sub.l	a2,d1
+		add.l	a1,d1
+		move.l	a2,a1
+	;add the name
+		sub.l	d1,d2			;enough space left?
+		bls	.illegal
+.buildname_cp2	move.b	(a1)+,(a0)+
+		subq.l	#1,d1
+		bne	.buildname_cp2
+.buildname_ok	clr.b	(a0)			;terminate string
+		IFD DEBUG
+		cmp.l	#MAXFILENAME,d2		;empty string?
+		beq	.illegal
+		ENDC
+.buildname_quit	movem.l	(a7)+,d2-d4/a2
+		rts
+.buildname_nomem
+		move.l	#ERROR_NO_FREE_STORE,d1
+		bra	.buildname_quit
 
 	ENDC
 
