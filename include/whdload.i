@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Feodorstraﬂe 8, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 14.5 2001/09/23 09:55:05 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 15.1 2002/08/08 22:51:58 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -15,7 +15,8 @@
 ;		15.04.01 FAILMSG added
 ;		29.04.01 resload_Relocate tags added
 ;		09.12.01 v15 stuff added
-;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
+;		20.08.02 WHDLTAG_ALIGN added
+;  :Copyright.	© 1996-2002 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;---------------------------------------------------------------------------*
@@ -145,6 +146,8 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  ENUM	TAG_USER+$8100000
  EITEM	WHDLTAG_CHIPPTR		;relocate MEMF_CHIP hunks to this address
  EITEM	WHDLTAG_FASTPTR		;relocate MEMF_FAST hunks to this address
+; version 15.1
+ EITEM	WHDLTAG_ALIGN		;round up hunk lengths to the given boundary
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
