@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.6 2003/04/06 20:30:28 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.7 2003/04/07 06:51:54 wepl Exp $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -10,12 +10,12 @@
 ;			 deleting of directories works clean
 ;			 changes by JOTD merged
 ;		04.04.03 various changes for kick31
+;		11.07.03 relative object names now supported (e.g. "dh0:s//c/info")
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
-;  :To Do.	.buildname: support for relative paths
-;		more dos packets (maybe)
+;  :To Do.	more dos packets (maybe)
 ;---------------------------------------------------------------------------*
 
 	INCLUDE	lvo/expansion.i
@@ -579,7 +579,7 @@ HD_NumBuffers		= 5
 .read_ok	tst.l	d3
 		beq	.read_end			;eof
 		add.l	d3,(mfl_pos,a0)
-	IFD _bootdos
+	IFD BOOTDOS
 	;special files
 		move.l	(fl_Key,a0),a0			;name
 		bsr	.specialfile
@@ -604,7 +604,7 @@ HD_NumBuffers		= 5
 		jsr	(resload_LoadFileOffset,a2)
 	;finish
 .read_end	move.l	d3,d0				;bytes read
-	IFD _cb_dosRead
+	IFD CBDOSREAD
 		movem.l	d0-a6,-(a7)
 		move.l	(dp_Arg1,a4),a0
 		move.l	(mfl_pos,a0),d1
@@ -692,7 +692,7 @@ HD_NumBuffers		= 5
 	;finish
 .read_end	move.l	d3,d0
 		add.l	d4,d0
-	IFD _cb_dosRead
+	IFD CBDOSREAD
 		movem.l	d0-a6,-(a7)
 		move.l	(dp_Arg1,a4),a0
 		move.l	(mfl_pos,a0),d1
@@ -957,7 +957,7 @@ HD_NumBuffers		= 5
 		beq	.lock_nomem
 		move.l	d0,a4			;A4 = myfilelock
 	;special
-	IFD _bootdos
+	IFD BOOTDOS
 		move.l	d4,a0
 		bsr	.specialfile
 		tst.l	d0
@@ -1077,11 +1077,12 @@ HD_NumBuffers		= 5
 		move.l	#MEMF_ANY,d1
 		jsr	(_LVOAllocMem,a6)
 		tst.l	d0
-		beq	.buildname_nomem
+		beq	.buildname_mem
 		move.l	d0,a0
 		move.l	d3,(a0)+
 		move.l	a0,d0			;d0 = new object memory
 	;copy name
+		moveq	#"/",d3			;d3 = "/"
 		move.l	d4,a1
 		move.l	d6,d1
 		beq	.buildname_name
@@ -1090,8 +1091,8 @@ HD_NumBuffers		= 5
 		bne	.buildname_cp
 	;add seperator
 		tst.l	d7
-		beq	.buildname_name
-		move.b	#"/",(a0)+
+		beq	.buildname_ok
+		move.b	d3,(a0)+
 	;copy path
 .buildname_name	move.l	d5,a1
 		move.l	d7,d1
@@ -1099,15 +1100,52 @@ HD_NumBuffers		= 5
 .buildname_cn	move.b	(a1)+,(a0)+
 		subq.l	#1,d1
 		bne	.buildname_cn
-	;finish
 .buildname_ok	clr.b	(a0)			;terminate
+	;check for "//" (double slash) and trailing slash's
+		move.l	d0,a0
+		move.l	d0,a1
+		cmp.b	(a0),d3
+		beq	.buildname_inv		;must not start with a "/"
+.buildname_ds1	move.b	(a0)+,d1
+		beq	.buildname_ds3
+		cmp.b	d3,d1
+		bne	.buildname_ds2
+		bset	#0,d7			;indicate slash
+		beq	.buildname_ds3
+	;two slash
+		subq.l	#1,a1			;skip already written slash
+		cmp.l	a1,d0
+		bhs	.buildname_inv		;already at beginning?
+.buildname_ss	cmp.b	-(a1),d3
+		beq	.buildname_ds3
+		cmp.l	a1,d0
+		bne	.buildname_ss
+		bra	.buildname_ds1
+	;copy
+.buildname_ds2	sf	d7			;no slash
+.buildname_ds3	move.b	d1,(a1)+
+		bne	.buildname_ds1
+		tst.b	d7
+		beq	.buildname_sok
+	;trailing slash
+		subq.l	#2,a1			;skip already written slash and 0
+		cmp.l	a1,d0
+		bhs	.buildname_inv		;already at beginning?
+.buildname_ts1	cmp.b	-(a1),d3
+		beq	.buildname_ts2
+		cmp.l	a1,d0
+		bne	.buildname_ts1
+.buildname_ts2	clr.b	(a1)
+.buildname_sok
+	;finish
 		moveq	#0,d1			;errorcode
 .buildname_quit	movem.l	(a7)+,d3-d7
 		rts
 
-.buildname_nomem
-		moveq	#DOSFALSE,d0
-		move.l	#ERROR_NO_FREE_STORE,d1
+.buildname_inv	move.l	#ERROR_OBJECT_NOT_FOUND,d1
+		bra	.buildname_err
+.buildname_mem	move.l	#ERROR_NO_FREE_STORE,d1
+.buildname_err	moveq	#DOSFALSE,d0
 		bra	.buildname_quit
 
 ;---------------
@@ -1116,7 +1154,7 @@ HD_NumBuffers		= 5
 ; OUT:	d0 = APTR filedata
 ;	d1 = LONG filelength
 
-	IFD _bootdos
+	IFD BOOTDOS
 .specialfile
 		lea	(bootfile_ss,pc),a1
 		move.l	a1,d0
@@ -1157,7 +1195,7 @@ _dosname	dc.b	"dos.library",0
 
 ;---------------
 
-	IFD _bootdos
+	IFD BOOTDOS
 	IFND BOOTFILENAME
 BOOTFILENAME	MACRO
 		dc.b	"WHDBoot.exe"
