@@ -4,9 +4,10 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straße 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 10.5 2000/01/23 12:16:16 jah Exp jah $
+;  :Version.	$Id: whdload.i 10.5 2000/01/25 22:08:51 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
+;		09.03.00 new stuff for whdload v11
 ;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -109,6 +110,8 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
  EITEM	WHDLTAG_REVISION_GET	;get WHDLoad minor version number
  EITEM	WHDLTAG_BUILD_GET	;get WHDLoad build number
  EITEM	WHDLTAG_TIME_GET	;get current time and date
+; version 11
+ EITEM	WHDLTAG_BPLCON0_GET	;get system bplcon0
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
@@ -194,6 +197,11 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 ; version 9
 	BITDEF WHDL,EmulTrapV,8	;forward "trapv" exceptions to the handler
 				;of the installed program
+; version 11
+	BITDEF WHDL,EmulChk,9	;forward "chk, chk2" exceptions to the handler
+				;of the installed program
+	BITDEF WHDL,EmulPriv,10	;forward 'privilege violation' exceptions to
+				;the handler of the installed program
 
 ;=============================================================================
 ; properties for resload_SetCPU
@@ -280,7 +288,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; IN :	-
 		; OUT :	-
 	ULONG	resload_GetFileSize
-		; get size of file
+		; get size of a file
 		; IN :	a0 = CPTR   filename
 		; OUT :	d0 = ULONG  size of file
 	ULONG	resload_DiskLoad
@@ -390,6 +398,25 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;	a1 = APTR   destination address
 		; OUT :	-
 
+******* the following functions require ws_Version >= 11
+
+	ULONG	resload_LoadKick
+		; load kickstart image
+		; IN :	d0 = ULONG  length of image
+		;	d1 = UWORD  crc16 of image
+		;	a0 = CPTR   basename of image
+		; OUT :	-
+	ULONG	resload_Delta
+		; apply wdelta
+		; IN :	a0 = APTR   src data
+		;	a1 = APTR   dest data
+		;	a2 = APTR   wdelta data
+		; OUT :	-
+	ULONG	resload_GetFileSizeDec
+		; get size of a packed file
+		; IN :	a0 = CPTR   filename
+		; OUT :	d0 = ULONG  size of file
+
 	LABEL	resload_SIZEOF
 
 ******* compatibility for older slave sources:
@@ -412,6 +439,9 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_B			;write byte to specified address
 	EITEM	PLCMD_W			;write word to specified address
 	EITEM	PLCMD_L			;write long to specified address
+; version 11
+	EITEM	PLCMD_A			;write address which is calculated as
+					;base + arg to specified address
 
 ;=============================================================================
 ; macros to build patchlist
@@ -469,6 +499,13 @@ PL_W		MACRO			;write word
 
 PL_L		MACRO			;write long
 	PL_CMDADR PLCMD_L,\1
+	dc.l	\2			;data to write
+		ENDM
+
+; version 11
+
+PL_A		MACRO			;write address (base+arg)
+	PL_CMDADR PLCMD_A,\1
 	dc.l	\2			;data to write
 		ENDM
 

@@ -11,6 +11,10 @@
 ;		21.02.00 cbswitch added (cop2lc)
 ;		22.02.00 free memory count added
 ;		01.03.00 wait in _trd_changedisk removed because deadlocks
+;		09.03.00 adapted for whdload v11
+;		17.03.00 most stuff from SetPatch 1.38 added
+;		20.03.00 some fixes for 68060 and snoop
+;		16.04.00 loadview fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,8 +23,10 @@
 ;---------------------------------------------------------------------------*
 
 	INCLUDE	lvo/exec.i
+	INCLUDE	lvo/graphics.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
+	INCLUDE	graphics/gfxbase.i
 
 ;============================================================================
 
@@ -38,61 +44,20 @@ _boot		lea	(_resload,pc),a1
 		jsr	(resload_Control,a5)
 	
 	;load kickstart
-		lea	(_kick,pc),a0
-		move.l	(_expmem,pc),a1
-		move.l	a1,a4				;A4 = kickstart
-		jsr	(resload_LoadFileDecrunch,a5)
-		cmp.l	#KICKSIZE,d0
-		bne	.wrongkick
-		move.l	a4,a0
-		jsr	(resload_CRC16,a5)
-		cmp.w	#$f9e3,d0
-		bne	.wrongkick
-
-	;load relocation table
-		lea	(_rtb,pc),a0
-		lea	($400),a1
-		move.l	a1,a2				;A2 = rtb
-		jsr	(resload_LoadFileDecrunch,a5)
-		
-	;relocate the kickstart
-		addq.l	#4,a2				;skip kick-chksum
-		move.l	#$fc0000,d2
-		sub.l	a4,d2
-		moveq	#0,d1
-		bra	.1
-
-.add		add.l	d0,d1
-.2		sub.l	d2,(a4,d1.l)
-		moveq	#0,d0
-		move.b	(a2)+,d0
-		bne	.add
-		move.l	a2,d3
-		btst	#0,d3
-		beq	.3
-		addq.l	#1,a2
-.3		move.w	(a2)+,d0
-		bne	.add
-.1		move.l	(a2)+,d0
-		bpl	.add
-
-		asr.l	#2,d2
-		bra	.4
-.5		sub.l	d2,(a4,d1.l)
-.4		move.l	(a2)+,d1
-		bne	.5
+		move.l	#KICKSIZE,d0			;length
+		move.w	#$f9e3,d1			;crc16
+		lea	(_kick,pc),a0			;name
+		jsr	(resload_LoadKick,a5)
 		
 	;patch the kickstart
 		lea	(kick_patch,pc),a0
-		move.l	a4,a1
+		move.l	(_expmem,pc),a1
 		jsr	(resload_Patch,a5)
 
 	;call
-	;	jmp	(2,a4)				;original entry
-		jmp	($fe,a4)			;this entry saves some patches
-
-.wrongkick	pea	TDREASON_WRONGVER
-		jmp	(resload_Abort,a5)
+		move.l	(_expmem,pc),a0
+	;	jmp	(2,a0)				;original entry
+		jmp	($fe,a0)			;this entry saves some patches
 
 kick_patch	PL_START
 		PL_W	$132,0				;color00 $444 -> $000
@@ -107,19 +72,26 @@ kick_patch	PL_START
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$422,exec_Supervisor
+		PL_I	$3012				;exec_Alert
 	IFD MEMFREE
 		PL_P	$1826,exec_AllocMem
 	ENDC
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
+		PL_PS	$6d86,gfx_snoop1
 		PL_PS	$6d70,gfx_vbserver
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
-		PL_W	$aece,0				;color00 $fff -> $000
-		PL_W	$aed4,0				;color01 $fff -> $000
+		PL_W	$ad60,$180			;strange copperlist stuff
+		PL_W	$ad64,$0			;strange copperlist stuff
+		PL_PS	$ad62,gfx_setcoplc
+	;	PL_W	$aece,0				;color00 $fff -> $000
+	;	PL_W	$aed4,0				;color01 $fff -> $000
+		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
 	;	PL_PS	$aec6,gfx_fix1
 	;	PL_B	$d57a,$66
-	;	PL_I	$d568
+	;	PL_I	$d5c2				;gfx_LoadView
+		PL_PS	$d5be,gfx_fix2			;gfx_LoadView
 	IFD _bootearly
 		PL_P	$284ee,_bootearly
 	ENDC
@@ -141,6 +113,14 @@ kick_patch	PL_START
 		
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3c9b6,dos_1
+
+	;the following stuff is from SetPatch 1.38
+		PL_PS	$582c,gfx_MrgCop
+		PL_PS	$7f66,gfx_SetFont
+		PL_P	$7fa6,gfx_SetSoftStyle
+		PL_P	$195a,exec_AllocEntry
+		PL_P	$11b0,exec_UserState
+		PL_P	$1696,exec_FindName
 
 		PL_END		
 
@@ -240,6 +220,91 @@ exec_AllocMem	movem.l	d0-d1/a0-a1,-(a7)
 		rts
 	ENDC
 
+exec_AllocEntry	movem.l	d2/d3/a2-a4,-(sp)
+		movea.l	a0,a2
+		moveq	#0,d3
+		move.w	(14,a2),d3
+		move.l	d3,d0
+		lsl.l	#3,d0
+		addi.l	#$10,d0
+		move.l	#$10000,d1
+		jsr	(-$C6,a6)
+		movea.l	d0,a3
+		movea.l	d0,a4
+		tst.l	d0
+		beq.b	.BD0
+		move.w	d3,(14,a3)
+		lea	($10,a2),a2
+		lea	($10,a3),a3
+		moveq	#0,d2
+.B78		move.l	(0,a2),d1
+		move.l	(4,a2),d0
+		move.l	d0,(4,a3)
+		beq.b	.B8E
+		jsr	(_LVOAllocMem,a6)
+		tst.l	d0
+		beq.b	.BA4
+.B8E		move.l	d0,(0,a3)
+		addq.l	#8,a2
+		addq.l	#8,a3
+		addq.w	#1,d2
+		subq.l	#1,d3
+		bne.b	.B78
+		move.l	a4,d0
+.B9E		movem.l	(sp)+,d2/d3/a2-a4
+		rts
+
+.BA4		subq.w	#1,d2
+		bmi.b	.BB8
+		subq.l	#8,a3
+		movea.l	(0,a3),a1
+		move.l	(4,a3),d0
+		jsr	(_LVOFreeMem,a6)
+		bra.b	.BA4
+
+.BB8		moveq	#0,d0
+		move.w	(14,a4),d0
+		lsl.l	#3,d0
+		addi.l	#$10,d0
+		movea.l	a4,a1
+		jsr	(_LVOFreeMem,a6)
+		move.l	(0,a2),d0
+.BD0		bset	#$1F,d0
+		bra.b	.B9E
+
+exec_UserState	move.l	(sp)+,d1
+		move.l	sp,usp
+		movea.l	d0,sp
+		movea.l	a5,a0
+		lea	(.B18,pc),a5
+		jmp	(_LVOSupervisor,a6)
+
+.B18		movea.l	a0,a5
+		move.l	d1,(2,sp)
+		andi.w	#$DFFF,(sp)
+		rte
+
+exec_FindName	move.l	a2,-(sp)
+		movea.l	a0,a2
+		move.l	a1,d1
+		move.l	(a2),d0
+		beq.b	.FDC
+.FBE		movea.l	d0,a2
+		move.l	(a2),d0
+		beq.b	.FDC
+		tst.l	(10,a2)
+		beq.b	.FBE
+		movea.l	(10,a2),a0
+		movea.l	d1,a1
+.FD0		cmpm.b	(a0)+,(a1)+
+		bne.b	.FBE
+		tst.b	(-1,a0)
+		bne.b	.FD0
+		move.l	a2,d0
+.FDC		movea.l	d1,a1
+		movea.l	(sp)+,a2
+		rts
+
 ;============================================================================
 
 gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
@@ -249,6 +314,11 @@ gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
 
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
 		jmp	(a0)
+
+	;move (custom),(cia) does not work with Snoop/S on 68060
+gfx_snoop1	move.b	(vhposr,a0),d0
+		move.b	d0,(ciatodlow,a6)
+		rts
 
 gfx_detectgenlock
 		moveq	#0,d0
@@ -262,8 +332,92 @@ gfx_detectdisplay
 		moveq	#1,d0			;ntsc
 .1		rts
 
+gfx_setcoplc	move.w	#-1,(a3)+		;original
+		move.l	a3,(cop2lc,a4)		;original
+		move.l	a3,(gb_LOFlist,a2)
+		move.l	a3,(gb_SHFlist,a2)
+		addq.l	#2,(a7)
+		rts
+
 gfx_fix1	bsr	_waitvb
 		move.w	#DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR,(dmacon,a3)
+		rts
+
+gfx_fix2	move.l	(v_LOFCprList,a1),d0
+		beq	.s1
+		move.l	d0,a0
+		move.l	(4,a0),(gb_LOFlist,a3)
+.s1		move.l	(v_SHFCprList,a1),d0
+		beq	.s2
+		move.l	d0,a0
+		move.l	(4,a0),(gb_SHFlist,a3)
+.s2		add.l	#$d5d2-$d5be-6,(a7)
+		rts
+
+gfx_MrgCop	move.w	($10,a1),d0
+		move.w	($9E,a6),d1
+		eor.w	d1,d0
+		andi.w	#4,d0
+		beq.b	.F58
+		and.w	($10,a1),d0
+		beq.b	.F58
+		movem.l	a2/a3,-(sp)
+		movea.l	a1,a2
+		movea.l	a1,a3
+.F2E		move.l	(a3),d0
+		beq.b	.F52
+		movea.l	d0,a3
+		move.w	($20,a3),d0
+		move.w	#$2000,d1
+		and.w	d0,d1
+		beq.b	.F2E
+		move.w	#4,d1
+		and.w	d0,d1
+		beq.b	.F2E
+		movea.l	a2,a0
+		movea.l	a3,a1
+		jsr	(_LVOMakeVPort,a6)
+		bra.b	.F2E
+.F52		movea.l	a2,a1
+		movem.l	(sp)+,a2/a3
+.F58
+		move.l	a1,-(a7)		;original
+		pea	(.ret,pc)
+		move.l	(8,a7),-(a7)
+		add.l	#-6-$582c+$a5b4,(a7)
+		rts
+		
+.ret		addq.l	#8,a7
+		rts
+
+gfx_SetFont	move.l	a0,d0
+		beq.b	.FAC
+		move.l	a1,d0
+		beq.b	.FAC
+		move.w	($14,a0),($3a,a1)	;original
+		rts
+
+.FAC		addq.l	#4,a7
+		rts
+
+gfx_SetSoftStyle
+		move.l	d2,-(sp)
+		moveq	#0,d2
+		movem.l	d0/d1/a0/a1,-(sp)
+		jsr	(_LVOAskSoftStyle,a6)
+		move.b	d0,d2
+		movem.l	(sp)+,d0/d1/a0/a1
+		movea.l	($34,a1),a0
+		and.b	d2,d1
+		move.b	($38,a1),d2
+		and.b	d1,d0
+		not.b	d1
+		and.b	d1,d2
+		or.b	d0,d2
+		move.b	d2,($38,a1)
+		or.b	($16,a0),d2
+		move.l	d2,d0
+		move.l	(sp)+,d2
 		rts
 
 ;============================================================================
@@ -436,6 +590,8 @@ _waitvb
 
 ;============================================================================
 
+_kick		dc.b	"34005.a500",0
+	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
@@ -445,10 +601,6 @@ _monitor	dc.l	0
 		dc.l	0
 _resload	dc.l	0
 _cbswitch_cop2lc dc.l	0
-
-_kick		dc.b	"devs:kickstarts/kick34005.a500",0
-_rtb		dc.b	"devs:kickstarts/kick34005.a500.rtb",0
-	EVEN
 
 ;============================================================================
 
