@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.33 2002/02/26 23:58:54 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.34 2002/03/05 17:43:59 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -35,6 +35,8 @@
 ;		06.02.02 cleanup
 ;		27.02.02 trailing slash in .buildname removed
 ;		05.03.02 modification of filter by kick disabled (Psygore)
+;		17.04.02 POINTERTICKS added
+;			 ACTION_DELETE_OBJECT fixed for nonexistent objects
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -137,6 +139,9 @@ kick_patch	PL_START
 	IFD BLACKSCREEN
 		PL_C	$1b9d2,6			;color17,18,19
 		PL_C	$1b9da,8			;color0,1,2,3
+	ENDC
+	IFD POINTERTICKS
+		PL_W	$1b9d8,POINTERTICKS
 	ENDC
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
@@ -1009,19 +1014,19 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_delete_object
-		bsr	.getarg1
+		bsr	.getarg1		;lock
 		move.l	d7,d0
-		bsr	.getarg2
+		bsr	.getarg2		;name
 		move.l	d7,d1
-		bsr	.buildname
-		tst.l	d0
-		beq	.reply2
+		move.l	#ACCESS_READ,d2
+		bsr	.lock
 		move.l	d0,d2
+		beq	.reply2
 		move.l	d0,a0
+		move.l	(fl_Key,a0),a0
 		jsr	(resload_DeleteFile,a2)
-		move.l	d2,a1
-		move.l	-(a1),d0
-		jsr	(_LVOFreeMem,a6)
+		move.l	d2,d0
+		bsr	.unlock
 		moveq	#DOSTRUE,d0
 		bra	.reply1
 
