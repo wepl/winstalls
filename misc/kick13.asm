@@ -3,8 +3,9 @@
 ;  :Contents.	kickstart 1.3 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.s 0.3 1999/12/22 11:13:14 jah Exp jah $
+;  :Version.	$Id: kick13.asm 1.1 2001/08/01 20:50:28 jah Exp jah $
 ;  :History.	19.10.99 started
+;		20.09.01 ready for JOTD ;)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -28,31 +29,17 @@
 
 ;============================================================================
 
-; number of floppy drives:
-;	sets the number of floppy drives, valid values are 0-4.
-;	0 means that the number is specified via option Custom1/N
-NUMDRIVES=0
-
-; protection state for floppy disks:
-;	0 means 'write protected', 1 means 'read/write'
-;	bit 0 means drive DF0:, bit 3 means drive DF3:
-WPDRIVES=%1111
-
-; disable fpu support:
-;	results in a different task switching routine, if fpu is enabled also
-;	the fpu status will be saved and restored.
-;	for better compatibility and performance the fpu should be disabled
-NOFPU
-
-; enable debug support for hrtmon:
-;	hrtmon reads to much from the stackframe if entered, if the ssp is at
-;	the end hrtmon will create a access fault.
-;	for better compatibility this option should be disabled
-HRTMON
-
-; amount of memory available for the system
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $10000
+FASTMEMSIZE	= $80000
+NUMDRIVES	= 2
+WPDRIVES	= %1111
+
+DISKSONBOOT
+;HDINIT
+;HRTMON
+;MEMFREE	= $100
+;NEEDFPU
+SETPATCH
 
 ;============================================================================
 
@@ -87,7 +74,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 _name		dc.b	"Kickstarter for 34.005",0
 _copy		dc.b	"1987 Amiga Inc.",0
 _info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.2 "
+		dc.b	"Version 0.3 "
 		INCBIN	"T:date"
 		dc.b	0
 	EVEN
@@ -96,33 +83,29 @@ _info		dc.b	"adapted for WHDLoad by Wepl",10
 _start	;	A0 = resident loader
 ;============================================================================
 
+		move.l	a0,a2
+		move.l	#WCPUF_Exp_WT,d0
+		move.l	#WCPUF_Exp,d1
+	;	jsr	(resload_SetCPU,a2)
+		move.l	a2,a0
+
 	;initialize kickstart and environment
 		bra	_boot
 
 	IFEQ 1
+_cb_dosLoadSeg	lsl.l	#2,d0
+		move.l	d0,a0
+		move.b	(a0)+,d0
+		lea	(.ptr),a2
+		move.l	(a2),a1
+.cp		move.b	(a0)+,(a1)+
+		sub.b	#1,d0
+		bgt	.cp
+		clr.b	(a1)+
+		move.l	a1,(a2)
+		rts
 
-	;a1 = ioreq ($2c+a5)
-	;a4 = buffer (1024 bytes)
-	;a6 = execbase
-_bootblock
-	;set caches
-		move.l	#0,d0
-		move.l	#WCPUF_All,d1
-		move.l	(_resload,pc),a0
-		jsr	(resload_SetCPU,a0)
-	;setup hook
-		patch	$xx(a4),_xx
-	;call bootblock
-		jmp	(12,a4)
-
-_xx
-
-	ENDC
-
-	IFEQ 1
-;not implemented yet!
-	;a6 = dosbase
-_dos
+.ptr		dc.l	$70000
 	ENDC
 
 ;============================================================================
