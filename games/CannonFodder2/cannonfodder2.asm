@@ -2,16 +2,17 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	BJ
-;  :Version.	$Id$
+;  :Version.	$Id: cf2.asm 1.1 1998/03/16 16:58:59 jah Exp $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
 ;		22.05.97 working on german version
 ;		12.01.98 support for original english version
+;		21.09.98 access fault in soundplayer in german version fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
+;  :Translator.	Barfly V2.9
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -22,7 +23,7 @@ crc_v3	= $389d		;english
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 
-	OUTPUT	wart:cannon2/cf2.slave
+	OUTPUT	wart:a-c/cannonfodder2/cf2.slave
 	BOPT	O+ OG+				;enable optimizing
 	BOPT	ODd- ODe-			;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
@@ -38,7 +39,7 @@ crc_v3	= $389d		;english
 		dc.w	_Start-.base		;ws_GameLoader
 		dc.w	_dir-.base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
-_keydebug	dc.b	$58			;ws_keydebug = F9
+_keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
 
 ;======================================================================
@@ -48,7 +49,7 @@ _dir		dc.b	"data",0
 ;======================================================================
 
 	DOSCMD	"WDate >T:date"
-		dc.b	"$VER: CannonFodder 2 "
+		dc.b	"$VER: CannonFodder2.Slave "
 	INCBIN	"T:date"
 		dc.b	0
 	EVEN
@@ -59,15 +60,15 @@ _Start	;	A0 = resident loader
 
 		lea	(_resload,pc),a1
 		move.l	a0,(a1)
+		move.l	a0,a2			;A2 = resload
 
 		move.l	#CACRF_EnableI,d0
 		move.l	d0,d1
-		jsr	(resload_SetCACR,a0)
+		jsr	(resload_SetCACR,a2)
 
 		lea	(_main),a0
 		lea	($80000),a1
 		move.l	a1,a5			;A5 = main address
-		move.l	(_resload),a2
 		jsr	(resload_LoadFileDecrunch,a2)
 		move.l	a5,a0
 		jsr	(resload_CRC16,a2)
@@ -186,17 +187,27 @@ _version2
 	;	move.l	#$4e71<<16+%0100100001111001,(a0)+	;nop,pea x.l
 	;	lea	(_spfuck),a1
 	;	move.l	a1,(a0)+
-
 	;	ill	$a2740
 	;	ill	$a272c
 	;	move.b	#$6f,$a2c70
 	;	move.b	#$6f,$a2d58
 	;	jsr	$a2780
 	;	ret	$a2a2e			;disable sound
+		move.b	#$6f,$a2c70		;beq -> ble
+		patchs	$a2d5a,_s1
 		
 		move.l	#$4e714e71,$5fd2(a5)	;move #$2000,sr
 		move	#0,sr			;to usermode
 		JMP	$5f46(a5)
+
+_s1		cmp.l	#$100000,d0
+		bhs	.ret
+		move.l	d0,a1			;original
+		move.l	($20,a0),d0		;original
+		rts
+
+.ret		addq.l	#4,a7
+		rts
 
 _spfuck	;	move.w	#-1,$a25ca
 	;	rts
