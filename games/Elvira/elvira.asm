@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1
-;  :Version.	$Id: elvira.asm 1.6 2002/02/19 22:44:29 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.7 2002/04/17 17:24:43 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
@@ -61,7 +61,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
+		dc.w	_boot-_base		;ws_GameLoader
 		dc.w	_data-_base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
@@ -93,11 +93,6 @@ _args_end
 	EVEN
 
 ;============================================================================
-_start	;	A0 = resident loader
-;============================================================================
-
-	;initialize kickstart and environment
-		bra	_boot
 
 _bootdos
 
@@ -164,11 +159,11 @@ _bootdos
 		add.l	a1,a1
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
-		move.l	(4,a7),d1		;stacksize
-		sub.l	#5*4,d1			;required for MANX stack check
-		movem.l	d1/d7/a2/a6,-(a7)
+		move.l	(4,a7),d2		;D2 = stacksize
+		sub.l	#5*4,d2			;required for MANX stack check
+		movem.l	d2/d7/a2/a6,-(a7)
 		jsr	(4,a1)
-		movem.l	(a7)+,d1/d7/a2/a6
+		movem.l	(a7)+,d2/d7/a2/a6
 
 	;remove exe
 		move.l	d7,d1
@@ -307,7 +302,7 @@ _intro		lea	_custom,a5		;A5 = custom
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick13.s
+	INCLUDE	Sources:whdload/kick12.s
 
 ;============================================================================
 
