@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
-;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.40 2002/11/30 18:19:59 wepl Exp wepl $
+;  :Author.	Wepl, Psygore
+;  :Version.	$Id: kick13.s 0.41 2003/02/13 22:47:17 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -54,6 +54,8 @@
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	graphics/gfxbase.i
+
+KICKVERSION = 34
 
 ;============================================================================
 
@@ -685,18 +687,6 @@ dos_bootdos
 	;return
 		rts
 
-	CNOP 0,4
-bootname_ss_b	dc.b	10
-bootname_ss	dc.b	"WHDBoot.ss",0
-bootfile_ss	dc.b	"WHDBoot.exe",10
-bootfile_ss_e
-bootname_exe	dc.b	"WHDBoot.exe",0
-	EVEN
-bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
-bootfile_exe_j	jmp	$99999999
-		dc.w	0
-		dc.l	$3f2
-bootfile_exe_e
 	ENDC
 
 ;---------------
@@ -788,8 +778,6 @@ _waitvb
 _debug1		tst	-1	;unknown packet (=d2) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
-_debug4		tst	-4	;wrong mode while read
-_debug5		tst	-5	;wrong mode while write
 		illegal		;security if executed without mmu
 	ENDC
 

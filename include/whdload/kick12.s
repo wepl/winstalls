@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
-;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick12.s 1.5 2002/11/30 18:24:57 wepl Exp wepl $
+;  :Author.	Wepl, JOTD, Psygore
+;  :Version.	$Id: kick12.s 1.6 2003/02/13 22:47:17 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -20,6 +20,8 @@
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	graphics/gfxbase.i
+
+KICKVERSION = 33
 
 ;============================================================================
 
@@ -650,18 +652,6 @@ dos_bootdos
 	;return
 		rts
 
-	CNOP 0,4
-bootname_ss_b	dc.b	10
-bootname_ss	dc.b	"WHDBoot.ss",0
-bootfile_ss	dc.b	"WHDBoot.exe",10
-bootfile_ss_e
-bootname_exe	dc.b	"WHDBoot.exe",0
-	EVEN
-bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
-bootfile_exe_j	jmp	$99999999
-		dc.w	0
-		dc.l	$3f2
-bootfile_exe_e
 	ENDC
 
 ;---------------

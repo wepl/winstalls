@@ -1,11 +1,14 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
-;  :Author.	Wepl
-;  :Version.	$Id: kickfs.s 1.2 2002/05/09 13:34:52 wepl Exp wepl $
+;  :Author.	Wepl, JOTD
+;  :Version.	$Id: kickfs.s 1.3 2002/05/09 14:19:15 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
+;		04.03.03 ACTION_COPY_DIR fixed, wb double click works now
+;			 deleting of directories works clean
+;			 changes by JOTD merged
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -38,13 +41,16 @@
 ;		      2c dn_SIZEOF
 ; 14 bn_SIZEOF
 
+	IFND HD_Cyls
 HD_Cyls			= 80
+	ENDC
 HD_Surfaces		= 2
 HD_BlocksPerTrack	= 11
 HD_NumBlocksRes		= 2
 HD_NumBlocks		= HD_Cyls*HD_Surfaces*HD_BlocksPerTrack-HD_NumBlocksRes
 HD_NumBlocksUsed	= HD_NumBlocks/2
 HD_BytesPerBlock	= 512
+HD_NumBuffers		= 5
 
 	;file locking is not implemented! no locklist is used
 	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
@@ -86,6 +92,25 @@ HD_BytesPerBlock	= 512
 		move.l	d1,(dn_SegList,a3)
 		move.l	a2,(dn_GlobalVec,a3)		;no BCPL shit (A2 = -1)
 
+	IFD FSSM
+		move.l	#FileSysStartupMsg_SIZEOF,d0
+		move.l	#MEMF_CLEAR,d1
+		move.l	(4),a6
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,a2
+		lsr.l	#2,d0
+		move.l	d0,(dn_Startup,a3)
+		clr.l	(a2)+				;fssm_Unit
+		lea	(.devicename,pc),a1
+		move.l	a1,d0
+		lsr.l	#2,d0
+		move.l	d0,(a2)+			;fssm_Device
+		lea	(.environ,pc),a1
+		move.l	a1,d0
+		lsr.l	#2,d0
+		move.l	d0,(a2)+			;fssm_Environ
+	ENDC
+
 		moveq	#BootNode_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
 		move.l	(4),a6
@@ -100,6 +125,27 @@ HD_BytesPerBlock	= 512
 
 		movem.l	(a7)+,d0-a6
 		rts
+
+	IFD FSSM
+.environ	dc.l	DE_DOSTYPE		; Size of Environment vector (in longwords)
+		dc.l	HD_BytesPerBlock/4	; in longwords: standard value is 128
+		dc.l	0			; not used; must be 0
+		dc.l	HD_Surfaces		; # of heads (surfaces). drive specific
+		dc.l	1			; not used; must be 1
+		dc.l	HD_BlocksPerTrack	; blocks per track. drive specific
+		dc.l	HD_NumBlocksRes		; DOS reserved blocks at start of partition.
+		dc.l	2			; DOS reserved blocks at end of partition
+		dc.l	0			; usually 0
+		dc.l	0			; starting cylinder. typically 0
+		dc.l	HD_Cyls-1		; max cylinder. drive specific
+		dc.l	HD_NumBuffers		; Initial # DOS of buffers.
+		dc.l	MEMF_PUBLIC		; type of mem to allocate for buffers
+		dc.l	$00100000		; Max number of bytes to transfer at a time
+		dc.l	$7ffffffe		; Address Mask to block out certain memory
+		dc.l	0			; Boot priority for autoboot (doesn't work)
+		dc.l	ID_DOS_DISK+1		; ASCII (HEX) string showing filesystem type
+.devicename	dc.b	14,"whdload.device",0
+	ENDC
 
 .diagarea	dc.b	DAC_CONFIGTIME		;da_Config
 		dc.b	0			;da_Flags
@@ -125,7 +171,7 @@ HD_BytesPerBlock	= 512
 		dc.l	0			;interleave
 		dc.l	0			;lower cylinder
 		dc.l	HD_Cyls-1		;upper cylinder
-		dc.l	5			;buffers
+		dc.l	HD_NumBuffers		;buffers
 
 .bootcode	lea	(_dosname,pc),a1
 		jsr	(_LVOFindResident,a6)
@@ -229,6 +275,7 @@ HD_BytesPerBlock	= 512
 		dc.w	ACTION_DELETE_OBJECT,.a_delete_object-.action		;10	16
 		dc.w	ACTION_COPY_DIR,.a_copy_dir-.action			;13	19
 		dc.w	ACTION_SET_PROTECT,.a_set_protect-.action		;15	21
+		dc.w	ACTION_CREATE_DIR,.a_create_dir-.action			;16	22
 		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17	23
 		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18	24
 		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19	25
@@ -243,6 +290,10 @@ HD_BytesPerBlock	= 512
 		dc.w	ACTION_FINDOUTPUT,.a_findoutput-.action			;3ee	1006
 		dc.w	ACTION_END,.a_end-.action				;3ef	1007
 		dc.w	ACTION_SEEK,.a_seek-.action				;3f0	1008
+	IFGT KICKVERSION-36
+		dc.w	ACTION_FH_FROM_LOCK,.a_fh_from_lock-.action		;402	1026
+		dc.w	ACTION_EXAMINE_FH,.a_examine_fh-.action			;40A	1034
+	ENDC
 		dc.w	0
 
 	; conventions for action functions:
@@ -282,15 +333,30 @@ HD_BytesPerBlock	= 512
 		move.l	d7,d1
 		move.l	#ACCESS_READ,d2
 		bsr	.lock
-		move.l	d0,d2
+		move.l	d0,d7			;d7 = new lock
 		beq	.reply2
 		move.l	d0,a0
-		move.l	(fl_Key,a0),a0
+		tst.l	(mfl_fib+fib_DirEntryType,a0)
+		bmi	.delete_do
+	;a directory
+		lea	(mfl_fib,a0),a0
+		jsr	(resload_ExNext,a2)
+		tst.l	d0
+		bne	.delete_dirnotempty
+		move.l	d7,a0
+.delete_do	move.l	(fl_Key,a0),a0
 		jsr	(resload_DeleteFile,a2)
-		move.l	d2,d0
+		move.l	d7,d0
 		bsr	.unlock
 		moveq	#DOSTRUE,d0
 		bra	.reply1
+
+.delete_dirnotempty
+		move.l	d7,d0
+		bsr	.unlock
+		moveq	#DOSFALSE,d0
+		move.l	#ERROR_DIRECTORY_NOT_EMPTY,d1
+		bra	.reply2
 
 ;---------------
 
@@ -298,21 +364,66 @@ HD_BytesPerBlock	= 512
 	IFD DEBUG
 		beq	_debug2
 	ENDC
+	;copy name
+		move.l	d7,a0			;a0 = APTR lock
+		move.l	(fl_Key,a0),a0		;name
+		move.l	-(a0),d0
+		moveq	#0,d1
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,d2			;d2 = new name
+		beq	.copy_dir_nm
 		move.l	d7,a0
-		move.l	(fl_Key,a0),d1
-		moveq	#0,d0
-		move.l	#ACCESS_READ,d2
-		bsr	.lock
+		move.l	(fl_Key,a0),a0
+		move.l	d2,a1
+		move.l	-(a0),d0		;length
+.copy_dir_cpy	move.l	(a0)+,(a1)+
+		subq.l	#4,d0
+		bhi	.copy_dir_cpy
+	;copy lock
+		move.l	#mfl_SIZEOF,d0
+		move.l	#MEMF_CLEAR,d1
+		jsr	(_LVOAllocMem,a6)
 		tst.l	d0
-		bne	.reply1
+		beq	.copy_dir_nm2
+	;fill lock structure
+		move.l	d7,a0
+		move.l	d0,a1
+		move.l	(a0)+,(a1)+		;fl_Link
+		addq.l	#4,d2
+		move.l	d2,(a1)+		;fl_Key (name)
+		addq.l	#4,a0
+		move.l	(a0)+,(a1)+		;fl_Access
+		move.l	(a0)+,(a1)+		;fl_Task (MsgPort)
+		move.l	(a0)+,(a1)+		;fl_Volume
+		lsr.l	#2,d0			;lock
+		bra	.reply1
+
+.copy_dir_nm2	move.l	d2,a1
+		move.l	(a1),d0
+		jsr	(_LVOFreeMem,a6)
+.copy_dir_nm	moveq	#DOSFALSE,d0
+		move.l	#ERROR_NO_FREE_STORE,d1
 		bra	.reply2
 
 ;---------------
 
+.a_create_dir	moveq	#0,d0
+		move.l	#ERROR_DISK_FULL,d1
+		bra	.reply2
+
+;---------------
+
+	IFGT KICKVERSION-36
+.a_examine_fh	move.l	(dp_Arg1,a4),a0		;filehandle
+		move.l	(fh_Arg1,a0),a0		;lock
+		bra	.a_examine
+	ENDC
+
 .a_examine_object
 		bsr	.getarg1
 		move.l	d7,a0			;a0 = APTR lock
-		bsr	.getarg2		;d7 = APTR fib
+
+.a_examine	bsr	.getarg2		;d7 = APTR fib
 		move.l	a0,d0
 		beq	.examine_root
 	;copy whdload's examine result
@@ -332,6 +443,7 @@ HD_BytesPerBlock	= 512
 	;return
 		moveq	#DOSTRUE,d0
 		bra	.reply1
+
 	;special handling of NULL lock
 .examine_root	clr.l	-(a7)
 		move.l	a7,a0
@@ -347,8 +459,7 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_examine_next
-		bsr	.getarg2
+.a_examine_next	bsr	.getarg2
 		move.l	d7,a0			;a0 = APTR fib
 		jsr	(resload_ExNext,a2)
 		move.l	d7,a1
@@ -438,10 +549,6 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_read		move.l	(dp_Arg1,a4),a0			;a0 = APTR lock
-	IFD DEBUG
-		cmp.l	#ACCESS_READ,(fl_Access,a0)
-		bne	_debug4
-	ENDC
 		move.l	(dp_Arg3,a4),d3			;d3 = readsize
 	IFD IOCACHE
 		moveq	#0,d4				;d4 = readcachesize
@@ -585,10 +692,6 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_write	move.l	(dp_Arg1,a4),a0			;APTR lock
-	IFD DEBUG
-		cmp.l	#ACCESS_WRITE,(fl_Access,a0)
-		bne	_debug5
-	ENDC
 	IFND IOCACHE
 		move.l	(dp_Arg3,a4),d0			;len
 		move.l	(mfl_pos,a0),d1			;offset
@@ -765,6 +868,17 @@ HD_BytesPerBlock	= 512
 .seek_err	move.l	#-1,d0
 		move.l	#ERROR_SEEK_ERROR,d1
 		bra	.reply2
+
+;---------------
+
+	IFGT KICKVERSION-36
+.a_fh_from_lock	bsr	.getarg1		;handle
+		move.l	d7,a0
+		bsr	.getarg2		;lock
+		move.l	d7,(fh_Arg1,a0)		;using the lock we refer the filename later
+		moveq	#DOSTRUE,d0
+		bra	.reply1
+	ENDC
 
 ;---------------
 ; these functions get the respective arg converted from a BPTR to a APTR in D7
@@ -1014,5 +1128,30 @@ HD_BytesPerBlock	= 512
 .handlername	dc.b	"DH0",0
 .expansionname	dc.b	"expansion.library",0
 _dosname	dc.b	"dos.library",0
-	EVEN
 
+;---------------
+
+	IFD _bootdos
+	IFND BOOTFILENAME
+BOOTFILENAME	MACRO
+		dc.b	"WHDBoot.exe"
+	ENDM
+	ENDC
+	CNOP 0,4
+bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
+bootfile_exe_j	jmp	$99999999		;avoid optimizing!
+		dc.w	0			;pad to longword
+		dc.l	$3f2
+bootfile_exe_e
+bootname_ss_b	dc.b	10			;BSTR
+bootname_ss	dc.b	"WHDBoot.ss",0		;name of ':s/startup-sequence'
+bootfile_ss	BOOTFILENAME
+		dc.b	10
+bootfile_ss_e
+bootname_exe	BOOTFILENAME
+		dc.b	0
+	ENDC
+
+;---------------
+
+	EVEN
