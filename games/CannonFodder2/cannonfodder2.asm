@@ -2,7 +2,7 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: cf2.asm 1.5 2000/09/03 18:11:44 jah Exp jah $
+;  :Version.	$Id: cf2.asm 1.6 2001/01/10 22:47:58 jah Exp jah $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -15,6 +15,8 @@
 ;		27.08.00 adapted for v10
 ;		03.09.00 finished rework
 ;		10.01.01 bplcon0 and aga accesses fixed
+;		20.02.01 support for english crack version reenabled (wrong crc???)
+;			 one access fault fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -22,7 +24,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-crc_v1	= $54b2		;english cracked ?
+crc_v1	= $e95e		;english cracked ?
 crc_v2	= $b9c6		;german
 crc_v3	= $389d		;english
 
@@ -71,7 +73,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.6 "
+		dc.b	"Version 1.7 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -191,7 +193,14 @@ _pl1		PL_START
 		PL_S	$28c2c,4
 		PL_W	$28c38,$98a-$890
 
+		PL_PS	$1ddfa,_af
+		
 		PL_END
+
+_af		move.w	$8155a,d0			;actual player/team (0-5)
+		bpl	.ok
+		clr.w	d0
+.ok		rts
 		
 ;======================================================================
 
@@ -237,8 +246,10 @@ _pl2		PL_START
 		PL_S	$2910e,4
 		PL_W	$2911a,$8cc-$7ce
 		
-		PL_END
+		PL_PS	$1ded8,_af
 		
+		PL_END
+
 _s1		cmp.l	#$100000,d0
 		bhs	.ret
 		move.l	d0,a1			;original
