@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.24 2002/01/05 10:13:50 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.26 2002/01/14 22:48:58 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -30,6 +30,7 @@
 ;		27.11.01 fs enhanced
 ;		17.12.01 beta finished for Elvira
 ;		04.01.02 MAXFILENAME removed
+;		16.01.02 support for Guru Meditation added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -77,11 +78,11 @@ _boot		lea	(_resload,pc),a1
 		jsr	(resload_Patch,a5)
 
 	;call
-		move.l	(_expmem,pc),a0
-	;	jmp	(2,a0)				;original entry
-		jmp	($fe,a0)			;this entry saves some patches
+kick_reboot	move.l	(_expmem,pc),a0
+		jmp	(2,a0)				;original entry
 
 kick_patch	PL_START
+		PL_S	$d2,$fe-$d2
 		PL_CW	$132				;color00 $444 -> $000
 		PL_P	$61a,kick_detectfast
 		PL_P	$592,kick_detectchip
@@ -90,7 +91,7 @@ kick_patch	PL_START
 		PL_PS	$286,kick_hrtmon
 	ENDC
 		PL_P	$546,kick_detectcpu
-		PL_I	$5f0				;reboot (reset)
+		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$1354,exec_snoop1
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
@@ -949,6 +950,7 @@ HD_BytesPerBlock	= 512
 		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18
 		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19
 		dc.w	ACTION_INFO,.a_info-.action				;1a
+		dc.w	ACTION_FLUSH,.a_flush-.action				;1b
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f
 		dc.w	ACTION_PARENT,.a_parent-.action				;29
 		dc.w	ACTION_READ,.a_read-.action				;52
@@ -1056,11 +1058,7 @@ HD_BytesPerBlock	= 512
 		moveq	#DOSTRUE,d0
 		bra	.reply1
 	;special handling of NULL lock
-.examine_root
-	jmp -5
-	IFEQ 1
-		move.l	a1,d7
-		clr.l	-(a7)
+.examine_root	clr.l	-(a7)
 		move.l	a7,a0
 		jsr	(resload_Examine,a2)
 		addq.l	#4,a7
@@ -1071,7 +1069,6 @@ HD_BytesPerBlock	= 512
 		bne	.examine_root2
 		move.l	d7,a1
 		bra	.examine_adj
-	ENDC
 
 ;---------------
 
@@ -1108,6 +1105,7 @@ HD_BytesPerBlock	= 512
 ;---------------
 
 .a_set_protect
+.a_flush
 .a_inhibit	moveq	#DOSTRUE,d0
 		bra	.reply1
 
