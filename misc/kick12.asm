@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.3 2003/12/09 11:15:39 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.4 2004/10/18 11:18:49 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;  :Requires.	-
@@ -43,7 +43,7 @@ DEBUG
 DISKSONBOOT
 ;DOSASSIGN
 ;FONTHEIGHT	= 8
-HDINIT
+;HDINIT
 ;HRTMON
 IOCACHE		= 1024
 ;MEMFREE	= $100
