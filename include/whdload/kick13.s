@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.12 2001/06/19 20:47:23 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.13 2001/07/15 22:13:30 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -18,6 +18,7 @@
 ;		11.05.00 SetPatch can be enabled/disabled via a defined label
 ;		19.06.01 ChkBltWait problem fixed in blitter init
 ;		15.07.01 using time provided by whdload to init timer.device
+;		02.08.01 exec.Supervisor fixed (to work with exec.SuperState)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -178,22 +179,36 @@ exec_SetFunction
 		bset	#1,(14,a1)		;original
 		rts
 
-exec_Supervisor	lea	(.1,pc),a0
+exec_Supervisor	lea	(.supervisor,pc),a0
 		move.l	a0,(_LVOSupervisor+2,a6)
 		lea	(_custom),a0		;original
 		bra	_flushcache
-
-.1		movem.l	a0-a1,-(a7)
-		move.l	($bc),a0
-		lea	(.2,pc),a1
+.supervisor	movem.l	a0-a1,-(a7)
+		move.l	($bc),a0		;a0 = old $bc
+		lea	(.trap15,pc),a1
 		move.l	a1,($bc)
-		move.l	a7,a1
 		trap	#15
-		addq.l	#8,a7
-		rts
-
-.2		move.l	a0,($bc)
-		movem.l	(a1),a0-a1
+.trap15		move.l	a0,($bc)
+		btst	#5,(a7)			;super?
+		bne	.super
+.user		move	usp,a1
+		move.l	(8,a1),(2,a7)		;set return
+		add.w	#12,a1
+		move	a1,usp
+		movem.l	(-12,a1),a0-a1
+		jmp	(a5)
+.super		btst	#AFB_68010,(AttnFlags+1,a6)
+		bne	.super10
+.super00	movem.l	(6,a7),a0-a1
+		move.w	(a7),(12,a7)		;sr
+		add.w	#12,a7
+		jmp	(a5)
+.super10	movem.l	(8,a7),a0-a1
+		move.w	(16,a7),(14,a7)
+		move.w	(18,a7),(16,a7)		;avoid move.l (16,a7),(14,a7) ! (problems with AF-Handler on 040/060)
+		clr.w	(18,a7)			;frame type
+		move.w	(a7),(12,a7)		;sr
+		add.w	#12,a7
 		jmp	(a5)
 
 	IFD MEMFREE
@@ -488,7 +503,7 @@ trd_readwrite	moveq	#0,d1
 
 .diskok		cmp.b	#CMD_READ,(IO_COMMAND+1,a1)
 		bne	trd_write
-		
+
 trd_read	movem.l	d2/a1,-(a7)
 		moveq	#0,d2
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
@@ -538,19 +553,19 @@ trd_motor	moveq	#0,d0
 		rts
 
 trd_protstatus	moveq	#0,d0
-		move.b	($43,a3),d1
+		move.b	($43,a3),d1		;unit number
 		move.b	(_trd_prot,pc),d0
 		btst	d1,d0
 		seq	d0
 		move.l	d0,(IO_ACTUAL,a1)
-		add.l	#$708-$6d6-6,(a7)
+		add.l	#$708-$6d6-6,(a7)	;skip unnecessary code
 		rts
 
-trd_endio	move.l	(_expmem,pc),-(a7)
+trd_endio	move.l	(_expmem,pc),-(a7)	;jump into rom
 		add.l	#$29e30,(a7)
 		rts
 
-tdtask_cause	move.l	(_expmem,pc),-(a7)
+tdtask_cause	move.l	(_expmem,pc),-(a7)	;jump into rom
 		add.l	#$296e8,(a7)
 		rts
 
@@ -625,7 +640,7 @@ _monitor	dc.l	0
 _time		dc.l	0
 		dc.l	0
 _resload	dc.l	0
-_cbswitch_cop2lc dc.l	0
+_cbswitch_cop2lc	dc.l	0
 
 ;============================================================================
 
