@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.52 2003/12/10 14:22:49 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.53 2004/03/04 08:52:45 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -51,6 +51,7 @@
 ;		09.12.03 keyboard acknowledgment fixed
 ;		06.02.04 keyboard acknowledgment fix fixed
 ;		19.02.04 clearing ciasdr removed
+;		15.11.04 _keydebug/exit check added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -210,7 +211,7 @@ kick_patch	PL_START
 	IFD POINTERTICKS
 		PL_W	$1b9d8,POINTERTICKS
 	ENDC
-		PL_PS	$2528a,keyboard_start
+		PL_PS	$25290,keyboard_start
 		PL_PS	$253a2,keyboard_end
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
@@ -583,9 +584,37 @@ disk_getunitid
 ; use the rasterbeam, required minimum waiting is 75탎, one rasterline is
 ; 63.5탎 a this results in min=127탎 max=190.5탎
 
-keyboard_start	or.b	#CIACRAF_SPMODE,(ciacra,a0)
-		lea	(_keyboarddelay,pc),a1
+keyboard_start	moveq	#0,d4
+		not.b	d0
+		ror.b	#1,d0
+		cmp.b	(_keyexit,pc),d0
+		beq	.exit
+		cmp.b	(_keydebug,pc),d0
+		beq	.debug
+.continue	lea	(_keyboarddelay,pc),a1
 		move.b	(_custom+vhposr),(a1)
+		rts
+
+.exit		pea	TDREASON_OK
+		bra	.abort
+
+.debug		tst.b	d0
+		beq	.continue
+		addq.l	#4,a7			;rts from patchs
+		movem.l	(a7)+,d2-d4/a6
+		addq.l	#4,a7			;rts from keyboard int
+		movem.l	(a7)+,d2/a2
+		addq.l	#4,a7			;rts from ports int
+		move.l	(a7)+,a2
+		move.w	(a7)+,(_custom+intena)
+		addq.l	#4,a7			;rts from int handler
+		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
+		move.w	(a7),(6,a7)
+		move.l	(2,a7),(a7)
+		clr.w	(4,a7)
+		pea	TDREASON_DEBUG
+.abort		move.l	(_resload,pc),-(a7)
+		addq.l	#resload_Abort,(a7)
 		rts
 
 keyboard_end	move.b	(_keyboarddelay,pc),d1
