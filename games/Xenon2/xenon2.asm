@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.3 1999/05/30 17:24:24 jah Exp jah $
+;  :Version.	$Id: xenon2.asm 1.4 1999/06/03 20:34:22 jah Exp jah $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
 ;		20.12.98 work on CDTV version started
@@ -10,6 +10,8 @@
 ;		25.12.98 disk version finished
 ;		07.01.98 support for second disk version started
 ;		03.06.99 support for third disk version added
+;		17.06.00 highscores fixed
+;		18.06.00 trainer fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -17,18 +19,21 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-;CDTV		;if defined Slave for CDTV version will be created
+CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
 	IFD CDTV
-	OUTPUT	"wart:v-x/xenon2 cdtv/Xenon2.Slave"
+	OUTPUT	"wart:x/xenon2 cdtv/Xenon2.Slave"
 	ELSE
-	OUTPUT	"wart:v-x/xenon2/Xenon2.Slave"
+	OUTPUT	"wart:x/xenon2/Xenon2.Slave"
 	ENDC
-	BOPT	O+ OG+			;enable optimizing
+	BOPT	O+			;enable optimizing
+	BOPT	OG+			;enable optimizing
+	BOPT	ODd-			;disable mul optimizing
+	BOPT	ODe-			;disable mul optimizing
 	BOPT	w4-			;disable 64k warnings
 	SUPER
 
@@ -44,7 +49,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 	IFD CDTV
 		dc.l	$c6000			;ws_BaseMemSize
 	ELSE
-		dc.l	$80000			;ws_BaseMemSize
+		dc.l	$81000			;ws_BaseMemSize
 	ENDC
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -72,7 +77,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.4 Floppy "
+		dc.b	"Version 1.5 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -80,7 +85,7 @@ _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.3 CDTV "
+		dc.b	"Version 1.4 CDTV "
 		INCBIN	"T:date"
 		dc.b	0
 	ENDC
@@ -120,19 +125,21 @@ _start	;	A0 = resident loader
 		bne	.1
 		move.w	#4,($12,a4)		;3=pal 4=ntsc
 .1
+		lea	(_gametrainer),a0
 		move.l	(_custom1),d0
-		beq	.notrainer
-		patchs	$3a742,_trainer1
-		bra	.ash
-.notrainer
+		bne	.trained
+		lea	(_notrainer),a0
 		patch	$3c54c,_savehighs
-.ash
+.trained	lea	$3a296,a1
+		move.l	#$4e714eb9,(a1)+
+		move.l	a0,(a1)
+
 		lea	(_highs),a0
 		jsr	(resload_GetFileSize,a5)
-		tst.l	d0
-		beq	.nohighs
+		cmp.l	#$fc-$66+$28,d0
+		bne	.nohighs
 		lea	(_highs),a0
-		lea	$3c366,a1
+		lea	$3c366-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
 		move.l	(a7)+,a0
@@ -170,6 +177,7 @@ _px2
 	PL_R	$3a9ba				;cdtv.device stuff
 	PL_P	$37a98,_32bit
 	;PL_P	$410b2,$34fb2			;strange sound problem (does not help)
+	PL_S	$3a742,12			;cash clear before each level
 	PL_END
 
 _load_sounds
@@ -178,9 +186,7 @@ _load_sounds2	lea	($88a48),a1		;186900 bytes
 _load		move.l	d1,a0
 		addq.l	#4,a0
 		move.l	(RESLOAD),a2
-		jsr	(resload_LoadFileDecrunch,a2)
-;	waitvb
-	rts
+		jmp	(resload_LoadFileDecrunch,a2)
 
 _load_speech	move.l	($411e4),a1		;107800 bytes
 		pea	($3c80c)
@@ -215,8 +221,8 @@ _load_level2	lea	($4e26),a1		;180000 bytes
 		bra	_load
 
 _savehighs	jsr	$3ca02			;original
-		move.l	#$fc-$66,d0
-		lea	$3c366,a0
+		move.l	#$fc-$66+$28,d0
+		lea	$3c366-$28,a0
 		movem.l	d0/a0,-(a7)
 		bsr	_crypt
 		move.l	a0,a1
@@ -232,17 +238,12 @@ _crypt		movem.l	d0/a0,-(a7)
 		movem.l	(a7)+,d0/a0
 		rts
 
-	;trainer
- IFEQ 1
-_key_help	movem.l	d0-a6,-(a7)
-		move.l	#999999,($ca0)		;cash
-		jsr	$40ffc			;refresh display
-		movem.l	(a7)+,d0-a6
+_notrainer	move.w	#3,($cd0)		;ships
+		move.l	#0,($ca0)		;cash
 		rts
- ENDC
-_trainer1	move.l	#100000,($ca0)		;cash
-		move.l	#100000,($cac)		;cash (in level?)
-		move.w	#9,($cd0)		;credits
+
+_gametrainer	move.w	#9,($cd0)		;ships
+		move.l	#100000,($ca0)		;cash
 		rts
 
 _x2		dc.b	"x2",0
@@ -257,9 +258,9 @@ _x2		dc.b	"x2",0
 ;======================================================================
 
 	;enable cache
-		move.l	#CACRF_EnableI,d0
-		move.l	d0,d1
-		jsr	(resload_SetCACR,a5)
+	;	move.l	#CACRF_EnableI,d0
+	;	move.l	d0,d1
+	;	jsr	(resload_SetCACR,a5)
 
 	;bootblock
 		move.l	#0,d0			;offset
@@ -300,21 +301,23 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		skip	$7058-$7046,$7046	;vector init
 		patch	$47d8,_32bit
 		patch	$9012,_load
+		skip	8,$6f86			;cash clear before each level
 
+		lea	(_gametrainer),a0
 		move.l	(_custom1),d0
-		beq	.notrainer
-		patch	$6f98,_trainer1
-		bra	.ash
-.notrainer
+		bne	.trained
+		lea	(_notrainer),a0
 		patch	$853c,_v2_savehighs
-.ash
+.trained	move.w	#$4eb9,$6bae
+		move.l	a0,$6bae+2
+
 		lea	(_highs),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
-		tst.l	d0
-		beq	.nohighs
+		cmp.l	#$fc-$66+$28,d0
+		bne	.nohighs
 		lea	(_highs),a0
-		lea	$8368,a1
+		lea	$8368-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
 		move.l	(a7)+,a0
@@ -329,8 +332,8 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		jmp	$400
 
 _v2_savehighs	jsr	$86aa			;original
-		move.l	#$fc-$66,d0
-		lea	$8368,a0
+		move.l	#$fc-$66+$28,d0
+		lea	$8368-$28,a0
 		movem.l	d0/a0,-(a7)
 		bsr	_crypt
 		move.l	a0,a1
@@ -338,8 +341,7 @@ _v2_savehighs	jsr	$86aa			;original
 		move.l	(RESLOAD),a2
 		jsr	(resload_SaveFile,a2)
 		movem.l	(a7)+,d0/a0
-
-		jmp	$400
+		bra	_crypt
 
 ;============== version 3
 
@@ -414,25 +416,27 @@ _4		move.l	#$70c00,d0		;offset
 		jmp	$6423c
 
 	;main loaded and decrypted
-_5		patch	$70f6,$763a		;third copylock
+_5		move.l	#$4ef8763a,$70f6	;third copylock
 		skip	$7654-$7642,$7642	;vector init
 		patch	$47ce,_32bit
 		patch	$921a,_load
+		skip	8,$6f7c			;cash clear before each level
 
+		lea	(_gametrainer),a0
 		move.l	(_custom1),d0
-		beq	.notrainer
-		patch	$6f8e,_trainer1
-		bra	.ash
-.notrainer
+		bne	.trained
+		lea	(_notrainer),a0
 		patch	$8b1a,_savehighs
-.ash
+.trained	move.w	#$4eb9,$6ba4
+		move.l	a0,$6ba4+2
+
 		lea	(_highs),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
-		tst.l	d0
-		beq	.nohighs
+		cmp.l	#$fc-$66+$28,d0
+		bne	.nohighs
 		lea	(_highs),a0
-		lea	$8946,a1
+		lea	$8946-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
 		move.l	(a7)+,a0
@@ -444,8 +448,8 @@ _5		patch	$70f6,$763a		;third copylock
 		jmp	$400
 
 _savehighs	jsr	$8c88			;original
-		move.l	#$fc-$66,d0
-		lea	$8946,a0
+		move.l	#$fc-$66+$28,d0
+		lea	$8946-$28,a0
 		movem.l	d0/a0,-(a7)
 		bsr	_crypt
 		move.l	a0,a1
@@ -463,10 +467,12 @@ _crypt		movem.l	d0/a0,-(a7)
 		movem.l	(a7)+,d0/a0
 		rts
 
-_trainer1	move.l	#100000,($c9a)		;cash
-		move.l	#100000,($ca6)		;cash (in level?)
-		move.w	#9,($cca)		;credits
-		clr.w	$cf2			;original
+_notrainer	move.w	#3,($cca)		;ships
+		move.l	#0,($c9a)		;cash
+		rts
+
+_gametrainer	move.w	#9,($cca)		;ships
+		move.l	#100000,($c9a)		;cash
 		rts
 
 _load		mulu	#512,d0			;offset
