@@ -1,4 +1,4 @@
-; $Id: Install,v 1.1 2002/07/17 21:11:39 wepl Exp wepl $
+; $Id: Install 1.1 2002/07/17 22:42:39 wepl Exp wepl $
 
 (set #sub-dir "")			;sub directory containing data files
 (set #readme-file "ReadMe")		;name of readme file
@@ -170,10 +170,7 @@
     )
   )
   (if (= #choice 1)
-    (delete #dest
-      (help @delete-help)
-      (all)
-    )
+    (run ("Delete \"%s\" \"%s.info\" All Quiet Force" #dest #dest))
   )
 ))
 (makedir #dest
@@ -243,10 +240,7 @@
   )
   (if (= #newstuff 1) (
     (closewbobject #icon-dir)
-    (delete #icon-dir
-      (help @delete-help)
-      (all)
-    )
+    (run ("Delete \"%s\" All Quiet Force" #icon-dir))
   ))
 ))
 (select #icon
