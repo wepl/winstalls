@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.7 2002/11/22 16:46:32 wepl Exp wepl $
+$Id: kick.readme 1.8 2002/11/30 18:15:10 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -132,6 +132,11 @@ SETPATCH
 If that symbol is defined nearly all patches done by the SetPatch v1.38
 program will be performed. Usually that is not necessary and omitting the
 option makes the Slave around 400 bytes shorter.
+
+STACKSIZE
+
+Using this symbol the default stacksize can be set. The initial CLI structure
+will be patched for this. The system default on V33 and V34 is 4000 bytes.
 
 TRDCHANGEDISK
 

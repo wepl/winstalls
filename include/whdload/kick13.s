@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.38 2002/05/09 14:18:17 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.40 2002/11/30 18:19:59 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -40,6 +40,8 @@
 ;			 filesystem handler moved to kickfs.s
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
+;		13.02.03 snoopbug at $6efe fixed (Psygore)
+;			 STACKSIZE added (Captain HIT)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -107,6 +109,7 @@ kick_patch	PL_START
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
 		PL_PS	$6d70,gfx_vbserver
 		PL_PS	$6d86,gfx_snoop1
+		PL_L	$6efe,$08390005			;snoop bug ('and.w #$20,$DFF01E' -> 'btst #5,$DFF01E')
 		PL_PS	$ad5e,gfx_setcoplc
 		PL_S	$ad7a,6				;avoid ChkBltWait problem
 		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
@@ -154,6 +157,9 @@ kick_patch	PL_START
 		PL_PS	$36e4c,dos_LoadSeg
 	;	PL_B	$38795,cli_StandardOutput	;probably a bug in the initial code
 	ENDC
+	ENDC
+	IFD STACKSIZE
+		PL_L	$387be,STACKSIZE/4
 	ENDC
 	IFD  _bootdos
 		PL_PS	$38748,dos_bootdos

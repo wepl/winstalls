@@ -2,10 +2,12 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick12.s 1.3 2002/05/09 14:18:45 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.5 2002/11/30 18:24:57 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
+;		13.02.03 snoopbug at $6e92 fixed (Psygore)
+;			 STACKSIZE added (Captain HIT)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,6 +75,7 @@ kick_patch	PL_START
 		PL_S	$4c66,4				;skip autoconfiguration at $e80000
 		PL_PS	$6d04,gfx_vbserver
 		PL_PS	$6d1a,gfx_snoop1
+		PL_L	$6e92,$08390005			;snoop bug ('and.w #$20,$DFF01E' -> 'btst #5,$DFF01E')
 		PL_PS	$ad9e,gfx_setcoplc
 		PL_S	$adc2,6				;avoid ChkBltWait problem
 		PL_S	$af16,$36-$16			;skip color stuff & strange gb_LOFlist set
@@ -119,6 +122,9 @@ kick_patch	PL_START
 		PL_PS	$3c9b2,dos_1
 		PL_PS	$3717c,dos_LoadSeg
 	ENDC
+	ENDC
+	IFD STACKSIZE
+		PL_L	$38ac0,STACKSIZE/4
 	ENDC
 	IFD  _bootdos
 		PL_PS	$38a4a,dos_bootdos
