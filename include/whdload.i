@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Feodorstraﬂe 8, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 15.2 2002/08/20 19:38:27 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 15.3 2003/06/03 06:38:08 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -18,6 +18,8 @@
 ;		20.08.02 WHDLTAG_ALIGN added
 ;		19.11.02 WHDLTAG_CHKCOPCON added
 ;		03.06.03 EmulDivZero added
+;		16.06.03 new PL's added
+;		18.07.03 EmulIllegal added
 ;  :Copyright.	© 1996-2002 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -206,12 +208,20 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 				;if negative it is optional
 
 ;=============================================================================
-; additional	Version 10
+; additional	Version 10..15
 ;=============================================================================
 
 	RPTR	ws_name		;name of the installed program
 	RPTR	ws_copy		;year and owner of the copyright
 	RPTR	ws_info		;additional informations (author, version...)
+
+;=============================================================================
+; additional	Version 16
+;=============================================================================
+
+	RPTR	ws_kickname	;name of kickstart image
+	ULONG	ws_kicksize	;size of kickstart image
+	UWORD	ws_kickcrc	;crc16 of kickstart image
 	LABEL	ws_SIZEOF
 
 ;=============================================================================
@@ -252,6 +262,8 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	BITDEF WHDL,Examine,13	;preload cache for Examine/ExNext
 ; version 16
 	BITDEF WHDL,EmulDivZero,14 ;forward "division by zero" exceptions to
+				;the handler of the installed program
+	BITDEF WHDL,EmulIllegal,15 ;forward "illegal instruction" exceptions to
 				;the handler of the installed program
 
 ;=============================================================================
@@ -530,6 +542,13 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_CB		;clear one byte
 	EITEM	PLCMD_CW		;clear one word
 	EITEM	PLCMD_CL		;clear one long
+; version 16
+	EITEM	PLCMD_PSS		;set "jsr","nop..."
+	EITEM	PLCMD_NEXT		;continue with another patch list
+	EITEM	PLCMD_AB		;add byte to specified address
+	EITEM	PLCMD_AW		;add word to specified address
+	EITEM	PLCMD_AL		;add long to specified address
+	EITEM	PLCMD_DATA		;write n data bytes to specified address
 
 ;=============================================================================
 ; macros to build patchlist
@@ -627,6 +646,52 @@ PL_CW		MACRO			;clear one word
 PL_CL		MACRO			;clear one long
 	PL_CMDADR PLCMD_CL,\1
 		ENDM
+
+PL_PSS		MACRO			;set "jsr","nop..."
+	PL_CMDADR PLCMD_PSS,\1
+	dc.w	\2-.patchlist		;destination (inside slave!)
+	dc.w	\3			;byte count of nop's to append
+		ENDM
+
+PL_NEXT		MACRO			;continue with another patch list
+	PL_CMDADR PLCMD_NEXT,0
+	dc.w	\1-.patchlist		;destination (inside slave!)
+		ENDM
+
+PL_AB		MACRO			;add byte
+	PL_CMDADR PLCMD_AB,\1
+	dc.w	\2			;data to add
+		ENDM
+
+PL_AW		MACRO			;add word
+	PL_CMDADR PLCMD_AW,\1
+	dc.w	\2			;data to add
+		ENDM
+
+PL_AL		MACRO			;add long
+	PL_CMDADR PLCMD_AL,\1
+	dc.l	\2			;data to add
+		ENDM
+
+; there are two macros provided for the DATA command, if you want change a 
+; string PL_STR can be used:
+;	PL_STR	$340,<NewString!>
+; for binary data you must use PL_DATA like to follwing example:
+;	PL_DATA	$350,.stop-.strt
+; .strt	dc.b	2,3,$ff,'a',0
+; .stop	EVEN
+
+PL_DATA		MACRO			;write n bytes to specified address
+	PL_CMDADR PLCMD_DATA,\1
+	dc.w	\2			;count of bytes to write
+		ENDM
+
+PL_STR		MACRO
+	PL_CMDADR PLCMD_DATA,\1
+	dc.w	.dat2\@-.dat1\@
+.dat1\@	dc.b	'\2'
+.dat2\@	EVEN
+		ENDM	
 
 ;=============================================================================
 
