@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.9 2000/04/16 16:46:17 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.10 2000/04/16 21:12:03 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -15,6 +15,7 @@
 ;		17.03.00 most stuff from SetPatch 1.38 added
 ;		20.03.00 some fixes for 68060 and snoop
 ;		16.04.00 loadview fixed
+;		11.05.00 SetPatch can be enabled/disabled via a defined label
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -108,12 +109,14 @@ kick_patch	PL_START
 		PL_PS	$3c9b6,dos_1
 
 	;the following stuff is from SetPatch 1.38
+	IFD SETPACTH
 		PL_PS	$582c,gfx_MrgCop
 		PL_PS	$7f66,gfx_SetFont
 		PL_P	$7fa6,gfx_SetSoftStyle
 		PL_P	$195a,exec_AllocEntry
 		PL_P	$11b0,exec_UserState
 		PL_P	$1696,exec_FindName
+	ENDC
 
 		PL_END
 
@@ -213,6 +216,8 @@ exec_AllocMem	movem.l	d0-d1/a0-a1,-(a7)
 		rts
 	ENDC
 
+	IFD SETPATCH
+
 exec_AllocEntry	movem.l	d2/d3/a2-a4,-(sp)
 		movea.l	a0,a2
 		moveq	#0,d3
@@ -298,6 +303,8 @@ exec_FindName	move.l	a2,-(sp)
 		movea.l	(sp)+,a2
 		rts
 
+	ENDC
+
 ;============================================================================
 
 gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
@@ -347,6 +354,8 @@ gfx_fix1	move.l	(v_LOFCprList,a1),d0
 .s2		add.l	#$d5d2-$d5be-6,(a7)
 		rts
 
+	IFD SETPATCH
+	
 gfx_MrgCop	move.w	($10,a1),d0
 		move.w	($9E,a6),d1
 		eor.w	d1,d0
@@ -412,6 +421,8 @@ gfx_SetSoftStyle
 		move.l	d2,d0
 		move.l	(sp)+,d2
 		rts
+
+	ENDC
 
 ;============================================================================
 
