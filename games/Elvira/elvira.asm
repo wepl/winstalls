@@ -3,10 +3,11 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1 
-;  :Version.	$Id: elvira.asm 1.4 2002/01/25 00:54:31 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.5 2002/01/30 21:21:07 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
+;		19.02.02 final
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -36,7 +37,7 @@ FASTMEMSIZE	= $80000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
-DEBUG
+;DEBUG
 ;DISKSONBOOT
 HDINIT
 ;HRTMON
@@ -84,7 +85,8 @@ _info		dc.b	"adapted by Wepl",10
 		dc.b	0
 _data		dc.b	"data",0
 _runit		dc.b	"runit",0
-_arg		dc.b	"gameamiga",10,0
+_args		dc.b	"gameamiga",10
+_args_end
 	EVEN
 
 ;============================================================================
@@ -143,6 +145,7 @@ _bootdos
 .p		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
+	IFD DEBUG
 	;set debug
 		clr.l	-(a7)
 		move.l	d7,-(a7)
@@ -150,16 +153,19 @@ _bootdos
 		move.l	a7,a0
 		jsr	(resload_Control,a2)
 		add.w	#12,a7
+	ENDC
 
 	;call
 		move.l	d7,a1
 		add.l	a1,a1
 		add.l	a1,a1
-		moveq	#10,d0
-		lea	(_arg,pc),a0
-		move.l	a6,-(a7)
+		moveq	#_args_end-_args,d0
+		lea	(_args,pc),a0
+		move.l	(4,a7),d1		;stacksize
+		sub.l	#5*4,d1			;required for MANX stack check
+		movem.l	d1/d7/a2/a6,-(a7)
 		jsr	(4,a1)
-		move.l	(a7)+,a6
+		movem.l	(a7)+,d1/d7/a2/a6
 
 	;remove exe
 		move.l	d7,d1
