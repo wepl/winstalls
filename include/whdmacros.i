@@ -4,11 +4,12 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 15.1 2002/08/08 22:52:55 wepl Exp wepl $
+;  :Version.	$Id: whdmacros.i 16.3 2004/07/16 13:56:18 wepl Exp wepl $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
 ;		04.06.04 macro 'blitz' improved
+;		29.10.04 macro 'blitz' fixed (oh god what a mess)
 ;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
@@ -263,7 +264,7 @@ blitz		MACRO
 .lpbl\@
 	IFNE NARG&1
 		move	#$4200,(bplcon0,a0)
-	ELSE
+	ENDC
 		move.w	d0,(color,a0)
 		subq.w	#1,d0
 		btst	#6,$bfe001
@@ -273,7 +274,7 @@ blitz		MACRO
 .lp2bl\@
 	IFNE NARG&1
 		move	#$4200,(bplcon0,a0)
-	ELSE
+	ENDC
 		move.w	d0,(color,a0)
 		subq.w	#1,d0
 		btst	#6,$bfe001
