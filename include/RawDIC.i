@@ -1,5 +1,5 @@
 
-	;	Include file for RawDIC V1.3 to V1.7
+	;	Include file for RawDIC V1.3 to V2.0
 
 	; incdir	Includes:
 		ifnd	EXEC_TYPES_I
@@ -132,6 +132,25 @@ IERR_VERSION	equ	-13	; slave has higher version number than imager
 IERR_DSKVERSION	equ	-14	; disk structure has not supported version number
 IERR_FLAGS	equ	-15	; slave uses flags not to be used with the specified version
 IERR_NOFUNCTION	equ	-16	; function may not be called at the current programstate
+IERR_INP_OPEN	equ	-17	; input file would not open
+IERR_INP_SEEK	equ	-18	; input file seek error
+IERR_INP_READ	equ	-19	; input file read error
+IERR_INP_NOTRK	equ	-20	; input file does not contain the track we wanted
+IERR_INP_BADHD	equ	-21	; input file has a bad track header
+IERR_XPK_DEPACK	equ	-22	; mfmwarp xpk depack routine failed
+IERR_MC1_DEPACK	equ	-23	; mfmwarp mc1 depack routine failed
+IERR_DIP_DEPACK	equ	-24	; mfmwarp dip depack routine failed
+IERR_MFM_CSUM	equ	-25	; mfmwarp checksum error
+IERR_INP_ILLEN	equ	-26	; input file has an illegal track length
+IERR_FORMAT_UNS	equ	-27	; format of the input file is currently unsupported
+IERR_INP_INCOMP	equ	-28	; format of the input file is not compatible with what the slave wants (eg. contains dos and wants mfm)
+IERR_NMD_DEPACK	equ	-29	; nomadwarp depack routine failed
+IERR_WWP_UNS	equ	-30	; wwarp file format is unsupported
+IERR_TABL_DATA	equ	-31	; wwarp table data error
+IERR_TABL_UNS	equ	-32	; wwarp table header version unsupported
+IERR_TRCK_UNS	equ	-33	; wwarp track header version unsupported
+IERR_TRCK_TYPE	equ	-34	; wwarp track type unsupported
+IERR_TRCK_FLAG	equ	-35	; wwarp track flags unsupported
 
  STRUCTURE	SlaveStructure,0
 
@@ -368,7 +387,7 @@ CRC_END		equ	-1
 
  ; TL_ENTRY: a tracklist entry
  ; format:	TL_ENTRY tle_FirstTrack,tle_LastTrack,tle_BlockLength,tle_Sync,tle_Decoder
- ; example:	TL_ENTRY 0,19,$1600,SYNC_STANDARD,DMFM_STANDARD
+ ; example:	TL_ENTRY 0,19,$1600,SYNC_STD,DMFM_STD
 
 	; defines for sync signals: (tle_Sync)
 
