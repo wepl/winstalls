@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.15 2003/08/10 13:12:39 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.16 2003/12/10 14:22:58 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -15,6 +15,8 @@
 ;		20.06.03 adapted for whdload v16
 ;		25.06.03 _dos_assign parameter change
 ;		09.12.03 keyboard acknowledgment fixed
+;		06.02.04 keyboard acknowledgment fix fixed
+;		19.02.04 clearing ciasdr removed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -543,12 +545,11 @@ disk_getunitid
 ; 63.5µs a this results in min=127µs max=190.5µs
 
 keyboard_start	or.b	#CIACRAF_SPMODE,(ciacra,a0)
-		clr.b	(ciasdr,a0)
 		lea	(_keyboarddelay,pc),a1
 		move.b	(_custom+vhposr),(a1)
 		rts
 
-keyboard_end	move.w	(_keyboarddelay,pc),d1
+keyboard_end	move.b	(_keyboarddelay,pc),d1
 		lea	(_custom),a1
 .wait1		cmp.b	(vhposr,a1),d1
 		beq	.wait1

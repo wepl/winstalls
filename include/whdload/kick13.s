@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.51 2003/08/10 13:12:32 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.52 2003/12/10 14:22:49 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -49,6 +49,8 @@
 ;		20.06.03 adapted for whdload v16
 ;		25.06.03 _dos_assign parameter change
 ;		09.12.03 keyboard acknowledgment fixed
+;		06.02.04 keyboard acknowledgment fix fixed
+;		19.02.04 clearing ciasdr removed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -582,12 +584,11 @@ disk_getunitid
 ; 63.5µs a this results in min=127µs max=190.5µs
 
 keyboard_start	or.b	#CIACRAF_SPMODE,(ciacra,a0)
-		clr.b	(ciasdr,a0)
 		lea	(_keyboarddelay,pc),a1
 		move.b	(_custom+vhposr),(a1)
 		rts
 
-keyboard_end	move.w	(_keyboarddelay,pc),d1
+keyboard_end	move.b	(_keyboarddelay,pc),d1
 		lea	(_custom),a1
 .wait1		cmp.b	(vhposr,a1),d1
 		beq	.wait1

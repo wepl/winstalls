@@ -1,13 +1,15 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.8 2003/02/19 07:34:07 wepl Exp $
+;  :Version.	$Id: keyboard.s 1.9 2003/05/14 23:56:44 wepl Exp $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
 ;		07.10.99 some cosmetic changes, documentation improved
 ;		24.10.99 _keycode added
 ;		15.05.03 better interrupt acknowledge
+;		04.03.04 clearing sdr removed, seems not required/causing
+;			 problems
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
@@ -71,8 +73,7 @@ _SetupKeyboard
 		beq	.end
 	;read keycode
 		move.b	(ciasdr,a1),d0
-	;set output to low and output mode (handshake)
-		clr.b	(ciasdr,a1)
+	;set output mode (handshake)
 		or.b	#CIACRAF_SPMODE,(ciacra,a1)
 	;calculate rawkeycode
 		not.b	d0
