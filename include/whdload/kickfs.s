@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.12 2003/09/01 21:13:57 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.13 2004/04/28 23:07:18 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -15,6 +15,7 @@
 ;		09.08.03 ACTION_CURRENT_VOLUME added (JOTD)
 ;		01.09.03 ACTION_EXAMINE_FH fixed (Psygore)
 ;		29.04.04 ACTION_CREATE_DIR returns ERROR_OBJECT_EXISTS if exists
+;		06.10.04 checks for startup-sequence if not BOOTDOS (JOTD)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,6 +74,19 @@ HD_NumBuffers		= 5
 ;---------------------------------------------------------------------------*
 
 		movem.l	d0-a6,-(a7)
+
+	IFND	BOOTDOS
+		lea	(ss_name,pc),a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_GetFileSize,a2)
+		tst.l	d0
+		bne	.ssok
+		pea	(ss_name,pc)
+		pea	ERROR_OBJECT_NOT_FOUND
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a2)
+.ssok
+	ENDC
 
 		moveq	#ConfigDev_SIZEOF,d0
 		move.l	#MEMF_CLEAR,d1
@@ -1275,6 +1289,8 @@ bootfile_ss	BOOTFILENAME
 bootfile_ss_e
 bootname_exe	BOOTFILENAME
 		dc.b	0
+	ELSE
+ss_name		dc.b	"s/startup-sequence",0
 	ENDC
 
 ;---------------
