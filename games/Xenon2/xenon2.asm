@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.4 1999/06/03 20:34:22 jah Exp jah $
+;  :Version.	$Id: xenon2.asm 1.5 2000/06/18 22:48:13 jah Exp jah $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
 ;		20.12.98 work on CDTV version started
@@ -12,6 +12,7 @@
 ;		03.06.99 support for third disk version added
 ;		17.06.00 highscores fixed
 ;		18.06.00 trainer fixed
+;		16.08.00 crash on not entering highscores fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,7 +20,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-CDTV		;if defined Slave for CDTV version will be created
+;CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -77,7 +78,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.5 Floppy "
+		dc.b	"Version 1.6 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -85,7 +86,7 @@ _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.4 CDTV "
+		dc.b	"Version 1.5 CDTV "
 		INCBIN	"T:date"
 		dc.b	0
 	ENDC
@@ -129,7 +130,7 @@ _start	;	A0 = resident loader
 		move.l	(_custom1),d0
 		bne	.trained
 		lea	(_notrainer),a0
-		patch	$3c54c,_savehighs
+		patch	$3c54a,_savehighs
 .trained	lea	$3a296,a1
 		move.l	#$4e714eb9,(a1)+
 		move.l	a0,(a1)
@@ -220,7 +221,8 @@ _load_level2	lea	($4e26),a1		;180000 bytes
 		pea	($3d2d2)
 		bra	_load
 
-_savehighs	jsr	$3ca02			;original
+_savehighs	addq.l	#2,a7			;original
+		jsr	$3ca02			;original
 		move.l	#$fc-$66+$28,d0
 		lea	$3c366-$28,a0
 		movem.l	d0/a0,-(a7)
@@ -307,7 +309,7 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	(_custom1),d0
 		bne	.trained
 		lea	(_notrainer),a0
-		patch	$853c,_v2_savehighs
+		patch	$853a,_v2_savehighs
 .trained	move.w	#$4eb9,$6bae
 		move.l	a0,$6bae+2
 
@@ -331,7 +333,8 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 
 		jmp	$400
 
-_v2_savehighs	jsr	$86aa			;original
+_v2_savehighs	addq.l	#2,a7			;original
+		jsr	$86aa			;original
 		move.l	#$fc-$66+$28,d0
 		lea	$8368-$28,a0
 		movem.l	d0/a0,-(a7)
@@ -426,7 +429,7 @@ _5		move.l	#$4ef8763a,$70f6	;third copylock
 		move.l	(_custom1),d0
 		bne	.trained
 		lea	(_notrainer),a0
-		patch	$8b1a,_savehighs
+		patch	$8b18,_savehighs
 .trained	move.w	#$4eb9,$6ba4
 		move.l	a0,$6ba4+2
 
@@ -447,7 +450,8 @@ _5		move.l	#$4ef8763a,$70f6	;third copylock
 		move.l	#$7670CF6B,d0		;CopyLock
 		jmp	$400
 
-_savehighs	jsr	$8c88			;original
+_savehighs	addq.l	#2,a7			;original
+		jsr	$8c88			;original
 		move.l	#$fc-$66+$28,d0
 		lea	$8946-$28,a0
 		movem.l	d0/a0,-(a7)
