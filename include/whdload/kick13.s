@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.43 2003/03/30 17:41:29 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.44 2003/04/03 07:13:01 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -139,7 +139,8 @@ kick_patch	PL_START
 		PL_I	$2af68				;trd_rawread
 		PL_I	$2af6e				;trd_rawwrite
 	ENDC
-		PL_P	$4984,disk_getunitid
+		PL_S	$4964,$4978-$4964		;skip disk unit detect
+		PL_P	$4adc,disk_getunitid
 	IFD BLACKSCREEN
 		PL_C	$1b9d2,6			;color17,18,19
 		PL_C	$1b9da,8			;color0,1,2,3
@@ -480,33 +481,15 @@ gfx_SetSoftStyle
 ;============================================================================
 
 disk_getunitid
-	IFNE NUMDRIVES-4
-		lea	(12,a3),a3
-	IFEQ NUMDRIVES
-		clr.l	-(a7)
-		subq.l	#4,a7
-		pea	WHDLTAG_CUSTOM1_GET
-		move.l	a7,a0
-		move.l	(_resload,pc),a1
-		jsr	(resload_Control,a1)
-		addq.l	#4,a7
-		move.l	(a7),d0
-		addq.l	#8,a7
-		neg.l	d0
-		addq.l	#3,d0
-		bmi	.q
-		cmp.w	#3,d0
-		blo	.ok
-		moveq	#2,d0
-.ok
+	IFMI NUMDRIVES
+		cmp.l	(_custom1,pc),d0
 	ELSE
-		moveq	#3-NUMDRIVES,d0
+		cmp.l	#NUMDRIVES,d0
 	ENDC
-		moveq	#-1,d1
-.0		move.l	d1,-(a3)
-		dbf	d0,.0
-	ENDC
-.q		rts
+		scc	d0
+		ext.w	d0
+		ext.l	d0
+		rts
 
 ;============================================================================
 
@@ -803,6 +786,10 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
+	IFMI NUMDRIVES
+		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+	ENDC
 		dc.l	0
 _resload	dc.l	0
 _cbswitch_cop2lc	dc.l	0

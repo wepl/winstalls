@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.7 2003/03/30 11:16:16 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.8 2003/03/30 17:41:29 wepl Exp $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -105,7 +105,8 @@ kick_patch	PL_START
 		PL_I	$2b2e8				;trd_rawread
 		PL_I	$2b2ee				;trd_rawwrite
 	ENDC
-		PL_P	$491c,disk_getunitid
+		PL_S	$48fc,$4910-$48fc		;skip disk unit detect
+		PL_P	$4a74,disk_getunitid
 	IFD BLACKSCREEN
 		PL_C	$1bcd6,6			;color17,18,19
 		PL_C	$1bcde,8			;color0,1,2,3
@@ -449,33 +450,15 @@ gfx_SetSoftStyle
 ;============================================================================
 
 disk_getunitid
-	IFNE NUMDRIVES-4
-		lea	(12,a3),a3
-	IFEQ NUMDRIVES
-		clr.l	-(a7)
-		subq.l	#4,a7
-		pea	WHDLTAG_CUSTOM1_GET
-		move.l	a7,a0
-		move.l	(_resload,pc),a1
-		jsr	(resload_Control,a1)
-		addq.l	#4,a7
-		move.l	(a7),d0
-		addq.l	#8,a7
-		neg.l	d0
-		addq.l	#3,d0
-		bmi	.q
-		cmp.w	#3,d0
-		blo	.ok
-		moveq	#2,d0
-.ok
+	IFMI NUMDRIVES
+		cmp.l	(_custom1,pc),d0
 	ELSE
-		moveq	#3-NUMDRIVES,d0
+		cmp.l	#NUMDRIVES,d0
 	ENDC
-		moveq	#-1,d1
-.0		move.l	d1,-(a3)
-		dbf	d0,.0
-	ENDC
-.q		rts
+		scc	d0
+		ext.w	d0
+		ext.l	d0
+		rts
 
 ;============================================================================
 
@@ -778,6 +761,10 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
+	IFMI NUMDRIVES
+		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+	ENDC
 		dc.l	0
 _resload	dc.l	0
 _cbswitch_cop2lc	dc.l	0

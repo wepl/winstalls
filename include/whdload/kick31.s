@@ -2,8 +2,9 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.2 2003/03/30 17:41:29 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.3 2003/04/03 07:13:01 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
+;		04.04.03 disk.ressource cleanup
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -107,7 +108,11 @@ kick_patch	PL_START
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
 		PL_CB	$3ddf2				;dont init battclock.ressource
-		PL_P	$40442,disk_getunitid
+		PL_S	$40414,$40436-$40414		;skip disk unit detect
+	;	PL_R	$40442
+		PL_P	$40566,disk_getunitid
+		PL_P	$4056e,disk_getunitid
+	;	PL_P	$40442,disk_getunitid
 	IFD	INIT_MATHFFP				;mathffp.library
 		PL_B	$40632,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -263,10 +268,10 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
 		tst.b	(_cbflag_beamcon0,pc)
 		beq	.nobeamcon0
-		move.l	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
+		move.w	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
 .nobeamcon0	tst.b	(_cbflag_vbstrt,pc)
 		beq	.novbstrt
-		move.l	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
+		move.w	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
 .novbstrt	jmp	(a0)
 
 gfx_readvpos	move	(vposr+_custom),d0
@@ -293,41 +298,13 @@ gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 ;============================================================================
 
 disk_getunitid
-	; compute number of drives
-
-	IFEQ NUMDRIVES
-		; NUMDRIVES = 0: try to read CUSTOM1
-		clr.l	-(a7)
-		subq.l	#4,a7
-		pea	WHDLTAG_CUSTOM1_GET
-		move.l	a7,a0
-		move.l	(_resload,pc),a1
-		jsr	(resload_Control,a1)
-		addq.l	#4,a7
-		move.l	(a7),d1
-		addq.l	#8,a7
-		tst.l	d1
-		bne.b	.nz
-		moveq.l	#1,d1	; 0 or less: set 1		
-.nz
-		cmp.l	#5,d1
-		bcs.b	.le4
-		moveq.l	#4,d1	; 5 or more: set 4
-.le4
+	IFMI NUMDRIVES
+		cmp.l	(_custom1,pc),d0
 	ELSE
-		moveq	#NUMDRIVES,d1
+		cmp.l	#NUMDRIVES,d0
 	ENDC
-		moveq.l	#1,d0
-		addq.l	#2,d1
-		lsl	d1,d0	; 2^(numdrive+3-1)
-
-		moveq	#-1,D1
-		cmp.b	d3,d0
-		bcs.b	.d	; no more drives
-		moveq	#0,D1
-.d
-		move.l	D1,(A3)+
-		move.l	D1,D0
+		scc	d0
+		extb.l	d0
 		rts
 
 ;============================================================================
@@ -452,23 +429,25 @@ trd_task	move.b	($63,a3),d1		;unit number
 
 .2		rts
 
+	IFD TRDCHANGEDISK
 	;d0.b = unit
 	;d1.b = new disk image number
 _trd_changedisk	movem.l	a6,-(a7)
 
 		and.w	#3,d0
 		lea	(_trd_chg,pc),a0
-		
+
 		move.l	(4),a6
 		jsr	(_LVODisable,a6)
-		
+
 		move.b	d1,(-5,a0,d0.w)
 		bset	d0,(a0)
-		
+
 		jsr	(_LVOEnable,a6)
-		
+
 		movem.l	(a7)+,a6
 		rts
+	ENDC
 
 ;============================================================================
 
@@ -602,13 +581,6 @@ _flushcache	move.l	(_resload,pc),-(a7)
 		add.l	#resload_FlushCache,(a7)
 		rts
 
-_waitvb
-.1		btst	#0,(_custom+vposr+1)
-		beq	.1
-.2		btst	#0,(_custom+vposr+1)
-		bne	.2
-		rts
-
 ;============================================================================
 
 	IFD DEBUG
@@ -630,6 +602,10 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
+	IFMI NUMDRIVES
+		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+	ENDC
 		dc.l	0
 _resload	dc.l	0
 _cbswitch_cop2lc	dc.l	0
