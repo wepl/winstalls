@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.3 2000/12/12 21:43:04 jah Exp $
+;  :Version.	$Id: speed.asm 1.4 2001/02/20 21:53:12 jah Exp jah $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -599,7 +599,7 @@ _top3		dc.b	"  Eclock=",0
 _top5		dc.b	"  whdload"
 _equ		dc.b	"=",0
 _dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.7  wepl "
+_quit		dc.b	"hold lmb to quit and save pic  v1.8  wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
