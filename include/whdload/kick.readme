@@ -1,5 +1,5 @@
 
-$Id: kick13.readme 1.4 2002/02/08 15:29:56 wepl Exp wepl $
+$Id: kick.readme 1.5 2002/05/09 13:34:28 wepl Exp $
 
 Symbols in the Slave-Source
 ***************************
@@ -170,18 +170,18 @@ _cb_dosLoadSeg
 	* Registers upon calling:
 	  D0 = BSTR name of the loaded program as BCPL string
 	  D1 = BPTR segment list of the loaded program as BCPL pointer
-	* the routine may destory all registers but must return via RTS
+	* the routine may destroy all registers but must return via RTS
 
 _cb_dosRead
 
 	* that label will be called after each successful execution of
-	  dos.Read and can be used to patch the loaded programs
+	  dos.Read and can be used to patch the loaded data
 	* Registers upon calling:
 	  D0 = ULONG amount of bytes read during current Read
 	  D1 = ULONG offset in file on start of current Read
 	  A0 = CPTR  full name of file
 	  A1 = APTR  buffer to the data has been read
-	* the routine may destory all registers but must return via RTS
+	* the routine may destroy all registers but must return via RTS
 
 Functions in kick13.s
 *********************
@@ -201,7 +201,7 @@ _dos_assign
 		bsr	_dos_assign
 		...
 		CNOP 0,4
-	  _name dc.b	4,"DF0:",0
+	  _name dc.b	3,"DF0",0
 
 _trd_changedisk
 	* change a disk in a trackdisk.device unit
@@ -214,11 +214,11 @@ _trd_changedisk
 
 _flushcache
 	* flush cpu caches
-	* all registers will preseved
+	* all registers will preserved
 
 _waitvb
 	* wait for vertical raster blank
-	* all registers will preseved
+	* all registers will preserved
 
 
 Labels in kick13.s
