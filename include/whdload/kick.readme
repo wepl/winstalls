@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.5 2002/05/09 13:34:28 wepl Exp $
+$Id: kick.readme 1.6 2002/11/05 18:52:57 wepl Exp $
 
 Symbols in the Slave-Source
 ***************************
@@ -127,6 +127,11 @@ If that symbol is defined nearly all patches done by the SetPatch v1.38
 program will be performed. Usually that is not necessary and omitting the
 option makes the Slave around 400 bytes shorter.
 
+TRDCHANGEDISK
+
+If that symbol is defined the subroutine _trd_changedisk will be included and
+can be used (see below).
+
 
 Labels in the Slave-Source
 **************************
@@ -183,8 +188,8 @@ _cb_dosRead
 	  A1 = APTR  buffer to the data has been read
 	* the routine may destroy all registers but must return via RTS
 
-Functions in kick13.s
-*********************
+Functions in kick12.s/kick13.s
+******************************
 
 _dos_assign
 	* only avaliable if DOSASSIGN is defined
@@ -204,6 +209,7 @@ _dos_assign
 	  _name dc.b	3,"DF0",0
 
 _trd_changedisk
+	* only avaliable if TRDCHANGEDISK is defined
 	* change a disk in a trackdisk.device unit
 	* SYNOPSIS
 		IN:	D0 = BYTE unit
@@ -221,8 +227,8 @@ _waitvb
 	* all registers will preserved
 
 
-Labels in kick13.s
-******************
+Labels in kick12.s/kick13.s
+***************************
 
 _attnflags
 	* a long word containing the exec.AttnFlags
