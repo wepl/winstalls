@@ -2,12 +2,13 @@
 ;  :Program.	elvira.asm
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
-;  :Original	v1 
-;  :Version.	$Id: elvira.asm 1.5 2002/01/30 21:21:07 wepl Exp wepl $
+;  :Original	v1
+;  :Version.	$Id: elvira.asm 1.6 2002/02/19 22:44:29 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
 ;		19.02.02 final
+;		17.04.02 POINTERTICKS added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -44,6 +45,7 @@ HDINIT
 IOCACHE		= 22000
 ;MEMFREE	= $200
 ;NEEDFPU
+POINTERTICKS	= 1
 ;SETPATCH
 
 ;============================================================================
@@ -87,6 +89,7 @@ _data		dc.b	"data",0
 _runit		dc.b	"runit",0
 _args		dc.b	"gameamiga",10
 _args_end
+		dc.b	0
 	EVEN
 
 ;============================================================================
