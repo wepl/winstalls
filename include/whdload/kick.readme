@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.9 2003/02/13 22:47:17 wepl Exp wepl $
+$Id: kick.readme 1.10 2003/03/30 18:25:01 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -36,8 +36,10 @@ NUMDRIVES = 1
 
 That sets the number of drives which will get detected by the emulated system.
 The amount has nothing to do with the amount of physically available drives!
-Allowed values are 0 - 4. The value 0 has special meaning that Custom1/N is
-used to set drive count.
+Allowed values are -1 ... 4. The value -1 has special meaning that Custom1/N
+is used to set drive count. If Custom1/N is not specified (its zero) than one
+drive will be used. Setting the drivecount to 0 works only with Kickstart 3.1,
+the older Kickstarts 1.2 and 1.3 will crash if there is no floppy drive.
 
 WPDRIVES = %0000
 
@@ -55,6 +57,12 @@ That symbol forces all colors (0-4,17-19) in the default system (intuition)
 preferences to null. The result is that the initial AmigaDOS boot screen will
 be invisible.
 
+CACHE
+
+The presence of that symbol enables full cpu caches for the expansion memory
+before the kickstart is booting. That gives best performance for the installed
+program. Chip memory remains uncached.
+
 DEBUG
 
 If that symbol is defined various checks will be included in the emulation
@@ -71,7 +79,7 @@ the drives use the function _trd_changedisk (see below).
 DOSASSIGN
 
 If that symbol is defined the subroutine _dos_assign will be included and can
-be used (see below).
+be used (see below). Only available in kick12.s and kick13.s.
 
 FONTHEIGHT
 
@@ -85,7 +93,7 @@ If that symbol is defined a dos filesystem handler will be installed which
 mounts the actual directory as a drive called DH0: (volume has name
 'WHDLoad'). If there is no bootable disk inserted (check DISKSONBOOT) the
 dos.library will try to boot from that device. HDINIT requires that the flag
-WHDLF_Examine is set!
+WHDLF_Examine to be set!
 
 HRTMON
 
@@ -102,6 +110,26 @@ seperately. If the installed program uses savegames you should probably set
 the IOCACHE to the size of the savegame (or at least half/quarter) to minimize
 the amount OS swaps. If you use large values you maybe need to increase the
 memory for the installed program.
+
+INITAGA
+
+Only available in kick31.s. Enables the AGA graphics modes using
+gfx.SetChipRev(SETCHIPREV_BEST).
+
+INIT_AUDIO
+
+Only available in kick31.s. Forces the kickstart to initialize the
+audio.device.
+
+INIT_GADTOOLS
+
+Only available in kick31.s. Forces the kickstart to initialize the
+gadtools.library.
+
+INIT_MATHFFP
+
+Only available in kick31.s. Forces the kickstart to initialize the
+mathffp.library.
 
 MEMFREE = $100
 
@@ -131,7 +159,8 @@ SETPATCH
 
 If that symbol is defined nearly all patches done by the SetPatch v1.38
 program will be performed. Usually that is not necessary and omitting the
-option makes the Slave around 400 bytes shorter.
+option makes the Slave around 400 bytes shorter. Only available in kick12.s
+and kick13.s.
 
 STACKSIZE
 
@@ -189,6 +218,7 @@ _cb_dosLoadSeg
 
 _cb_dosRead
 
+	* works only in conjunction with HDINIT
 	* that label will be called after each successful execution of
 	  dos.Read and can be used to patch the loaded data
 	* Registers upon calling:
@@ -198,10 +228,12 @@ _cb_dosRead
 	  A1 = APTR  buffer to the data has been read
 	* the routine may destroy all registers but must return via RTS
 
-Functions in kick12.s/kick13.s
-******************************
+Functions in kick(12|13|31).s
+*****************************
 
 _dos_assign
+	* only available in kick12/3.s, with kick31 use the appropriate
+	  dos.library functions AssignLock, AssignPath, ...
 	* only avaliable if DOSASSIGN is defined
 	* performs a C:Assign like operation
 	* SYNOPSIS
@@ -232,13 +264,9 @@ _flushcache
 	* flush cpu caches
 	* all registers will preserved
 
-_waitvb
-	* wait for vertical raster blank
-	* all registers will preserved
 
-
-Labels in kick12.s/kick13.s
-***************************
+Labels in kick(12|13|31).s
+**************************
 
 _attnflags
 	* a long word containing the exec.AttnFlags
