@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.13 2001/07/15 22:13:30 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.17 2001/08/05 00:45:12 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -22,6 +22,9 @@
 ;		03.08.01 NOFPU->NEEDFPU changed, DISKSONBOOT added
 ;			 bug in trackdisk fixed (endio missing on error)
 ;		04.08.01 flushcache and callback for dos.LoadSeg added
+;		05.08.01 hd supported started
+;		01.09.01 trap #15 to trap #14 changed in _Supervisor (debug rnc)
+;			 BLACKSCREEN added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -30,10 +33,16 @@
 ;---------------------------------------------------------------------------*
 
 	INCLUDE	lvo/exec.i
+	INCLUDE	lvo/expansion.i
 	INCLUDE	lvo/graphics.i
 	INCLUDE	devices/trackdisk.i
+	INCLUDE	dos/dosextens.i
+	INCLUDE	dos/filehandler.i
 	INCLUDE	exec/memory.i
+	INCLUDE	exec/resident.i
 	INCLUDE	graphics/gfxbase.i
+	INCLUDE	libraries/configvars.i
+	INCLUDE	libraries/expansionbase.i
 
 ;============================================================================
 
@@ -111,6 +120,15 @@ kick_patch	PL_START
 		PL_P	$2960c,trd_task
 	;	PL_L	$29c54,-1			;disable asynchron io
 		PL_P	$4984,disk_getunitid
+	IFD BLACKSCREEN
+		PL_L	$1b9d2,0			;color17,18
+		PL_W	$1b9d6,0			;color19
+		PL_L	$1b9da,0			;color0,1
+		PL_L	$1b9de,0			;color2,3
+	ENDC
+	IFD HDINIT
+		PL_PS	$28452,hd_init			;enter while starting strap
+	ENDC
 	IFND _bootearly
 	IFND _bootblock
 		PL_PS	$33ef0,dos_init
@@ -188,11 +206,11 @@ exec_Supervisor	lea	(.supervisor,pc),a0
 		lea	(_custom),a0		;original
 		bra	_flushcache
 .supervisor	movem.l	a0-a1,-(a7)
-		move.l	($bc),a0		;a0 = old $bc
-		lea	(.trap15,pc),a1
-		move.l	a1,($bc)
-		trap	#15
-.trap15		move.l	a0,($bc)
+		move.l	($b8),a0		;a0 = old $b8
+		lea	(.trap14,pc),a1
+		move.l	a1,($b8)
+		trap	#14
+.trap14		move.l	a0,($b8)
 		btst	#5,(a7)			;super?
 		bne	.super
 .user		move	usp,a1
@@ -650,6 +668,181 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 		jmp	(a6)
 
 	ENDC
+	ENDC
+
+;============================================================================
+
+	IFD HDINIT
+
+hd_init		lea	-1,a2				;original
+		movem.l	d0-a6,-(a7)
+
+		moveq	#ConfigDev_SIZEOF,d0
+		move.l	#MEMF_CLEAR,d1
+		move.l	(4),a6
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,a5				;A5 = ConfigDev
+		bset	#ERTB_DIAGVALID,(cd_Rom+er_Type,a5)
+		lea	(.diagarea,pc),a0
+		move.l	a0,(cd_Rom+er_Reserved0c,a5)
+
+		lea	(.expansionname,pc),a1
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a4				;A4 = expansionbase
+		
+		lea	(.parameterPkt,pc),a0
+		lea	(.handlername,pc),a1
+		move.l	a1,(a0)
+		move.l	a4,a6
+		jsr	(_LVOMakeDosNode,a6)
+		move.l	d0,a3				;A3 = DeviceNode
+	illegal
+		lea	(.seglist,pc),a1
+		move.l	a1,d1
+		lsr.l	#2,d1
+		move.l	d1,(dn_SegList,a3)
+
+		moveq	#BootNode_SIZEOF,d0
+		move.l	#MEMF_CLEAR,d1
+		move.l	(4),a6
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,a1				;BootNode
+		move.b	#NT_BOOTNODE,(LN_TYPE,a1)
+		move.l	a5,(LN_NAME,a1)			;ConfigDev
+		move.l	a3,(bn_DeviceNode,a1)
+		
+		lea	(eb_MountList,a4),a0
+		jsr	(_LVOEnqueue,a6)
+		
+		movem.l	(a7)+,d0-a6
+		rts
+
+.diagarea	dc.b	DAC_CONFIGTIME		;da_Config
+		dc.b	0			;da_Flags
+		dc.w	0			;da_Size
+		dc.w	0			;da_DiagPoint
+		dc.w	.bootcode-.diagarea	;da_BootPoint
+		dc.w	0			;da_Name
+		dc.w	0			;da_Reserved01
+		dc.w	0			;da_Reserved02
+
+.parameterPkt	dc.l	0			;name of handler (drive)
+		dc.l	0			;name of exec device
+		dc.l	0			;unit number for OpenDevice
+		dc.l	0			;flags for OpenDevice
+		dc.l	11			;amount following longwords
+		dc.l	512/4			;longs per block
+		dc.l	0			;sector start, unused
+		dc.l	2			;surfaces
+		dc.l	1			;sectors per block, unused
+		dc.l	11			;blocks per track
+		dc.l	2			;reserved blocks
+		dc.l	0			;unused
+		dc.l	0			;interleave
+		dc.l	0			;first cylinder
+		dc.l	1000			;last cylinder = 11 MB, avoid get detected as floppy
+		dc.l	1			;buffers
+
+.handlername	dc.b	"DH0",0
+.dosname	dc.b	"dos.library",0
+.expansionname	dc.b	"expansion.library",0
+
+.bootcode	lea	(.dosname,pc),a1
+		jsr	(_LVOFindResident,a6)
+		move.l	d0,a0
+		move.l	(RT_INIT,a0),a0
+		jmp	(a0)			;init dos.library
+
+		dc.l	4			;segment length
+.seglist	dc.l	0			;next segment
+		movem.l	d0-a6,-(a7)
+
+		illegal
+		
+		movem.l	(a7)+,d0-a6
+		rts
+
+		lea	(_as,pc),a0
+		lea	(-2,a0),a1
+.next		addq.l	#2,a1
+		move.w	(a1)+,d0
+		beq	.notfound
+		cmp.w	d0,d2
+		bne	.next
+		add.w	(a1)+,a0
+		jsr	(a0)
+
+.notfound
+
+_as	dc.w	ACTION_CURRENT_VOLUME,_a_current_volume-_as
+	dc.w	ACTION_LOCATE_OBJECT,_a_locate_object-_as
+	dc.w	ACTION_RENAME_DISK,_a_rename_disk-_as
+	dc.w	ACTION_FREE_LOCK,_a_free_lock-_as
+	dc.w	ACTION_DELETE_OBJECT,_a_delete_object-_as
+	dc.w	ACTION_RENAME_OBJECT,_a_rename_object-_as
+	dc.w	ACTION_COPY_DIR,_a_copy_dir-_as
+	dc.w	ACTION_SET_PROTECT,_a_set_protect-_as
+	dc.w	ACTION_CREATE_DIR,_a_create_dir-_as
+	dc.w	ACTION_EXAMINE_OBJECT,_a_examine_object-_as
+	dc.w	ACTION_EXAMINE_NEXT,_a_examine_next-_as
+	dc.w	ACTION_DISK_INFO,_a_disk_info-_as
+	dc.w	ACTION_INFO,_a_info-_as
+	dc.w	ACTION_FLUSH,_a_flush-_as
+	dc.w	ACTION_SET_COMMENT,_a_set_comment-_as
+	dc.w	ACTION_PARENT,_a_parent-_as
+	dc.w	ACTION_SET_DATE,_a_set_date-_as
+	dc.w	ACTION_FINDUPDATE,_a_find_update-_as
+	dc.w	ACTION_FINDINPUT,_a_find_input-_as
+	dc.w	ACTION_FINDOUTPUT,_a_find_output-_as
+	dc.w	ACTION_END,_a_end-_as
+	dc.w	ACTION_SEEK,_a_seek-_as
+	dc.w	ACTION_IS_FILESYSTEM,_a_is_filesystem-_as
+	dc.w	ACTION_READ,_a_read-_as
+	dc.w	ACTION_WRITE,_a_write-_as
+	dc.w	0
+
+; conventions for action functions:
+; IN:	a0 = packet
+; OUT:	-
+
+_a_current_volume
+	;	move.l	(_volname),(dp_Res1,a0)
+		rts
+
+_a_rename_disk	move.l	#DOSFALSE,(dp_Res1,a0)
+		move.l	#ERROR_DISK_WRITE_PROTECTED,(dp_Res2,a0)
+		rts
+
+_a_is_filesystem
+		move.l	#DOSTRUE,(dp_Res1,a0)
+		rts
+
+_a_locate_object
+_a_free_lock
+_a_delete_object
+_a_rename_object
+_a_copy_dir
+_a_set_protect
+_a_create_dir
+_a_examine_object
+_a_examine_next
+_a_disk_info
+_a_info
+_a_flush
+_a_set_comment
+_a_parent
+_a_set_date
+_a_find_update
+_a_find_input
+_a_find_output
+_a_end
+_a_seek
+_a_read
+_a_write
+		move.l	#DOSFALSE,(dp_Res1,a0)
+		move.l	#ERROR_NOT_IMPLEMENTED,(dp_Res2,a0)
+		rts
+
 	ENDC
 
 ;============================================================================
