@@ -1,76 +1,57 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	Flink.asm
 ;  :Contents.	Slave for "Flink" from Psygnosis
-;  :Author.	MrLarmer & Wepl
-;  :Original.	v1
-;  :Version.	$Id: GhostBusters2.asm 1.2 1999/07/21 21:07:23 jah Exp jah $
+;  :Author.	Mr.Larmer of Wanted Team
 ;  :History.	22.03.99
-;		21.07.99 compatibility with whdload v10
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	Devpac 3.14
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
-	INCLUDE	lvo/exec.i
-	INCLUDE	lvo/dos.i
+	INCDIR	Include:
+	INCLUDE	lvo/exec_lib.i
+	INCLUDE	lvo/dos_lib.i
+	INCLUDE	lvo/graphics_lib.i
+	INCLUDE	lvo/intuition_lib.i
+	INCLUDE	devices/trackdisk.i
 	INCLUDE	whdload.i
 
-	OUTPUT	"wart:f/flink/Flink.Slave"
-	BOPT	O+ OG+			;enable optimizing
-	BOPT	w4-			;disable 64k warnings
-	SUPER
+	OUTPUT	dh2:flink/Flink.slave
+	OPT	O+ OG+			;enable optimizing
 
 Trainer		=	0	; 0-off, 1-on
 Decruncher	=	0
 
 ;======================================================================
 
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10			;ws_Version
+_base
+		SLAVE_HEADER		;ws_Security + ws_ID
+		dc.w	7		;ws_Version
 		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_ReqAGA|WHDLF_Req68020	;ws_flags
-		dc.l	$200000			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
-		dc.w	_data-_base		;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-		dc.l	0			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
+		dc.l	$200000		;ws_BaseMemSize
+		dc.l	0		;ws_ExecInstall
+		dc.w	Start-_base	;ws_GameLoader
+		dc.w	dir-_base	;ws_CurrentDir
+		dc.w	0		;ws_DontCache
+_keydebug	dc.b	$58		;ws_keydebug = F9
+_keyexit	dc.b	$59		;ws_keyexit = F10
 
-;============================================================================
-
-_data		dc.b	'data',0
-
-		dc.b	'$VER: Flink CD32 HD by Mr.Larmer/Wanted Team - V1.1 (21.07.99)',0
-
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-
-_name		dc.b	"The (mis)adventures of Flink",0
-_copy		dc.b	"1993 Psygnosis",0
-_info		dc.b	"installed & fixed by Mr.Larmer",10
-		dc.b	"Version 1.1 "
-		INCBIN	"T:date"
-		dc.b	0
-	EVEN
+	dc.b	'$VER: Flink CD32 HD by Mr.Larmer/Wanted Team - V1.0 (22.03.99)',0
+dir
+	dc.b	'data',0
+	CNOP 0,2
 
 ;======================================================================
-_start	;	A0 = resident loader
+Start	;	A0 = resident loader
 ;======================================================================
 
 		lea	_resload(pc),a1
 		move.l	a0,(a1)			;save for later use
-		move.l	A0,A2
 
-		moveq	#CACRF_EnableI,d0
+		move.l	A0,A2
+		moveq	#CACRF_EnableI,d1
 		move.l	d0,d1
 		jsr	resload_SetCACR(a2)
 
