@@ -4,14 +4,15 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 13.0 2000/12/08 14:36:34 jah Exp jah $
+;  :Version.	$Id: whdload.i 13.1 2001/01/13 15:23:21 jah Exp $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
 ;		10.07.00 new stuff for whdload v12
 ;		25.11.00 new stuff for whdload v13
 ;		13.01.01 some comments spelling errors fixed
-;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
+;		15.03.01 v14 stuff added
+;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;---------------------------------------------------------------------------*
@@ -123,6 +124,8 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
  EITEM	WHDLTAG_CHKBLTSIZE	;enable/disable blitter size check
  EITEM	WHDLTAG_CHKBLTHOG	;enable/disable dmacon.blithog (bltpri) check
  EITEM	WHDLTAG_CHKCOLBST	;enable/disable bplcon0.color check
+; version 14
+ EITEM	WHDLTAG_LANG_GET	;GetLanguageSelection like lowlevel.library
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
@@ -458,6 +461,10 @@ resload_CheckFileExist = resload_GetFileSize
 ; version 11
 	EITEM	PLCMD_A			;write address which is calculated as
 					;base + arg to specified address
+; version 14
+	EITEM	PLCMD_PA		;write address given by argument to
+					;specified address
+	EITEM	PLCMD_NOP		;fill given area with nop instructions
 
 ;=============================================================================
 ; macros to build patchlist
@@ -523,6 +530,18 @@ PL_L		MACRO			;write long
 PL_A		MACRO			;write address (base+arg)
 	PL_CMDADR PLCMD_A,\1
 	dc.l	\2			;data to write
+		ENDM
+
+; version 14
+
+PL_PA		MACRO			;write address
+	PL_CMDADR PLCMD_PA,\1
+	dc.w	\2-.patchlist		;destination (inside slave!)
+		ENDM
+
+PL_NOP		MACRO			;fill area with nop's
+	PL_CMDADR PLCMD_NOP,\1
+	dc.w	\2			;distance
 		ENDM
 
 ;=============================================================================

@@ -4,11 +4,11 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 10.5 2000/01/25 22:09:38 jah Exp $
+;  :Version.	$Id: whdmacros.i 13.0 2000/12/08 14:37:55 jah Exp jah $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
-;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
+;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
