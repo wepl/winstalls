@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.islave.asm
 ;  :Contents.	Imager for Xenon 2
 ;  :Author.	Wepl
-;  :Version.	$Id: thunderblade.islave.asm 1.1 2002/02/21 23:43:07 wepl Exp wepl $
+;  :Version.	$Id: xenon2.islave.asm 1.1 2004/08/10 22:36:51 wepl Exp wepl $
 ;  :History.	10.08.04 created
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -89,7 +89,7 @@ _decode		move.l	d0,d6			;D6 = track number
 		add.l	d0,d0
 		or.l	d1,d0
 		bclr	#31,d0
-		move.w	d0,d5			;D5 = chksum
+		move.w	d0,a2			;A2 = chksum
 		swap	d0
 		cmp.b	d0,d6
 		bne	.error
@@ -99,6 +99,7 @@ _decode		move.l	d0,d6			;D6 = track number
 
 		moveq	#512/4-1,d3
 		moveq	#0,d4
+		moveq	#0,d5			;diskkey
 
 .dec		move.l	($200,a0),d1
 		move.l	(a0)+,d0
@@ -108,7 +109,9 @@ _decode		move.l	d0,d6			;D6 = track number
 		and.l	d2,d1
 		add.l	d0,d0
 		or.l	d1,d0
-		move.l	d0,(a1)+
+		eor.l	d0,d5
+		move.l	d5,(a1)+
+		move.l	d0,d5
 		dbf	d3,.dec
 
 		and.l	d2,d4
@@ -116,7 +119,7 @@ _decode		move.l	d0,d6			;D6 = track number
 		swap	d4
 		add.w	d4,d4
 		or.w	d4,d0
-		cmp.w	d0,d5
+		cmp.w	d0,a2
 		bne	.error
 
 		add.w	#$200,a0
