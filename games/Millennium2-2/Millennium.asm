@@ -3,9 +3,11 @@
 ;  :Contents.	Slave for "Millennium 2·2" from Electronic Dreams
 ;  :Author.	Mr.Larmer & Wepl
 ;  :Original	v1 Harry
-;  :Version.	$Id: Millennium2-2.asm 1.0 2001/02/22 12:17:18 jah Exp $
+;  :Version.	$Id: Millennium.asm 1.4 2001/02/25 13:53:43 jah Exp jah $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
+;		13.03.01 extro works now
+;			 length of loadgames fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -94,7 +96,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 _name		dc.b	"Millennium 2·2",0
 _copy		dc.b	"1989 Ian Bird / Electric Dreams",0
 _info		dc.b	"adapted by Mr.Larmer & Wepl",10
-		dc.b	"Version 1.0 "
+		dc.b	"Version 1.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -177,19 +179,39 @@ _main		move.w	#$601A,$766E4		; skip set stack
 
 	;	move.w	#$7001,$68f68		;df1:
 	
-		patchs	$69174,.change
+		patchs	$69174,.change2
 		move.w	#3,$7056e		;disable format savedisk
 	;	move.b	#0,$6e1fd
+	
+		patchs	$7692c,.change1
+		patchs	$7638e,.loadgame
 
 		jmp	$68000
 
-.change		movem.l	d0-d1,-(a7)
+.change2	movem.l	d0-d1,-(a7)
 		moveq	#0,d0			;unit
 		moveq	#2,d1			;disk
 		bsr	_trd_changedisk
 		movem.l	(a7)+,d0-d1
 		moveq	#0,d7
 		rts
+
+.change1	moveq	#0,d0			;unit
+		moveq	#1,d1			;disk
+		bsr	_trd_changedisk
+		add.l	#$7696c-$7692c-6,(a7)
+		rts
+
+.loadgame	move.l	d1,d2
+		lea	(_savename),a0
+		move.l	(_resload),a1
+		jsr	(resload_GetFileSize,a1)
+		move.l	d2,d1
+		sub.l	d7,d0			;d7 = offset
+		cmp.l	#$4e20,d0
+		blo	.q
+		move.l	#$4e20,d0
+.q		rts
 
 ;============================================================================
 
