@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.41 2003/02/13 22:47:17 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.42 2003/03/30 11:16:16 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -42,6 +42,7 @@
 ;		30.11.02 FONTHEIGHT added
 ;		13.02.03 snoopbug at $6efe fixed (Psygore)
 ;			 STACKSIZE added (Captain HIT)
+;		30.03.03 _bootearly/block made returnable
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -119,10 +120,10 @@ kick_patch	PL_START
 		PL_P	$b00c,gfx_detectdisplay
 		PL_PS	$d5be,gfx_fix1			;gfx_LoadView
 	IFD _bootearly
-		PL_P	$284ee,_bootearly
+		PL_PS	$284fa,kick_bootearly
 	ENDC
 	IFD _bootblock
-		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
+		PL_PS	$285c6,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
 		PL_P	$28f88,timer_init
 		PL_P	$2a3b4,trd_readwrite
@@ -342,6 +343,23 @@ exec_FindName	move.l	a2,-(sp)
 		movea.l	(sp)+,a2
 		rts
 
+	ENDC
+
+	IFD _bootearly
+kick_bootearly	movem.l	d0-a6,-(a7)
+		bsr	_bootearly
+		movem.l	(a7)+,d0-a6
+		lea	($2c,a5),a1		;original
+		moveq	#0,d0			;original
+		rts
+	ENDC
+
+	IFD _bootblock
+kick_bootblock	movem.l	d2-d7/a2-a6,-(a7)
+		bsr	_bootblock
+		movem.l	(a7)+,d2-d7/a2-a6
+		tst.l	d0			;original
+		rts
 	ENDC
 
 ;============================================================================

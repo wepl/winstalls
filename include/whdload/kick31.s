@@ -3,7 +3,7 @@
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	JOTD, Wepl, Psygore
 ;  :Version.	$Id$
-;  :History.	04.03.03 cleanup
+;  :History.	04.03.03 rework/cleanup
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -78,13 +78,19 @@ kick_patch	PL_START
 	ENDC
 	;	PL_L	$329a,$70004e71			;SAD, movec vbr,d0 -> moveq #0,d0
 		PL_S	$38f8,$3a00-$38f8		;autoconfiguration at $e80000
-	IFD _bootblock
-		PL_PS	$4896,_bootblock		;a1=ioreq a4=buffer a6=execbase
-		PL_NOP	$4896+6,6			;d2-d7/a2-a6 must be untouched
+	IFD _bootearly
+		PL_PS	$4798,kick_bootearly
 	ENDC
+	IFD _bootblock
+		PL_PS	$4896,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
+	ENDC
+		PL_PS	$b484,gfx_readvpos		;patched to set NTSC/PAL
 		PL_S	$b4a0,$b4b0-$b4a0		;snoop, byte writes to bpl1dat-bpl6dat, strange?
 		PL_S	$b73c,6				;blit wait, graphics init
 		PL_S	$b758,6				;blit wait, graphics init
+	IFD INITAGA
+		PL_PS	$b9f8,gfx_initaga
+	ENDC
 		PL_P	$bb7e,gfx_detectgenlock
 		PL_PS	$f6d8,gfx_beamcon01
 		PL_PS	$f72e,gfx_vbstrt1
@@ -92,8 +98,23 @@ kick_patch	PL_START
 		PL_PS	$f796,gfx_vbstrt2
 		PL_PS	$f7be,gfx_beamcon02
 		PL_PS	$f7e0,gfx_snoop1
+		PL_PS	$14b4e,gfx_readvpos		;patched to set NTSC/PAL
 		PL_CB	$3504a				;dont init scsi.device
+	IFD	INIT_AUDIO				;audio.device
+		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
+	ENDC
 		PL_CB	$3ddf2				;dont init battclock.ressource
+		PL_P	$40442,disk_getunitid
+	IFD	INIT_MATHFFP				;mathffp.library
+		PL_B	$40632,RTF_COLDSTART|RTF_AUTOINIT
+	ENDC
+		PL_P	$40D3A,timer_init
+	;	PL_NOP	$44294,2			;skip rom menu
+		PL_P	$44A5A,trd_task
+		PL_P	$45258,trd_format
+		PL_P	$4569C,trd_motor
+		PL_P	$4598C,trd_readwrite
+		PL_PS	$45D5A,trd_protstatus
 	IFD FONTHEIGHT
 		PL_B	$68CB0,FONTHEIGHT
 	ENDC
@@ -104,35 +125,17 @@ kick_patch	PL_START
 	IFD POINTERTICKS
 		PL_W	$68D1C,POINTERTICKS
 	ENDC
-	;	PL_NOP	$44294,2			;skip rom menu
-
-
-;		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
-;		PL_P	$bc48,gfx_detectdisplay		; patched at a lower level (NTSC/PAL)
-;		PL_PS	$8568,gfx_read_vpos		; gfx_VBeamPos, unpatched
-		PL_PS	$B484,gfx_read_vpos		; patched to set NTSC/PAL
-		PL_PS	$14B4E,gfx_read_vpos		; patched to set NTSC/PAL
-
-	IFD _bootearly
-		PL_P	$4794,do_bootearly		; 3.1
+	IFD	INIT_GADTOOLS				;gadtools.library
+		PL_B	$68e1e,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
+
+
 	IFD _bootdos
 		PL_PS	$22814,dos_bootdos		; 3.1
 	ENDC
 	IFD	HDINIT
 		PL_P	$42F4,hd_init			; 3.1
 	ENDC
-		PL_P	$40D3A,timer_init		; 3.1
-		PL_P	$4598C,trd_readwrite		; 3.1
-		PL_P	$4569C,trd_motor		; 3.1
-		PL_P	$45258,trd_format		; 3.1
-		PL_PS	$45D5A,trd_protstatus		; 3.1
-	;	PL_I	$2af68				;trd_rawread
-	;	PL_I	$2af6e				;trd_rawwrite
-	;	PL_I	$2a19c				;empty dbf-loop in trackdisk.device
-		PL_P	$44A5A,trd_task			; 3.1
-	;	PL_L	$29c54,-1			;disable asynchron io
-		PL_P	$40442,disk_getunitid		; 3.1
 	IFD	_cb_dosLoadSeg
 		PL_PS	$2726A,dos_LoadSeg		; 3.1 loadseg entrypoint
 	ENDC
@@ -193,6 +196,22 @@ exec_AllocMem	move.l	d0,-(a7)
 		rts
 	ENDC
 
+	IFD _bootearly
+kick_bootearly	movem.l	d0-a6,-(a7)
+		bsr	_bootearly
+		movem.l	(a7)+,d0-a6
+		moveq	#0,d2			;original
+		lea	($1c,a2),a3		;original
+		rts
+	ENDC
+
+	IFD _bootblock
+kick_bootblock	move.l	(a7)+,d1		;original
+		addq.l	#2,d1
+		movem.l	d1-d7/a2-a6,-(a7)	;original
+		bra	_bootblock
+	ENDC
+
 ;============================================================================
 
 gfx_beamcon01	bclr	#4,(gb_Bugs,a1)			;original
@@ -249,36 +268,26 @@ _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
 		move.l	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
 .novbstrt	jmp	(a0)
 
-
-; JFF: fake PAL (resp NTSC) on a NTSC (resp PAL) amiga
-gfx_read_vpos
-	move	(vposr+_custom),d0
-		move.l	d1,-(a7)
+gfx_readvpos	move	(vposr+_custom),d0
 		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
-		beq.b	.pal
-		; ntsc
+		beq	.pal
 		bset	#12,d0
-		bra.b	.sk
-.pal
-		bclr	#12,d0
-.sk
-		move.l	(a7)+,d1
-
-	rts
-
+		bra.b	.end
+.pal		bclr	#12,d0
+.end		rts
 
 gfx_detectgenlock
 		moveq	#0,d0
 		rts
 
-gfx_detectdisplay
-		moveq	#4,d0			;pal
-		move.l	(_monitor,pc),d1
-		cmp.l	#PAL_MONITOR_ID,d1
-		beq	.1
-		moveq	#1,d0			;ntsc
-.1		rts
+	IFD	INITAGA					;enable enhanced gfx modes
+gfx_initaga	move.l	#SETCHIPREV_BEST,d0
+		jsr	(_LVOSetChipRev,a6)
+		moveq	#-1,d0
+		movem.l	(-$34,a5),d2/d6/d7/a2/a3/a6	;original
+		rts
+	ENDC
 
 ;============================================================================
 
@@ -463,24 +472,8 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
-	IFND _bootearly
-	IFND _bootblock
-
-dos_init	move.l	#$10001,d1
-		bra	_flushcache
-
-dos_1		move.l	#$118,d1		;original
-		bra	_flushcache
-
-	ENDC
-	ENDC
-
 	IFD  _bootdos
 dos_bootdos
-	IFD	INITAGA
-	bsr	init_aga
-	ENDC
-
 	;init boot exe
 		lea	(_bootdos,pc),a0
 		move.l	a0,(bootfile_exe_j+2-_bootdos,a0)
@@ -649,86 +642,6 @@ dos_LoadSeg
 	tst.l	d0
 	rts
 		
-	ENDC
-
-	IFD	INITAGA
-init_aga
-	movem.l	d0-d1/a0-a1/a6,-(a7)
-
-	; enable enhanced gfx modes
-
-	lea	.gfxname(pc),A1
-	moveq	#0,D0
-	move.l	$4.W,A6
-	jsr	_LVOOpenLibrary(a6)
-	move.l	D0,a6
-	move.l	#SETCHIPREV_BEST,D0
-	jsr	_LVOSetChipRev(a6)
-
-	movem.l	(a7)+,d0-d1/a0-a1/a6
-	rts
-
-.gfxname:
-	dc.b	"graphics.library",0
-	even
-
-	ENDC
-
-	IFD _bootearly
-do_bootearly:
-	IFD	INITAGA
-	bsr	_INITAGA
-	ENDC
-
-	; initialize audio device
-
-	IFD	INIT_AUDIO
-	lea	.audioname(pc),a1
-	bsr	.init_resident
-	ENDC
-	IFD	INIT_GADTOOLS
-	lea	.gadtoolsname(pc),a1
-	bsr	.init_resident
-	ENDC
-	IFD	INIT_INPUT
-	lea	.inputname(pc),a1
-	bsr	.init_resident
-	ENDC
-	IFD	INIT_MATHFFP
-	lea	.mathffpname(pc),a1
-	bsr	.init_resident
-	ENDC
-	bra	_bootearly
-
-	IFD	INIT_AUDIO
-.audioname:
-	dc.b	"audio.device",0
-	ENDC
-	IFD	INIT_GADTOOLS
-.gadtoolsname:
-	dc.b	"gadtools.library",0
-	ENDC
-	IFD	INIT_MATHFFP
-.mathffpname:
-	dc.b	"mathffp.library",0
-	ENDC
-	IFD	INIT_INPUT
-.inputname:
-	dc.b	"input.device",0
-	ENDC
-
-	even
-.init_resident:
-	move.l	$4.W,A6
-	jsr	_LVOFindResident(a6)
-	tst.l	D0
-	bne.b	.ok
-	illegal
-.ok
-	move.l	D0,A1
-	moveq.l	#0,D1
-	jsr	_LVOInitResident(a6)
-	rts
 	ENDC
 
 ;============================================================================
