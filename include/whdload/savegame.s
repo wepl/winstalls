@@ -7,11 +7,12 @@
 ;		grows dynamically
 ;		the savegames must have always the same size
 ;  :Author.	Wepl
-;  :Version.	$Id: savegame.s 1.2 1998/11/22 14:29:48 jah Exp $
+;  :Version.	$Id: savegame.s 1.3 2000/01/23 21:10:48 jah Exp $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed
 ;		23.01.00 better selection on loading
+;		23.07.00 adapted for whdload v12 and WHDLTAG_KEYTRANS_GET
 ;  :Requires.	_keyexit	byte variable containing rawkey code
 ;		_exit		function to quit
 ;  :Copyright.	Public Domain
@@ -43,13 +44,14 @@
 ; OUT:	d0 = BOOL  success
 ;	d1/a0/a1 destroyed
 
-MAXNAMELEN	= 40
+MAXNAMELEN	= 40		;max desription length
 LINE		= 320/8
 SCREEN		= LINE*200
 SAVEDIRLEN	= 4+10+(10*MAXNAMELEN)
-CHARHEIGHT	= 5
-CHARWIDTH	= 5
+CHARWIDTH	= 6
+CHARHEIGHT	= 8
 
+	INCLUDE	diskfont/diskfont.i
 	INCLUDE	macros/ntypes.i
 
 	NSTRUCTURE	SaveGame,0
@@ -60,13 +62,16 @@ CHARWIDTH	= 5
 		NLONG	sg_old6c
 		NWORD	sg_oldintena
 		NWORD	sg_olddmacon
+		NLONG	sg_keytrans
 		NSTRUCT	sg_save_names,10*MAXNAMELEN
 		NSTRUCT	sg_save_flags,10
 		NSTRUCT	sg_save_id,4
 		NSTRUCT	sg_tmpname,MAXNAMELEN
 		NWORD	sg_c_x
 		NWORD	sg_c_y
-		NBYTE	sg_key
+		NBYTE	sg_rawkey
+		NBYTE	sg_asckey
+		NBYTE	sg_keymodi		;bit#0=shift bit#1=alt
 		NBYTE	sg_c_on
 		NBYTE	sg_success
 		NALIGNLONG
@@ -77,7 +82,7 @@ CHARWIDTH	= 5
 ; IN:	-
 ; OUT:	-
 
-XBASE	= 50
+XBASE	= (320-((3+MAXNAMELEN)*CHARWIDTH))/2
 YBASE	= 40
 YSKIP	= 15
 
@@ -88,7 +93,7 @@ _sg_printdir	moveq	#XBASE,d0		;x-pos
 .next		add.w	#YSKIP,d1		;line skip
 		bsr	_pc
 		movem.l	d0/d2,-(a7)
-		add.w	#15,d0
+		add.w	#3*CHARWIDTH,d0
 		sub.w	#'1',d2
 		mulu.w	#MAXNAMELEN,d2
 		lea	(sg_save_names,a5),a0
@@ -98,6 +103,25 @@ _sg_printdir	moveq	#XBASE,d0		;x-pos
 		addq.b	#1,d2
 		cmp.b	#'9',d2
 		bls	.next
+		rts
+
+;--------------------------------
+; set or clear box around savegame postion
+; IN:	D0 = position
+; OUT:	-
+
+BORDER = 4
+
+_sg_drawbox	movem.l	d0-d3,-(a7)
+		moveq	#YSKIP,d1
+		mulu	d0,d1
+		add.w	#YBASE-BORDER,d1	;y1
+		move.w	d1,d3
+		add.w	#CHARWIDTH+(2*BORDER),d3	;y2
+		move.w	#XBASE+(3*CHARWIDTH)-BORDER,d0	;x1
+		move.w	#XBASE+((3+MAXNAMELEN)*CHARWIDTH)+BORDER,d2	;x2
+		bsr	_sg_rect
+		movem.l	(a7)+,d0-d3
 		rts
 
 ;--------------------------------
@@ -111,13 +135,13 @@ _sg_save	moveq	#0,d1
 		bra	_sg_degrade
 _sg_save_in	bsr	_sg_loaddir
 
-.start		moveq	#7,d1
+.start		moveq	#YBASE-(5*CHARHEIGHT),d1
 		lea	(_save,pc),a0
 		bsr	_psc
-		add.w	#8,d1
+		add.w	#2*CHARHEIGHT,d1
 		lea	(_saveselect,pc),a0
 		bsr	_psc
-		add.w	#8,d1
+		add.w	#CHARHEIGHT,d1
 		lea	(_esc,pc),a0
 		bsr	_psc
 
@@ -126,24 +150,18 @@ _sg_save_in	bsr	_sg_loaddir
 .keyloop	bsr	_sg_get_key
 		cmp.b	#$45,d0
 		beq	_sg_restore
-		cmp.b	#'1',d1
-		blo	.keyloop
 		cmp.b	#'9',d1
 		bhi	.keyloop
-
-		moveq	#XBASE+9,d0
-		sub.w	#'1',d1
-		move.w	d1,d6			;D6 = save no.
-		mulu	#YSKIP,d1
-		add.w	#YBASE-5,d1
-		move.w	d0,d2
-		add.w	#210,d2
-		move.w	d1,d3
-		add.w	#YSKIP-1,d3
-		bsr	_sg_rect
-
+		sub.b	#'1',d1
+		blo	.keyloop
+		
+		move.w	d1,d6			;D6 = actual choice
+		
 		move.w	d6,d0
-		mulu.w	#MAXNAMELEN,d0
+		bsr	_sg_drawbox
+
+		moveq	#MAXNAMELEN,d0
+		mulu	d6,d0
 		lea	(sg_save_names,a5),a3
 		add.w	d0,a3			;A3 = save name
 
@@ -160,15 +178,15 @@ _sg_save_in	bsr	_sg_loaddir
 
 		move.w	d5,d0
 		mulu	#CHARWIDTH,d0
-		add.w	#XBASE+15,d0
+		add.w	#XBASE+(3*CHARWIDTH),d0
 		move.w	d0,(sg_c_x,a5)
-		move.w	d6,d1
-		mulu	#YSKIP,d1
-		add.w	#YBASE,d1
-		move.w	d1,(sg_c_y,a5)
+		moveq	#YSKIP,d0
+		mulu	d6,d0
+		add.w	#YBASE,d0
+		move.w	d0,(sg_c_y,a5)
 		st	(sg_c_on,a5)
 
-		moveq	#15,d1
+		moveq	#YBASE-(3*CHARHEIGHT),d1
 		lea	(_saveinsert,pc),a0
 		bsr	_psc
 
@@ -198,8 +216,17 @@ _sg_save_in	bsr	_sg_loaddir
 .bs		tst.w	d5
 		beq	.nextkey
 		bsr	_sg_cursoroff
-		subq.w	#1,d5
+		btst	#0,(sg_keymodi,a5)	;shift?
+		bne	.bsall
+		clr.b	(-1,a3,d5.w)
+		bra	.chkname
+.bsall		move.w	(sg_c_x,a5),d0
+		move.w	(sg_c_y,a5),d1
+.bsclr		sub.w	#CHARWIDTH,d0
+		bsr	_pc
 		clr.b	(a3,d5.w)
+		subq.w	#1,d5
+		bne	.bsclr
 		bra	.chkname
 
 .esc		bsr	_sg_cursoroff
@@ -214,7 +241,7 @@ _sg_save_in	bsr	_sg_loaddir
 		beq	.esc
 		bsr	_sg_cursoroff
 
-		moveq	#15,d1
+		moveq	#YBASE-(3*CHARHEIGHT),d1
 		lea	(_saveconfirm,pc),a0
 		bsr	_psc
 
@@ -295,7 +322,7 @@ _sg_initscr	movem.l	d0-d3/a0,-(a7)
 		move.w	#180,d1
 		lea	(_info1,pc),a0
 		bsr	_psc
-		add.w	#8,d1
+		add.w	#CHARHEIGHT,d1
 		lea	(_info2,pc),a0
 		bsr	_psc
 
@@ -311,15 +338,23 @@ _sg_initscr	movem.l	d0-d3/a0,-(a7)
 _sg_load	moveq	#-1,d1
 		bra	_sg_degrade
 _sg_load_in	bsr	_sg_loaddir
-		beq	.nosavegame
+		bne	.start
+		moveq	#60,d1
+		lea	(_loadno1,pc),a0
+		bsr	_psc
+		add.w	#2*CHARHEIGHT,d1
+		lea	(_loadno2,pc),a0
+		bsr	_psc
+		bsr	_sg_get_key
+		bra	_sg_restore
 
-.start		moveq	#7,d1
+.start		moveq	#YBASE-(5*CHARHEIGHT),d1
 		lea	(_load,pc),a0
 		bsr	_psc
-		add.w	#8,d1
+		add.w	#2*CHARHEIGHT,d1
 		lea	(_loadselect,pc),a0
 		bsr	_psc
-		add.w	#8,d1
+		add.w	#CHARHEIGHT,d1
 		lea	(_esc,pc),a0
 		bsr	_psc
 
@@ -331,29 +366,20 @@ _sg_load_in	bsr	_sg_loaddir
 .keyloop	bsr	_sg_get_key
 		cmp.b	#$45,d0
 		beq	_sg_restore
-		cmp.b	#'1',d1
-		blo	.keyloop
 		cmp.b	#'9',d1
 		bhi	.keyloop
+		sub.b	#'1',d1
+		bcs	.keyloop
 
 		lea	(sg_save_flags,a5),a0
-		tst.b	(-'1',a0,d1.w)
+		tst.b	(a0,d1.w)
 		beq	.keyloop
+		
+.drawbox	move.w	d1,d6			;D6 = actual choice
+		move.w	d6,d0
+		bsr	_sg_drawbox
 
-.drawbox	moveq	#XBASE+9,d0
-		sub.w	#'1',d1
-		move.w	d1,d6			;D6 = save no.
-		mulu	#YSKIP,d1
-		add.w	#YBASE-5,d1
-		move.w	d0,d2
-		add.w	#210,d2			;D2 = x2
-		move.w	d1,d3
-		add.w	#YSKIP-1,d3		;D3 = y2
-		move.l	d0,d4			;D4 = x1
-		move.l	d1,d5			;D5 = y1
-		bsr	_sg_rect
-
-		moveq	#15,d1
+		moveq	#YBASE-(3*CHARHEIGHT),d1
 		lea	(_loadconfirm,pc),a0
 		bsr	_psc
 
@@ -364,18 +390,15 @@ _sg_load_in	bsr	_sg_loaddir
 		beq	.confirmed
 		cmp.b	#$45,d0			;escape
 		beq	.canceled
-		cmp.b	#'1',d1
-		blo	.nextkey2
 		cmp.b	#'9',d1
 		bhi	.nextkey2
+		sub.b	#'1',d1
+		blo	.nextkey2
 		lea	(sg_save_flags,a5),a0
-		tst.b	(-'1',a0,d1.w)
+		tst.b	(a0,d1.w)
 		beq	.nextkey2
-		move.l	d1,d6
-		move.l	d4,d0
-		move.l	d5,d1
-		bsr	_sg_rect
-		move.l	d6,d1
+		move.w	d6,d0
+		bsr	_sg_drawbox
 		bra	.drawbox
 
 .canceled	bsr	_sg_initscr
@@ -393,15 +416,6 @@ _sg_load_in	bsr	_sg_loaddir
 		bsr	_sg_exec_resload
 
 		st	(sg_success,a5)
-		bra	_sg_restore
-
-.nosavegame	moveq	#60,d1
-		lea	(_loadno1,pc),a0
-		bsr	_psc
-		add.w	#8,d1
-		lea	(_loadno2,pc),a0
-		bsr	_psc
-		bsr	_sg_get_key
 		bra	_sg_restore
 
 ;--------------------------------
@@ -452,17 +466,13 @@ _sg_exec_resload
 ; OUT:	D0 = LONG rawkey
 ;	D1 = LONG translated key
 
-_sg_get_key	clr.b	(sg_key,a5)
-		moveq	#0,d0
-.waitdown	move.b	(sg_key,a5),d0
-		ble	.waitdown
-		bchg	#7,d0
-.waitup		cmp.b	(sg_key,a5),d0
-		bne	.waitup
-		bclr	#7,d0
-		lea	(_keytrans,pc),a0
+_sg_get_key	moveq	#0,d0
 		moveq	#0,d1
-		move.b	(a0,d0.w),d1
+		move.b	(sg_rawkey,a5),d1
+.wait		move.b	(sg_rawkey,a5),d0
+		cmp.b	d0,d1
+		beq	.wait
+		move.b	(sg_asckey,a5),d1
 		rts
 
 ;--------------------------------
@@ -470,6 +480,7 @@ _sg_get_key	clr.b	(sg_key,a5)
 _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		link	a5,#sg_SIZEOF			;A5 = data
 		move.l	d0,(sg_size,a5)
+		move.l	d1,d7				;d7 = return
 		move.l	a0,(sg_address,a5)
 		move.l	a1,(sg_screen,a5)
 		sf	(sg_c_on,a5)
@@ -495,7 +506,18 @@ _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		clr.w	(bpl1mod,a6)
 		move.l	#$00000eee,(color,a6)
 		move.w	#DMAF_SETCLR|DMAF_MASTER|DMAF_RASTER,(dmacon,a6)
-		tst.l	d1
+	;get keymap
+		clr.l	-(a7)
+		clr.l	-(a7)
+		pea	WHDLTAG_KEYTRANS_GET
+		move.l	a7,a0
+		move.w	#resload_Control,a2
+		bsr	_sg_exec_resload
+		move.l	(4,a7),(sg_keytrans,a5)
+		add.w	#12,a7
+		clr.b	(sg_keymodi,a5)
+	;return
+		tst.l	d7
 		beq	_sg_save_in
 		bra	_sg_load_in
 
@@ -525,7 +547,7 @@ _sg_restore	bsr	_sg_clrscr
 
 ;--------------------------------
 
-_sg_int68	movem.l	d0-d1,-(a7)
+_sg_int68	movem.l	d0-d1/a0,-(a7)
 		btst	#CIAICRB_SP,(ciaicr+_ciaa)	;check int reason
 		beq	.int2_exit
 		move.b	(ciasdr+_ciaa),d0		;read code
@@ -535,7 +557,29 @@ _sg_int68	movem.l	d0-d1,-(a7)
 		ror.b	#1,d0
 		cmp.b	(_keyexit,pc),d0
 		beq	_exit
-		move.b	d0,(sg_key,a5)
+	;set raw
+		move.b	d0,(sg_rawkey,a5)
+	;qualifiers
+		lea	(.keys),a0
+.l		cmp.b	(a0)+,d0
+		bne	.n
+		move.b	(a0),d1
+		ext.w	d1
+		jsr	(.keys,pc,d1.w)
+.n		addq.l	#1,a0
+		tst.b	(a0)
+		bne	.l
+	;set ascii
+		clr.b	(sg_asckey,a5)
+		ext.w	d0
+		bmi	.up
+		ror.w	#7,d0
+		move.b	(sg_keymodi,a5),d0
+		rol.w	#7,d0
+		move.l	(sg_keytrans,a5),a0
+		move.b	(a0,d0.w),(sg_asckey,a5)
+.up
+	;reply keyboard
 		moveq	#3-1,d1				;wait because handshake min 75 µs
 .int2_w1	move.b	(vhposr,a6),d0
 .int2_w2	cmp.b	(vhposr,a6),d0			;one line is 63.5 µs
@@ -543,8 +587,27 @@ _sg_int68	movem.l	d0-d1,-(a7)
 		dbf	d1,.int2_w1			;(min=127µs max=190.5µs)
 		and.b	#~(CIACRAF_SPMODE),(ciacra+_ciaa)	;to input
 .int2_exit	move.w	#INTF_PORTS,(intreq,a6)
-		movem.l	(a7)+,d0-d1
+		movem.l	(a7)+,d0-d1/a0
 		rte
+
+.keys		dc.b	$60,.shiftdown-.keys
+		dc.b	$61,.shiftdown-.keys
+		dc.b	128+$60,.shiftup-.keys
+		dc.b	128+$61,.shiftup-.keys
+		dc.b	$64,.altdown-.keys
+		dc.b	$65,.altdown-.keys
+		dc.b	128+$64,.altup-.keys
+		dc.b	128+$65,.altup-.keys
+		dc.b	0,0
+
+.shiftdown	bset	#0,(sg_keymodi,a5)
+		rts
+.shiftup	bclr	#0,(sg_keymodi,a5)
+		rts
+.altdown	bset	#1,(sg_keymodi,a5)
+		rts
+.altup		bclr	#1,(sg_keymodi,a5)
+		rts
 
 ;--------------------------------
 
@@ -662,7 +725,14 @@ _getscrptr	move.l	(sg_screen,a5),a0
 ;	a0 = cptr string
 ; OUT:	d0 = word new x
 
-_psc		move.l	a0,-(a7)
+_psc		movem.l	d1/a0,-(a7)
+		bsr	_getscrptr
+		moveq	#LINE*CHARHEIGHT/4-1,d1
+.clr		clr.l	(a0)+
+		dbf	d1,.clr
+		movem.l	(a7)+,d1/a0
+
+		move.l	a0,-(a7)
 		moveq	#0,d0
 .count		tst.b	(a0)+
 		beq	.1
@@ -696,16 +766,42 @@ _ps		movem.l	d2,-(a7)
 ;	d1 = word y
 ;	d2 = char
 
-_pc		movem.l	d0-d5/a0-a1,-(a7)
-		bsr	_getscrptr
-		sub.w	#32,d2
-		mulu	#CHARWIDTH,d2
-		lea	(_font,pc),a1
-		moveq	#CHARHEIGHT-1,d3
+_pc		movem.l	d0-d7/a0-a2,-(a7)
+
+		lea	_font,a0
+		cmp.l	#$3f3,(a0)
+		bne	.relok
+		sub.l	a1,a1
+		move.w	#resload_Relocate,a2
+		movem.l	d0-d1/a0,-(a7)
+		bsr	_sg_exec_resload
+		movem.l	(a7)+,d0-d1/a0
+.relok
+		lea	(4+dfh_TF,a0),a2		;A2 = TextFont
+		
+		cmp.b	(tf_HiChar,a2),d2
+		bhi	.out
+		sub.b	(tf_LoChar,a2),d2
+		bcc	.in
+.out		move.b	(tf_HiChar,a2),d2
+		addq.b	#1,d2
+		sub.b	(tf_LoChar,a2),d2
+.in		and.w	#$00ff,d2
+		lsl.w	#2,d2
+		move.l	(tf_CharLoc,a2),a0
+		movem.w	(a0,d2.w),d2/d6			;D2 = srcbitpos
+							;D6 = srclen
+		move.w	(tf_XSize,a2),d7		;D7 = dstlen
+		bsr	_getscrptr			;A0 = dstptr
+		move.l	(tf_CharData,a2),a1		;A1 = srcptr
+		move.w	(tf_YSize,a2),d3
+		subq.w	#1,d3
 .cp
 	IFD _68020_
-		bfextu	(a1){d2:CHARWIDTH},d1
-		bfins	d1,(a0){d0:CHARWIDTH}
+		bfextu	(a1){d2:d6},d1
+		lsl.l	d6,d1
+		lsr.l	d7,d1
+		bfins	d1,(a0){d0:d6}
 	ELSE
 		move.l	d2,d1
 		lsr.l	#4,d1				;words
@@ -714,9 +810,15 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		move.l	d2,d4
 		and.w	#%1111,d4
 		lsl.l	d4,d1
-		and.l	#$ffffffff<<(32-CHARWIDTH),d1
-	;	move.l	#$ffffffff>>CHARWIDTH,d5	;PhxAss optimize bug!
-		move.l	#$07ffffff,d5
+		
+		moveq	#-1,d5
+		lsr.l	d6,d5
+		not.l	d5
+		and.l	d5,d1
+
+		moveq	#-1,d5
+		lsr.l	d7,d5
+
 		move.l	d0,d4
 		and.w	#%1111,d4
 		lsr.l	d4,d1
@@ -727,37 +829,27 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		and.l	d5,(a0,d4.l)
 		or.l	d1,(a0,d4.l)
 	ENDC
-	;	add.l	#(_font_-_font)*8/CHARHEIGHT,d2	;PhxAss unable to calculate!
-		add.l	#300*8/CHARHEIGHT,d2
+		add.w	(tf_Modulo,a2),a1
 		add.l	#LINE*8,d0
 		dbf	d3,.cp
-		movem.l	(a7)+,d0-d5/a0-a1
+		movem.l	(a7)+,d0-d7/a0-a2
 		rts
 
-_font		INCBIN	Sources:pics/pic_font_5x6_br.bin
-_font_
+_font		INCBIN	Fonts:xen/8
 
 ;--------------------------------
 
 _sg_name	dc.b	"savegame",0
-_info1		dc.b	"special multiple savegame support",0
-_info2		dc.b	"written by wepl in spring 1998",0
-_esc		dc.b	"press esc to cancel",0
-_save		dc.b	">>> save a game <<<",0
-_saveselect	dc.b	"select a save position using the keyboard '1' - '9'",0
-_saveinsert	dc.b	"    type in a description for this save position    ",0
-_saveconfirm	dc.b	"        confirm this save operation (return)        ",0
-_load		dc.b	">>> load a game <<<",0
-_loadselect	dc.b	"select a load position using the keyboard '1' - '9'",0
-_loadconfirm	dc.b	"        confirm this load operation (return)        ",0
-_loadno1	dc.b	"sorry there is currently no valid savegame to load",0
-_loadno2	dc.b	"press any key to continue",0
+_info1		dc.b	"Special multiple savegame support",0
+_info2		dc.b	"Written by Wepl 1998-2000",0
+_esc		dc.b	"press Esc to cancel",0
+_save		dc.b	"»»» Save a Game «««",0
+_saveselect	dc.b	"Select a save position using keyboard '1' - '9'",0
+_saveinsert	dc.b	"Type in a description for this save position",0
+_saveconfirm	dc.b	"Confirm this save operation (Return)",0
+_load		dc.b	"»»» Load a Game «««",0
+_loadselect	dc.b	"Select a load position using keyboard '1' - '9'",0
+_loadconfirm	dc.b	"Confirm this load operation (Return)",0
+_loadno1	dc.b	"Sorry, there is currently no savegame to load",0
+_loadno2	dc.b	"Press any key to continue...",0
 
-_keytrans	dc.b	0,"1234567890",0,0,"0",0,0
-		dc.b	"qwertyuiop",0,0,0,"123"
-		dc.b	"asdfghjkl",0,0,0,0,"456"
-		dc.b	0,"zxcvbnm,.-",0,0,"789"
-		dc.b	" ",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-		dc.b	"123456789",0,0,0,0,0,0,0
-		ds.b	16
-		ds.b	16
