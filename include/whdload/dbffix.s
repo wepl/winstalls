@@ -3,7 +3,7 @@
 ;  :Contents.	routine to fix empty dbf loops
 ;		the dbf loop will be replaced by a wait based on the vertical
 ;		raster position
-;  :Version.	$Id: stfix.s 1.4 1999/03/16 14:09:13 jah Exp jah $
+;  :Version.	$Id: dbffix.s 1.1 1999/03/19 18:57:32 jah Exp jah $
 ;  :History.	19.03.99 written based on the stfix routine
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -51,7 +51,7 @@ _dbffix		movem.l	d0-d1/a0-a1,-(a7)
 		and.w	#7,d0			;register number
 		addq.b	#1,(-8,a2,d0.w)
 	ENDC
-		
+
 		moveq	#0,d1			;clear high word
 		move.w	(2,a0),d1		;loop counter
 		divu	#34,d1
@@ -59,7 +59,7 @@ _dbffix		movem.l	d0-d1/a0-a1,-(a7)
 		pea	(.wait,pc)
 		move.l	(a7)+,(a0)+
 		move.w	d1,(a0)
-		
+
 .next		addq.l	#2,a0
 		cmp.l	a0,a1
 		bhi	.loop
@@ -77,4 +77,3 @@ _dbffix		movem.l	d0-d1/a0-a1,-(a7)
 		dbf	d1,.1
 		movem.l	(a7)+,d0-d1/a0
 		rts
-
