@@ -6,7 +6,7 @@
 ;		v2 Carlo Pirri
 ;		v3 Wolfgang Unger PAL
 ;		v4 Wolfgang Unger NTSC
-;  :Version.	$Id: Millennium.asm 1.6 2001/04/28 11:40:03 jah Exp jah $
+;  :Version.	$Id: Millennium.asm 1.7 2005/03/08 09:33:42 wepl Exp wepl $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
 ;		13.03.01 extro works now
@@ -38,7 +38,7 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= 0
+FASTMEMSIZE	= $7000
 NUMDRIVES	= 1
 WPDRIVES	= %0001
 
@@ -49,7 +49,7 @@ BOOTBLOCK
 ;CBDOSLOADSEG
 ;CBDOSREAD
 ;CACHE
-DEBUG
+;DEBUG
 DISKSONBOOT
 ;DOSASSIGN
 ;FONTHEIGHT	= 8
@@ -59,7 +59,7 @@ DISKSONBOOT
 ;MEMFREE	= $200
 ;NEEDFPU
 ;POINTERTICKS	= 1
-SETPATCH
+;SETPATCH
 ;STACKSIZE	= 6000
 TRDCHANGEDISK
 
@@ -82,7 +82,7 @@ slv_keyexit	= $59	;F10
 	ENDC
 	ENDC
 
-slv_CurrentDir	= slv_base
+slv_CurrentDir	dc.b	0
 slv_name	dc.b	"Millennium 2·2",0
 slv_copy	dc.b	"1989 Ian Bird / Electric Dreams",0
 slv_info	dc.b	"adapted by Mr.Larmer & Wepl",10
@@ -118,6 +118,13 @@ _bootblock
 		jsr	(resload_SaveFileOffset,a2)
 	;savedisk ok
 .saveok
+
+	IFD DEBUG
+	;protect kickstart
+		move.l	#$40000,d0
+		move.l	(_expmem),a0
+		jsr	(resload_ProtectWrite,a2)
+	ENDC
 
 	;check version
 		move.l	#$400,d0
@@ -173,8 +180,20 @@ _pre4		movem.l	d0/a0,-(a7)
 		rts
 
 _plp4		PL_START
+		PL_S	0,$242			;stack
+		PL_PS	$2c2,.diskinsert
 		PL_P	$314,.go
 		PL_END
+
+	;somehow: if the intro is running a bit longer the disk from
+	;the drive is no longer inserted, so we make a disk change
+	;which will reinsert the disk on the next trd_task (kick13.s)
+.diskinsert	move.l	a1,-(a7)
+		moveq	#0,d0			;unit
+		moveq	#1,d1			;disk
+		bsr	_trd_changedisk
+		movem.l	(a7)+,a1
+		rts
 
 .go		move.w	$12800+$234,d0		;original
 		move.l	(a7)+,d1
@@ -287,7 +306,7 @@ _main		move.l	(_expmem),d0		;kickstart
 		move.l	a3,a1
 		move.l	_resload,a2
 		jsr	(resload_Patch,a2)
-		
+
 		jmp	(a3)
 
 		dc.l	$e7c,$110f2		;random generator patches
