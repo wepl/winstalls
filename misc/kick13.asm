@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.3 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.asm 1.1 2001/08/01 20:50:28 jah Exp jah $
+;  :Version.	$Id: kick13.asm 1.2 2001/09/20 19:46:12 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;  :Requires.	-
@@ -35,7 +35,7 @@ NUMDRIVES	= 2
 WPDRIVES	= %1111
 
 DISKSONBOOT
-;HDINIT
+HDINIT
 ;HRTMON
 ;MEMFREE	= $100
 ;NEEDFPU
@@ -51,7 +51,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	11			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
+		dc.w	WHDLF_NoError|WHDLF_EmulPriv	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -83,11 +83,13 @@ _info		dc.b	"adapted for WHDLoad by Wepl",10
 _start	;	A0 = resident loader
 ;============================================================================
 
+	IFEQ 1
 		move.l	a0,a2
 		move.l	#WCPUF_Exp_WT,d0
 		move.l	#WCPUF_Exp,d1
-	;	jsr	(resload_SetCPU,a2)
+		jsr	(resload_SetCPU,a2)
 		move.l	a2,a0
+	ENDC
 
 	;initialize kickstart and environment
 		bra	_boot
