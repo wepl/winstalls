@@ -2,13 +2,15 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	BJ
-;  :Version.	$Id: cf2.asm 1.1 1998/03/16 16:58:59 jah Exp $
+;  :Version.	$Id: cf2.asm 1.2 1998/09/23 17:34:48 jah Exp jah $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
 ;		22.05.97 working on german version
 ;		12.01.98 support for original english version
 ;		21.09.98 access fault in soundplayer in german version fixed
+;		29.09.98 fix problem with savegames from a floppy game
+;			 containing absolute address of relocated program
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -23,7 +25,7 @@ crc_v3	= $389d		;english
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 
-	OUTPUT	wart:a-c/cannonfodder2/cf2.slave
+	OUTPUT	wart:c/cannonfodder2/cf2.slave
 	BOPT	O+ OG+				;enable optimizing
 	BOPT	ODd- ODe-			;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
@@ -291,6 +293,13 @@ _Loader		cmp.w	#3,d0		;list
 		move.l	(_resload),a2
 		jsr	(resload_LoadFileDecrunch,a2)
 		move.l	d0,d1
+		
+		cmp.l	#$8062a,a5
+		bne	.ok
+	;fix problem with savegames from a floppy game
+	;containing absolute address of relocated program
+		move.l	#$80a1a,$80cec
+		
 .ok		movem.l	(a7)+,d2-a6
 		moveq	#0,d0
 		rts
