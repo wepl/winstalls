@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.11 2003/05/14 22:40:00 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.12 2003/06/07 13:25:23 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -11,6 +11,7 @@
 ;		30.03.03 _bootearly/block made returnable
 ;		06.04.03 cache option added
 ;		15.05.03 patch for exec.ExitIntr to avoid double ints
+;		11.06.03 patch for access fault from EndCLI (JOTD)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -130,6 +131,7 @@ kick_patch	PL_START
 		PL_I	$2b2ee				;trd_rawwrite
 	ENDC
 		PL_PS	$342ec,dos_init
+		PL_PS	$35a0c,dos_endcli
 		PL_PS	$3717c,dos_LoadSeg
 	IFD _bootdos
 		PL_PS	$38a4a,dos_bootdos
@@ -615,6 +617,12 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 dos_init	move.l	#$10001,d1
 		bra	_flushcache
+
+dos_endcli	tst.l	D2			;is -1 with EndCLI
+		bmi	.1
+		move.b	(a0,d2.l),d3		;original
+.1		move.l	d3,d1			;original
+		rts
 
 dos_1		move.l	#$118,d1		;original
 		bra	_flushcache

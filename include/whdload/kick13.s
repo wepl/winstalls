@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.47 2003/05/14 22:40:00 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.48 2003/06/07 13:25:23 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -45,6 +45,7 @@
 ;		30.03.03 _bootearly/block made returnable
 ;		06.04.03 cache option added
 ;		15.05.03 patch for exec.ExitIntr to avoid double ints
+;		11.06.03 patch for access fault from EndCLI (JOTD)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -165,6 +166,7 @@ kick_patch	PL_START
 		PL_I	$2af6e				;trd_rawwrite
 	ENDC
 		PL_PS	$33ef0,dos_init
+		PL_PS	$3568c,dos_endcli
 		PL_PS	$36e4c,dos_LoadSeg
 	IFD _bootdos
 		PL_PS	$38748,dos_bootdos
@@ -652,6 +654,12 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 dos_init	move.l	#$10001,d1
 		bra	_flushcache
+
+dos_endcli	tst.l	D2			;is -1 with EndCLI
+		bmi	.1
+		move.b	(a0,d2.l),d3		;original
+.1		move.l	d3,d1			;original
+		rts
 
 dos_1		move.l	#$118,d1		;original
 		bra	_flushcache
