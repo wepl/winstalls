@@ -19,6 +19,8 @@
 ;		19.06.01 ChkBltWait problem fixed in blitter init
 ;		15.07.01 using time provided by whdload to init timer.device
 ;		02.08.01 exec.Supervisor fixed (to work with exec.SuperState)
+;		03.08.01 NOFPU->NEEDFPU changed, DISKSONBOOT added
+;			 bug in trackdisk fixed (endio missing on error)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -76,7 +78,7 @@ kick_patch	PL_START
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$422,exec_Supervisor
-		PL_I	$3012				;exec_Alert
+	;	PL_I	$3012				;exec_Alert
 	IFD MEMFREE
 		PL_P	$1826,exec_AllocMem
 	ENDC
@@ -152,7 +154,7 @@ kick_hrtmon	move.l	a4,d0
 	ENDC
 
 kick_detectcpu	move.l	(_attnflags,pc),d0
-	IFD NOFPU
+	IFND NEEDFPU
 		and.w	#~(AFF_68881|AFF_68882|AFF_FPU40),d0
 	ENDC
 		rts
@@ -492,41 +494,43 @@ timer_init	move.l	(_time),a0
 ;============================================================================
 
 trd_format
-trd_readwrite	moveq	#0,d1
+trd_readwrite	movem.l	d2/a1-a2,-(a7)
+
+		moveq	#0,d1
 		move.b	($43,a3),d1		;unit number
 		clr.b	(IO_ERROR,a1)
+
 		btst	#1,($40,a3)		;disk inserted?
 		beq	.diskok
-		moveq	#TDERR_DiskChanged,d0
-		move.b	d0,(IO_ERROR,a1)
+
+		move.b	#TDERR_DiskChanged,(IO_ERROR,a1)
+		
+.end		movem.l	(a7),d2/a1-a2
+		bsr	trd_endio
+		movem.l	(a7)+,d2/a1-a2
+		moveq	#0,d0
+		move.b	(IO_ERROR,a1),d0
 		rts
 
 .diskok		cmp.b	#CMD_READ,(IO_COMMAND+1,a1)
-		bne	trd_write
+		bne	.write
 
-trd_read	movem.l	d2/a1,-(a7)
-		moveq	#0,d2
+.read		moveq	#0,d2
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
 		move.l	(IO_DATA,a1),a0		;destination
 		move.l	(_resload,pc),a1
 		jsr	(resload_DiskLoad,a1)
-		movem.l	(a7),d2/a1
-		bsr	trd_endio
-		movem.l	(a7)+,d2/a1
-		moveq	#0,d0
-		rts
+		bra	.end
 
-trd_write	move.b	(_trd_prot,pc),d0
+.write		move.b	(_trd_prot,pc),d0
 		btst	d1,d0
 		bne	.protok
-		moveq	#TDERR_WriteProt,d0
-		move.b	d0,(IO_ERROR,a1)
-		rts
+		move.b	#TDERR_WriteProt,(IO_ERROR,a1)
+		bra	.end
 
-.protok		movem.l	a1-a2,-(a7)
-		lea	(.disk,pc),a0
+.protok		lea	(.disk,pc),a0
 		move.b	(_trd_disk,pc,d1.w),d0	;disk
 		add.b	#"0",d0
 		move.b	d0,(5,a0)		;name
@@ -535,11 +539,7 @@ trd_write	move.b	(_trd_prot,pc),d0
 		move.l	(IO_DATA,a1),a1		;destination
 		move.l	(_resload,pc),a2
 		jsr	(resload_SaveFileOffset,a2)
-		movem.l	(a7),a1-a2
-		bsr	trd_endio
-		movem.l	(a7)+,a1-a2
-		moveq	#0,d0
-		rts
+		bra	.end
 
 .disk		dc.b	"Disk.",0,0,0
 
@@ -569,18 +569,24 @@ tdtask_cause	move.l	(_expmem,pc),-(a7)	;jump into rom
 		add.l	#$296e8,(a7)
 		rts
 
-trd_task	bclr	#1,($40,a3)		;set disk inserted
+trd_task
+	IFD DISKSONBOOT
+		bclr	#1,($40,a3)		;set disk inserted
 		beq	.1
 		addq.l	#1,($126,a3)		;inc change count
 		bsr	tdtask_cause
 .1
+	ENDC
 		move.b	($43,a3),d1		;unit number
 		lea	(_trd_chg,pc),a0
 		bclr	d1,(a0)
-		beq	.2
+		beq	.2			;if not changed skip
+
 		bset	#1,($40,a3)		;set no disk inserted
+		bne	.3
 		addq.l	#1,($126,a3)		;inc change count
 		bsr	tdtask_cause
+.3
 		bclr	#1,($40,a3)		;set disk inserted
 		addq.l	#1,($126,a3)		;inc change count
 		bsr	tdtask_cause
