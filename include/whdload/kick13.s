@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.11 2000/05/11 19:56:41 jah Exp $
+;  :Version.	$Id: kick13.s 0.12 2001/06/19 20:47:23 jah Exp jah $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -17,6 +17,7 @@
 ;		16.04.00 loadview fixed
 ;		11.05.00 SetPatch can be enabled/disabled via a defined label
 ;		19.06.01 ChkBltWait problem fixed in blitter init
+;		15.07.01 using time provided by whdload to init timer.device
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -94,6 +95,7 @@ kick_patch	PL_START
 	IFD _bootblock
 		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
+		PL_P	$28f88,timer_init
 		PL_P	$2a3b4,trd_readwrite
 		PL_I	$2a5d8				;internal readwrite
 		PL_P	$2a0e2,trd_motor
@@ -121,9 +123,6 @@ kick_patch	PL_START
 	ENDC
 
 		PL_END
-
-;DANGER:
-;	$3c9ae
 
 ;============================================================================
 
@@ -459,6 +458,24 @@ disk_getunitid
 
 ;============================================================================
 
+timer_init	move.l	(_time),a0
+		move.l	(whdlt_days,a0),d0
+		mulu	#24*60,d0
+		add.l	(whdlt_mins,a0),d0
+		move.l	d0,d1
+		lsl.l	#6,d0			;*64
+		lsl.l	#2,d1			;*4
+		sub.l	d1,d0			;=*60
+		move.l	(whdlt_ticks,a0),d1
+		divu	#50,d1
+		ext.l	d1
+		add.l	d1,d0
+		move.l	d0,($c6,a2)
+		movem.l	(a7)+,d2/a2-a3		;original
+		rts
+
+;============================================================================
+
 trd_format
 trd_readwrite	moveq	#0,d1
 		move.b	($43,a3),d1		;unit number
@@ -604,6 +621,8 @@ _cbswitch_tag	dc.l	0
 _attnflags	dc.l	0
 		dc.l	WHDLTAG_MONITOR_GET
 _monitor	dc.l	0
+		dc.l	WHDLTAG_TIME_GET
+_time		dc.l	0
 		dc.l	0
 _resload	dc.l	0
 _cbswitch_cop2lc dc.l	0
