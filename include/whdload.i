@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@kagi.com
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 8.0 1998/11/25 13:23:54 jah Exp jah $
+;  :Version.	$Id: whdload.i 9.0 1999/01/11 23:22:35 jah Exp jah $
 ;  :History.
 ;  :Copyright.	© 1996,1997,1998 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
@@ -286,12 +286,13 @@ blitz		MACRO
 ***** color the screen and wait for LMB
 bwait		MACRO
 		move	#$1200,bplcon0+_custom
+.wd\@
 	IFEQ NARG
 		move.w	#$ff0,color+_custom		;yellow
 	ELSE
 		move.w	#\1,color+_custom
 	ENDC
-.wd\@		btst	#6,$bfe001
+		btst	#6,$bfe001
 		bne	.wd\@
 		waitvb					;entprellen
 		waitvb					;entprellen
@@ -399,6 +400,13 @@ TDREASON_DELETEFILE	= 27	;error with resload_DeleteFile
 				;(see "Includes:graphics/gfxbase.i")
 ; version 8
  EITEM	WHDLTAG_IOERR_GET	;get dos error code from last resload function
+ EITEM	WHDLTAG_Private4
+; version 9
+ EITEM	WHDLTAG_CBAF_SET	;set callback function to execute when access 
+				;fault occurs (see autodoc)
+ EITEM	WHDLTAG_VERSION_GET	;get WHDLoad version number (major)
+ EITEM	WHDLTAG_REVISION_GET	;get WHDLoad revision number (minor)
+ EITEM	WHDLTAG_BUILD_GET	;get WHDLoad build number
 
 ;=============================================================================
 ; Slave		Version 1..3
@@ -475,6 +483,10 @@ TDREASON_DELETEFILE	= 27	;error with resload_DeleteFile
 	BITDEF WHDL,EmulLineA,7	;if set and the vbr is moved Line-A
 				;instructions (opcodes starting with %1010)
 				;are emulated like the autovectors
+; version 9
+	BITDEF WHDL,EmulTrapV,8	;if set and the vbr is moved trap-v
+				;instructions are emulated like the
+				;autovectors
 
 ;=============================================================================
 ; resload_#? functions
