@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.13 2003/11/15 21:32:26 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.14 2003/12/09 16:32:47 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -10,6 +10,7 @@
 ;		15.05.03 patch for exec.ExitIntr to avoid double ints
 ;		22.06.03 adapted for whdload v16
 ;		13.11.03 merged support for A4000 image into
+;		02.05.04 lowlevel loading/joypad emulation integrated
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,10 +20,12 @@
 
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
+	INCLUDE	lvo/lowlevel.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	exec/resident.i
 	INCLUDE	graphics/gfxbase.i
+	INCLUDE	libraries/lowlevel.i
 
 KICKVERSION	= 40
 KICKCRC1200	= $9ff5				;40.068 A1200
@@ -133,8 +136,7 @@ _boot		lea	(_resload,pc),a1
 		jsr	(resload_Patch,a5)
 
 	;call
-kick_reboot	move.l	(_expmem,pc),a0
-		jmp	(2,a0)				;original entry
+kick_reboot	jmp	([_expmem,pc],2.w)		;original entry
 
 kick_patch1200	PL_START
 		PL_S	$d6,$166-$d6
@@ -694,8 +696,13 @@ dos_LoadSeg	move.l	d0,d1		;original
 	IFD BOOTDOS
 dos_bootdos
 	;init boot exe
+	IFND INIT_LOWLEVEL
 		lea	(_bootdos,pc),a0
 		move.l	a0,(bootfile_exe_j+2-_bootdos,a0)
+	ELSE
+		lea	(_lowlevel,pc),a0
+		move.l	a0,(bootfile_exe_j+2-_lowlevel,a0)
+	ENDC
 	;fake startup-sequence
 		lea	(bootname_ss,pc),a0
 		move.l	a0,d1
@@ -743,6 +750,94 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 
 ;============================================================================
 
+	IFD INIT_LOWLEVEL
+_lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
+	;open lowlevel.library
+		moveq	#40,d0
+		lea	(_lowlevelname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOpenLibrary,a6)
+		move.l	d0,d2
+		bne	.lowlevelok
+		pea	(_lowlevelname,pc)
+		pea	ERROR_OBJECT_NOT_FOUND
+		pea	TDREASON_DOSREAD
+		jmp	([_resload,pc],resload_Abort.w)
+	;patch functions
+.lowlevelok	lea	.readjoyport,a0
+		move.l	a0,d0
+		move.w	#_LVOReadJoyPort,a0
+		move.l	d2,a1
+		jsr	(_LVOSetFunction,a6)
+		lea	.rjp_save,a0
+		move.l	d0,(a0)
+		lea	.getlanguage,a0
+		move.l	a0,d0
+		move.w	#_LVOGetLanguageSelection,a0
+		move.l	d2,a1
+		jsr	(_LVOSetFunction,a6)
+	;do initial joyport read to init internal structures
+	;	move.l	d2,a6
+	;	moveq	#1,d0			;port 1
+	;	jsr	(_LVOReadJoyPort,a6)
+	;call slave
+		movem.l	(a7)+,_MOVEMREGS
+		bra	_bootdos
+
+.readjoyport	moveq	#1,d1			;only port 1
+		cmp.l	d0,d1
+		bne	.rjp1
+		pea	.rjp2
+.rjp1		jmp	([.rjp_save,pc])
+.rjp2		move.l	d0,d1
+		clr.b	d1
+		rol.l	#4,d1
+		cmp.b	#JP_TYPE_JOYSTK>>28,d1
+		beq	.rjp_ok
+		cmp.b	#JP_TYPE_GAMECTLR>>28,d1
+		bne	.rjp_end
+.rjp_ok		move.l	d0,-(a7)
+		moveq	#6,d1			;amount of keys in array
+		lea	(.rjp_keys,pc),a0
+		jsr	(_LVOQueryKeys,a6)
+		move.l	(a7)+,d0
+		and.l	#~(JP_TYPE_MASK|JPF_BUTTON_BLUE),d0
+		or.l	#JP_TYPE_GAMECTLR,d0
+		tst.w	(.rjp_keys+2,pc)
+		beq	.rjp_f2
+		bset	#JPB_BUTTON_BLUE,d0
+.rjp_f2		tst.w	(.rjp_keys+6,pc)
+		beq	.rjp_f3
+		bset	#JPB_BUTTON_GREEN,d0
+.rjp_f3		tst.w	(.rjp_keys+10,pc)
+		beq	.rjp_f4
+		bset	#JPB_BUTTON_YELLOW,d0
+.rjp_f4		tst.w	(.rjp_keys+14,pc)
+		beq	.rjp_f5
+		bset	#JPB_BUTTON_PLAY,d0
+.rjp_f5		tst.w	(.rjp_keys+18,pc)
+		beq	.rjp_f6
+		bset	#JPB_BUTTON_REVERSE,d0
+.rjp_f6		tst.w	(.rjp_keys+22,pc)
+		beq	.rjp_end
+		bset	#JPB_BUTTON_FORWARD,d0
+.rjp_end	rts
+
+.rjp_save	dc.l	0
+.rjp_keys	dc.w	$50,0			;F1 Blue - Stop
+		dc.w	$51,0			;F2 Green - Shuffle
+		dc.w	$52,0			;F3 Yellow - Repeat
+		dc.w	$53,0			;F4 Grey - Play/Pause
+		dc.w	$54,0			;F5 Left Ear - Reverse
+		dc.w	$55,0			;F6 Right Ear - Forward
+
+.getlanguage	move.l	(_language,pc),d0
+		rts
+
+	ENDC
+
+;============================================================================
+
 	IFD HDINIT
 hd_init		move.l	(a7)+,d0
 		movem.l	d0/d2/a2-a6,-(a7)	;original
@@ -778,6 +873,10 @@ slv_kickname	dc.w	KICKCRC1200,.a1200-slv_base
 .a1200		dc.b	"40068.a1200",0
 .a4000		dc.b	"40068.a4000",0
 	ENDC
+	IFD INIT_LOWLEVEL
+_lowlevelname	dc.b	"lowlevel.library",0
+	EVEN
+	ENDC
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
@@ -789,6 +888,10 @@ _time		dc.l	0
 	IFLT NUMDRIVES
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
+	ENDC
+	IFD INIT_LOWLEVEL
+		dc.l	WHDLTAG_LANG_GET
+_language	dc.l	0
 	ENDC
 		dc.l	0
 _resload	dc.l	0
