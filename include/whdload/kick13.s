@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.53 2004/03/04 08:52:45 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.54 2004/11/16 20:29:03 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -52,6 +52,7 @@
 ;		06.02.04 keyboard acknowledgment fix fixed
 ;		19.02.04 clearing ciasdr removed
 ;		15.11.04 _keydebug/exit check added
+;		26.01.05 trackdisk device IO_ACTUAL field set (Hacker uses this)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -683,6 +684,7 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
+		move.l	d1,(IO_ACTUAL,a1)	;actually read (fix for Hacker)
 		move.l	(IO_DATA,a1),a0		;destination
 		move.l	(_resload,pc),a1
 		jsr	(resload_DiskLoad,a1)

@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.17 2004/03/04 08:52:45 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.18 2004/11/16 20:54:14 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -18,6 +18,7 @@
 ;		06.02.04 keyboard acknowledgment fix fixed
 ;		19.02.04 clearing ciasdr removed
 ;		16.11.04 _keydebug/exit check added
+;		27.01.05 IO_ACTUAL fixed (JOTD)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -638,6 +639,7 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
+		move.l	d1,(IO_ACTUAL,a1)	;actually read
 		move.l	(IO_DATA,a1),a0		;destination
 		move.l	(_resload,pc),a1
 		jsr	(resload_DiskLoad,a1)

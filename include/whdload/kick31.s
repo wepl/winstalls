@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.15 2004/06/18 08:37:09 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.16 2004/10/16 14:57:58 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -12,6 +12,8 @@
 ;		13.11.03 merged support for A4000 image into
 ;		02.05.04 lowlevel loading/joypad emulation integrated
 ;		16.10.04 support for NUMDRIVES=0 added
+;		26.01.05 trackdisk device IO_ACTUAL field set
+;
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -560,6 +562,7 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
+		move.l	d1,(IO_ACTUAL,a1)	;actually read
 		move.l	(IO_DATA,a1),a0		;destination
 		move.l	(_resload,pc),a1
 		jsr	(resload_DiskLoad,a1)
