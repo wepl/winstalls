@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.10 2003/03/30 18:25:01 wepl Exp wepl $
+$Id: kick.readme 1.11 2003/04/10 05:46:18 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -79,7 +79,7 @@ the drives use the function _trd_changedisk (see below).
 DOSASSIGN
 
 If that symbol is defined the subroutine _dos_assign will be included and can
-be used (see below). Only available in kick12.s and kick13.s.
+be used (see below).
 
 FONTHEIGHT
 
@@ -141,6 +141,9 @@ and avoid memory wasting. Test a game trough all paths with that symbol
 defined. Then make a dump and checkout the memory dump file. At address
 (MEMFREE) you will find the lowest free chip memory during the games lifetime.
 At address (MEMFREE+4) you will find the same for fast memory.
+The MEMFREE has also the side effect that trashing the memory list will be
+detected on the next AllocMem call because AvailMem(LARGEST) used in MEMFREE
+will traverse all free memory. This may be useful for debugging.
 
 NEEDFPU
 
@@ -153,7 +156,7 @@ present.
 POINTERTICKS
 
 If defined that symbol sets the system default mouse speed in the preferences
-(intuition), under Kick1.3 the default is 2, 1 will be fast, 4 slow
+(intuition). The system default is 2. Setting 1 means fast, 4 slow.
 
 SETPATCH
 
@@ -165,7 +168,8 @@ and kick13.s.
 STACKSIZE
 
 Using this symbol the default stacksize can be set. The initial CLI structure
-will be patched for this. The system default on V33 and V34 is 4000 bytes.
+will be patched for this. The system default on V33 and V34 is 4000 bytes, on
+V40 it's 4096 bytes.
 
 TRDCHANGEDISK
 
@@ -175,6 +179,14 @@ can be used (see below).
 
 Labels in the Slave-Source
 **************************
+
+In the old style Slaves it was sufficient to only define the labels below.
+Beginning with the new style and WHDLoad v16 the kicknn.s will be included at
+the top of the slave source which results in that these labels are not visible
+to kicknn.s in the first assembling pass. This can cause problems with your
+assembler (e.g. "Internal Global Optimize Error" with BASM). To aid this you
+must define an uppercase symbol without the underlines (e.g. BOOTEARLY for
+_bootearly) before including kicknn.s in your slave source (see examples).
 
 _bootearly
 
@@ -232,23 +244,20 @@ Functions in kick(12|13|31).s
 *****************************
 
 _dos_assign
-	* only available in kick12/3.s, with kick31 use the appropriate
-	  dos.library functions AssignLock, AssignPath, ...
 	* only avaliable if DOSASSIGN is defined
 	* performs a C:Assign like operation
 	* SYNOPSIS
-		IN:	A0 = BSTR destination name (null terminated BCPL
-				  string, at long word address!)
+		IN:	A0 = CPTR destination name
 			A1 = CPTR directory (can be 0 meaning SYS:)
 		OUT:	-
-	* you may also assign device names to a directory!
+	* only under kick12/13.s you may also assign device names to a
+	  directory!
 	* EXAMPLE
-		lea	_name,a0
+		lea	(_name,pc),a0
 		sub.l	a1,a1
 		bsr	_dos_assign
 		...
-		CNOP 0,4
-	  _name dc.b	3,"DF0",0
+	  _name dc.b	"DataDisk",0
 
 _trd_changedisk
 	* only avaliable if TRDCHANGEDISK is defined
@@ -271,7 +280,7 @@ Labels in kick(12|13|31).s
 _attnflags
 	* a long word containing the exec.AttnFlags
 	* EXAMPLE
-		move.l	_attnflags,d0
+		move.l	(_attnflags,pc),d0
 		btst	#AFB_68020,d0
 		beq	...
 
@@ -283,7 +292,7 @@ _dosname
 _monitor
 	* a long word containing the actual monitor
 	* EXAMPLE
-		move.l	_monitor,d0
+		move.l	(_monitor,pc),d0
 		cmp.l	#PAL_MONITOR_ID,d0
 		beq	...
 
