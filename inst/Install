@@ -1,6 +1,6 @@
-; $Id: Install 1.8 2004/10/07 00:56:04 wepl Exp wepl $
+; $Id: Install 1.8 2004/10/11 21:34:13 wepl Exp $
 
-(set #multiple-versions "")		;set to <> "" if there are multiple versions
+(set #multiple-versions "yes")		;set to <> "" if there are multiple versions
 (set #sub-dir "")			;sub directory containing data files
 (set #highs-file "highs")		;name of high scores file
 
@@ -145,15 +145,8 @@
         (dest #dest)
         (pattern "~(#?.info)")
       )
-
-      ;				;----- XFDDecrunch support (uncomment if required) -----
-      ;(set #program "xfddecrunch")
-      ;(P_ChkRun_XFD)
-      ;(if
-      ;  (= 0 (run ("xfddecrunch \"%s:Enemy\" >CON:///1000//CLOSE" #dest)))
-      ;  ("")
-      ;  (abort "\"xfddecrunch\" has failed to decompress the file")
-      ;)
+      (set #file (tackon #dest "Enemy"))
+      (P_XFDDecrunch)
     )
 
     (				;----- CD version (Files) -----
@@ -230,10 +223,6 @@
   (set #package "WHDLoad")
   (P_ChkRun_Package)
 )
-(procedure P_ChkRun_XFD
-  (set #package "XFD")
-  (P_ChkRun_Package)
-)
 (procedure P_ChkRun_Package
   (if (= 0 (run ("cd SYS:\nWhich %s >NIL:" #program)))
     ("")
@@ -244,6 +233,21 @@
 	"You can find it in the " #package " package."
       )
     )
+  )
+)
+
+;----------------------------
+; decrunch one file using XFD package
+; IN:  #file - file to decrunch (full path)
+; OUT: -
+
+(procedure P_XFDDecrunch
+  (set #program "xfddecrunch")
+  (set #package "XFD")
+  (P_ChkRun_Package)
+  (if
+     (<> 0 (run ("%s \"%s\" >CON:///1000//CLOSE" #program #file)))
+     (abort ("\"%s\" has failed to decompress the file \"%s\"" #program #file))
   )
 )
 
@@ -555,37 +559,24 @@
       (newname ("%s.info" #icon_prefix))
       (dest #dest)
     )
-
-    ; Check if we should set Slave=xxxxxx.slave and PreLoad tooltypes
-    (if (= #icon_set_slave_preload "")
-      ("")
-      (
-        ;installer has problems on deleting with newicons
-        ;(tooltype
-        ;  (dest (tackon #dest #icon_prefix))
-        ;  (settooltype "Slave")
-        ;  (settooltype "PreLoad")
-        ;)
-        (tooltype
-          (dest (tackon #dest #icon_prefix))
-          (settooltype "PreLoad" "")
-          (settooltype "Slave" ("%s.Slave" #icon_slave))
-        )
+    ;installer has problems on deleting tooltypes with newicons
+    (if (<> (substr #icon 0 3) "new")
+      (tooltype
+        (dest (tackon #dest #icon_prefix))
+        (settooltype "Slave")
+        (settooltype "PreLoad")
       )
     )
-
-    ; Check if we should set the default tool to "WHDLoad" and the stack
-    ; to 10240 bytes
-    (if (= #icon_set_deftool_stack "")
-      ("")
-      (
-        (tooltype
-          (dest (tackon #dest #icon_prefix))
-          (setdefaulttool "WHDLoad")
-          (setstack 10240)
-          (noposition)
-        )
-      )
+    (tooltype
+      (dest (tackon #dest #icon_prefix))
+      (settooltype "PreLoad" "")
+      (settooltype "Slave" ("%s.Slave" #icon_slave))
+    )
+    (tooltype
+      (dest (tackon #dest #icon_prefix))
+      (setdefaulttool "WHDLoad")
+      (setstack 10240)
+      (noposition)
     )
   ))
 )
