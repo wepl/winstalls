@@ -2,7 +2,7 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: cf2.asm 1.3 1998/09/29 22:49:19 jah Exp jah $
+;  :Version.	$Id: cf2.asm 1.5 2000/09/03 18:11:44 jah Exp jah $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -14,6 +14,7 @@
 ;		13.01.99 stack decreased on exit because "unacceptible args.."
 ;		27.08.00 adapted for v10
 ;		03.09.00 finished rework
+;		10.01.01 bplcon0 and aga accesses fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -70,7 +71,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.5 "
+		dc.b	"Version 1.6 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -146,6 +147,11 @@ _pl		PL_START
 
 		PL_S	$5fd2,4			;move #$2000,sr
 
+		PL_W	$2dbc,$4200		;bplcon0
+		PL_S	$5fc2,8+8		;bplcon3,4
+		PL_W	$ac98,$1e		;htotal
+		PL_W	$c0c2,$200		;bplcon0
+
 		PL_END
 		
 ;======================================================================
@@ -157,6 +163,16 @@ _pl1		PL_START
 		PL_L	$9ffa,$2cf14e75
 		PL_B	$22b92,$60
 		PL_B	$22c7a,$60
+
+		PL_W	$1C278,$4200
+		PL_W	$1C318,$4200
+		PL_W	$1C32c,$5200
+		PL_W	$1C610,$5200
+		PL_W	$1C6Ce,$4200
+		PL_W	$26076,$6600
+		PL_W	$26266,$4200
+		PL_W	$275E0,$5200
+		PL_W	$2786c,$4200
 
 	;exception #11266 at $89e08
 		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
@@ -187,6 +203,16 @@ _pl2		PL_START
 
 		PL_R	$29bea			;"insert disk 3"
 		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
+
+		PL_W	$1C356,$4200
+		PL_W	$1C3F6,$4200
+		PL_W	$1C40a,$5200
+		PL_W	$1C6Ee,$5200
+		PL_W	$1C7Ac,$4200
+		PL_W	$26420,$6600
+		PL_W	$26638,$4200
+		PL_W	$279B4,$5200
+		PL_W	$27C40,$4200
 
 	;ein übelster Schrapelplayer ist das !
 	;a2740 = a2892 sound off
