@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1 
-;  :Version.	$Id: elvira.asm 1.2 2001/12/21 12:16:01 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.4 2002/01/25 00:54:31 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
@@ -32,7 +32,7 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $100000
+FASTMEMSIZE	= $80000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
@@ -40,8 +40,8 @@ DEBUG
 ;DISKSONBOOT
 HDINIT
 ;HRTMON
-IOCACHE		= 1024
-MEMFREE	= $200
+IOCACHE		= 22000
+;MEMFREE	= $200
 ;NEEDFPU
 ;SETPATCH
 
