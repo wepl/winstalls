@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.16 2004/10/16 14:57:58 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.17 2005/01/27 08:44:12 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -13,7 +13,7 @@
 ;		02.05.04 lowlevel loading/joypad emulation integrated
 ;		16.10.04 support for NUMDRIVES=0 added
 ;		26.01.05 trackdisk device IO_ACTUAL field set
-;
+;		11.02.05 PROMOTE_DISPLAY added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -480,6 +480,8 @@ gfx_readvpos	move	(vposr+_custom),d0
 		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
 		beq	.pal
+		cmp.l	#DBLPAL_MONITOR_ID,d1
+		beq	.pal
 		bset	#12,d0
 		bra.b	.end
 .pal		bclr	#12,d0
@@ -703,18 +705,22 @@ dos_LoadSeg	move.l	d0,d1		;original
 	IFD BOOTDOS
 dos_bootdos
 	;init boot exe
-	IFND INIT_LOWLEVEL
-		lea	(_bootdos,pc),a0
-		move.l	a0,(bootfile_exe_j+2-_bootdos,a0)
-	ELSE
-		lea	(_lowlevel,pc),a0
-		move.l	a0,(bootfile_exe_j+2-_lowlevel,a0)
-	ENDC
+		lea	(dos_startup,pc),a0
+		move.l	a0,(bootfile_exe_j+2-dos_startup,a0)
 	;fake startup-sequence
 		lea	(bootname_ss,pc),a0
 		move.l	a0,d1
 	;return
 		rts
+
+dos_startup
+	IFD INIT_LOWLEVEL
+		bsr	_lowlevel
+	ENDC
+	IFD PROMOTE_DISPLAY
+		bsr	_promotedisplay
+	ENDC
+		bra	_bootdos
 	ENDC
 
 ;---------------
@@ -789,7 +795,7 @@ _lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
 	;	jsr	(_LVOReadJoyPort,a6)
 	;call slave
 		movem.l	(a7)+,_MOVEMREGS
-		bra	_bootdos
+		rts
 
 .readjoyport	moveq	#1,d1			;only port 1
 		cmp.l	d0,d1
@@ -845,6 +851,73 @@ _lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
 
 ;============================================================================
 
+	IFD PROMOTE_DISPLAY
+
+_promotedisplay	movem.l	d0-a6,-(a7)
+		
+		move.l	(_monitor,pc),d0
+		moveq	#10,d5				;D5 = monitor id
+		lea	(_mon_dblpal,pc),a3		;A3 = monitor name
+		lea	(_load_dblpal,pc),a4		;A4 = monitor load
+		cmp.l	#DBLPAL_MONITOR_ID,d0
+		beq	.promote
+		moveq	#9,d5				;D5 = monitor id
+		lea	(_mon_dblntsc,pc),a3		;A3 = monitor name
+		lea	(_load_dblntsc,pc),a4		;A4 = monitor load
+		cmp.l	#DBLNTSC_MONITOR_ID,d0
+		bne	.end
+	;enable AGA chipset
+.promote	lea	(_gfxname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a5				;A5 = gfxbase
+		move.l	d0,a6
+		move.l	#SETCHIPREV_BEST,d0
+		jsr	(_LVOSetChipRev,a6)
+	;load monitor
+		sub.l	a1,a1
+		move.l	(4),a6
+		jsr	(_LVOFindTask,a6)
+		move.l	d0,a2				;A2 = process
+		move.l	(pr_WindowPtr,a2),d6		;D6 = window
+		moveq	#-1,d0
+		move.l	d0,(pr_WindowPtr,a2)		;avoid 'Insert Volume' requester
+		lea	(_dosname,pc),a1
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a6
+		move.l	a4,d1				;command
+		moveq	#0,d2				;taglist
+		jsr	(_LVOSystemTagList,a6)
+		move.l	d6,(pr_WindowPtr,a2)		;restore window
+		tst.l	d0
+		beq	.monok
+.nomon		pea	(_err_load_mon,pc)
+		pea	TDREASON_FAILMSG
+		move.l	(_resload,pc),a0
+		jmp	(resload_Abort,a0)
+	;change default monitor
+.monok		moveq	#0,d0				;display id
+		move.l	a3,a1				;monitor name
+		move.l	a5,a6
+		jsr	(_LVOOpenMonitor,a6)
+		move.l	d0,d7				;D7 = monitor
+		beq	.nomon
+		move.l	(gb_default_monitor,a6),a0
+		jsr	(_LVOCloseMonitor,a6)
+		move.w	d5,(gb_monitor_id,a6)
+		move.l	d7,(gb_default_monitor,a6)
+		bset	#LIBB_CHANGED,(LIB_FLAGS,a6)
+		move.l	a6,a1
+		move.l	(4),a6
+		jsr	(_LVOSumLibrary,a6)
+.end
+		movem.l	(a7)+,d0-a6
+		rts
+
+	ENDC
+
+;============================================================================
+
 	IFD HDINIT
 hd_init		move.l	(a7)+,d0
 		movem.l	d0/d2/a2-a6,-(a7)	;original
@@ -882,8 +955,16 @@ slv_kickname	dc.w	KICKCRC1200,.a1200-slv_base
 	ENDC
 	IFD INIT_LOWLEVEL
 _lowlevelname	dc.b	"lowlevel.library",0
-	EVEN
 	ENDC
+	IFD PROMOTE_DISPLAY
+_load_dblpal	dc.b	"DblPAL",0
+_load_dblntsc	dc.b	"DblNTSC",0
+_err_load_mon	dc.b	"Couldn't load monitor!",0
+_mon_dblpal	dc.b	"DblPAL.monitor",0
+_mon_dblntsc	dc.b	"DblNTSC.monitor",0
+_gfxname	dc.b	"graphics.library",0
+	ENDC
+	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET

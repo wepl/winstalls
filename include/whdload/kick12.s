@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.18 2004/11/16 20:54:14 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.19 2005/01/27 08:44:38 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -430,6 +430,8 @@ gfx_detectdisplay
 		moveq	#4,d0			;pal
 		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
+		beq	.1
+		cmp.l	#DBLPAL_MONITOR_ID,d1
 		beq	.1
 		moveq	#1,d0			;ntsc
 .1		rts

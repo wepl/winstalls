@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.12 2003/07/15 20:38:31 wepl Exp $
+$Id: kick.readme 1.13 2004/05/02 13:19:06 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -132,7 +132,8 @@ Only available in kick31.s. Loads the lowlevel.library from disk into memory
 and patches the functions GetLanguageSelection and ReadJoyPort. Emulates
 joypad buttons via keyboard if there is only a usual joystick attached to
 port 1. Requires that the disk version of the lowlevel.library is present on
-the games data directory.
+the games data directory. BOOTDOS must be used, otherwise the patch will not
+be activated.
 
 INIT_MATHFFP
 
@@ -165,6 +166,13 @@ POINTERTICKS
 
 If defined that symbol sets the system default mouse speed in the preferences
 (intuition). The system default is 2. Setting 1 means fast, 4 slow.
+
+PROMOTE_DISPLAY
+
+Only available in kick31.s. Enables display promotion when WHDLoad options
+DblPAL or DblNTSC are used. The monitor driver (from "DEVS:Monitors/") must be
+present in the install directory. BOOTDOS must be used, otherwise the patch
+will not be activated.
 
 SETPATCH
 

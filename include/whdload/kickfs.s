@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.15 2004/10/18 11:14:16 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.16 2004/11/26 08:31:01 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -19,6 +19,7 @@
 ;		17.10.04 set IoErr on Seek on success to be more system conform
 ;		26.11.04 set IoErr on Read on success to be more system conform
 ;			 ACTION_SET_COMMENT dummy added
+;		08.02.05 ACTION_ADD_NOTIFY dummy added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -298,6 +299,7 @@ HD_NumBuffers		= 5
 		dc.w	ACTION_IS_FILESYSTEM,.a_is_filesystem-.action		;403	1027
 		dc.w	ACTION_EXAMINE_ALL,.a_examine_all-.action		;409	1033
 		dc.w	ACTION_EXAMINE_FH,.a_examine_fh-.action			;40A	1034
+		dc.w	ACTION_ADD_NOTIFY,.a_add_notify-.action			;1001	4097
 	ENDC
 		dc.w	0
 
@@ -972,6 +974,7 @@ HD_NumBuffers		= 5
 ;---------------
 
 	IFGT KICKVERSION-36
+.a_add_notify
 .a_examine_all	moveq	#DOSFALSE,d0
 		move.l	#ERROR_ACTION_NOT_KNOWN,d1
 		bra	.reply2

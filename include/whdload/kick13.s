@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.54 2004/11/16 20:29:03 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.55 2005/01/27 08:44:27 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -469,6 +469,8 @@ gfx_detectdisplay
 		moveq	#4,d0			;pal
 		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
+		beq	.1
+		cmp.l	#DBLPAL_MONITOR_ID,d1
 		beq	.1
 		moveq	#1,d0			;ntsc
 .1		rts
