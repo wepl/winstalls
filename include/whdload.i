@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@kagi.com
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 8.0 1998/11/22 13:35:42 jah Exp jah $
+;  :Version.	$Id: whdload.i 8.0 1998/11/25 13:23:54 jah Exp jah $
 ;  :History.
 ;  :Copyright.	© 1996,1997,1998 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
@@ -12,7 +12,7 @@
 ;---------------------------------------------------------------------------*
 
  IFND WHDLOAD_I
-WHDLOAD=1
+WHDLOAD_I=1
 
 	IFND	EXEC_EXECBASE_I
 	INCLUDE	exec/execbase.i
