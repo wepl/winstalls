@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.10 2000/04/16 21:12:03 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.11 2000/05/11 19:56:41 jah Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -16,6 +16,7 @@
 ;		20.03.00 some fixes for 68060 and snoop
 ;		16.04.00 loadview fixed
 ;		11.05.00 SetPatch can be enabled/disabled via a defined label
+;		19.06.01 ChkBltWait problem fixed in blitter init
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -82,6 +83,7 @@ kick_patch	PL_START
 		PL_PS	$6d70,gfx_vbserver
 		PL_PS	$6d86,gfx_snoop1
 		PL_PS	$ad5e,gfx_setcoplc
+		PL_S	$ad7a,6				;avoid ChkBltWait problem
 		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
@@ -109,7 +111,7 @@ kick_patch	PL_START
 		PL_PS	$3c9b6,dos_1
 
 	;the following stuff is from SetPatch 1.38
-	IFD SETPACTH
+	IFD SETPATCH
 		PL_PS	$582c,gfx_MrgCop
 		PL_PS	$7f66,gfx_SetFont
 		PL_P	$7fa6,gfx_SetSoftStyle
