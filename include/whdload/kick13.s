@@ -699,7 +699,7 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 		jsr	(_LVOAllocMem,a6)
 	IFD DEBUG
 		tst.l	d0
-		beq	.error
+		beq	_debug3
 	ENDC
 		move.l	d0,a5			;A5 = DosList
 
@@ -1166,31 +1166,34 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-.a_read		move.l	(dp_Arg1,a4),a0		;a0 = APTR lock
+.a_read		move.l	(dp_Arg1,a4),a0			;a0 = APTR lock
 	IFD DEBUG
 		cmp.l	#ACCESS_READ,(fl_Access,a0)
 		bne	_debug4
 	ENDC
-		move.l	(dp_Arg3,a4),d3		;d3 = readsize
-		move.l	(mfl_pos,a0),d5		;d5 = pos
+		move.l	(dp_Arg3,a4),d3			;d3 = readsize
+	IFD IOCACHE
+		moveq	#0,d4				;d4 = readcachesize
+	ENDC
+		move.l	(mfl_pos,a0),d5			;d5 = pos
 	;correct readsize if necessary
 		move.l	(mfl_fib+fib_Size,a0),d2
-		sub.l	d5,d2			;d2 = bytes left in file
+		sub.l	d5,d2				;d2 = bytes left in file
 		cmp.l	d2,d3
 		bls	.read_ok
-		move.l	d2,d3			;d3 = readsize
+		move.l	d2,d3				;d3 = readsize
 .read_ok	tst.l	d3
-		beq	.read_end		;eof
+		beq	.read_end			;eof
 		add.l	d3,(mfl_pos,a0)
 	IFD _bootdos
 	;special files
-		move.l	(fl_Key,a0),a0		;name
+		move.l	(fl_Key,a0),a0			;name
 		bsr	.specialfile
 		tst.l	d0
 		beq	.read_nospec
 		move.l	d0,a0
-		add.l	d5,a0			;source
-		move.l	(dp_Arg2,a4),a1		;destination
+		add.l	d5,a0				;source
+		move.l	(dp_Arg2,a4),a1			;destination
 		move.l	d3,d0
 .read_spec	move.b	(a0)+,(a1)+
 		subq.l	#1,d0
@@ -1200,20 +1203,19 @@ HD_BytesPerBlock	= 512
 	ENDC
 	IFND IOCACHE
 	;read direct
-		move.l	d3,d0			;length
-		move.l	d5,d1			;offset
-		move.l	(fl_Key,a0),a0		;name
-		move.l	(dp_Arg2,a4),a1		;buffer
+		move.l	d3,d0				;length
+		move.l	d5,d1				;offset
+		move.l	(fl_Key,a0),a0			;name
+		move.l	(dp_Arg2,a4),a1			;buffer
 		jsr	(resload_LoadFileOffset,a2)
 	;finish
-.read_end	move.l	d3,d0			;bytes read
+.read_end	move.l	d3,d0				;bytes read
 		bra	.reply1
 	ELSE
-		moveq	#0,d4			;d4 = readcachesize
-		move.l	(mfl_cpos,a0),d6	;d6 = cachepos
-		move.l	#IOCACHE,d7		;d7 = IOCACHE
+		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
+		move.l	#IOCACHE,d7			;d7 = IOCACHE
 	;try from cache
-		tst.l	(mfl_iocache,a0)	;buffer allocated?
+		tst.l	(mfl_iocache,a0)		;buffer allocated?
 		beq	.read_1
 		cmp.l	d5,d6
 		bhi	.read_1
@@ -1221,14 +1223,14 @@ HD_BytesPerBlock	= 512
 		add.l	d6,d0
 		sub.l	d5,d0
 		bls	.read_1
-		move.l	d0,d4			;d4 = readcachesize
+		move.l	d0,d4				;d4 = readcachesize
 		cmp.l	d4,d3
 		bhi	.read_2
 		move.l	d3,d4
 .read_2		move.l	(mfl_iocache,a0),a0
 		add.l	d5,a0
-		sub.l	d6,a0			;source
-		move.l	(dp_Arg2,a4),a1		;destination
+		sub.l	d6,a0				;source
+		move.l	(dp_Arg2,a4),a1			;destination
 		move.l	d4,d0
 .read_3		move.b	(a0)+,(a1)+
 		subq.l	#1,d0
@@ -1239,15 +1241,15 @@ HD_BytesPerBlock	= 512
 		beq	.read_end
 	;decide if read through cache or direct
 .read_1		cmp.l	d2,d3
-		beq	.read_d			;read remaining/complete file -> doesn't make sense to cache it
+		beq	.read_d				;read remaining/complete file -> doesn't make sense to cache it
 		cmp.l	d7,d3
 		blo	.read_c
 	;read direct
-.read_d		move.l	d3,d0			;length
-		move.l	d5,d1			;offset
+.read_d		move.l	d3,d0				;length
+		move.l	d5,d1				;offset
 		move.l	(dp_Arg1,a4),a0
-		move.l	(fl_Key,a0),a0		;name
-		move.l	(dp_Arg2,a4),a1		;buffer
+		move.l	(fl_Key,a0),a0			;name
+		move.l	(dp_Arg2,a4),a1			;buffer
 		add.l	d4,a1
 		jsr	(resload_LoadFileOffset,a2)
 		bra	.read_end
@@ -1264,21 +1266,21 @@ HD_BytesPerBlock	= 512
 		move.l	d0,(mfl_iocache,a0)
 		beq	.read_d
 	;read into cache
-.read_c1	move.l	d0,a1			;buffer
+.read_c1	move.l	d0,a1				;buffer
 		move.l	(mfl_fib+fib_Size,a0),d0
-		sub.l	d5,d0			;length
+		sub.l	d5,d0				;length
 		cmp.l	d7,d0
 		bls	.read_c2
-		move.l	d7,d0			;length
-.read_c2	move.l	d5,d1			;offset
-		move.l	(fl_Key,a0),a0		;name
+		move.l	d7,d0				;length
+.read_c2	move.l	d5,d1				;offset
+		move.l	(fl_Key,a0),a0			;name
 		jsr	(resload_LoadFileOffset,a2)
 		move.l	(dp_Arg1,a4),a0
 		move.l	d5,(mfl_cpos,a0)
 	;copy from cache
-		move.l	(mfl_iocache,a0),a0	;source
+		move.l	(mfl_iocache,a0),a0		;source
 		move.l	(dp_Arg2,a4),a1
-		add.l	d4,a1			;destination
+		add.l	d4,a1				;destination
 		move.l	d3,d0
 .read_c3	move.b	(a0)+,(a1)+
 		subq.l	#1,d0
@@ -1291,22 +1293,6 @@ HD_BytesPerBlock	= 512
 
 ;---------------
 
-	IFEQ 1
-.a_write	move.l	(dp_Arg1,a4),a0		;APTR lock
-		move.l	(dp_Arg3,a4),d0		;len
-		move.l	(mfl_pos,a0),d1		;offset
-		move.l	d1,d2
-		add.l	d0,d2
-		move.l	d2,(mfl_pos,a0)
-		cmp.l	(mfl_fib+fib_Size,a0),d2
-		bls	.write1
-		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
-.write1		move.l	(fl_Key,a0),a0		;name
-		move.l	(dp_Arg2,a4),a1		;buffer
-		jsr	(resload_SaveFileOffset,a2)
-		move.l	(dp_Arg3,a4),d0		;bytes written
-		bra	.reply1
-	ELSE
 .a_write	move.l	(dp_Arg1,a4),a0			;APTR lock
 	IFD DEBUG
 		cmp.l	#ACCESS_WRITE,(fl_Access,a0)
@@ -1327,8 +1313,8 @@ HD_BytesPerBlock	= 512
 		move.l	(dp_Arg3,a4),d0			;bytes written
 		bra	.reply1
 	ELSE
-; blitz
 	;set new pos and correct size if necessary
+		move.l	#IOCACHE,d4			;d4 = IOCACHE
 		move.l	(dp_Arg2,a4),d5			;d5 = buffer
 		move.l	(dp_Arg3,a4),d6			;d6 = len
 		beq	.write_end
@@ -1341,7 +1327,7 @@ HD_BytesPerBlock	= 512
 		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
 .write_1
 	;check if fits into cache
-		move.l	#IOCACHE,d0
+		move.l	d4,d0
 		move.l	(mfl_cpos,a0),d1
 		add.l	(mfl_clen,a0),d1
 		cmp.l	d1,d7				;offsets match?
@@ -1353,7 +1339,7 @@ HD_BytesPerBlock	= 512
 	;get memory if necessary
 .write_cache	move.l	(mfl_iocache,a0),d0
 		bne	.write_memok
-		move.l	#IOCACHE,d0
+		move.l	d4,d0
 		moveq	#MEMF_ANY,d1
 		jsr	(_LVOAllocMem,a6)
 		move.l	(dp_Arg1,a4),a0			;lock
@@ -1368,7 +1354,7 @@ HD_BytesPerBlock	= 512
 		bne	.write_flush
 		move.l	d7,(mfl_cpos,a0)
 .write_posok	move.l	d0,a1
-		move.l	#IOCACHE,d0
+		move.l	d4,d0
 		sub.l	(mfl_clen,a0),d0		;free space in cache
 		beq	.write_flush
 		cmp.l	d0,d6
@@ -1404,7 +1390,6 @@ HD_BytesPerBlock	= 512
 		jsr	(resload_SaveFileOffset,a2)
 .write_end	move.l	(dp_Arg3,a4),d0			;bytes written
 		bra	.reply1
-	ENDC
 	ENDC
 
 ;---------------
