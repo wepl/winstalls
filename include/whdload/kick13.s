@@ -3,12 +3,15 @@
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick13.s 0.3 1999/12/22 11:13:14 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.4 1999/12/22 13:33:34 jah Exp jah $
 ;  :History.	19.10.99 started
+;		18.01.00 trd_write with writeprotected fixed
+;			 diskchange fixed
+;		24.01.00 reworked to assemble with Asm-Pro
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -22,12 +25,12 @@ _boot		lea	(_resload,pc),a1
 		move.l	a0,a5				;A5 = resload
 
 	;get tags
-		lea	(_tags),a0
+		lea	(_tags,pc),a0
 		jsr	(resload_Control,a5)
 	
 	;load kickstart
-		lea	(_kick),a0
-		move.l	(_expmem),a1
+		lea	(_kick,pc),a0
+		move.l	(_expmem,pc),a1
 		move.l	a1,a4				;A4 = kickstart
 		jsr	(resload_LoadFileDecrunch,a5)
 		cmp.l	#KICKSIZE,d0
@@ -38,7 +41,7 @@ _boot		lea	(_resload,pc),a1
 		bne	.wrongkick
 
 	;load relocation table
-		lea	(_rtb),a0
+		lea	(_rtb,pc),a0
 		lea	($400),a1
 		move.l	a1,a2				;A2 = rtb
 		jsr	(resload_LoadFileDecrunch,a5)
@@ -71,7 +74,7 @@ _boot		lea	(_resload,pc),a1
 		bne	.5
 		
 	;patch the kickstart
-		lea	kick_patch,a0
+		lea	(kick_patch,pc),a0
 		move.l	a4,a1
 		jsr	(resload_Patch,a5)
 
@@ -106,16 +109,16 @@ kick_patch	PL_START
 	IFD _bootblock
 		PL_PS	$285c6,_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
-		PL_P	$2a3b4,td_readwrite
+		PL_P	$2a3b4,trd_readwrite
 		PL_I	$2a5d8				;internal readwrite
-		PL_P	$2a0e2,td_motor
-		PL_I	$2a694				;td_seek
-		PL_P	$29cfa,td_format
-		PL_PS	$2a6d6,td_protstatus
-		PL_I	$2af68				;td_rawread
-		PL_I	$2af6e				;td_rawwrite
+		PL_P	$2a0e2,trd_motor
+		PL_I	$2a694				;trd_seek
+		PL_P	$29cfa,trd_format
+		PL_PS	$2a6d6,trd_protstatus
+		PL_I	$2af68				;trd_rawread
+		PL_I	$2af6e				;trd_rawwrite
 		PL_I	$2a19c				;empty dbf-loop in trackdisk.device
-		PL_P	$2960c,td_task
+		PL_P	$2960c,trd_task
 	;	PL_L	$29c54,-1			;disable asynchron io
 		PL_P	$4984,disk_getunitid
 		
@@ -133,7 +136,7 @@ kick_detectfast
 	IFEQ FASTMEMSIZE
 		sub.l	a4,a4
 	ELSE
-		move.l	(_expmem),a4
+		move.l	(_expmem,pc),a4
 		add.l	#KICKSIZE,a4
 		move.l	a4,($1f0-$1ea,a5)
 		move.l	a4,($1fc-$1ea,a5)
@@ -153,7 +156,7 @@ kick_hrtmon	move.l	a4,d0
 		rts
 	ENDC
 
-kick_detectcpu	move.l	(_attnflags),d0
+kick_detectcpu	move.l	(_attnflags,pc),d0
 	IFD NOFPU
 		and.w	#~(AFF_68881|AFF_68882|AFF_FPU40),d0
 	ENDC
@@ -163,7 +166,7 @@ exec_MakeFunctions
 		subq.l	#8,a7
 		move.l	(8,a7),(a7)
 		move.l	a3,(4,a7)		;original
-		lea	(_flushcache),a3
+		lea	(_flushcache,pc),a3
 		move.l	a3,(8,a7)
 		moveq	#0,d0			;original
 		move.l	a2,d1			;original
@@ -171,19 +174,19 @@ exec_MakeFunctions
 
 exec_SetFunction
 		move.l	(a7)+,d1
-		pea	(_flushcache)
+		pea	(_flushcache,pc)
 		move.l	d1,-(a7)
 		bset	#1,(14,a1)		;original
 		rts
 
-exec_Supervisor	lea	(.1),a0
+exec_Supervisor	lea	(.1,pc),a0
 		move.l	a0,(_LVOSupervisor+2,a6)
 		lea	(_custom),a0		;original
 		bra	_flushcache
 
 .1		movem.l	a0-a1,-(a7)
 		move.l	($bc),a0
-		lea	(.2),a1
+		lea	(.2,pc),a1
 		move.l	a1,($bc)
 		move.l	a7,a1
 		trap	#15
@@ -202,13 +205,13 @@ gfx_detectgenlock
 
 gfx_detectdisplay
 		moveq	#4,d0			;pal
-		move.l	(_monitor),d1
+		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
 		beq	.1
 		moveq	#1,d0			;ntsc
 .1		rts
 
-gfx_fix1	waitvb	a3
+gfx_fix1	bsr	_waitvb
 		move.w	#DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR,(dmacon,a3)
 		rts
 
@@ -222,7 +225,7 @@ disk_getunitid
 		subq.l	#4,a7
 		pea	WHDLTAG_CUSTOM1_GET
 		move.l	a7,a0
-		move.l	(_resload),a1
+		move.l	(_resload,pc),a1
 		jsr	(resload_Control,a1)
 		addq.l	#4,a7
 		move.l	(a7),d0
@@ -245,8 +248,8 @@ disk_getunitid
 
 ;============================================================================
 
-td_format
-td_readwrite	moveq	#0,d1
+trd_format
+trd_readwrite	moveq	#0,d1
 		move.b	($43,a3),d1		;unit number
 		clr.b	(IO_ERROR,a1)
 		btst	#1,($40,a3)		;disk inserted?
@@ -256,81 +259,81 @@ td_readwrite	moveq	#0,d1
 		rts
 
 .diskok		cmp.b	#CMD_READ,(IO_COMMAND+1,a1)
-		bne	td_write
+		bne	trd_write
 		
-td_read		movem.l	d2/a1,-(a7)
+trd_read	movem.l	d2/a1,-(a7)
 		moveq	#0,d2
-		move.b	(_td_disk,pc,d1.w),d2	;disk
+		move.b	(_trd_disk,pc,d1.w),d2	;disk
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
 		move.l	(IO_DATA,a1),a0		;destination
-		move.l	(_resload),a1
+		move.l	(_resload,pc),a1
 		jsr	(resload_DiskLoad,a1)
-		movem.l	(a7),_MOVEMREGS
-		bsr	td_endio
-		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(a7),d2/a1
+		bsr	trd_endio
+		movem.l	(a7)+,d2/a1
 		moveq	#0,d0
 		rts
 
-td_write	movem.l	a1-a2,-(a7)
-		move.b	(_td_prot,pc),d0
+trd_write	move.b	(_trd_prot,pc),d0
 		btst	d1,d0
-		beq	.prot
-		lea	(.disk),a0
-		move.b	(_td_disk,pc,d1.w),d0	;disk
+		bne	.protok
+		moveq	#TDERR_WriteProt,d0
+		move.b	d0,(IO_ERROR,a1)
+		rts
+
+.protok		movem.l	a1-a2,-(a7)
+		lea	(.disk,pc),a0
+		move.b	(_trd_disk,pc,d1.w),d0	;disk
 		add.b	#"0",d0
 		move.b	d0,(5,a0)		;name
 		move.l	(IO_LENGTH,a1),d0	;length
 		move.l	(IO_OFFSET,a1),d1	;offset
 		move.l	(IO_DATA,a1),a1		;destination
-		move.l	(_resload),a2
+		move.l	(_resload,pc),a2
 		jsr	(resload_SaveFileOffset,a2)
-		movem.l	(a7),_MOVEMREGS
-		bsr	td_endio
-		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(a7),a1-a2
+		bsr	trd_endio
+		movem.l	(a7)+,a1-a2
 		moveq	#0,d0
-		rts
-
-.prot		moveq	#TDERR_WriteProt,d0
-		move.b	d0,(IO_ERROR,a1)
 		rts
 
 .disk		dc.b	"Disk.",0,0,0
 
-_td_disk	dc.b	1,2,3,4			;number of diskimage in drive
-_td_prot	dc.b	WPDRIVES		;protection status
-_td_chg		dc.b	0			;diskchanged
+_trd_disk	dc.b	1,2,3,4			;number of diskimage in drive
+_trd_prot	dc.b	WPDRIVES		;protection status
+_trd_chg		dc.b	0			;diskchanged
 
-td_motor	moveq	#0,d0
+trd_motor	moveq	#0,d0
 		bchg	#7,($41,a3)		;motor status
 		seq	d0
 		rts
 
-td_protstatus	moveq	#0,d0
+trd_protstatus	moveq	#0,d0
 		move.b	($43,a3),d1
-		move.b	(_td_prot,pc),d0
+		move.b	(_trd_prot,pc),d0
 		btst	d1,d0
 		seq	d0
 		move.l	d0,(IO_ACTUAL,a1)
 		add.l	#$708-$6d6-6,(a7)
 		rts
 
-td_endio	move.l	(_expmem),-(a7)
+trd_endio	move.l	(_expmem,pc),-(a7)
 		add.l	#$29e30,(a7)
 		rts
 
-tdtask_cause	move.l	(_expmem),-(a7)
+tdtask_cause	move.l	(_expmem,pc),-(a7)
 		add.l	#$296e8,(a7)
 		rts
 
-td_task		bclr	#1,($40,a3)		;set disk inserted
+trd_task	bclr	#1,($40,a3)		;set disk inserted
 		beq	.1
 		addq.l	#1,($126,a3)		;inc change count
 		bsr	tdtask_cause
 .1
 		move.b	($43,a3),d1		;unit number
-		move.b	(_td_chg),d0
-		btst	d1,d0
+		lea	(_trd_chg,pc),a0
+		bclr	d1,(a0)
 		beq	.2
 		bset	#1,($40,a3)		;set no disk inserted
 		addq.l	#1,($126,a3)		;inc change count
@@ -343,10 +346,10 @@ td_task		bclr	#1,($40,a3)		;set disk inserted
 
 	;d0.b = unit
 	;d1.b = new disk image number
-_td_changedisk	movem.l	a6,-(a7)
+_trd_changedisk	movem.l	a6,-(a7)
 
 		and.w	#3,d0
-		lea	(_td_chg),a0
+		lea	(_trd_chg,pc),a0
 .wait		btst	d0,(a0)
 		bne	.wait
 		
@@ -358,7 +361,7 @@ _td_changedisk	movem.l	a6,-(a7)
 		
 		jsr	(_LVOPermit,a6)
 		
-		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(a7)+,a6
 		rts
 
 ;============================================================================
@@ -371,8 +374,15 @@ dos_1		move.l	#$118,d1		;original
 
 ;============================================================================
 
-_flushcache	move.l	(_resload),-(a7)
+_flushcache	move.l	(_resload,pc),-(a7)
 		add.l	#resload_FlushCache,(a7)
+		rts
+
+_waitvb
+.1		btst	#0,(_custom+vposr+1)
+		beq	.1
+.2		btst	#0,(_custom+vposr+1)
+		bne	.2
 		rts
 
 ;============================================================================
