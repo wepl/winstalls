@@ -2,8 +2,9 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.34 2002/03/05 17:43:59 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.1 2002/04/17 20:23:35 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
+;		02.05.02 _cb_dosRead added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -479,6 +480,16 @@ HD_BytesPerBlock	= 512
 		jsr	(resload_LoadFileOffset,a2)
 	;finish
 .read_end	move.l	d3,d0				;bytes read
+	IFD _cb_dosRead
+		movem.l	d0-a6,-(a7)
+		move.l	(dp_Arg1,a4),a0
+		move.l	(mfl_pos,a0),d1
+		sub.l	d0,d1				;file pos
+		move.l	(fl_Key,a0),a0			;name
+		move.l	(dp_Arg2,a4),a1			;buffer
+		bsr	_cb_dosRead
+		movem.l	(a7)+,d0-a6
+	ENDC
 		bra	.reply1
 	ELSE
 		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
@@ -557,6 +568,16 @@ HD_BytesPerBlock	= 512
 	;finish
 .read_end	move.l	d3,d0
 		add.l	d4,d0
+	IFD _cb_dosRead
+		movem.l	d0-a6,-(a7)
+		move.l	(dp_Arg1,a4),a0
+		move.l	(mfl_pos,a0),d1
+		sub.l	d0,d1				;file pos
+		move.l	(fl_Key,a0),a0			;name
+		move.l	(dp_Arg2,a4),a1			;buffer
+		bsr	_cb_dosRead
+		movem.l	(a7)+,d0-a6
+	ENDC
 		bra	.reply1
 	ENDC
 
