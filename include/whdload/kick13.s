@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.37 2002/05/09 12:11:53 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.38 2002/05/09 14:18:17 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -38,6 +38,7 @@
 ;		17.04.02 POINTERTICKS added
 ;			 ACTION_DELETE_OBJECT fixed for nonexistent objects
 ;			 filesystem handler moved to kickfs.s
+;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -119,16 +120,18 @@ kick_patch	PL_START
 	ENDC
 		PL_P	$28f88,timer_init
 		PL_P	$2a3b4,trd_readwrite
-	;	PL_I	$2a5d8				;internal readwrite
 		PL_P	$2a0e2,trd_motor
-	;	PL_I	$2a694				;trd_seek
 		PL_P	$29cfa,trd_format
 		PL_PS	$2a6d6,trd_protstatus
-	;	PL_I	$2af68				;trd_rawread
-	;	PL_I	$2af6e				;trd_rawwrite
-	;	PL_I	$2a19c				;empty dbf-loop in trackdisk.device
 		PL_P	$2960c,trd_task
-	;	PL_L	$29c54,-1			;disable asynchron io
+	IFD DEBUG
+		PL_L	$29c54,-1			;disable asynchron io
+		PL_I	$2a19c				;empty dbf-loop in trackdisk.device
+		PL_I	$2a5d8				;internal readwrite
+		PL_I	$2a694				;trd_seek
+		PL_I	$2af68				;trd_rawread
+		PL_I	$2af6e				;trd_rawwrite
+	ENDC
 		PL_P	$4984,disk_getunitid
 	IFD BLACKSCREEN
 		PL_C	$1b9d2,6			;color17,18,19

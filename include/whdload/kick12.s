@@ -2,8 +2,9 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick12.s 1.2 2002/05/09 12:11:43 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.3 2002/05/09 14:18:45 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
+;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -85,16 +86,18 @@ kick_patch	PL_START
 	ENDC
 		PL_P	$29308,timer_init
 		PL_P	$2a734,trd_readwrite
-	;	PL_I	$2a5d8				;internal readwrite
 		PL_P	$2a462,trd_motor
-	;	PL_I	$2aa14				;trd_seek
 		PL_P	$2a07a,trd_format
 		PL_PS	$2aa56,trd_protstatus
-	;	PL_I	$2b2e8				;trd_rawread
-	;	PL_I	$2b2ee				;trd_rawwrite
-	;	PL_I	$2a51c				;empty dbf-loop in trackdisk.device
 		PL_P	$2998c,trd_task
-	;	PL_L	$29fd4,-1			;disable asynchron io
+	IFD DEBUG
+		PL_L	$29fd4,-1			;disable asynchron io
+		PL_I	$2a51c				;empty dbf-loop in trackdisk.device
+	;	PL_I	$2a5d8				;internal readwrite
+		PL_I	$2aa14				;trd_seek
+		PL_I	$2b2e8				;trd_rawread
+		PL_I	$2b2ee				;trd_rawwrite
+	ENDC
 		PL_P	$491c,disk_getunitid
 	IFD BLACKSCREEN
 		PL_C	$1bcd6,6			;color17,18,19
