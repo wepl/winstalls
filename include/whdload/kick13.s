@@ -78,7 +78,6 @@ kick_patch	PL_START
 		PL_PS	$15b2,exec_MakeFunctions
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$422,exec_Supervisor
-	;	PL_I	$3012				;exec_Alert
 	IFD MEMFREE
 		PL_P	$1826,exec_AllocMem
 	ENDC
@@ -111,10 +110,12 @@ kick_patch	PL_START
 		PL_P	$2960c,trd_task
 	;	PL_L	$29c54,-1			;disable asynchron io
 		PL_P	$4984,disk_getunitid
-		
+	IFND _bootearly
+	IFND _bootblock
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3c9b6,dos_1
-
+	ENDC
+	ENDC
 	;the following stuff is from SetPatch 1.38
 	IFD SETPATCH
 		PL_PS	$582c,gfx_MrgCop
@@ -124,7 +125,6 @@ kick_patch	PL_START
 		PL_P	$11b0,exec_UserState
 		PL_P	$1696,exec_FindName
 	ENDC
-
 		PL_END
 
 ;============================================================================
@@ -613,11 +613,17 @@ _trd_changedisk	movem.l	a6,-(a7)
 
 ;============================================================================
 
+	IFND _bootearly
+	IFND _bootblock
+
 dos_init	move.l	#$10001,d1
 		bra	_flushcache
 
 dos_1		move.l	#$118,d1		;original
 		bra	_flushcache
+
+	ENDC
+	ENDC
 
 ;============================================================================
 
