@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.20 2001/11/28 22:57:42 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.22 2001/12/16 23:30:32 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -28,6 +28,7 @@
 ;		08.11.01 Supervisor patch removed, slaves now require 
 ;			 WHDLF_EmulPriv to be set
 ;		27.11.01 fs enhanced
+;		17.12.01 beta finished for Elvira
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -750,7 +751,6 @@ HD_BytesPerBlock	= 512
 	EVEN
 
 .bootcode	lea	(.dosname,pc),a1
-	;illegal
 		jsr	(_LVOFindResident,a6)
 		move.l	d0,a0
 		move.l	(RT_INIT,a0),a0
