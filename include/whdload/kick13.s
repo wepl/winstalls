@@ -1,9 +1,9 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	Lotus2.asm
-;  :Contents.	Slave for
+;  :Modul.	kick13.s
+;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick.asm 0.2 1999/12/07 23:18:05 jah Exp jah $
+;  :Version.	$Id: kick13.s 0.3 1999/12/22 11:13:14 jah Exp jah $
 ;  :History.	19.10.99 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -12,97 +12,14 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
-	INCLUDE	whdload.i
-	INCLUDE	whdmacros.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	devices/trackdisk.i
 
-	;OUTPUT	"wart:k-l/lotus2/Lotus2.Slave"
-	BOPT	O+				;enable optimizing
-	BOPT	OG+				;enable optimizing
-	BOPT	ODd-				;disable mul optimizing
-	BOPT	ODe-				;disable mul optimizing
-	BOPT	w4-				;disable 64k warnings
-	SUPER
-
-; number of floppy drives:
-;	sets the number of floppy drives, valid values are 0-4.
-;	0 means that the number is specified via option Custom1/N
-NUMDRIVES=0
-
-; protection state for floppy disks:
-;	0 means 'write protected', 1 means 'read/write'
-;	bit 0 means drive DF0:, bit 3 means drive DF3:
-WPDRIVES=%1110
-
-; disable fpu support:
-;	results in a different task switching routine, if fpu is enabled also
-;	the fpu status will be saved and restored.
-;	for better compatibility and performance the fpu should be disabled
-NOFPU
-
-; enable debug support for hrtmon:
-;	hrtmon reads to much from the stackframe if entered, if the ssp is at
-;	the end hrtmon will create a access fault.
-;	for better compatibility this option should be disabled
-HRTMON
-
-; amount of
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
-
-
-KICKSIZE	= $40000		;34.005
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
-
 ;============================================================================
 
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
-		dc.w	0			;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
-
-;============================================================================
-
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-
-_name		dc.b	"Kickstarter",0
-_copy		dc.b	"1989 Amiga",0
-_info		dc.b	"Emulation by Wepl",10
-		dc.b	"Version 0.1 "
-		INCBIN	"T:date"
-		dc.b	0
-_kick		dc.b	"devs:kickstarts/kick34005.a500",0
-_rtb		dc.b	"devs:kickstarts/kick34005.a500.rtb",0
-	EVEN
-
-;============================================================================
-_start	;	A0 = resident loader
-;============================================================================
-
-		lea	(_resload,pc),a1
+_boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
-
-	;set caches
-		move.l	#0,d0
-		move.l	#WCPUF_All,d1
-	;	jsr	(resload_SetCPU,a5)
 
 	;get tags
 		lea	(_tags),a0
@@ -160,7 +77,7 @@ _start	;	A0 = resident loader
 
 	;call
 	;	jmp	(2,a4)				;original entry
-		jmp	($fe,a4)			;34.005
+		jmp	($fe,a4)			;this entry saves some patches
 
 .wrongkick	pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a5)
@@ -466,6 +383,10 @@ _attnflags	dc.l	0
 _monitor	dc.l	0
 		dc.l	0
 _resload	dc.l	0
+
+_kick		dc.b	"devs:kickstarts/kick34005.a500",0
+_rtb		dc.b	"devs:kickstarts/kick34005.a500.rtb",0
+	EVEN
 
 ;============================================================================
 
