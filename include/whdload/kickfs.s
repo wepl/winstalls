@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.13 2004/04/28 23:07:18 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.14 2004/10/06 07:14:42 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -16,6 +16,7 @@
 ;		01.09.03 ACTION_EXAMINE_FH fixed (Psygore)
 ;		29.04.04 ACTION_CREATE_DIR returns ERROR_OBJECT_EXISTS if exists
 ;		06.10.04 checks for startup-sequence if not BOOTDOS (JOTD)
+;		17.10.04 set IoErr on Seek on success to be more system conform
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -945,7 +946,8 @@ HD_NumBuffers		= 5
 	;set new
 		move.l	(mfl_pos,a0),d0
 		move.l	d2,(mfl_pos,a0)
-		bra	.reply1
+		moveq	#0,d1
+		bra	.reply2
 .seek_err	move.l	#-1,d0
 		move.l	#ERROR_SEEK_ERROR,d1
 		bra	.reply2
