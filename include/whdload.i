@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@kagi.com
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 9.2125 1999/02/14 23:31:57 jah Exp jah $
+;  :Version.	$Id: whdload.i 10.0 1999/05/08 22:33:25 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;  :Copyright.	© 1996,1997,1998,1999 Bert Jahn, All Rights Reserved
@@ -153,12 +153,13 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 				;=0 means no key
 
 ;=============================================================================
-; additional	Version 8
+; additional	Version 8..9
 ;=============================================================================
 
 	ULONG	ws_ExpMem	;size of required expansions memory, during
 				;initialisation overwritten by WHDLoad with
 				;address of the memory (multiple of $1000)
+				;if negative it is optional
 
 ;=============================================================================
 ; additional	Version 10
@@ -358,7 +359,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 
 	ULONG	resload_Relocate
 		; relocate AmigaDOS executable
-		; IN :	a0 = APTR   address (source/destination)
+		; IN :	a0 = APTR   address (source=destination)
 		;	a1 = STRUCT taglist
 		; OUT :	d0 = ULONG  size
 	ULONG	resload_Delay
@@ -399,7 +400,7 @@ resload_CheckFileExist = resload_GetFileSize
 ; commands used in patchlist
 ; each command follows the address to modify, if bit 16 of the command is
 ; cleared address follows as 32 bit, if bit 16 of the command is set it
-; follows as 16 bit (nonsigned extended to 32 bit)
+; follows as 16 bit (unsigned extended to 32 bit)
 
 	ENUM	0
 	EITEM	PLCMD_END		;end of list
