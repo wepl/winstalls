@@ -1,0 +1,133 @@
+
+important changes:
+
+NOFPU changed to NEEDFPU
+no longer disk present in any drive by default, see DISKSONBOOT
+
+$Id$
+
+Symbols in the Slave-Source
+***************************
+
+There are two classes of Symbols to define in the Slave-Source. The first
+class must be specified to setup essential informations for the system. The
+second class contains optional Symbols changing some behaviors of the
+emulation.
+
+
+Required Symbols
+----------------
+
+CHIPMEMSIZE = $80000
+
+That specfies the amount of Chip-Memory for the system. Allowed values are
+between $1000 and $200000. It is recommended to start with a full value like
+$80000 or $100000, and later to adjust that value to the minimum required
+using the MEMFREE feature (see below).
+
+FASTMEMSIZE = $10000
+
+That specifies the Fast-Memory (better to say ExpMem because it can be ChipMem
+too if not enough FastMem is available) for the system. Allowed values are
+0 upto any what WHDLoad supports.
+
+NUMDRIVES = 1
+
+That sets the number of drives available in the system. Allowed values are
+0 - 4. The value 0 has special meaning that Custom1/N is used to set drive
+count.
+
+WPDRIVES = %0000
+
+That sets the protections state for the emulated floppy drives. Bit #0 means
+drive DF0: and the value 0 means 'write protected' and 1 means 'read/write'.
+
+
+Optional Symbols
+----------------
+
+BLACKSCREEN
+
+That symbol forces all colors (0-4,17-19) in the default system (intuition)
+preferences to null. The result is that the initial AmigaDOS boot screen will
+be invisible.
+
+DISKSONBOOT
+
+If that symbol is defined there will be disks inserted in the drives at
+booting time. Otherwise all drives will be empty. If the symbol is set DF0:
+will contain 'Disk.1', DF1: 'Disk.2' an so on.
+
+HRTMON
+
+The presence of that symbol adds some debugging support for HrtMon. HrtMon
+reads to much from the stackframe if entered. If the SSP is at the end of the
+memory that will cause an access fault. The symbol results in a decremented
+SSP.
+
+MEMFREE = $100
+
+If this symbol is defined the function exec.AllocMem will be patched. At each
+call to this function the size of the largest free memory chunk will be
+calculated and saved at the specified address if lower than the previous one.
+Using this feature it is absolutely simple to optimize the memory requirements
+and avoid memory wasting. Test a game trough all paths with that symbol
+defined. Then make a dump and checkout the memory dump file. At address 
+(MEMFREE) you will find the lowest free chip memory during the games lifetime.
+At address (MEMFREE+4) you will find the same for fast memory.
+
+NEEDFPU
+
+If that symbol is defined the system will get informed if an FPU is preset
+(execbase.AttnFlags). If the symbol is not defined the system will think there
+is no FPU regardless if there is one really. The system will use a different
+task switching routine which will save also the FPU registers if a FPU is
+present.
+
+SETPATCH
+
+If that symbol is defined nearly all patches done by the SetPatch v1.38
+program will be performed. Usually that is not necessary and omitting the
+option makes the Slave around 400 bytes shorter.
+
+
+Labels in the Slave-Source
+**************************
+
+All boot entry vectors terminate the boot process! That means you cannot
+continue using a RTS or similar from the boot entry vector.
+
+_bootearly
+
+	*
+	
+_bootblock
+
+	* will be entered after the bootblock has been loaded from the disk in
+	  drive DF0:, that is the point at which Kickstart normally jumps into
+	  bootblock
+
+	* Registers:
+	  A1 = ioreq
+	  A4 = buffer which contains the loaded bootblock (1024 bytes)
+	  A6 = execbase
+
+	* NO dos.library exists at this time!
+	
+_bootdos
+
+	* will be entered short before the S:Startup-Sequence will be loaded
+	  and executed
+
+	* dos.library is fully initialized and usable
+
+
+_cb_dosLoadSeg
+
+Functions in kick13.s
+*********************
+
+	;d0.b = unit
+	;d1.b = new disk image number
+_trd_changedisk
+
