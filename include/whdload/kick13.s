@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.s 0.26 2002/01/14 22:48:58 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.27 2002/01/17 00:46:50 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -927,6 +927,7 @@ HD_BytesPerBlock	= 512
 ;	D1 = res2
 ;	A4 = DosPacket
 
+.reply1		moveq	#0,d1
 .reply2		move.l	d1,(dp_Res2,a4)
 
 ;---------------
@@ -934,7 +935,7 @@ HD_BytesPerBlock	= 512
 ; IN:	D0 = res1
 ;	A4 = DosPacket
 
-.reply1		move.l	d0,(dp_Res1,a4)
+		move.l	d0,(dp_Res1,a4)
 		move.l	(dp_Port,a4),a0
 		move.l	(dp_Link,a4),a1
 		move.l	a5,(dp_Port,a4)
