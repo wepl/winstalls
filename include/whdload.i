@@ -4,10 +4,11 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 10.5 2000/01/25 22:08:51 jah Exp jah $
+;  :Version.	$Id: whdload.i 11.0 2000/04/16 16:43:12 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
+;		10.07.00 new stuff for whdload v12
 ;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -112,6 +113,9 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
  EITEM	WHDLTAG_TIME_GET	;get current time and date
 ; version 11
  EITEM	WHDLTAG_BPLCON0_GET	;get system bplcon0
+; version 12
+ EITEM	WHDLTAG_KEYTRANS_GET	;get pointer to a 128 byte table to convert
+				;rawkey's to ascii-chars
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
@@ -202,6 +206,9 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 				;of the installed program
 	BITDEF WHDL,EmulPriv,10	;forward 'privilege violation' exceptions to
 				;the handler of the installed program
+; version 12
+	BITDEF WHDL,EmulLineF,11 ;forward "line-f" exceptions to the handler
+				;of the installed program
 
 ;=============================================================================
 ; properties for resload_SetCPU
