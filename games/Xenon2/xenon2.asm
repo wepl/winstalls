@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.5 2000/06/18 22:48:13 jah Exp jah $
+;  :Version.	$Id: xenon2.asm 1.6 2000/08/15 22:41:34 jah Exp jah $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
 ;		20.12.98 work on CDTV version started
@@ -13,6 +13,8 @@
 ;		17.06.00 highscores fixed
 ;		18.06.00 trainer fixed
 ;		16.08.00 crash on not entering highscores fixed
+;		06.05.03 snoop bugs fixed
+;		11.05.03 keyboard fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -27,9 +29,9 @@
 	INCLUDE	whdmacros.i
 
 	IFD CDTV
-	OUTPUT	"wart:x/xenon2 cdtv/Xenon2.Slave"
+	OUTPUT	"wart:x-y/xenon2 cdtv/Xenon2.Slave"
 	ELSE
-	OUTPUT	"wart:x/xenon2/Xenon2.Slave"
+	OUTPUT	"wart:x-y/xenon2/Xenon2.Slave"
 	ENDC
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
@@ -78,7 +80,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.6 Floppy "
+		dc.b	"Version 1.7 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -259,11 +261,6 @@ _x2		dc.b	"x2",0
 	
 ;======================================================================
 
-	;enable cache
-	;	move.l	#CACRF_EnableI,d0
-	;	move.l	d0,d1
-	;	jsr	(resload_SetCACR,a5)
-
 	;bootblock
 		move.l	#0,d0			;offset
 		move.l	#$400,d1		;size
@@ -282,7 +279,8 @@ _x2		dc.b	"x2",0
 
 ;============== version 2
 
-_v2		patch	$10ac,_v2_1
+_v2		move.b	#-1,$1055		;snoop ciab.prb
+		patch	$10ac,_v2_1
 		jmp	($1018)
 
 _v2_1		move.l	#$2c00,d0		;offset
@@ -291,6 +289,10 @@ _v2_1		move.l	#$2c00,d0		;offset
 		lea	$400,a0			;address
 		jsr	(resload_DiskLoad,a5)
 		patch	$63f62,_v2_2
+		move.b	#-1,$44f		;snoop ciab.prb
+		move.w	#$4200,$45e		;snoop custom.bplcon0
+		patchs	$5f4,_keyboard
+		move.l	#$636,_custom+cop1lc	;snoop copper dma before list
 		jmp	$400
 
 _v2_2		move.l	#$52*$1600,d0		;offset
@@ -300,7 +302,9 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l  (RESLOAD),a5
 		jsr	(resload_DiskLoad,a5)
 
+		patchs	$fd4,_keyboard
 		skip	$7058-$7046,$7046	;vector init
+		move.b	#-1,$70ab		;snoop ciab.prb
 		patch	$47d8,_32bit
 		patch	$9012,_load
 		skip	8,$6f86			;cash clear before each level
@@ -348,7 +352,8 @@ _v2_savehighs	addq.l	#2,a7			;original
 
 ;============== version 3
 
-_v3		patch	$10a8,.1
+_v3		move.b	#-1,$1051		;snoop ciab.prb
+		patch	$10a8,.1
 		jmp	($1016)
 
 .1		move.l	#$2c00,d0		;offset
@@ -365,7 +370,11 @@ _v3		patch	$10a8,.1
 		patch	$64bf2,.2
 		jmp	$64bb6			;$a24
 
-.2		patch	$63e,.3			;second copylock
+.2		move.b	#-1,$467		;snoop ciab.prb
+		move.w	#$4200,$476		;snoop custom.bplcon0
+		patchs	$bc2,_keyboard
+		move.l	#$c02,_custom+cop1lc	;snoop copper dma before list
+		patch	$63e,.3			;second copylock
 		jmp	$400
 
 .3		move.l	#$7670CF6B,d0		;CopyLock
@@ -379,15 +388,16 @@ _v3		patch	$10a8,.1
 		lea	$400,a0			;address
 		move.l	(RESLOAD),a2
 		jsr	(resload_DiskLoad,a2)
-		patch	$64276,_5
+		patch	$64276,_v13_5
 		jmp	$64252
 
 ;============== version 1
 
-_v1		patch	$10b0,_1
+_v1		move.b	#-1,$104d		;snoop ciab.prb
+		patch	$10b0,.1
 		jmp	($1016)
 
-_1		move.l	#$2c00,d0		;offset
+.1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
@@ -398,29 +408,36 @@ _1		move.l	#$2c00,d0		;offset
 		rol.l	#8,d0			;$a1a
 		eor.l	#$400,d0		;$a20
 		ror.l	#8,d0			;$a22
-		patch	$64b84,_2
+		patch	$64b84,.2
 		jmp	$64b48			;$a24
 
-_2		patch	$63e,_3			;second copylock
+.2		move.b	#-1,$467		;snoop ciab.prb
+		move.w	#$4200,$476		;snoop custom.bplcon0
+		patchs	$bc2,_keyboard
+		move.l	#$c02,_custom+cop1lc	;snoop copper dma before list
+		patch	$63e,.3			;second copylock
 		jmp	$400
 
-_3		move.l	#$7670CF6B,d0		;CopyLock
-		patch	$641d2,_4
+.3		move.l	#$7670CF6B,d0		;CopyLock
+		patch	$641d2,.4
 		jmp	$b82
 
 	;after intro
-_4		move.l	#$70c00,d0		;offset
+.4		move.l	#$70c00,d0		;offset
 		move.l	#$3fc00,d1		;size
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
 		move.l	(RESLOAD),a2
 		jsr	(resload_DiskLoad,a2)
-		patch	$64260,_5
+		patch	$64260,_v13_5
 		jmp	$6423c
 
 	;main loaded and decrypted
-_5		move.l	#$4ef8763a,$70f6	;third copylock
+_v13_5		patchs	$fd4,_keyboard
+		move.l	#$4ef8763a,$70f6	;third copylock
 		skip	$7654-$7642,$7642	;vector init
+		move.b	#-1,$76d1		;snoop ciab.prb
+		move.w	#$4200,$76e0		;snoop custom.bplcon0
 		patch	$47ce,_32bit
 		patch	$921a,_load
 		skip	8,$6f7c			;cash clear before each level
@@ -448,6 +465,7 @@ _5		move.l	#$4ef8763a,$70f6	;third copylock
 		move.l	#$e841c3fc,$2f84	;access fault (lsr->asr,mulu->muls)
 
 		move.l	#$7670CF6B,d0		;CopyLock
+	;	move.l	#$5618,d1
 		jmp	$400
 
 _savehighs	addq.l	#2,a7			;original
@@ -493,6 +511,15 @@ _load		mulu	#512,d0			;offset
 	ENDC
 
 ;======================================================================
+
+_keyboard	move.l	d1,-(a7)
+		moveq	#3-1,d1
+.wait1		move.b	(_custom+vhposr),d0
+.wait2		cmp.b	(_custom+vhposr),d0
+		beq	.wait2
+		dbf	d1,.wait1
+		move.l	(a7)+,d1
+		rts
 
 _32bit		move.l	a0,-(a7)
 		exg.l	d1,a1
