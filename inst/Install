@@ -1,4 +1,4 @@
-; $Id: Install 1.1 2002/07/17 22:42:39 wepl Exp wepl $
+; $Id: install 1.2 2002/08/31 12:50:14 wepl Exp wepl $
 
 (set #sub-dir "")			;sub directory containing data files
 (set #readme-file "ReadMe")		;name of readme file
@@ -263,20 +263,15 @@
   (newname ("%s.info" #prefix))
   (dest #dest)
 )
-(if (= #icon "newicon")
-  ("")
-  (
-    (tooltype
-      (dest (tackon #dest #prefix))
-      (settooltype "Slave")
-      (settooltype "PreLoad")
-    )
-    (tooltype
-      (dest (tackon #dest #prefix))
-      (settooltype "PreLoad" "")
-      (settooltype "Slave" ("%s.Slave" #prefix))
-    )
-  )
+(tooltype
+  (dest (tackon #dest #prefix))
+  (settooltype "Slave")
+  (settooltype "PreLoad")
+)
+(tooltype
+  (dest (tackon #dest #prefix))
+  (settooltype "PreLoad" "")
+  (settooltype "Slave" ("%s.Slave" #prefix))
 )
 (tooltype
   (dest (tackon #dest #prefix))
