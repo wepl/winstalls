@@ -1,12 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.7 2001/03/18 12:46:09 jah Exp jah $
+;  :Version.	$Id: keyboard.s 1.8 2003/02/19 07:34:07 wepl Exp $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
 ;		07.10.99 some cosmetic changes, documentation improved
 ;		24.10.99 _keycode added
+;		15.05.03 better interrupt acknowledge
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
@@ -60,9 +61,12 @@ _SetupKeyboard
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena+_custom)
 		rts
 
-.int		movem.l	d0-d1/a1,-(a7)
+.int		movem.l	d0-d1/a0-a1,-(a7)
+		lea	(_custom),a0
 		lea	(_ciaa),a1
 	;check if keyboard has caused interrupt
+		btst	#INTB_PORTS,(intreqr+1,a0)
+		beq	.end
 		btst	#CIAICRB_SP,(ciaicr,a1)
 		beq	.end
 	;read keycode
@@ -76,7 +80,7 @@ _SetupKeyboard
 
 		cmp.b	(_keydebug,pc),d0
 		bne	.1
-		movem.l	(a7)+,d0-d1/a1
+		movem.l	(a7)+,d0-d1/a0-a1
 		move.w	(a7),(6,a7)			;sr
 		move.l	(2,a7),(a7)			;pc
 		clr.w	(4,a7)				;ext.l sr
@@ -121,15 +125,18 @@ _SetupKeyboard
 	;required minimum waiting is 75 탎, one rasterline is 63.5 탎
 	;a loop of 3 results in min=127탎 max=190.5탎
 		moveq	#3-1,d1
-.wait1		move.b	(_custom+vhposr),d0
-.wait2		cmp.b	(_custom+vhposr),d0
+.wait1		move.b	(vhposr,a0),d0
+.wait2		cmp.b	(vhposr,a0),d0
 		beq	.wait2
 		dbf	d1,.wait1
 
 	;set input mode
 		and.b	#~(CIACRAF_SPMODE),(ciacra,a1)
-.end		move.w	#INTF_PORTS,(intreq+_custom)
-		movem.l	(a7)+,d0-d1/a1
+.end		move.w	#INTF_PORTS,(intreq,a0)
+	;to avoid timing problems on very fast machines we do another
+	;custom access
+		tst.w	(intreqr,a0)
+		movem.l	(a7)+,d0-d1/a0-a1
 		rte
 
 	IFND _exit
