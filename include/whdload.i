@@ -2,14 +2,14 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@kagi.com
+;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 10.0 1999/05/08 22:33:25 jah Exp jah $
+;  :Version.	$Id: whdload.i 10.5 2000/01/23 12:16:16 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
-;  :Copyright.	© 1996,1997,1998,1999 Bert Jahn, All Rights Reserved
+;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
+;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;---------------------------------------------------------------------------*
 
  IFND WHDLOAD_I
@@ -425,7 +425,7 @@ PL_END		MACRO			;end of patchlist
 		ENDM
 
 PL_CMDADR	MACRO			;set cmd and address
-	IFMI $ffff-\2
+	IFLT $ffff-\2
 	dc.w	\1
 	dc.l	\2
 	ELSE

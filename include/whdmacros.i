@@ -2,13 +2,13 @@
 ;  :Module.	whdmacros.i
 ;  :Contens.	useful macros for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@kagi.com
+;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 9.2125 1999/02/14 23:31:57 jah Exp jah $
+;  :Version.	$Id: whdmacros.i 10.5 2000/01/23 12:16:16 jah Exp jah $
 ;  :History.	11.04.99 separated from whdload.i
-;  :Copyright.	© 1996,1997,1998,1999 Bert Jahn, All Rights Reserved
+;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
+;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
 
  IFND WHDMACROS_I
@@ -104,7 +104,7 @@ patch	MACRO
 		FAIL	arguments "patch"
 	ENDC
 		move.w	#$4ef9,\1
-		pea	\2
+		pea	(\2,pc)
 		move.l	(a7)+,2+\1
 	ENDM
 
@@ -115,7 +115,7 @@ patchs	MACRO
 		FAIL	arguments "patchs"
 	ENDC
 		move.w	#$4eb9,\1
-		pea	\2
+		pea	(\2,pc)
 		move.l	(a7)+,2+\1
 	ENDM
 
@@ -291,7 +291,7 @@ bwait		MACRO
 ***** install Vertical-Blank-Interrupt which quits on LMB pressed
 QUITVBI		MACRO
 		move.l	a0,-(a7)
-		lea	.vbi,a0
+		lea	(.vbi,pc),a0
 		move.l	a0,$6c
 		bra	.g
 .vbi		btst	#6,$bfe001
