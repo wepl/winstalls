@@ -4,8 +4,10 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 10.5 2000/01/23 12:16:16 jah Exp jah $
+;  :Version.	$Id: whdmacros.i 10.5 2000/01/25 22:09:38 jah Exp $
 ;  :History.	11.04.99 separated from whdload.i
+;		07.09.00 macro 'skip' fixed for distance of 2
+;		21.09.00 macro 'blitz' small fix
 ;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
@@ -67,6 +69,12 @@ skip	MACRO
 	IFNE	NARG-2
 		FAIL	arguments "skip"
 	ENDC
+	IFNE \1&1
+		FAIL	arguments "skip"
+	ENDC
+	IFEQ \1-2
+		move.w	#$4e71,\2
+	ELSE
 	IFLE \1-126
 		move.w	#$6000+\1-2,\2
 	ELSE
@@ -74,6 +82,7 @@ skip	MACRO
 		move.l	#$60000000+\1-2,\2
 	ELSE
 		FAIL	"skip: distance to large"
+	ENDC
 	ENDC
 	ENDC
 	ENDM
@@ -247,16 +256,17 @@ waitbuttonup	MACRO
 ****************************************************************
 ***** flash the screen and wait for LMB
 blitz		MACRO
-		move	#$4200,bplcon0+_custom
 	;	move	#DMAF_SETCLR!DMAF_RASTER,dmacon+_custom
 		move.l	d0,-(a7)
-.lpbl\@		move.w	d0,$dff180
+.lpbl\@		move	#$4200,bplcon0+_custom
+		move.w	d0,$dff180
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		bne	.lpbl\@
 		waitvb					;entprellen
 		waitvb					;entprellen
-.lp2bl\@	move.w	d0,$dff180
+.lp2bl\@	move	#$4200,bplcon0+_custom
+		move.w	d0,$dff180
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		beq	.lp2bl\@

@@ -4,11 +4,12 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.org
 ;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdload.i 11.0 2000/04/16 16:43:12 jah Exp jah $
+;  :Version.	$Id: whdload.i 12.0 2000/08/07 22:30:54 jah Exp jah $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
 ;		10.07.00 new stuff for whdload v12
+;		25.11.00 new stuff for whdload v13
 ;  :Copyright.	© 1996-2000 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
@@ -116,6 +117,11 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 ; version 12
  EITEM	WHDLTAG_KEYTRANS_GET	;get pointer to a 128 byte table to convert
 				;rawkey's to ascii-chars
+; version 13
+ EITEM	WHDLTAG_CHKBLTWAIT	;enable/disable blitter wait check
+ EITEM	WHDLTAG_CHKBLTSIZE	;enable/disable blitter size check
+ EITEM	WHDLTAG_CHKBLTHOG	;enable/disable dmacon.blithog (bltpri) check
+ EITEM	WHDLTAG_CHKCOLBST	;enable/disable bplcon0.color check
 
 ;=============================================================================
 ;	structure returned by WHDLTAG_TIME_GET
@@ -209,6 +215,8 @@ TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 ; version 12
 	BITDEF WHDL,EmulLineF,11 ;forward "line-f" exceptions to the handler
 				;of the installed program
+; version 13
+	BITDEF WHDL,ClearMem,12	;initialize BaseMem and ExpMem with 0
 
 ;=============================================================================
 ; properties for resload_SetCPU
