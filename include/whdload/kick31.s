@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.3 2003/04/03 07:13:01 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.5 2003/04/06 20:30:28 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -334,7 +334,7 @@ timer_init	move.l	(_time),a0
 		divu	#50,d1
 		ext.l	d1
 		add.l	d1,d0
-		move.l	d0,($c6,a2)
+		move.l	d0,($40,a2)
 		movem.l	(a7)+,d2/a2-a3		;original
 		rts
 
