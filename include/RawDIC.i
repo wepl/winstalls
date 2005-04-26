@@ -1,7 +1,6 @@
 
-	;	Include file for RawDIC V1.3 to V2.0
+	;	Include file for RawDIC V3.0
 
-	; incdir	Includes:
 		ifnd	EXEC_TYPES_I
 		include	exec/types.i
 		endc
@@ -183,6 +182,8 @@ SFLG_VERSION1	equ	SFLG_DEBUG
 	APTR	dsk_AltDisk	; alternative disk structure, if CRC failed
 	FPTR	dsk_InitCode	; called before a disk is read
 	FPTR	dsk_DiskCode	; called after a disk has been read
+	LABEL	dsk_SIZEOF_v1
+	APTR	dsk_DiskName	; plain text name of the disk to insert
 	LABEL	dsk_SIZEOF
 
  ; dsk_NextDisk: contains the pointer to the next disk structure or 0
