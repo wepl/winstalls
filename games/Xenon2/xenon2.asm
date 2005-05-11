@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.7 2003/05/11 21:21:05 wepl Exp wepl $
+;  :Version.	$Id: xenon2.asm 1.8 2004/08/13 13:25:27 wepl Exp wepl $
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaption from J.F.Fabre's Installer
 ;		20.12.98 work on CDTV version started
@@ -16,6 +16,9 @@
 ;		06.05.03 snoop bugs fixed
 ;		11.05.03 keyboard fixed
 ;		11.08.04 support for v4/v5 added, UAE fix
+;		11.03.05 support for v6 added
+;		04.05.05 support for v6 continuing
+;		11.05.05 autofire fix added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -23,7 +26,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-;CDTV		;if defined Slave for CDTV version will be created
+CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -81,7 +84,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.8 Floppy "
+		dc.b	"Version 1.9 Floppy "
 		INCBIN	"T:date"
 		dc.b	0
 	ELSE
@@ -89,7 +92,7 @@ _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.5 CDTV "
+		dc.b	"Version 1.6 CDTV "
 		INCBIN	"T:date"
 		dc.b	0
 	ENDC
@@ -163,25 +166,25 @@ _start	;	A0 = resident loader
 _vbi		move.w	#INTF_VERTB,(_custom+intreq)
 		rte
 
-_px2
-	PL_START
-	PL_S	$3aa4a,$3aae8-$3aa4a		;os stuff
-	PL_S	$3ab2c,$3ab40-$3ab2c		;asking exec.VBlankFrequency
-	PL_P	$4fd78,_load_sounds
-	PL_P	$3c7de,_load_speech
+_px2	PL_START
 	PL_P	$33930,_load_level
-	PL_P	$3d86e,_load_intro
-	PL_P	$411a8,_load_speech2
-	PL_P	$50fce,_load_piccode
-	PL_P	$50f68,_load_pics
-	PL_P	$3e09a,_load_intro2
-	PL_P	$3d2a4,_load_level2
-	PL_P	$4fd28,_load_sounds2
+	PL_P	$37a98,_32bit
+	PL_S	$3a742,12			;cash clear before each level
 	PL_R	$3a924				;cdtv.device stuff
 	PL_R	$3a9ba				;cdtv.device stuff
-	PL_P	$37a98,_32bit
+	PL_S	$3aa4a,$3aae8-$3aa4a		;os stuff
+	PL_S	$3ab2c,$3ab40-$3ab2c		;asking exec.VBlankFrequency
+	PL_PS	$3c07e+$400,_waitautofire
+	PL_P	$3c7de,_load_speech
+	PL_P	$3d2a4,_load_level2
+	PL_P	$3d86e,_load_intro
+	PL_P	$3e09a,_load_intro2
 	;PL_P	$410b2,$34fb2			;strange sound problem (does not help)
-	PL_S	$3a742,12			;cash clear before each level
+	PL_P	$411a8,_load_speech2
+	PL_P	$4fd28,_load_sounds2
+	PL_P	$4fd78,_load_sounds
+	PL_P	$50f68,_load_pics
+	PL_P	$50fce,_load_piccode
 	PL_END
 
 _load_sounds
@@ -280,6 +283,8 @@ _x2		dc.b	"x2",0
 		cmp.w	#$bdce,d0
 	;	cmp.w	#$e08d,d0		;without first std track in image
 		beq	_v5
+		cmp.w	#$6827,d0
+		beq	_v6
 		cmp.w	#$c0fb,d0
 		bne	_wrongver
 
@@ -314,6 +319,7 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		patch	$47d8,_32bit
 		patch	$9012,_load
 		skip	8,$6f86			;cash clear before each level
+		patchs	$847a,_waitautofire
 
 		lea	(_gametrainer),a0
 		move.l	(_custom1),d0
@@ -442,6 +448,7 @@ _v13_5		patchs	$fd4,_keyboard
 		patch	$47ce,_32bit
 		patch	$921a,_load
 		skip	8,$6f7c			;cash clear before each level
+		patchs	$8a58,_waitautofire
 
 		lea	(_gametrainer),a0
 		move.l	(_custom1),d0
@@ -595,6 +602,7 @@ _v45_2		lea	$14006,a0
 		PL_S	$6eae,12		;cash clear before each level
 		PL_S	$6f8c,$6fa2-$6f8c	;vector init
 		PL_B	$7029,-1		;snoop ciab.prb
+		PL_PS	$8526,_waitautofire
 		PL_P	$957a,_decrunch
 		PL_END
 
@@ -611,6 +619,332 @@ _decrunch	movem.l	d0-d1/a0-a2,-(a7)
 		beq	_wrongver
 		movem.l	(a7)+,_MOVEMREGS
 		rts
+
+;============== version 6
+
+_v6	;	bra	_v6main
+
+		move.l	#0,d0			;offset
+		move.l	#$4b170,d1		;length
+		moveq	#1,d2			;disk
+		lea	$400,a0			;address
+		jsr	(resload_DiskLoad,a5)
+
+		move.l	#$63d9c,d1
+		lea	$4b570,a0
+		lea	$400,a1
+		bsr	_v6decrunch
+		lea	.pl,a0
+		lea	0,a1
+		jsr	(resload_Patch,a5)
+		
+		move.l	#$c02,$dff080		;copper list
+		lea	$78000,a0
+		move.w	#$8000/4-1,d0
+.clr		clr.l	(a0)+			;clear screen
+		dbf	d0,.clr
+		jmp	$400
+
+.pl		PL_START
+		PL_W	$476,$4200		;snoop custom.bplcon0
+		PL_S	$578,$125c-$578		;skip protection
+		PL_PS	$bc2,_keyboard
+		PL_P	$1498,_v6main
+		PL_END
+
+_v6main		lea	_custom,a6
+		waitvb	a6
+		move.w	#$7fff,(intena,a6)
+		move.w	#$7fff,(dmacon,a6)
+
+		move.l	#($30-3)*$1b00,d0	;offset
+		move.l	#$2b120-$e0c,d1		;length
+		moveq	#1,d2			;disk
+		lea	$e0c,a0			;address
+		move.l	RESLOAD,a5
+		jsr	(resload_DiskLoad,a5)
+
+		move.l	#$3f1f4,d1
+		lea	$2b120,a0
+		lea	$e0c,a1
+		bsr	_v6decrunch
+		
+		lea	.pl,a0
+		sub.l	a1,a1
+		jsr	(resload_Patch,a5)
+
+		lea	(_gametrainer),a0
+		move.l	(_custom1),d0
+		bne	.trained
+		lea	(_notrainer),a0
+		patch	$8b18,.savehighs
+.trained	move.w	#$4eb9,$6ba4
+		move.l	a0,$6ba4+2
+
+		lea	(_highs),a0
+		move.l	(RESLOAD),a5
+		jsr	(resload_GetFileSize,a5)
+		cmp.l	#$fc-$66+$28,d0
+		bne	.nohighs
+		lea	(_highs),a0
+		lea	$8946-$28,a1
+		pea	(a1)
+		jsr	(resload_LoadFileDecrunch,a5)
+		move.l	(a7)+,a0
+		bsr	_crypt
+.nohighs
+		move.l	#$1038,$dff080		;copper list init
+		jmp	$762e
+
+.pl		PL_START
+		PL_PS	$fd4,_keyboard
+		PL_L	$2d06,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$2d38,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$2f84,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$34cc,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_P	$47ce,_32bit
+		PL_S	$6f7c,8			;cash clear before each level
+		PL_S	$7642,$7654-$7642	;vector init
+		PL_S	$76c6,3*8		;cia access
+		PL_W	$76e0,$4200		;bplcon0
+		PL_PS	$8a58,_waitautofire
+		PL_P	$921a,.loader
+		PL_END
+
+.savehighs	addq.l	#2,a7			;original
+		jsr	$8c88			;original
+		move.l	#$fc-$66+$28,d0
+		lea	$8946-$28,a0
+		bra	_savehighs
+
+; d0=filenumber (d1=) (a0=address)
+
+.loader		move.w	d0,d4
+		lea	$9512,a0		;filetable
+		moveq	#0,d0
+		moveq	#0,d1
+		moveq	#-1,d7
+.search		move.w	(a0)+,d2
+		move.b	(a0)+,d0		;start track
+		move.b	(a0)+,d1		;count tracks
+		addq.w	#1,d7
+		cmp.w	d4,d2
+		bne	.search
+		
+		sub.w	#3,d0			;diskimage starts at track 3
+		mulu	#$1b00,d0		;offset
+		mulu	#$1b00,d1		;length
+		moveq	#1,d2			;disk
+		lea	$54e00,a0
+		move.l	RESLOAD,a5
+		jsr	(resload_DiskLoad,a5)
+		
+		lsl.w	#4,d7
+		lea	$94b2,a6		;fileaddresstable
+		add.w	d7,a6
+		moveq	#0,d5
+		lea	$54e00,a0
+		move.l	a0,a1			;start
+		add.l	(a6)+,a0		;end packed
+		move.l	(a6)+,d1		;unpacked length
+		lea	(a1,d1.l),a2		;end unpacked
+		
+	move.l	-(a0),d0
+	eor.l	d0,d5
+.93C8	lsr.l	#1,d0
+	bne.b	.93D0
+	bsr.w	.944A
+.93D0	bcs.b	.940A
+	moveq	#8,d1
+	moveq	#1,d3
+	lsr.l	#1,d0
+	bne.b	.93DE
+	bsr.w	.944A
+.93DE	bcs.b	.9434
+	moveq	#3,d1
+	clr.w	d4
+.93E4	bsr.w	.9456
+	move.w	d2,d3
+	add.w	d4,d3
+.93EC	moveq	#7,d1
+.93EE	lsr.l	#1,d0
+	bne.b	.93F6
+	bsr.w	.944A
+.93F6	roxl.l	#1,d2
+	dbra	d1,.93EE
+	move.b	d2,-(a2)
+	dbra	d3,.93EC
+	bra.b	.9442
+
+.9404	moveq	#8,d1
+	moveq	#8,d4
+	bra.b	.93E4
+
+.940A	moveq	#2,d1
+	bsr.w	.9456
+	cmp.b	#2,d2
+	blt.b	.942A
+	cmp.b	#3,d2
+	beq.b	.9404
+	moveq	#8,d1
+	bsr.w	.9456
+	move.w	d2,d3
+	move.w	#8,d1
+	bra.b	.9434
+
+.942A	move.w	#8,d1
+	add.w	d2,d1
+	addq.w	#2,d2
+	move.w	d2,d3
+.9434	bsr.w	.9456
+.9438	subq.w	#1,a2
+	move.b	(a2,d2.w),(a2)
+	dbra	d3,.9438
+.9442	cmpa.l	a2,a1
+	blt.b	.93C8
+	tst.l	d5
+	bra.b	.9470
+
+.944A	move.l	-(a0),d0
+	eor.l	d0,d5
+	move.w	#$10,ccr
+	roxr.l	#1,d0
+	rts
+
+.9456	subq.w	#1,d1
+	clr.w	d2
+.945A	lsr.l	#1,d0
+	bne.b	.9468
+	move.l	-(a0),d0
+	eor.l	d0,d5
+	move.w	#$10,ccr
+	roxr.l	#1,d0
+.9468	roxl.l	#1,d2
+	dbra	d1,.945A
+	rts
+
+.9470	lea	($54E00).l,a0	;run length decompressor
+	move.b	(a6),d7
+	move.l	(a6)+,d0
+	andi.l	#$FFFFFF,d0
+	lea	(a0,d0.l),a2
+	move.l	(a6),d0
+	lea	(a0,d0.l),a1
+.948A	cmpa.l	a0,a2
+	ble.b	.94A4
+	move.b	-(a2),d1
+	cmp.b	d1,d7
+	beq.b	.9498
+	move.b	d1,-(a1)
+	bra.b	.948A
+
+.9498	move.b	-(a2),d4
+	move.b	-(a2),d5
+.949C	move.b	d4,-(a1)
+	subq.b	#1,d5
+	bne.b	.949C
+	bra.b	.948A
+
+.94A4	cmp.b	#$10,d6
+	bne.b	.94B0
+	move.b	#$AA,(3,a0)
+.94B0	rts
+
+; d1=unpacked-length a0=end-packed a1=start
+
+_v6decrunch
+	lea	(a1,d1.l),a2
+	move.l	-(a0),d0
+.248	add.l	d0,d0
+	bne.b	.254
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.254	bcs.b	.2AA
+	moveq	#8,d1
+	moveq	#1,d3
+	add.l	d0,d0
+	bne.b	.266
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.266	bcs.w	.2F8
+	moveq	#3,d1
+	clr.w	d4
+.26E	subq.w	#1,d1
+	clr.w	d2
+.272	add.l	d0,d0
+	bne.b	.27E
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.27E	addx.l	d2,d2
+	dbra	d1,.272
+	move.w	d2,d3
+	add.w	d4,d3
+.288	moveq	#7,d1
+.28A	add.l	d0,d0
+	bne.b	.296
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.296	addx.l	d2,d2
+	dbra	d1,.28A
+	move.b	d2,-(a2)
+	dbra	d3,.288
+	bra.b	.318
+
+.2A4	moveq	#8,d1
+	moveq	#8,d4
+	bra.b	.26E
+
+.2AA	moveq	#2,d1
+	subq.w	#1,d1
+	clr.w	d2
+.2B0	add.l	d0,d0
+	bne.b	.2BC
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.2BC	addx.l	d2,d2
+	dbra	d1,.2B0
+	cmpi.b	#2,d2
+	blt.b	.2EE
+	cmpi.b	#3,d2
+	beq.b	.2A4
+	moveq	#8,d1
+	subq.w	#1,d1
+	clr.w	d2
+.2D4	add.l	d0,d0
+	bne.b	.2E0
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.2E0	addx.l	d2,d2
+	dbra	d1,.2D4
+	move.w	d2,d3
+	move.w	#8,d1
+	bra.b	.2F8
+
+.2EE	move.w	#8,d1
+	add.w	d2,d1
+	addq.w	#2,d2
+	move.w	d2,d3
+.2F8	subq.w	#1,d1
+	clr.w	d2
+.2FC	add.l	d0,d0
+	bne.b	.308
+	move.l	-(a0),d0
+	move.w	#$10,ccr
+	addx.l	d0,d0
+.308	addx.l	d2,d2
+	dbra	d1,.2FC
+.30E	subq.w	#1,a2
+	move.b	(a2,d2.w),(a2)
+	dbra	d3,.30E
+.318	cmpa.l	a2,a1
+	blt.w	.248
+	rts
 
 ;============== all versions
 
@@ -642,6 +976,28 @@ _load0		mulu	#512,d0			;offset
 
 ;======================================================================
 
+; wait a specific time the fire button hasn't been pressed
+; to avoid filling the highscore name with autofire
+
+_waitautofire	move.b	#$3a,(12,a1)		;original
+
+		movem.l	d0-d2,-(a7)
+.reset		moveq	#50,d0
+		btst	#0,(_custom+vposr+1)
+		seq	d1
+
+.test		btst	#7,$bfe001
+		beq	.reset
+		btst	#0,(_custom+vposr+1)
+		seq	d2
+		cmp.b	d1,d2
+		beq	.test
+		move.b	d2,d1
+		dbf	d0,.test
+
+		movem.l	(a7)+,d0-d2
+		rts
+
 _keyboard	move.l	d1,-(a7)
 		moveq	#3-1,d1
 .wait1		move.b	(_custom+vhposr),d0
@@ -659,11 +1015,9 @@ _32bit		move.l	a0,-(a7)
 		move.l	(a7)+,a0
 		rts
 
-_wrongver	subq.l	#8,a7
-		pea	TDREASON_WRONGVER
+_wrongver	pea	TDREASON_WRONGVER
 		bra	_end
-_exit		subq.l	#8,a7
-		pea	TDREASON_OK
+_exit		pea	TDREASON_OK
 		bra	_end
 _debug		pea	TDREASON_DEBUG
 _end		move.l	(RESLOAD),-(a7)
