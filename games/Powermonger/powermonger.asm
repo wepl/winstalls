@@ -2,7 +2,9 @@
 ;  :Program.	powermonger.asm
 ;  :Contents.	Slave for "PowerMonger"
 ;  :Author.	Wepl
-;  :Version.	$Id: powermonger.asm 1.2 1998/04/23 14:45:17 jah Exp $
+;  :Original.	v1 original	Peter Schreck
+;		v2 Hit Squad	Harley Kingston <hkingston@ozemail.com.au>
+;  :Version.	$Id: powermonger.asm 1.3 2002/07/17 21:04:26 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		09.12.96 reworked for diskimages and clean media
 ;		30.12.96 ws_DontCache removed (WARNING ws_Version is only 1)
@@ -20,7 +22,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	wart:po/powermonger/powermonger.slave
+	OUTPUT	wart:pl/powermonger/Powermonger.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -41,7 +43,7 @@ _base		SLAVE_HEADER				;ws_Security + ws_ID
 		dc.w	_Start-_base			;ws_GameLoader
 		dc.w	0				;ws_CurrentDir
 		dc.w	0				;ws_DontCache
-_keydebug	dc.b	$58				;ws_keydebug = F9
+_keydebug	dc.b	0				;ws_keydebug = F9
 _keyexit	dc.b	$59				;ws_keyexit = F10
 _expmem		dc.l	0				;ws_ExpMem
 		dc.w	_name-_base			;ws_name
