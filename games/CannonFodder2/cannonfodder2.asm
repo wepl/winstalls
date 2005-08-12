@@ -2,7 +2,11 @@
 ;  :Program.	cf2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: cf2.asm 1.7 2001/04/28 11:44:03 jah Exp jah $
+;  :Original.	v1 crack
+;		v2 german	Bert Jahn
+;		v3 english
+;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
+;  :Version.	$Id: cf2.asm 1.8 2003/07/25 14:28:19 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -18,6 +22,7 @@
 ;		20.02.01 support for english crack version reenabled (wrong crc???)
 ;			 one access fault fixed
 ;		20.07.03 keyboard fixed
+;		10.08.05 support for french version added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -28,6 +33,7 @@
 crc_v1	= $e95e		;english cracked ?
 crc_v2	= $b9c6		;german
 crc_v3	= $389d		;english
+crc_v4	= $aa9f		;french
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -50,7 +56,7 @@ BUFLEN = 256
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10			;ws_Version
+		dc.w	14			;ws_Version
 		dc.w	WHDLF_NoError		;ws_flags
 		dc.l	$100000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -74,7 +80,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.8 "
+		dc.b	"Version 1.9 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -111,13 +117,13 @@ _start	;	A0 = resident loader
 		lea	(_pl2),a0
 		cmp.w	#crc_v2,d0
 		beq	.ok
+		lea	(_pl4),a0
+		cmp.w	#crc_v4,d0
+		beq	.ok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
 
 .ok		move.l	a5,a1
-		jsr	(resload_Patch,a2)
-		lea	(_pl),a0
-		move.l	a5,a1
 		jsr	(resload_Patch,a2)
 
 		LEA	$3D50.W,A0		;clr diskbuffer for root-block
@@ -136,67 +142,49 @@ _start	;	A0 = resident loader
 ;======================================================================
 
 _pl		PL_START
-
-	;exception #11266 at $89e08
-		PL_L	$9ee2,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_W	$2dbc,$4200		;bplcon0
+		PL_S	$5fc2,8+8		;bplcon3,4
+		PL_S	$5fd2,4			;move #$2000,sr
 		PL_L	$762c,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_L	$7724,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_L	$777a,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_L	$77d0,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
-
-		PL_R	$9ec8			;copylock
 		PL_P	$98a6,_keyboard		;keyboard int umleiten
-		PL_P	$afd6,_Loader
-
-		PL_S	$5fd2,4			;move #$2000,sr
-
-		PL_W	$2dbc,$4200		;bplcon0
-		PL_S	$5fc2,8+8		;bplcon3,4
+		PL_R	$9ec8			;copylock
+		PL_L	$9ee2,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_W	$ac98,$1e		;htotal
+		PL_P	$afd6,_Loader
 		PL_W	$c0c2,$200		;bplcon0
-
 		PL_END
 		
 ;======================================================================
 
 _pl1		PL_START
-
-	;differences between cracked and original version
-		PL_L	$9ff6,$203c3d74
-		PL_L	$9ffa,$2cf14e75
-		PL_B	$22b92,$60
-		PL_B	$22c7a,$60
-
+	;	PL_L	$9ff6,$203c3d74		;differences between cracked and original version
+	;	PL_L	$9ffa,$2cf14e75		;differences between cracked and original version
 		PL_W	$1C278,$4200
 		PL_W	$1C318,$4200
 		PL_W	$1C32c,$5200
 		PL_W	$1C610,$5200
 		PL_W	$1C6Ce,$4200
+		PL_PS	$1ddfa,_af
+		PL_B	$22b92,$6f		;bra -> ble
+	;	PL_B	$22b92,$60		;differences between cracked and original version
+	;	PL_B	$22c7a,$60		;differences between cracked and original version
+		PL_PS	$22c7c,_s1
 		PL_W	$26076,$6600
 		PL_W	$26266,$4200
 		PL_W	$275E0,$5200
 		PL_W	$2786c,$4200
-
-	;exception #11266 at $89e08
-		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
-		PL_L	$29496,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
-
-	;	nops	4,$898a6		;intreq reset before int disabled
-		PL_R	$297c6			;"insert disk 3"
+		PL_W	$28974,$352+$304	;load/save game
 		PL_S	$289a6,$e4-$a6		;skips file "CFSDISK"
-
-	;	PL_B	$22b92,$6f		;bra -> ble
-	;	PL_PS	$22c7c,_s1
-		
-	;load/save game
-		PL_S	$28d94,10
-		PL_W	$28974,$352+$304
-		PL_S	$28c2c,4
-		PL_W	$28c38,$98a-$890
-
-		PL_PS	$1ddfa,_af
-		
-		PL_END
+		PL_S	$28c2c,4		;load/save game
+		PL_W	$28c38,$98a-$890	;load/save game
+		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_S	$28d94,10		;load/save game
+		PL_L	$29496,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_R	$297c6			;"insert disk 3"
+		PL_NEXT	_pl
 
 _af		move.w	$8155a,d0			;actual player/team (0-5)
 		bpl	.ok
@@ -205,51 +193,31 @@ _af		move.w	$8155a,d0			;actual player/team (0-5)
 		
 ;======================================================================
 
-_pl2		PL_START
-
-	;exceptions #11266 at $89e08
-		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
-		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
-
-		PL_R	$29bea			;"insert disk 3"
-		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
-
+_pl24		PL_START
 		PL_W	$1C356,$4200
 		PL_W	$1C3F6,$4200
 		PL_W	$1C40a,$5200
 		PL_W	$1C6Ee,$5200
 		PL_W	$1C7Ac,$4200
+		PL_PS	$1ded8,_af
+		PL_B	$22c70,$6f		;beq -> ble
+		PL_PS	$22d5a,_s1
+		PL_NEXT	_pl
+
+_pl2		PL_START
 		PL_W	$26420,$6600
 		PL_W	$26638,$4200
 		PL_W	$279B4,$5200
 		PL_W	$27C40,$4200
-
-	;ein übelster Schrapelplayer ist das !
-	;a2740 = a2892 sound off
-	;a272c = a2780 sound init
-	;a2728 = a2a2e sound play
-	;	lea	$a2780,a0
-	;	move.l	#$4e71<<16+%0100100001111001,(a0)+	;nop,pea x.l
-	;	lea	(_spfuck),a1
-	;	move.l	a1,(a0)+
-	;	ill	$a2740
-	;	ill	$a272c
-	;	move.b	#$6f,$a2c70
-	;	move.b	#$6f,$a2d58
-	;	jsr	$a2780
-	;	ret	$a2a2e			;disable sound
-		PL_B	$22c70,$6f		;beq -> ble
-		PL_PS	$22d5a,_s1
-
-	;load/save game
-		PL_S	$2927a,10
-		PL_W	$28e48,$360+$32e
-		PL_S	$2910e,4
-		PL_W	$2911a,$8cc-$7ce
-		
-		PL_PS	$1ded8,_af
-		
-		PL_END
+		PL_W	$28e48,$360+$32e	;load/save game
+		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
+		PL_S	$2910e,4		;load/save game
+		PL_W	$2911a,$8cc-$7ce	;load/save game
+		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_S	$2927a,10		;load/save game
+		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_R	$29bea			;"insert disk 3"
+		PL_NEXT	_pl24
 
 _s1		cmp.l	#$100000,d0
 		bhs	.ret
@@ -259,8 +227,22 @@ _s1		cmp.l	#$100000,d0
 .ret		addq.l	#4,a7
 		rts
 
-_spfuck	;	move.w	#-1,$a25ca
-	;	rts
+;======================================================================
+
+_pl4		PL_START
+		PL_W	$2640e,$6600
+		PL_W	$26626,$4200
+		PL_W	$2799a,$5200
+		PL_W	$27C26,$4200
+		PL_W	$28e2e,$360+$32e	;load/save game
+		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
+		PL_S	$290f2,4		;load/save game
+		PL_W	$290fe,$8cc-$7ce	;load/save game
+		PL_L	$29114,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_S	$29266,10		;load/save game
+		PL_L	$2985e,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_R	$29b94			;"insert disk 3"
+		PL_NEXT	_pl24
 
 ;======================================================================
 
