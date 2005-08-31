@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.17 2005/01/27 08:44:12 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.19 2005/02/11 00:44:37 wepl Exp $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -14,6 +14,7 @@
 ;		16.10.04 support for NUMDRIVES=0 added
 ;		26.01.05 trackdisk device IO_ACTUAL field set
 ;		11.02.05 PROMOTE_DISPLAY added
+;		23.08.05 JOYPADEMU added, user defineable keys added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -26,6 +27,7 @@
 	INCLUDE	lvo/graphics.i
 	INCLUDE	lvo/lowlevel.i
 	INCLUDE	devices/trackdisk.i
+	INCLUDE	dos/rdargs.i
 	INCLUDE	exec/memory.i
 	INCLUDE	exec/resident.i
 	INCLUDE	graphics/gfxbase.i
@@ -765,7 +767,11 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 ;============================================================================
 
 	IFD INIT_LOWLEVEL
-_lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
+	IFND BOOTDOS
+	FAIL	INIT_LOWLEVEL requires BOOTDOS
+	ENDC
+_lowlevel	movem.l	d0-d3/a0-a2/a5-a6,-(a7)
+		move.l	(_resload,pc),a5
 	;open lowlevel.library
 		moveq	#40,d0
 		lea	(_lowlevelname,pc),a1
@@ -776,27 +782,96 @@ _lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
 		pea	(_lowlevelname,pc)
 		pea	ERROR_OBJECT_NOT_FOUND
 		pea	TDREASON_DOSREAD
-		jmp	([_resload,pc],resload_Abort.w)
+		jmp	(resload_Abort,a5)
 	;patch functions
-.lowlevelok	lea	.readjoyport,a0
-		move.l	a0,d0
-		move.w	#_LVOReadJoyPort,a0
-		move.l	d2,a1
-		jsr	(_LVOSetFunction,a6)
-		lea	.rjp_save,a0
-		move.l	d0,(a0)
-		lea	.getlanguage,a0
+.lowlevelok	lea	.getlanguage,a0
 		move.l	a0,d0
 		move.w	#_LVOGetLanguageSelection,a0
 		move.l	d2,a1
 		jsr	(_LVOSetFunction,a6)
+	IFD JOYPADEMU
+		lea	(.readjoyport,pc),a0
+		move.l	a0,d0
+		move.w	#_LVOReadJoyPort,a0
+		move.l	d2,a1
+		jsr	(_LVOSetFunction,a6)
+		lea	(.rjp_save,pc),a0
+		move.l	d0,(a0)
 	;do initial joyport read to init internal structures
 	;	move.l	d2,a6
 	;	moveq	#1,d0			;port 1
 	;	jsr	(_LVOReadJoyPort,a6)
+	;check for user defined keys
+JPARGBUFLEN = 100
+		sub.l	#JPARGBUFLEN,a7
+		moveq	#(RDA_SIZEOF+(6*4))/4-1,d0
+.clr		clr.l	-(a7)
+		dbf	d0,.clr
+		move.l	#JPARGBUFLEN,d0		;buffer length
+		moveq	#0,d1			;reserved
+		lea	(RDA_SIZEOF+(6*4),a7),a0
+		move.l	a0,(RDA_Source+CS_Buffer,a7)
+		jsr	(resload_GetCustom,a5)
+		tst.l	d0
+		beq	.badcustom
+		lea	(_dosname,pc),a1
+		jsr	(_LVOOldOpenLibrary,a6)
+		move.l	d0,a6
+		lea	(.rjp_template,pc),a0
+		move.l	a0,d1			;template
+		lea	(RDA_SIZEOF,a7),a0
+		move.l	a0,d2			;array
+		move.l	a7,d3			;rdargs
+		move.l	(RDA_Source+CS_Buffer,a7),a0
+		moveq	#0,d0
+.cnt		addq.l	#1,d0
+		tst.b	(a0)+
+		bne	.cnt
+		move.b	#10,-(a0)
+		move.l	d0,(RDA_Source+CS_Length,a7)
+		move.l	#RDAF_NOPROMPT,(RDA_Flags,a7)
+		jsr	(_LVOReadArgs,a6)
+		tst.l	d0
+		beq	.badargs
+		lea	(RDA_SIZEOF,a7),a2
+		lea	(.rjp_keys,pc),a1
+		moveq	#6-1,d3
+.loop		move.l	(a2)+,d0
+		beq	.skip
+		move.l	d0,a0
+		bsr	_atoi
+		tst.b	(a0)
+		bne	.badnum
+		cmp.w	#$70,d0
+		bhs	.badnum
+		move.w	d0,(a1)
+.skip		addq.l	#4,a1
+		dbf	d3,.loop
+		move.l	a7,d1
+		jsr	(_LVOFreeArgs,a6)
+		add.l	#RDA_SIZEOF+(6*4)+JPARGBUFLEN,a7
+	ENDC
 	;call slave
 		movem.l	(a7)+,_MOVEMREGS
 		rts
+
+.getlanguage	move.l	(_language,pc),d0
+		rts
+
+
+	IFD JOYPADEMU
+.badcustom	move.l	#ERROR_NO_FREE_STORE,d0
+		bra	.bad
+
+.badargs	jsr	(_LVOIoErr,a6)
+		bra	.bad
+
+.badnum		move.l	#ERROR_BAD_NUMBER,d0
+.bad		pea	(.rjp_template,pc)
+		move.l	d0,-(a7)
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a5)
+
 
 .readjoyport	moveq	#1,d1			;only port 1
 		cmp.l	d0,d1
@@ -845,9 +920,79 @@ _lowlevel	movem.l	d0-d2/a0-a1/a6,-(a7)
 		dc.w	$54,0			;F5 Left Ear - Reverse
 		dc.w	$55,0			;F6 Right Ear - Forward
 
-.getlanguage	move.l	(_language,pc),d0
-		rts
+.rjp_template	dc.b	"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K",0
 
+;----------------------------------------
+; ASCII to Integer
+; asciiint ::= [+|-] { {<digit>} | ${<hexdigit>} }¹
+; hexdigit ::= {012456789abcdefABCDEF}¹
+; digit    ::= {0123456789}¹
+; IN:	A0 = CPTR ascii | NIL
+; OUT:	D0 = LONG integer (on error=0)
+;	A0 = CPTR first char after translated ASCII
+
+_atoi		movem.l	d6-d7,-(a7)
+		moveq	#0,d0		;default
+		move.l	a0,d1		;a0 = NIL ?
+		beq	.eend
+		moveq	#0,d1
+		move.b	(a0)+,d1
+		cmp.b	#"-",d1
+		seq	d7		;D7 = negative
+		beq	.1p
+		cmp.b	#"+",d1
+		bne	.base
+.1p		move.b	(a0)+,d1
+.base		cmp.b	#"$",d1
+		beq	.hexs
+
+.dec		cmp.b	#"0",d1
+		blo	.end
+		cmp.b	#"9",d1
+		bhi	.end
+		sub.b	#"0",d1
+		move.l	d0,d6		;D0 * 10
+		lsl.l	#3,d0		;
+		add.l	d6,d0		;
+		add.l	d6,d0		;
+		add.l	d1,d0
+		move.b	(a0)+,d1
+		bra	.dec
+
+.hexs		move.b	(a0)+,d1
+.hex		cmp.b	#"0",d1
+		blo	.hexl
+		cmp.b	#"9",d1
+		bhi	.hexl
+		sub.b	#"0",d1
+		bra	.hexgo
+.hexl		cmp.b	#"a",d1
+		blo	.hexh
+		cmp.b	#"f",d1
+		bhi	.hexh
+		sub.b	#"a"-10,d1
+		bra	.hexgo
+.hexh		cmp.b	#"A",d1
+		blo	.end
+		cmp.b	#"F",d1
+		bhi	.end
+		sub.b	#"A"-10,d1
+.hexgo		lsl.l	#4,d0		;D0 * 16
+		add.l	d1,d0
+		move.b	(a0)+,d1
+		bra	.hex
+
+.end		subq.l	#1,a0
+		tst.b	d7
+		beq	.eend
+		neg.l	d0
+.eend		movem.l	(a7)+,d6-d7
+		rts
+	ENDC
+	ELSE
+	IFD JOYPADEMU
+	FAIL	JOYPADEMU requires INIT_LOWLEVEL
+	ENDC
 	ENDC
 
 ;============================================================================

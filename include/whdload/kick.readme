@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.13 2004/05/02 13:19:06 wepl Exp wepl $
+$Id: kick.readme 1.14 2005/02/11 00:30:53 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -129,16 +129,27 @@ gadtools.library.
 INIT_LOWLEVEL
 
 Only available in kick31.s. Loads the lowlevel.library from disk into memory
-and patches the functions GetLanguageSelection and ReadJoyPort. Emulates
-joypad buttons via keyboard if there is only a usual joystick attached to
-port 1. Requires that the disk version of the lowlevel.library is present on
-the games data directory. BOOTDOS must be used, otherwise the patch will not
-be activated.
+and patches the function GetLanguageSelection to reflect the setting of the
+host operating system. Requires that the disk version of the lowlevel.library
+is present on the games data directory. BOOTDOS must be used, otherwise the
+patch will not be activated.
 
 INIT_MATHFFP
 
 Only available in kick31.s. Forces the kickstart to initialize the
 mathffp.library.
+
+JOYPADEMU
+
+Only available in kick31.s. Requires that INIT_LOWLEVEL and BOOTDOS are also
+set. It patches ReadJoyPort to emulate the joypad buttons of the controller
+in port 1 via keyboard. A connected joypad remains fully working. If a
+joystick is connected it queries the keyboard for the addtional keys and
+returns a joypad response to the calling application. The keys for the
+emulation can be user defined via the Custom/K option/tooltype. It uses
+dos.ReadArgs to parse the specified string with the template 
+"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K". The default keys for
+the buttons are F1..F6 in order.
 
 MEMFREE = $100
 
