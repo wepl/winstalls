@@ -3,13 +3,14 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.6 2004/10/18 11:18:49 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.7 2005/02/23 22:10:02 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;		02.05.04 lowlevel added, error msg on program loading
 ;		16.10.04 saving d7 for UnLoadSeg in _bootdos
 ;		23.02.05 _bootdos simplified
+;		23.08.05 JOYPADEMU added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -42,23 +43,24 @@ WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
-;BOOTDOS
+BOOTDOS
 ;BOOTEARLY
 ;CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
 DEBUG
 ;DISKSONBOOT
-;DOSASSIGN
+DOSASSIGN
 ;FONTHEIGHT	= 8
 HDINIT
+HRTMON
 ;INITAGA
 ;INIT_AUDIO
 ;INIT_GADTOOLS
 ;INIT_LOWLEVEL
 ;INIT_MATHFFP
-HRTMON
 IOCACHE		= 1024
+;JOYPADEMU
 ;MEMFREE	= $200
 ;NEEDFPU
 ;POINTERTICKS	= 1
