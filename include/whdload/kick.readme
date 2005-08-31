@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.14 2005/02/11 00:30:53 wepl Exp wepl $
+$Id: kick.readme 1.15 2005/08/31 17:19:47 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -147,9 +147,12 @@ in port 1 via keyboard. A connected joypad remains fully working. If a
 joystick is connected it queries the keyboard for the addtional keys and
 returns a joypad response to the calling application. The keys for the
 emulation can be user defined via the Custom/K option/tooltype. It uses
-dos.ReadArgs to parse the specified string with the template 
+dos.ReadArgs to parse the specified string with the template
 "Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K". The default keys for
 the buttons are F1..F6 in order.
+When trying this feature make sure the game does not force the game controller
+to a joypad using SetJoyPortAttrsA! If it has been forced lowlowel will
+always return a joypad and the emulation will not work.
 
 MEMFREE = $100
 
@@ -325,4 +328,3 @@ _monitor
 
 _resload
 	* containing resload base
-
