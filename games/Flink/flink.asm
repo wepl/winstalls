@@ -2,9 +2,11 @@
 ;  :Program.	Flink.asm
 ;  :Contents.	Slave for "Flink" from Psygnosis
 ;  :Author.	Mr.Larmer of Wanted Team, Harry, Wepl
-;  :Version.	$Id: kick31.asm 1.4 2004/03/05 07:44:16 wepl Exp wepl $
+;  :Version.	$Id: Flink.asm 1.4 2004/07/07 21:31:24 wepl Exp $
 ;  :History.	22.03.99/2.7.2000
 ;		08.04.04 rework for kickemu
+;		23.08.05 JOYPADEMU added
+;		30.08.05 auto set of correct language
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -45,7 +47,7 @@ BOOTDOS
 ;CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
-DEBUG
+;DEBUG
 ;DOSASSIGN
 ;DISKSONBOOT
 ;FONTHEIGHT	= 8
@@ -55,6 +57,7 @@ HDINIT
 ;INIT_GADTOOLS
 ;INIT_MATHFFP
 INIT_LOWLEVEL
+JOYPADEMU
 ;HRTMON
 ;IOCACHE	= 1024
 ;MEMFREE	= $200
@@ -86,7 +89,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Flink",0
 slv_copy	dc.b	"1994 Psygnosis",0
 slv_info	dc.b	"adapted by Mr.Larmer, Harry, Wepl",10
-		dc.b	"Version 2.0 "
+		dc.b	"Version 2.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -127,6 +130,24 @@ _bootdos	move.l	(_resload),a2		;A2 = _resload
 		jmp	(resload_Abort,a2)
 .programok
 
+	;set language in patch list
+		move.l	_language,d0
+		moveq	#4,d1
+		cmp.w	#LANG_FRENCH,d0
+		beq	.set
+		moveq	#8,d1
+		cmp.w	#LANG_GERMAN,d0
+		beq	.set
+		moveq	#12,d1
+		cmp.w	#LANG_ITALIAN,d0
+		beq	.set
+		moveq	#16,d1
+		cmp.w	#LANG_DUTCH,d0
+		bne	.skip
+.set		lea	_pl_program+6,a0
+		move.w	d1,(a0)
+.skip
+
 	;patch
 		lea	(_pl_program,pc),a0
 		move.l	d7,a1
@@ -147,16 +168,28 @@ _bootdos	move.l	(_resload),a2		;A2 = _resload
 		jmp	(4,d7.l*4)		;will be (4,a0,d7.l*4)
 
 _pl_program	PL_START
+		PL_W	$918cc,0		;language
 		PL_S	$11a,$15e-$11a		;dont open cd.device
 		PL_S	$1d6,4			;skip reading vbr
 		PL_L	$40c,-1			;simulate error on opening cd.device to avoid further acesses
 		PL_S	$af2,$b0e-$af2		; dont force lowlevel port0 to GAMECTLR
 		PL_S	$b72,6			; skip set NTSC mode
 		PL_S	$c6c,6			; skip read DSKDATR
+	PL_PS	$102e,.bw1
+	PL_PS	$10aa,.bw1
+	PL_PS	$1116,.bw1
+	PL_PS	$1fc0,.bw1
+	PL_PS	$5512,.bw1
+	PL_PS	$5588,.bw1
+	PL_PS	$55ee,.bw1
+	PL_PS	$199e0,.af1
 		PL_R	$21ec0			; skip init disk drive (motor off)
 		PL_W	$221fe,$207B		; REMOVE CRASH IN SEVERAL SPELLS
 		PL_S	$21dba,$21f00-$21dba
 		PL_P	$21f26,.load
+	IFD DEBUG
+		PL_PS	$225d6,.bw
+	ENDC
 	ifne	Trainer
 		PL_S	$78AE,6
 		PL_B	$7956,$4a
@@ -175,6 +208,22 @@ _pl_program	PL_START
 		PL_W	$20B56,$4e71
 	endc
 		PL_END
+
+.af1	;	move.l	(4,a6),(a0)+
+	;	dbf	d0,.af1
+		rts
+
+.bw1		BLITWAIT
+		move.w	#INTF_BLIT,_custom+intreq
+		addq.l	#4,(a7)
+		rts
+
+	IFD DEBUG
+.bw		tst.w	(_custom+dmaconr)
+		move.w	#INTF_BLIT,(_custom+intreq)
+		addq.l	#2,(a7)
+		rts
+	ENDC
 
 .load		movem.l	d0-d1/a0-a2,-(a7)
 		move.l	d1,a0			;name
