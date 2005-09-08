@@ -6,7 +6,7 @@
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.8 2003/07/25 14:28:19 wepl Exp wepl $
+;  :Version.	$Id: cf2.asm 1.9 2005/08/12 18:06:43 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -23,6 +23,7 @@
 ;			 one access fault fixed
 ;		20.07.03 keyboard fixed
 ;		10.08.05 support for french version added
+;		08.09.05 save/load fixed for french version
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -209,10 +210,10 @@ _pl2		PL_START
 		PL_W	$26638,$4200
 		PL_W	$279B4,$5200
 		PL_W	$27C40,$4200
-		PL_W	$28e48,$360+$32e	;load/save game
+		PL_W	$28e48,$360+$32e	;load/save game (bsr $294d6)
 		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$2910e,4		;load/save game
-		PL_W	$2911a,$8cc-$7ce	;load/save game
+		PL_W	$2911a,$8cc-$7ce	;load/save game (bsr $299e6 -> $29218)
 		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_S	$2927a,10		;load/save game
 		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
@@ -234,13 +235,13 @@ _pl4		PL_START
 		PL_W	$26626,$4200
 		PL_W	$2799a,$5200
 		PL_W	$27C26,$4200
-		PL_W	$28e2e,$360+$32e	;load/save game
+		PL_W	$28e2e,$35e+$324	;load/save game (bsr $294b0)
 		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$290f2,4		;load/save game
-		PL_W	$290fe,$8cc-$7ce	;load/save game
-		PL_L	$29114,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
+		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_S	$29266,10		;load/save game
-		PL_L	$2985e,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
 		PL_R	$29b94			;"insert disk 3"
 		PL_NEXT	_pl24
 
