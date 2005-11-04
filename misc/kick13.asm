@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.asm 1.10 2004/10/16 14:45:01 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.11 2005/02/23 22:10:02 wepl Exp $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -11,6 +11,7 @@
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
 ;		25.05.04 error msg on program loading
 ;		23.02.05 startup init code for BCPL programs fixed
+;		04.11.05 Shell-Seg access fault fixed
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -45,7 +46,7 @@ WPDRIVES	= %0000
 ;BOOTBLOCK
 BOOTDOS
 ;BOOTEARLY
-;CBDOSLOADSEG
+CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
 DEBUG
@@ -375,15 +376,20 @@ PATCH	MACRO
 		dc.w	\3-.patch	;patch list
 	ENDM
 
-.patch		PATCH	2516,.n_run,_p_run2568
+.patch	;	PATCH	2516,.n_run,_p_run2568
+		PATCH	7080,.n_shellseg,_p_shellseg7080
 		dc.l	0
 
 	;all upper case!
 .n_run		dc.b	"RUN",0
+.n_shellseg	dc.b	"SHELL-SEG",0
 	EVEN
 
 _p_run2568	PL_START
 	;	PL_P	0,.1
+		PL_END
+_p_shellseg7080	PL_START
+		PL_AW	$1990,$1a4c-$19ae	;dereferences NULL (maybe dirlock because actual directory is broken)
 		PL_END
 
 	ENDC
