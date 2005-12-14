@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.19 2005/02/11 00:44:37 wepl Exp $
+;  :Version.	$Id: kick31.s 1.20 2005/08/31 17:20:43 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -15,6 +15,8 @@
 ;		26.01.05 trackdisk device IO_ACTUAL field set
 ;		11.02.05 PROMOTE_DISPLAY added
 ;		23.08.05 JOYPADEMU added, user defineable keys added
+;		14.12.05 blue button no longer masked out from lowlevel
+;			 result in joypad emulation
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -890,7 +892,7 @@ JPARGBUFLEN = 100
 		lea	(.rjp_keys,pc),a0
 		jsr	(_LVOQueryKeys,a6)
 		move.l	(a7)+,d0
-		and.l	#~(JP_TYPE_MASK|JPF_BUTTON_BLUE),d0
+		and.l	#~(JP_TYPE_MASK),d0
 		or.l	#JP_TYPE_GAMECTLR,d0
 		tst.w	(.rjp_keys+2,pc)
 		beq	.rjp_f2
