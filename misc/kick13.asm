@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.asm 1.11 2005/02/23 22:10:02 wepl Exp $
+;  :Version.	$Id: kick13.asm 1.12 2005/11/04 09:09:34 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -12,10 +12,11 @@
 ;		25.05.04 error msg on program loading
 ;		23.02.05 startup init code for BCPL programs fixed
 ;		04.11.05 Shell-Seg access fault fixed
+;		03.05.06 made compatible to ASM-One
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -44,21 +45,21 @@ WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
-BOOTDOS
+;BOOTDOS
 ;BOOTEARLY
-CBDOSLOADSEG
+;CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
 DEBUG
 ;DISKSONBOOT
-DOSASSIGN
-;FONTHEIGHT	= 8
+;DOSASSIGN
+FONTHEIGHT     = 8
 HDINIT
 HRTMON
 IOCACHE		= 1024
 ;MEMFREE	= $200
 ;NEEDFPU
-;POINTERTICKS	= 1
+POINTERTICKS   = 1
 SETPATCH
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
@@ -86,7 +87,7 @@ slv_CurrentDir	dc.b	"wb13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.7 "
+		dc.b	"Version 0.8 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -267,6 +268,12 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	(_callrts,pc),a0
 		jmp	(a0)
 
+	IFD SIMPLE_CALL
+.call		lsl.l	#2,d1
+		move.l	d1,a3
+		jmp	(4,a3)
+	ENDC
+
 _pl_program	PL_START
 		PL_END
 
@@ -329,14 +336,14 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		move.l	a1,d7
 		bne	.add
 	;search patch
-		lea	(.patch,pc),a1
+		lea	(_cbls_patch,pc),a1
 .next		move.l	(a1)+,d3
 		movem.w	(a1)+,d4-d5
 		beq	.end
 		cmp.l	d2,d3		;length match?
 		bne	.next
 	;compare name
-		lea	(.patch,pc,d4.w),a2
+		lea	(_cbls_patch,pc,d4.w),a2
 		move.l	a0,a3
 		move.l	d0,d6
 .cmp		move.b	(a3)+,d7
@@ -363,21 +370,21 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		add.w	#12,a7
 	ENDC
 	;patch
-		lea	(.patch,pc,d5.w),a0
+		lea	(_cbls_patch,pc,d5.w),a0
 		move.l	d1,a1
 		move.l	(_resload,pc),a2
 		jsr	(resload_PatchSeg,a2)
 	;end
 .end		rts
 
-PATCH	MACRO
+LSPATCH	MACRO
 		dc.l	\1		;cumulated size of hunks (not filesize!)
-		dc.w	\2-.patch	;name
-		dc.w	\3-.patch	;patch list
+		dc.w	\2-_cbls_patch	;name
+		dc.w	\3-_cbls_patch	;patch list
 	ENDM
 
-.patch	;	PATCH	2516,.n_run,_p_run2568
-		PATCH	7080,.n_shellseg,_p_shellseg7080
+_cbls_patch	LSPATCH	2516,.n_run,_p_run2568
+		LSPATCH	7080,.n_shellseg,_p_shellseg7080
 		dc.l	0
 
 	;all upper case!
@@ -386,7 +393,6 @@ PATCH	MACRO
 	EVEN
 
 _p_run2568	PL_START
-	;	PL_P	0,.1
 		PL_END
 _p_shellseg7080	PL_START
 		PL_AW	$1990,$1a4c-$19ae	;dereferences NULL (maybe dirlock because actual directory is broken)

@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.7 2005/02/23 22:10:02 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.8 2005/08/31 19:37:22 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -11,10 +11,12 @@
 ;		16.10.04 saving d7 for UnLoadSeg in _bootdos
 ;		23.02.05 _bootdos simplified
 ;		23.08.05 JOYPADEMU added
+;		03.05.06 made compatible to ASM-One
+;			 NO68020 added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -43,15 +45,15 @@ WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
-BOOTDOS
+;BOOTDOS
 ;BOOTEARLY
 ;CBDOSLOADSEG
 ;CBDOSREAD
 CACHE
 DEBUG
 ;DISKSONBOOT
-DOSASSIGN
-;FONTHEIGHT	= 8
+;DOSASSIGN
+FONTHEIGHT	= 8
 HDINIT
 HRTMON
 ;INITAGA
@@ -63,7 +65,8 @@ IOCACHE		= 1024
 ;JOYPADEMU
 ;MEMFREE	= $200
 ;NEEDFPU
-;POINTERTICKS	= 1
+NO68020
+POINTERTICKS	= 1
 ;PROMOTE_DISPLAY
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
@@ -91,7 +94,7 @@ slv_CurrentDir		dc.b	"wb31",0
 slv_name		dc.b	"Kickstarter for 40.068",0
 slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.3 "
+		dc.b	"Version 0.4 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -275,14 +278,14 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		move.l	a1,d7
 		bne	.add
 	;search patch
-		lea	(.patch,pc),a1
+		lea	(_cbls_patch,pc),a1
 .next		move.l	(a1)+,d3
 		movem.w	(a1)+,d4-d5
 		beq	.end
 		cmp.l	d2,d3		;length match?
 		bne	.next
 	;compare name
-		lea	(.patch,pc,d4.w),a2
+		lea	(_cbls_patch,pc,d4.w),a2
 		move.l	a0,a3
 		move.l	d0,d6
 .cmp		move.b	(a3)+,d7
@@ -309,20 +312,20 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		add.w	#12,a7
 	ENDC
 	;patch
-		lea	(.patch,pc,d5.w),a0
+		lea	(_cbls_patch,pc,d5.w),a0
 		move.l	d1,a1
 		move.l	(_resload,pc),a2
 		jsr	(resload_PatchSeg,a2)
 	;end
 .end		rts
 
-PATCH	MACRO
+LSPATCH	MACRO
 		dc.l	\1		;cumulated size of hunks (not filesize!)
-		dc.w	\2-.patch	;name
-		dc.w	\3-.patch	;patch list
+		dc.w	\2-_cbls_patch	;name
+		dc.w	\3-_cbls_patch	;patch list
 	ENDM
 
-.patch		PATCH	2516,.n_run,_p_run2568
+_cbls_patch	LSPATCH	2516,.n_run,_p_run2568
 		dc.l	0
 
 	;all upper case!
