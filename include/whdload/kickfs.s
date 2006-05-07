@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.16 2004/11/26 08:31:01 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.17 2005/02/11 00:28:45 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -20,6 +20,8 @@
 ;		26.11.04 set IoErr on Read on success to be more system conform
 ;			 ACTION_SET_COMMENT dummy added
 ;		08.02.05 ACTION_ADD_NOTIFY dummy added
+;		04.05.06 fix for startup packet under v34
+;			 ACTION_SET_DATE dummy added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -225,10 +227,16 @@ HD_NumBuffers		= 5
 		jsr	(_LVOGetMsg,a6)
 		move.l	d0,a4
 		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
-		move.l	(dp_Arg3,a4),a0		;DeviceNode
-		add.l	a0,a0
-		add.l	a0,a0
-		move.l	a5,(dn_Task,a0)		;signal: the handler is running
+	IFEQ 1
+	;I don't remember that was good for, but it fails under
+	;v34 because dp_Arg3 is NULL
+		move.l	(dp_Arg3,a4),d0		;DeviceNode
+		beq	.nodn			;not present under v34
+		lsl.l	#2,d0
+		move.l	d0,a0
+		move.l  a5,(dn_Task,a0)	        ;signal: the handler is running
+.nodn
+	ENDC
 		moveq	#DOSTRUE,d0		;success
 		bra	.reply1
 
@@ -286,6 +294,7 @@ HD_NumBuffers		= 5
 		dc.w	ACTION_SET_COMMENT,.a_set_comment-.action		;1c	28
 		dc.w	ACTION_PARENT,.a_parent-.action				;1d	29
 		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f	31
+		dc.w	ACTION_SET_DATE,.a_set_date-.action			;22	34
 		dc.w	ACTION_READ,.a_read-.action				;52	82
 		dc.w	ACTION_WRITE,.a_write-.action				;57	87
 		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec	1004
@@ -522,6 +531,7 @@ HD_NumBuffers		= 5
 .a_is_filesystem
 .a_set_protect
 .a_set_comment
+.a_set_date
 .a_flush
 .a_inhibit	moveq	#DOSTRUE,d0
 		bra	.reply1

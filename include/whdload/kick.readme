@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.15 2005/08/31 17:19:47 wepl Exp wepl $
+$Id: kick.readme 1.16 2005/08/31 17:37:53 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -175,6 +175,15 @@ If that symbol is defined the system will get informed if an FPU is preset
 is no FPU regardless if there is one really. The system will use a different
 task switching routine which will save also the FPU registers if a FPU is
 present.
+
+NO68020
+
+Only available in kick31.s. Makes all patches done compatible to the 68000
+processor, so that resulting slave do not require a 68020. It should be noted
+here that the kickstart images for A1200 and A4000 contain code for the 68020
+in the utility.library. Therefore the install is still not 68000 compatible if
+these kickstart images are used and the installed program uses these functions
+from utility.library.
 
 POINTERTICKS
 

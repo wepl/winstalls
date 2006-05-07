@@ -2,7 +2,7 @@
 ;  :Modul.	kick31_A1200.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.20 2005/08/31 17:20:43 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.21 2005/12/14 18:41:29 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -17,10 +17,13 @@
 ;		23.08.05 JOYPADEMU added, user defineable keys added
 ;		14.12.05 blue button no longer masked out from lowlevel
 ;			 result in joypad emulation
+;		02.05.06 made compatible to ASM-One
+;			 option NO68020 added to create 68000 compatible slaves
+;		07.05.06 patches added to avoid overwriting the vector table (68000 support)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -39,7 +42,10 @@ KICKVERSION	= 40
 KICKCRC1200	= $9ff5				;40.068 A1200
 KICKCRC4000	= $75D3				;40.068 A4000
 KICKCRC		= KICKCRC1200
+
+	IFND NO68020
 	MC68020
+	ENDC
 
 ;============================================================================
 
@@ -144,12 +150,19 @@ _boot		lea	(_resload,pc),a1
 		jsr	(resload_Patch,a5)
 
 	;call
-kick_reboot	jmp	([_expmem,pc],2.w)		;original entry
+kick_reboot
+	IFND NO68020
+		jmp	([_expmem,pc],2.w)		;original entry
+	ELSE
+		move.l	(_expmem,pc),-(a7)
+		addq.l	#2,(a7)
+		rts
+	ENDC
 
 kick_patch1200	PL_START
-		PL_S	$d6,$166-$d6
+		PL_S	$d2,$166-$d2			;kick chksum, hardware init
 		PL_PS	$166,kick_leaveled
-		PL_S	$1a6,$1ac-$1a6			;kick chksum
+		PL_S	$1a6,$1d0-$1a6			;kick chksum, avoid overwriting vector table
 		PL_PS	$240,kick_detectchip
 		PL_S	$246,$26a-$246			;kick_detectchip
 		PL_S	$334,6				;kick_detectfast
@@ -163,6 +176,11 @@ kick_patch1200	PL_START
 		PL_PS	$5aa,kick_hrtmon
 	ENDC
 	ENDC
+		PL_S	$5e8,$5fe-$5e8			;avoid overwriting vector table
+		PL_PS	$634,kick_setvecs
+		PL_S	$66a,12				;avoid overwriting vector table
+		PL_C	$a4c,$a58-$a4c			;avoid overwriting vector table
+		PL_C	$a5a,$a7a-$a5a			;avoid overwriting vector table
 		PL_P	$c1c,kick_detectcpu
 		PL_P	$d36,_flushcache		;exec.CacheControl
 		PL_P	$db8,kick_reboot		;exec.ColdReboot
@@ -177,7 +195,7 @@ kick_patch1200	PL_START
 	IFD HDINIT
 		PL_PS	$42f4,hd_init
 	ENDC
-	IFHI NUMDRIVES-4
+	IFGT NUMDRIVES-4
 		PL_B	$439f,7				;allow 7 floppy drives
 	ENDC
 	IFD BOOTEARLY
@@ -193,6 +211,7 @@ kick_patch1200	PL_START
 	IFD INITAGA
 		PL_PS	$b9f8,gfx_initaga
 	ENDC
+		PL_PS	$ba72,gfx_bplcon0
 		PL_P	$bb7e,gfx_detectgenlock
 		PL_PS	$f6d8,gfx_beamcon01
 		PL_PS	$f72e,gfx_vbstrt1
@@ -247,11 +266,11 @@ kick_patch1200	PL_START
 	IFD slv_Version
 
 kick_patch4000	PL_START
-		PL_S	$d6,$10A-$d6
+		PL_S	$d2,$10A-$d2			;kick chksum, hardware init
 		PL_PS	$10A,kick_leaveled
 		PL_S	$146,$16C-$146			;A4000 DTack/bus stuff
 		PL_S	$174,$17C-$174			;A4000 DTack/bus stuff
-		PL_S	$180,$186-$180			;kick chksum
+		PL_S	$180,$1aa-$180			;kick chksum, avoid overwriting vector table
 		PL_PS	$21A,kick_detectchip
 		PL_S	$220,$244-$220			;kick_detectchip
 		PL_S	$30E,6				;kick_detectfast
@@ -265,6 +284,11 @@ kick_patch4000	PL_START
 		PL_PS	$582,kick_hrtmon
 	ENDC
 	ENDC
+		PL_S	$5c0,$5d6-$5c0			;avoid overwriting vector table
+		PL_PS	$60c,kick_setvecs
+		PL_S	$642,$656-$642			;avoid overwriting vector table
+		PL_C	$a54,$a60-$a54			;avoid overwriting vector table
+		PL_C	$a62,$a82-$a62			;avoid overwriting vector table
 		PL_P	$c24,kick_detectcpu
 		PL_P	$d3e,_flushcache		;exec.CacheControl
 		PL_P	$dc0,kick_reboot		;exec.ColdReboot
@@ -279,7 +303,7 @@ kick_patch4000	PL_START
 	IFD HDINIT
 		PL_PS	$4006C,hd_init
 	ENDC
-	IFHI NUMDRIVES-4
+	IFGT NUMDRIVES-4
 		PL_B	$40117,7			;allow 7 floppy drives
 	ENDC
 	IFD BOOTEARLY
@@ -295,6 +319,7 @@ kick_patch4000	PL_START
 	IFD INITAGA
 		PL_PS	$2AF50,gfx_initaga
 	ENDC
+		PL_PS	$2afca,gfx_bplcon0
 		PL_P	$2B0D6,gfx_detectgenlock
 		PL_PS	$2EC30,gfx_beamcon01
 		PL_PS	$2EC86,gfx_vbstrt1
@@ -351,6 +376,16 @@ kick_patch4000	PL_START
 	ENDC
 
 ;============================================================================
+
+kick_setvecs	move.w	(a1)+,d0
+		beq	.skip
+		lea	(a0,d0.w),a3
+		move.l	a3,(a2)
+.skip		addq.l	#4,a2
+		cmp.w	#$7c,a2			;stop at NMI
+		bne	kick_setvecs
+		add.l	#$3e2-$3d6-6,(a7)
+		rts
 
 kick_leaveled	and.b	#~CIAB_LED,$BFE001
 		rts
@@ -427,6 +462,9 @@ kick_bootblock	move.l	(a7)+,d1		;original
 
 ;============================================================================
 
+gfx_bplcon0	move.w	#$200,(_custom+bplcon0)
+		rts
+
 gfx_beamcon01	bclr	#4,(gb_Bugs,a1)			;original
 		move.l	a0,d2
 		lea	(_cbswitch_beamcon0,pc),a0
@@ -473,15 +511,27 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 		rts
 
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
+	IFND NO68020
 		tst.b	(_cbflag_beamcon0,pc)
 		beq	.nobeamcon0
 		move.w	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
 .nobeamcon0	tst.b	(_cbflag_vbstrt,pc)
 		beq	.novbstrt
 		move.w	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
-.novbstrt	jmp	(a0)
+.novbstrt
+	ELSE
+		move.l	d0,-(a7)
+		move.b	(_cbflag_beamcon0,pc),d0
+		beq	.nobeamcon0
+		move.w	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
+.nobeamcon0	move.b	(_cbflag_vbstrt,pc),d0
+		beq	.novbstrt
+		move.w	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
+.novbstrt	move.l	(a7)+,d0
+	ENDC
+		jmp	(a0)
 
-gfx_readvpos	move	(vposr+_custom),d0
+gfx_readvpos	move	(_custom+vposr),d0
 		move.l	(_monitor,pc),d1
 		cmp.l	#PAL_MONITOR_ID,d1
 		beq	.pal
@@ -517,17 +567,29 @@ disk_getunitid
 		subq.l	#NUMDRIVES,d0
 	ENDC
 		scc	d0
+	IFND NO68020
 		extb.l	d0
+	ELSE
+		ext.w	d0
+		ext.l	d0
+	ENDC
 		rts
 	ENDC
 
 ;============================================================================
 
-timer_init	move.l	(_time),a0
+timer_init	move.l	(_time,pc),a0
 		move.l	(whdlt_days,a0),d0
 		mulu	#24*60,d0
 		add.l	(whdlt_mins,a0),d0
+	IFND NO68020
 		mulu.l	#60,d0
+	ELSE
+		move.l	d0,d1
+		lsl.l	#6,d0
+		lsl.l	#2,d1
+		sub.l	d1,d0
+	ENDC
 		move.l	(whdlt_ticks,a0),d1
 		divu	#50,d1
 		ext.l	d1
@@ -854,7 +916,7 @@ JPARGBUFLEN = 100
 		add.l	#RDA_SIZEOF+(6*4)+JPARGBUFLEN,a7
 	ENDC
 	;call slave
-		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(a7)+,d0-d3/a0-a2/a5-a6
 		rts
 
 .getlanguage	move.l	(_language,pc),d0
@@ -862,6 +924,9 @@ JPARGBUFLEN = 100
 
 
 	IFD JOYPADEMU
+	IFD NO68020
+	FAIL JOYPADEMU not yet 68000 compatible
+	ENDC
 .badcustom	move.l	#ERROR_NO_FREE_STORE,d0
 		bra	.bad
 

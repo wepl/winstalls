@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.55 2005/01/27 08:44:27 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.56 2005/02/11 00:27:42 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -53,10 +53,12 @@
 ;		19.02.04 clearing ciasdr removed
 ;		15.11.04 _keydebug/exit check added
 ;		26.01.05 trackdisk device IO_ACTUAL field set (Hacker uses this)
+;		02.05.06 made compatible to ASM-One
+;		04.05.06 patches added to avoid overwriting the vector table (68000 support)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -172,10 +174,14 @@ kick_patch	PL_START
 		PL_S	$d2,$fe-$d2
 		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
 		PL_CW	$132				;color00 $444 -> $000
+		PL_S	$136,$148-$136			;avoid overwriting vector table
+		PL_W	$22e,$400			;avoid overwriting vector table
 		PL_CW	$25a				;color00 $888 -> $000
 	IFD HRTMON
 		PL_PS	$286,kick_hrtmon
 	ENDC
+		PL_PS	$3d6,kick_setvecs
+		PL_S	$3ec,12				;avoid overwriting vector table
 		PL_PS	$422,exec_flush
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$50C,$514-$50C			;skip LED power on
@@ -184,6 +190,8 @@ kick_patch	PL_START
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$61a,kick_detectfast
 		PL_P	$ebc,exec_ExitIntr
+		PL_C	$7b4,$7c0-$7b4			;avoid overwriting vector table
+		PL_C	$7c2,$7e2-$7c2			;avoid overwriting vector table
 		PL_P	$1354,exec_snoop1
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$15b2,exec_MakeFunctions
@@ -259,6 +267,16 @@ kick_patch	PL_START
 		PL_END
 
 ;============================================================================
+
+kick_setvecs	move.w	(a1)+,d0
+		beq	.skip
+		lea	(a0,d0.w),a3
+		move.l	a3,(a2)
+.skip		addq.l	#4,a2
+		cmp.w	#$7c,a2			;stop at NMI
+		bne	kick_setvecs
+		add.l	#$3e2-$3d6-6,(a7)
+		rts
 
 kick_detectfast
 	IFEQ FASTMEMSIZE
@@ -962,4 +980,3 @@ _cbswitch_cop2lc	dc.l	0
 
 ;============================================================================
 
-	END
