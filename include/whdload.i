@@ -3,8 +3,8 @@
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
-;  :Address.	Feodorstraﬂe 8, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 16.0 2003/08/04 21:20:08 wepl Exp wepl $
+;  :Address.	Clara-Zetkin-Straﬂe 52, Zwickau, 08058, Germany
+;  :Version.	$Id: whdload.i 16.3 2004/07/16 13:55:50 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -22,9 +22,12 @@
 ;		18.07.03 EmulIllegal added
 ;		05.06.04 macro PL_S improved
 ;		27.06.04 WHDLTAG_LOADSEG added
-;  :Copyright.	© 1996-2002 Bert Jahn, All Rights Reserved
+;		10.01.05 PL_OR's added
+;		02.04.06 PL_GA added
+;		02.05.06 made compatible to ASM-One
+;  :Copyright.	© 1996-2006 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;---------------------------------------------------------------------------*
 
  IFND WHDLOAD_I
@@ -561,6 +564,12 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_AW		;add word to specified address
 	EITEM	PLCMD_AL		;add long to specified address
 	EITEM	PLCMD_DATA		;write n data bytes to specified address
+; version 16.5
+	EITEM	PLCMD_ORB		;or byte to specified address
+	EITEM	PLCMD_ORW		;or word to specified address
+	EITEM	PLCMD_ORL		;or long to specified address
+; version 16.6
+	EITEM	PLCMD_GA		;get specified address and store in slave
 
 ;=============================================================================
 ; macros to build patchlist
@@ -598,11 +607,11 @@ PL_P		MACRO			;set "jmp"
 		ENDM
 
 PL_S		MACRO			;skip bytes, set "bra"
-	IFCS $8000-\1
-	FAIL PL_S distance too large (positive)
+	IFLT $8000-(\2)
+	FAIL PL_S positive distance \2 too large, max is $8000
 	ENDC
-	IFCS -$7ffe-\1
-	FAIL PL_S distance too large (negative)
+	IFGT -$7ffe-(\2)
+	FAIL PL_S negative distance \2 too large, max is -$7ffe
 	ENDC
 	PL_CMDADR PLCMD_S,\1
 	dc.w	\2-2			;distance
@@ -665,6 +674,8 @@ PL_CL		MACRO			;clear one long
 	PL_CMDADR PLCMD_CL,\1
 		ENDM
 
+; version 16
+
 PL_PSS		MACRO			;set "jsr","nop..."
 	PL_CMDADR PLCMD_PSS,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
@@ -694,7 +705,7 @@ PL_AL		MACRO			;add long
 ; there are two macros provided for the DATA command, if you want change a 
 ; string PL_STR can be used:
 ;	PL_STR	$340,<NewString!>
-; for binary data you must use PL_DATA like to follwing example:
+; for binary data you must use PL_DATA like the follwing example:
 ;	PL_DATA	$350,.stop-.strt
 ; .strt	dc.b	2,3,$ff,'a',0
 ; .stop	EVEN
@@ -710,6 +721,30 @@ PL_STR		MACRO
 .dat1\@	dc.b	'\2'
 .dat2\@	EVEN
 		ENDM	
+
+; version 16.5
+
+PL_ORB		MACRO			;or byte
+	PL_CMDADR PLCMD_ORB,\1
+	dc.w	\2			;data to or
+		ENDM
+
+PL_ORW		MACRO			;or word
+	PL_CMDADR PLCMD_ORW,\1
+	dc.w	\2			;data to or
+		ENDM
+
+PL_ORL		MACRO			;or long
+	PL_CMDADR PLCMD_ORL,\1
+	dc.l	\2			;data to or
+		ENDM
+
+; version 16.6
+
+PL_GA		MACRO			;get address
+	PL_CMDADR PLCMD_GA,\1
+	dc.w	\2-.patchlist		;destination (inside slave!)
+		ENDM
 
 ;=============================================================================
 
