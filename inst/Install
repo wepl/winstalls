@@ -1,6 +1,7 @@
-; $Id: Install 1.8 2004/10/11 21:34:13 wepl Exp $
+; $Id: Install 1.9 2004/12/09 08:30:01 wepl Exp wepl $
 
-(set #multiple-versions "yes")		;set to <> "" if there are multiple versions
+(set #multiple-versions "")		;set to <> "" if there are multiple versions
+(set #version "3")			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files
 (set #sub-dir "")			;sub directory containing data files
 (set #highs-file "highs")		;name of high scores file
 
@@ -25,7 +26,8 @@
 (set #ico_suffix_08 "colchris")
 (set #ico_suffix_09 "colcode")
 (set #ico_suffix_10 "colcfou")
-(set #ico_suffix_11 "boxicon")
+(set #ico_suffix_11 "colzarkov")
+(set #ico_suffix_12 "boxicon")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -41,7 +43,8 @@
 (set #ico_desc_08 "OS3.5 Icon by Chris Vella")
 (set #ico_desc_09 "OS3.5 Icon by Codetapper")
 (set #ico_desc_10 "OS3.5 Icon by CFou")
-(set #ico_desc_11 "OS3.5 BoxIcon")
+(set #ico_desc_11 "OS3.5 Icon by Dr.Zarkov")
+(set #ico_desc_12 "OS3.5 BoxIcon")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -79,7 +82,7 @@
 
 (procedure P_MakeImages
   (select #version
-    (				;----- RawDIC -----
+    (				;----- 0 = RawDIC -----
       (set #last-file "Disk.1")		;last file the imager should create
       (copyfiles
         (help @copyfiles-help)
@@ -95,7 +98,7 @@
       )
     )
 
-    (				;----- Patcher -----
+    (				;----- 1 = Patcher -----
       (set #last-file "Disk.1")		;last file the imager should create
       (copyfiles
         (help @copyfiles-help)
@@ -111,7 +114,7 @@
       )
     )
 
-    (				;----- DIC version (Disk Images) -----
+    (				;----- 2 = DIC version (Disk Images) -----
       (P_AskSrcDrv)
   
       ;the following lines must be copied and adjusted for multiple disk images
@@ -128,7 +131,7 @@
       (P_CreateImage)
     )
 
-    (				;----- DOS version (Files) -----
+    (				;----- 3 = DOS version (Files) -----
       (set #AD_disk "A")
       (P_disk)
       (copyfiles
@@ -493,6 +496,7 @@
 (procedure P_SelectIcon
   (set #icon 0)
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_12)) ((set #icon 12)(set #icnt (+ 1 #icnt))(set #icon_12 #ico_desc_12)) (set #icon_12 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_10)) ((set #icon 10)(set #icnt (+ 1 #icnt))(set #icon_10 #ico_desc_10)) (set #icon_10 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_09)) ((set #icon 9) (set #icnt (+ 1 #icnt))(set #icon_09 #ico_desc_09)) (set #icon_09 ""))
@@ -523,12 +527,13 @@
       (if #icon_09 ((set #icon-suf #ico_suffix_09) (set #icon-name #ico_desc_09) (P_Icon)))
       (if #icon_10 ((set #icon-suf #ico_suffix_10) (set #icon-name #ico_desc_10) (P_Icon)))
       (if #icon_11 ((set #icon-suf #ico_suffix_11) (set #icon-name #ico_desc_11) (P_Icon)))
+      (if #icon_12 ((set #icon-suf #ico_suffix_12) (set #icon-name #ico_desc_12) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     (set #icon
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
-        (choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11)
+	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12)
         (default #icon)
         (help @askchoice-help)
       )
@@ -552,6 +557,7 @@
       (set #icon #ico_suffix_09)
       (set #icon #ico_suffix_10)
       (set #icon #ico_suffix_11)
+      (set #icon #ico_suffix_12)
     )
     (copyfiles
       (help @copyfiles-help)
