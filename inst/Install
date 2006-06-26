@@ -1,7 +1,7 @@
-; $Id: Install 1.9 2004/12/09 08:30:01 wepl Exp wepl $
+; $Id: Install 1.10 2006/05/07 19:38:46 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
-(set #version "3")			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files
+(set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
 (set #sub-dir "")			;sub directory containing data files
 (set #highs-file "highs")		;name of high scores file
 
@@ -20,14 +20,15 @@
 (set #ico_suffix_02 "romicon")
 (set #ico_suffix_03 "newicon")
 (set #ico_suffix_04 "newexot")
-(set #ico_suffix_05 "colicon")
-(set #ico_suffix_06 "colexot")
-(set #ico_suffix_07 "colfrank")
-(set #ico_suffix_08 "colchris")
-(set #ico_suffix_09 "colcode")
-(set #ico_suffix_10 "colcfou")
-(set #ico_suffix_11 "colzarkov")
-(set #ico_suffix_12 "boxicon")
+(set #ico_suffix_05 "newcfou")
+(set #ico_suffix_06 "colicon")
+(set #ico_suffix_07 "colexot")
+(set #ico_suffix_08 "colfrank")
+(set #ico_suffix_09 "colchris")
+(set #ico_suffix_10 "colcode")
+(set #ico_suffix_11 "colcfou")
+(set #ico_suffix_12 "colzarkov")
+(set #ico_suffix_13 "boxicon")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -37,14 +38,15 @@
 (set #ico_desc_02 "RomIcon")
 (set #ico_desc_03 "NewIcon")
 (set #ico_desc_04 "NewIcon by Exotica")
-(set #ico_desc_05 "OS3.5 Icon")
-(set #ico_desc_06 "OS3.5 Icon by Exotica")
-(set #ico_desc_07 "OS3.5 Icon by Frank")
-(set #ico_desc_08 "OS3.5 Icon by Chris Vella")
-(set #ico_desc_09 "OS3.5 Icon by Codetapper")
-(set #ico_desc_10 "OS3.5 Icon by CFou")
-(set #ico_desc_11 "OS3.5 Icon by Dr.Zarkov")
-(set #ico_desc_12 "OS3.5 BoxIcon")
+(set #ico_desc_05 "NewIcon by CFou!")
+(set #ico_desc_06 "OS3.5 Icon")
+(set #ico_desc_07 "OS3.5 Icon by Exotica")
+(set #ico_desc_08 "OS3.5 Icon by Frank")
+(set #ico_desc_09 "OS3.5 Icon by Chris Vella")
+(set #ico_desc_10 "OS3.5 Icon by Codetapper")
+(set #ico_desc_11 "OS3.5 Icon by CFou!")
+(set #ico_desc_12 "OS3.5 Icon by Dr.Zarkov")
+(set #ico_desc_13 "OS3.5 BoxIcon")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -114,7 +116,7 @@
       )
     )
 
-    (				;----- 2 = DIC version (Disk Images) -----
+    (				;----- 2 = DIC (Disk Images) -----
       (P_AskSrcDrv)
   
       ;the following lines must be copied and adjusted for multiple disk images
@@ -131,7 +133,7 @@
       (P_CreateImage)
     )
 
-    (				;----- 3 = DOS version (Files) -----
+    (				;----- 3 = DOS (Files) -----
       (set #AD_disk "A")
       (P_disk)
       (copyfiles
@@ -152,7 +154,7 @@
       (P_XFDDecrunch)
     )
 
-    (				;----- CD version (Files) -----
+    (				;----- 4 = CD (Files) -----
       (message ("\nInsert your %s CD in any drive." @app-name))
       (copyfiles
         (help @copyfiles-help)
@@ -168,7 +170,7 @@
       )
     )
 
-    (				;----- DOS version (Select a single file on an unknown disk) -----
+    (				;----- 5 = DOS (Select a single file on an unknown disk) -----
       (set #SF_prompt "Please select the xxxxxx file (xxxxxx bytes)")
       (set #SF_default_filename "xxxxxx")
       (set #SF_new_filename #SF_default_filename)
@@ -496,6 +498,7 @@
 (procedure P_SelectIcon
   (set #icon 0)
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_13)) ((set #icon 13)(set #icnt (+ 1 #icnt))(set #icon_13 #ico_desc_13)) (set #icon_13 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_12)) ((set #icon 12)(set #icnt (+ 1 #icnt))(set #icon_12 #ico_desc_12)) (set #icon_12 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_10)) ((set #icon 10)(set #icnt (+ 1 #icnt))(set #icon_10 #ico_desc_10)) (set #icon_10 ""))
@@ -528,12 +531,13 @@
       (if #icon_10 ((set #icon-suf #ico_suffix_10) (set #icon-name #ico_desc_10) (P_Icon)))
       (if #icon_11 ((set #icon-suf #ico_suffix_11) (set #icon-name #ico_desc_11) (P_Icon)))
       (if #icon_12 ((set #icon-suf #ico_suffix_12) (set #icon-name #ico_desc_12) (P_Icon)))
+      (if #icon_13 ((set #icon-suf #ico_suffix_13) (set #icon-name #ico_desc_13) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     (set #icon
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
-	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12)
+	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12 #icon_13)
         (default #icon)
         (help @askchoice-help)
       )
@@ -558,6 +562,7 @@
       (set #icon #ico_suffix_10)
       (set #icon #ico_suffix_11)
       (set #icon #ico_suffix_12)
+      (set #icon #ico_suffix_13)
     )
     (copyfiles
       (help @copyfiles-help)
@@ -634,7 +639,6 @@
   (set @default-dest (getenv "WHDLInstPath"))
 )
 
-(set #version 0)
 (P_SelectVersion)
 
 (set #dest
