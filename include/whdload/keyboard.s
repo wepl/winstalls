@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.9 2003/05/14 23:56:44 wepl Exp $
+;  :Version.	$Id: keyboard.s 1.11 2006/08/19 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -10,6 +10,7 @@
 ;		15.05.03 better interrupt acknowledge
 ;		04.03.04 clearing sdr removed, seems not required/causing
 ;			 problems
+;		19.08.06 _key_check added (DJ Mike)
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
@@ -37,8 +38,13 @@
 ;
 ; the optional function:
 ;	_key_help
-; will be called when the 'help' key is pressed, the fuction must return via
+; will be called when the 'help' key is pressed, the function must return via
 ; 'rts' and must not change any registers
+;
+; the optional function:
+;	_key_check
+; will be called after ANY key is pressed. The keycode will be in d0.
+; The function must return using 'rts' and must not modify any registers
 ;
 ; the optional variable:
 ;	 _keycode
@@ -112,6 +118,10 @@ _SetupKeyboard
 		bne	.2
 		bsr	_key_help
 .2
+	ENDC
+
+	IFD _key_check
+		bsr	_key_check
 	ENDC
 
 	IFD _keycode
