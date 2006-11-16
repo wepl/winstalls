@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Clara-Zetkin-Straße 52, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 16.3 2004/07/16 13:55:50 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 16.4 2006/05/07 19:36:47 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -320,57 +320,57 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
     STRUCTURE	ResidentLoader,0
 	ULONG	resload_Install		;private
 	ULONG	resload_Abort
-		; return to operating system
+		; return to operating system (4)
 		; IN: (a7) = ULONG  reason for aborting
 		;   (4,a7) = ULONG  primary error code
 		;   (8,a7) = ULONG  secondary error code
 		; ATTENTION this routine must called via JMP! (not JSR)
 	ULONG	resload_LoadFile
-		; load file to memory
+		; load file to memory (8)
 		; IN :	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = ULONG  success (size of file)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_SaveFile
-		; write memory to file
+		; write memory to file (c)
 		; IN :	d0 = ULONG  size
 		;	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_SetCACR
-		; set cachebility for BaseMem
+		; set cachebility for BaseMem (10)
 		; IN :	d0 = ULONG  new setup
 		;	d1 = ULONG  mask
 		; OUT :	d0 = ULONG  old setup
 	ULONG	resload_ListFiles
-		; list filenames of directory
+		; list filenames of directory (14)
 		; IN :	d0 = ULONG  buffer size
 		;	a0 = CSTR   name of directory to scan
 		;	a1 = APTR   buffer (must be located in Slave)
 		; OUT :	d0 = ULONG  amount of names in buffer
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_Decrunch
-		; uncompress data in memory
+		; uncompress data in memory (18)
 		; IN :	a0 = APTR   source
 		;	a1 = APTR   destination (can be equal to source)
 		; OUT :	d0 = ULONG  uncompressed size
 	ULONG	resload_LoadFileDecrunch
-		; load file and uncompress
+		; load file and uncompress (1c)
 		; IN :	a0 = CSTR   filename
 		;	a1 = APTR   address
 		; OUT :	d0 = ULONG  success (size of file)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_FlushCache
-		; clear CPU caches
+		; clear CPU caches (20)
 		; IN :	-
 		; OUT :	-
 	ULONG	resload_GetFileSize
-		; get size of a file
+		; get size of a file (24)
 		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = ULONG  size of file
 	ULONG	resload_DiskLoad
-		; load part from diskimage
+		; load part from diskimage (28)
 		; IN :	d0 = ULONG  offset
 		;	d1 = ULONG  size
 		;	d2 = ULONG  disk number
@@ -381,6 +381,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 2
 
 	ULONG	resload_DiskLoadDev
+		; load part from physical disk via trackdisk (2c)
 		; IN :	d0 = ULONG  offset
 		;	d1 = ULONG  size
 		;	a0 = APTR   destination
@@ -391,7 +392,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 3
 
 	ULONG	resload_CRC16
-		; calculate 16 bit CRC checksum
+		; calculate 16 bit CRC checksum (30)
 		; IN :	d0 = ULONG  size
 		;	a0 = APTR   address
 		; OUT :	d0 = UWORD  CRC checksum
@@ -399,10 +400,11 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 5
 
 	ULONG	resload_Control
+		; misc control, get/set variables (34)
 		; IN :	a0 = STRUCT taglist
 		; OUT :	d0 = BOOL   success
 	ULONG	resload_SaveFileOffset
-		; write memory to file at offset
+		; write memory to file at offset (38)
 		; IN :	d0 = ULONG  size
 		;	d1 = ULONG  offset
 		;	a0 = CSTR   filename
@@ -413,27 +415,27 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 6
 
 	ULONG	resload_ProtectRead
-		; mark memory as read protected
+		; mark memory as read protected (3c)
 		; IN :	d0 = ULONG  length
 		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectReadWrite
-		; mark memory as read and write protected
+		; mark memory as read and write protected (40)
 		; IN :	d0 = ULONG  length
 		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectWrite
-		; mark memory as write protected
+		; mark memory as write protected (44)
 		; IN :	d0 = ULONG  length
 		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_ProtectRemove
-		; remove memory protection
+		; remove memory protection (48)
 		; IN :	d0 = ULONG  length
 		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_LoadFileOffset
-		; load part of file to memory
+		; load part of file to memory (4c)
 		; IN :	d0 = ULONG  size
 		;	d1 = ULONG  offset
 		;	a0 = CSTR   name of file
@@ -444,16 +446,16 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 8
 
 	ULONG	resload_Relocate
-		; relocate AmigaDOS executable
+		; relocate AmigaDOS executable (50)
 		; IN :	a0 = APTR   address (source=destination)
 		;	a1 = STRUCT taglist
 		; OUT :	d0 = ULONG  size
 	ULONG	resload_Delay
-		; wait some time
+		; wait some time (54)
 		; IN :	d0 = ULONG  time to wait in 1/10 seconds
 		; OUT :	-
 	ULONG	resload_DeleteFile
-		; delete file
+		; delete file (58)
 		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
@@ -461,17 +463,17 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 10
 
 	ULONG	resload_ProtectSMC
-		; detect self modifying code
+		; detect self modifying code (5c)
 		; IN :	d0 = ULONG  length
 		;	a0 = APTR   address
 		; OUT :	-
 	ULONG	resload_SetCPU
-		; control CPU setup
+		; control CPU setup (60)
 		; IN :	d0 = ULONG  properties
 		;	d1 = ULONG  mask
 		; OUT :	d0 = ULONG  old properties
 	ULONG	resload_Patch
-		; apply patchlist
+		; apply patchlist (64)
 		; IN :	a0 = APTR   patchlist
 		;	a1 = APTR   destination address
 		; OUT :	-
@@ -479,45 +481,45 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 ******* the following functions require ws_Version >= 11
 
 	ULONG	resload_LoadKick
-		; load kickstart image
+		; load kickstart image (68)
 		; IN :	d0 = ULONG  length of image
 		;	d1 = UWORD  crc16 of image
 		;	a0 = CSTR   basename of image
 		; OUT :	-
 	ULONG	resload_Delta
-		; apply wdelta
+		; apply wdelta (6c)
 		; IN :	a0 = APTR   src data
 		;	a1 = APTR   dest data
 		;	a2 = APTR   wdelta data
 		; OUT :	-
 	ULONG	resload_GetFileSizeDec
-		; get size of a packed file
+		; get size of a packed file (70)
 		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = ULONG  size of file
 
 ******* the following functions require ws_Version >= 15
 
 	ULONG	resload_PatchSeg
-		; apply patchlist to a segment list
+		; apply patchlist to a segment list (74)
 		; IN :	a0 = APTR   patchlist
 		;	a1 = BPTR   segment list
 		; OUT :	-
 
 	ULONG	resload_Examine
-		; apply patchlist to a segment list
+		; apply patchlist to a segment list (78)
 		; IN :	a0 = CSTR   name
 		;	a1 = APTR   struct FileInfoBlock (260 bytes)
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 	ULONG	resload_ExNext
-		; apply patchlist to a segment list
+		; apply patchlist to a segment list (7c)
 		; IN :	a0 = APTR   struct FileInfoBlock (260 bytes)
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 	ULONG	resload_GetCustom
-		; get Custom argument
+		; get Custom argument (80)
 		; IN :	d0 = ULONG  length of buffer
 		;	d1 = ULONG  reserved, must be 0
 		;	a0 = APTR   buffer
@@ -705,7 +707,7 @@ PL_AL		MACRO			;add long
 ; there are two macros provided for the DATA command, if you want change a 
 ; string PL_STR can be used:
 ;	PL_STR	$340,<NewString!>
-; for binary data you must use PL_DATA like the follwing example:
+; for binary data you must use PL_DATA like the following example:
 ;	PL_DATA	$350,.stop-.strt
 ; .strt	dc.b	2,3,$ff,'a',0
 ; .stop	EVEN
