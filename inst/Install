@@ -1,4 +1,4 @@
-; $Id: Install 1.10 2006/05/07 19:38:46 wepl Exp wepl $
+; $Id: Install 1.11 2006/06/26 09:20:56 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
@@ -13,22 +13,26 @@
 (set #extra2-file "Extra2")		;name of second extra file
 (set #extra3-file "Extra3")		;name of third extra file
 (set #prefix @app-name)			;name of slave, directory
-(set #version_suffix "")		;
+(set #prefix-slave "")
 
 (set #ico_suffix_00 "inf")		;Icon suffixes (not all of these must exist)
 (set #ico_suffix_01 "magicwb")
 (set #ico_suffix_02 "romicon")
 (set #ico_suffix_03 "newicon")
-(set #ico_suffix_04 "newexot")
-(set #ico_suffix_05 "newcfou")
-(set #ico_suffix_06 "colicon")
-(set #ico_suffix_07 "colexot")
-(set #ico_suffix_08 "colfrank")
-(set #ico_suffix_09 "colchris")
-(set #ico_suffix_10 "colcode")
-(set #ico_suffix_11 "colcfou")
-(set #ico_suffix_12 "colzarkov")
-(set #ico_suffix_13 "boxicon")
+(set #ico_suffix_04 "newicon2")
+(set #ico_suffix_05 "newexot")
+(set #ico_suffix_06 "newcfou")
+(set #ico_suffix_07 "colicon")
+(set #ico_suffix_08 "colicon2")
+(set #ico_suffix_09 "colicon3")
+(set #ico_suffix_10 "colexot")
+(set #ico_suffix_11 "colfrank")
+(set #ico_suffix_12 "colchris")
+(set #ico_suffix_13 "colcode")
+(set #ico_suffix_14 "colcfou")
+(set #ico_suffix_15 "colcfou2")
+(set #ico_suffix_16 "colzarkov")
+(set #ico_suffix_17 "boxicon")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -37,16 +41,20 @@
 (set #ico_desc_01 "MagicWB Icon")
 (set #ico_desc_02 "RomIcon")
 (set #ico_desc_03 "NewIcon")
-(set #ico_desc_04 "NewIcon by Exotica")
-(set #ico_desc_05 "NewIcon by CFou!")
-(set #ico_desc_06 "OS3.5 Icon")
-(set #ico_desc_07 "OS3.5 Icon by Exotica")
-(set #ico_desc_08 "OS3.5 Icon by Frank")
-(set #ico_desc_09 "OS3.5 Icon by Chris Vella")
-(set #ico_desc_10 "OS3.5 Icon by Codetapper")
-(set #ico_desc_11 "OS3.5 Icon by CFou!")
-(set #ico_desc_12 "OS3.5 Icon by Dr.Zarkov")
-(set #ico_desc_13 "OS3.5 BoxIcon")
+(set #ico_desc_04 "NewIcon 2")
+(set #ico_desc_05 "NewIcon by Exotica")
+(set #ico_desc_06 "NewIcon by CFou!")
+(set #ico_desc_07 "OS3.5 Icon")
+(set #ico_desc_08 "OS3.5 Icon 2")
+(set #ico_desc_09 "OS3.5 Icon 3")
+(set #ico_desc_10 "OS3.5 Icon by Exotica")
+(set #ico_desc_11 "OS3.5 Icon by Frank")
+(set #ico_desc_12 "OS3.5 Icon by Chris Vella")
+(set #ico_desc_13 "OS3.5 Icon by Codetapper")
+(set #ico_desc_14 "OS3.5 Icon by CFou!")
+(set #ico_desc_15 "OS3.5 Icon by CFou! 2")
+(set #ico_desc_16 "OS3.5 Icon by Dr.Zarkov")
+(set #ico_desc_17 "OS3.5 BoxIcon")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -60,21 +68,47 @@
         (askchoice
           (prompt ("Which version of %s would you like to install?" @app-name))
           (default 0)
-          (choices "Original release (RawDIC)" "Alternate version (Patcher)" "Budget re-release (DIC)" "Hit-Squad version (Files)" "CD version (Files)" "Defjam compact (Single File)")
+	  ;
+	  ; it is recommend to simply set choices which are not required to an
+	  ; empty string ala "", because then other procedures must bot changed
+	  ; because the number of the #version remains unchanged
+	  ;
+	  (choices
+		"Original release (RawDIC)"
+		"Alternate version (Patcher)"
+		"Budget re-release (DIC)"
+		"Hit-Squad version (Files)"
+		"CD/CDTV/CD³² version (Files)"
+		"Defjam compact (Single File)"
+	  )
           (help @askchoice-help)
         )
       )
-
-      ; Certain versions may use different slaves, so set that up here if
-      ; required. It will change the install directory and the slaves used.
-      ; 
-      ;(select #version
-      ;  ("")
-      ;  (set #version_suffix "AGA")		;Tack on AGA to the slave name(s)
-      ;  (set #version_suffix "CD32")		;Tack on CD32 to the slave name(s)
-      ;)
-
-      (set #prefix ("%s%s" #prefix #version_suffix))
+      ;
+      ; Certain versions may use different slaves, islaves, imager and icons.
+      ;	This can be set up here if required.
+      ; If you set #prefix it will change: install directory, islave, imager
+      ; and icon. If you set #prefix-slave it only changes the slave name.
+      ; You may also set the #sub-dir here if this is not required with all
+      ; versions
+      ;
+      (select #version
+	; 0 = RawDIC
+        ("")
+	; 1 = Patcher
+        ("")
+	; 2 = DIC
+        ("")
+	; 3 = Files
+	(set #prefix ("%s%s" #prefix "AGA"))
+	; 4 = CD Files
+	(
+	  (set #prefix-slave (cat #prefix "CDTV"))
+	  (set #sub-dir "data")
+	)
+	; 5 = Single File
+	("")
+      )
     )
   )
 )
@@ -200,8 +234,8 @@
 (procedure P_MakeIcons
   ; Uncomment the following lines if you have a separate intro slave/icon
   ;(set #icon_desc "intro")
-  ;(set #icon_prefix ("%s%s" "Intro" #version_suffix))
-  ;(set #icon_slave #icon_prefix)
+  ;(set #icon_prefix ("%s%s" #prefix #icon_desc))
+  ;(set #icon_slave #prefix-slave)
   ;(set #icon_set_slave_preload "")
   ;(set #icon_set_deftool_stack "true")
   ;(P_CopySlave)
@@ -209,12 +243,13 @@
 
   (set #icon_desc "game")
   (set #icon_prefix #prefix)
-  (set #icon_slave #icon_prefix)
+  (set #icon_slave #prefix-slave)
   (set #icon_set_slave_preload "")
   (set #icon_set_deftool_stack "true")
   (P_CopySlave)
   (P_SelectIcon)
 )
+
 
 ; ** ATTENTION! YOU SHOULD NOT HAVE TO CHANGE ANYTHING BEYOND THIS POINT! **
 
@@ -259,14 +294,20 @@
 ;----------------------------
 ; Wait for inserting disk
 ; IN:  #AD_disk - name of disk
+;      #AD_diskname - optional name of disk to request
 ; OUT: -
 
 (procedure P_disk
+  (if #AD_diskname
+    ("")
+    (set #AD_diskname #AD_disk)
+  )
   (askdisk
     (dest #AD_disk)
-    (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_disk))
+    (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_diskname))
     (help @askdisk-help)
   )
+  (set #AD_diskname "")
 )
 
 ;----------------------------
@@ -437,15 +478,24 @@
 )
 
 ;----------------------------
-; copy file including icon if exist
+; copy file/directory including icon if exist
 ; #copy-file - name of file to copy
 
 (procedure P_CopyFile
-  (if (exists #copy-file) (
-    (copyfiles
-      (help @copyfiles-help)
-      (source #copy-file)
-      (dest #dest)
+  (set #CF_type (exists #copy-file))
+  (if #CF_type (
+    (if (= #CF_type 2)
+      ((copyfiles
+          (help @copyfiles-help)
+          (source #copy-file)
+          (dest (tackon #dest #copy-file))
+	  (all)
+      ))
+      ((copyfiles
+          (help @copyfiles-help)
+          (source #copy-file)
+          (dest #dest)
+      ))
     )
     (if (exists ("%s.info" #copy-file)) (
       (copyfiles
@@ -498,6 +548,10 @@
 (procedure P_SelectIcon
   (set #icon 0)
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_17)) ((set #icon 17)(set #icnt (+ 1 #icnt))(set #icon_17 #ico_desc_17)) (set #icon_17 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_16)) ((set #icon 16)(set #icnt (+ 1 #icnt))(set #icon_16 #ico_desc_16)) (set #icon_16 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_15)) ((set #icon 15)(set #icnt (+ 1 #icnt))(set #icon_15 #ico_desc_15)) (set #icon_15 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_14)) ((set #icon 14)(set #icnt (+ 1 #icnt))(set #icon_14 #ico_desc_14)) (set #icon_14 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_13)) ((set #icon 13)(set #icnt (+ 1 #icnt))(set #icon_13 #ico_desc_13)) (set #icon_13 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_12)) ((set #icon 12)(set #icnt (+ 1 #icnt))(set #icon_12 #ico_desc_12)) (set #icon_12 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_11)) ((set #icon 11)(set #icnt (+ 1 #icnt))(set #icon_11 #ico_desc_11)) (set #icon_11 ""))
@@ -532,12 +586,16 @@
       (if #icon_11 ((set #icon-suf #ico_suffix_11) (set #icon-name #ico_desc_11) (P_Icon)))
       (if #icon_12 ((set #icon-suf #ico_suffix_12) (set #icon-name #ico_desc_12) (P_Icon)))
       (if #icon_13 ((set #icon-suf #ico_suffix_13) (set #icon-name #ico_desc_13) (P_Icon)))
+      (if #icon_14 ((set #icon-suf #ico_suffix_14) (set #icon-name #ico_desc_14) (P_Icon)))
+      (if #icon_15 ((set #icon-suf #ico_suffix_15) (set #icon-name #ico_desc_15) (P_Icon)))
+      (if #icon_16 ((set #icon-suf #ico_suffix_16) (set #icon-name #ico_desc_16) (P_Icon)))
+      (if #icon_17 ((set #icon-suf #ico_suffix_17) (set #icon-name #ico_desc_17) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     (set #icon
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
-	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12 #icon_13)
+	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16 #icon_17)
         (default #icon)
         (help @askchoice-help)
       )
@@ -563,6 +621,10 @@
       (set #icon #ico_suffix_11)
       (set #icon #ico_suffix_12)
       (set #icon #ico_suffix_13)
+      (set #icon #ico_suffix_14)
+      (set #icon #ico_suffix_15)
+      (set #icon #ico_suffix_16)
+      (set #icon #ico_suffix_17)
     )
     (copyfiles
       (help @copyfiles-help)
@@ -640,6 +702,7 @@
 )
 
 (P_SelectVersion)
+(if (= #prefix-slave "") (set #prefix-slave #prefix))
 
 (set #dest
   (askdir
