@@ -151,7 +151,6 @@
     )
 
     (				;----- 2 = DIC (Disk Images) -----
-      (P_AskSrcDrv)
   
       ;the following lines must be copied and adjusted for multiple disk images
   
@@ -160,16 +159,17 @@
       (set #CI_disklen 901120)
       (set #CI_skiptrk "")
       (P_CreateImage)
-  
+
       ;for example...
       (set #CI_disknum 2)
       (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
       (P_CreateImage)
+
     )
 
     (				;----- 3 = DOS (Files) -----
       (set #AD_disk "A")
-      (P_disk)
+      (P_AskDisk)
       (copyfiles
         (help @copyfiles-help)
         (source ("%s:" #AD_disk))
@@ -177,7 +177,7 @@
         (pattern "~(c|devs|s|.#?|intro)")
       )
       (set #AD_disk "B")
-      (P_disk)
+      (P_AskDisk)
       (copyfiles
         (help @copyfiles-help)
         (source ("%s:" #AD_disk))
@@ -292,87 +292,23 @@
 )
 
 ;----------------------------
-; Wait for inserting disk
-; IN:  #AD_disk - name of disk
-;      #AD_diskname - optional name of disk to request
+; variables to handle disk image files
+
+(set #DI_mode 9)
+(set #DI_image "SYS:")
+(set #DI_imagetmp "T:WHDI.image")
+(set #DI_mount "T:WHDI.mountlist")
+(set #DI_dev "WHDI")
+
+;----------------------------
+; functions to handle disk image files
+; ask the name of the image file
+; IN:  -
 ; OUT: -
 
-(set #AD_mode 9)
-(set #AD_image "SYS:")
-(set #AD_imagetmp "T:WHDI.image")
-(set #AD_mount "T:WHDI.mountlist")
-(set #AD_dev "WHDI:")
-
-(procedure P_disk_askimage
-  (if (getenv "WHDLImage")
-    (set #AD_image (getenv "WHDLImage"))
-  )
-  (set #AD_image
-    (askfile
-      (prompt "Please select disk image which is the disk named \"" #AD_diskname "\".\n"
-		"Beware the Installer has problems with long file names!")
-      (default #AD_image)
-      (help @askfile-help)
-    )
-  )
-  (run ("setenv WHDLImage \"%s\"\ncopy ENV:WHDLImage ENVARC:" #AD_image))
-)
-
-(procedure P_disk_insertimage
-  (if 
-    (<> 0 (run ("DiskImageCtrl Drive=%s ReadOnly Image=\"%s\" >CON:///1000//CLOSE/AUTO" #AD_dev #AD_image)))
-    (abort 
-	"Sorry, could not load the Image to the Device.\n"
-	"Make sure you have correctly installed aminet:disk/misc/diskimage.lha,\n"
-	"you have selected the right disk image\n"
-	"and there are enough free ressources."
-    )
-  )
-  (exists ("%s:" #AD_disk) (noreq))
-)
-
-(procedure P_disk_mount
-  (if (exists #AD_dev (noreq))
-    ("")
-    (
-      (textfile
-        (dest #AD_mount)
-        (append
-		"/**/\n"
-		#AD_dev "\n"
-		"\tDevice = diskimage.device\n"
-		"\tUnit = 9\n"
-		"\tFlags = 0\n"
-		"\tSurfaces = 2\n"
-		"\tBlocksPerTrack = 11\n"
-		"\tReserved = 2\n"
-		"\tLowCyl = 0\n"
-		"\tHighCyl = 79\n"
-		"\tStackSize = 4096\n"
-		"\tGlobVec = -1\n"
-		"\tActivate = 1\n"
-        )
-        (help @textfile-help)
-      )
-      (if 
-        (<> 0 (run ("mount %s FROM %s >CON:///1000//CLOSE/AUTO" #AD_dev #AD_mount)))
-        (abort 
-	  "Sorry, could not mount the Device " #AD_dev ".\n"
-	  "Make sure you have correctly installed the package " #package "\n"
-	  "and there are enough free ressources and Unit #9 is not already used."
-        )
-      )
-    )
-  )
-)
-
-(procedure P_disk
-  (if #AD_diskname
-    ("")
-    (set #AD_diskname #AD_disk)
-  )
-  (if (> #AD_mode 3)
-    (set #AD_mode
+(procedure PDI_AskMode
+  (if (> #DI_mode 3)
+    (set #DI_mode
       (askchoice
 	(prompt "In which form of media are your disks to install this program?")
 	(default 0)
@@ -398,7 +334,127 @@
       )
     )
   )
-  (select #AD_mode
+)
+
+;----------------------------
+; functions to handle disk image files
+; ask the name of the image file
+; IN:  #DI_diskname - name of the disk to insert
+; OUT: -
+
+(procedure PDI_AskImage
+  (if (getenv "WHDLImage")
+    (set #DI_image (getenv "WHDLImage"))
+  )
+  (set #DI_image
+    (askfile
+      (prompt "Please select disk image which is the disk named \"" #DI_diskname "\".\n"
+		"Beware the Installer has problems with long file names!")
+      (default #DI_image)
+      (help @askfile-help)
+    )
+  )
+  (run ("setenv WHDLImage \"%s\"\ncopy ENV:WHDLImage ENVARC:" #DI_image))
+)
+
+;----------------------------
+; functions to handle disk image files
+; insert the image file into the virtual drive
+; IN:  -
+; OUT: -
+
+(procedure PDI_Insert
+  (if 
+    (<> 0 (run ("DiskImageCtrl Drive=%s: ReadOnly Image=\"%s\" >CON:///1000//CLOSE/AUTO" #DI_dev #DI_image)))
+    (abort 
+	"Sorry, could not load the Image to the Device.\n"
+	"Make sure you have correctly installed aminet:disk/misc/diskimage.lha,\n"
+	"you have selected the right disk image\n"
+	"and there are enough free ressources."
+    )
+  )
+)
+
+;----------------------------
+; functions to handle disk image files
+; convert alien image to adf
+; IN:  -
+; OUT: -
+
+(procedure PDI_Convert
+  (set #program "tw2adf")
+  (set #package "TrackWarp (http://www.whdload.de/whdload/TrackWarp15.lha)")
+  (P_ChkRun_Package)
+  (run ("DiskImageCtrl Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_dev))
+  (if
+    (<> 0 (run ("tw2adf \"%s\" %s Quiet Overwrite >CON:///1000//CLOSE/AUTO" #DI_image #DI_imagetmp)))
+    (abort
+	"Sorry, could not convert the specified image file.\n"
+	"Make sure you have correctly installed the package " #package
+	" and there is enough free memory."
+    )
+  )
+  (set #DI_image #DI_imagetmp)
+)
+
+;----------------------------
+; functions to handle disk image files
+; mount the virtual drive
+; IN:  -
+; OUT: -
+
+(procedure PDI_Mount
+  (set #program "DiskImageCtrl")
+  (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
+  (P_ChkRun_Package)
+  (if (getassign #DI_dev "d")
+    ("")
+    (
+      (textfile
+	(dest #DI_mount)
+        (append
+		"/**/\n"
+		#DI_dev ":\n"
+		"\tDevice = diskimage.device\n"
+		"\tUnit = 9\n"
+		"\tFlags = 0\n"
+		"\tSurfaces = 2\n"
+		"\tBlocksPerTrack = 11\n"
+		"\tReserved = 2\n"
+		"\tLowCyl = 0\n"
+		"\tHighCyl = 79\n"
+		"\tStackSize = 4096\n"
+		"\tGlobVec = -1\n"
+		"\tActivate = 1\n"
+        )
+        (help @textfile-help)
+      )
+      (if 
+	(<> 0 (run ("mount %s: FROM %s >CON:///1000//CLOSE/AUTO" #DI_dev #DI_mount)))
+        (abort 
+	  "Sorry, could not mount the Device " #DI_dev ":.\n"
+	  "Make sure you have correctly installed the package " #package "\n"
+	  "and there are enough free ressources and Unit #9 is not already used."
+        )
+      )
+    )
+  )
+)
+
+;----------------------------
+; Wait for inserting a named disk
+; IN:  #AD_disk - name of disk
+;      #AD_diskname - optional name of disk to request
+; OUT: -
+
+(procedure P_AskDisk
+  (if #AD_diskname
+    ("")
+    (set #AD_diskname #AD_disk)
+  )
+  (PDI_AskMode)
+  (set #DI_diskname #AD_diskname)
+  (select #DI_mode
     ;0 = floppy
     (askdisk
       (dest #AD_disk)
@@ -407,37 +463,23 @@
     )
     ;1 = adf
     (
-      (set #program "DiskImageCtrl")
-      (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
-      (P_ChkRun_Package)
-      (P_disk_mount)
+      (PDI_Mount)
       (until
         (exists ("%s:" #AD_disk) (noreq))
-        (P_disk_askimage)
-        (P_disk_insertimage)
+	(PDI_AskImage)
+	(PDI_Insert)
+	(exists ("%s:" #AD_disk) (noreq))     ; to refresh the dos list
       )
     )
     ;1 = warp
     (
-      (set #program "DiskImageCtrl")
-      (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
-      (P_ChkRun_Package)
-      (P_disk_mount)
-      (set #program "tw2adf")
-      (set #package "TrackWarp (http://www.whdload.de/whdload/TrackWarp15.lha)")
-      (P_ChkRun_Package)
+      (PDI_Mount)
       (until
         (exists ("%s:" #AD_disk) (noreq))
-        (P_disk_askimage)
-        (if 
-          (<> 0 (run ("tw2adf \"%s\" %s Quiet Overwrite >CON:///1000//CLOSE/AUTO" #AD_image #AD_imagetmp)))
-          (abort 
-	    "Sorry, could not convert the specified image file.\n"
-	    "Make sure you have correctly installed the package " #package 
-	    " and there is enough free memory."
-          )
-        )
-        (P_disk_insertimage)
+	(PDI_AskImage)
+	(PDI_Convert)
+	(PDI_Insert)
+	(exists ("%s:" #AD_disk) (noreq))     ; to refresh the dos list
       )
     )
   )
@@ -448,63 +490,68 @@
 ; ask for source drive (DIC installs)
 
 (procedure P_AskSrcDrv
-  (set #dcnt 0)
-  (set #CI_cfg (getenv "WHDLSrcDrv"))
-  (if (#CI_cfg)
-    (if (getassign (substr #CI_cfg 0 (- (strlen #CI_cfg) 1)) "d")
-      (set #dcnt (+ 1 #dcnt)) (set #CI_cfg "")
-    )
-  )
-  (set #CI_df0 "")
-  (if (<> "DF0:" #CI_cfg)
-    (if (getassign "DF0" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df0 "DF0:")))
-  )
-  (set #CI_df1 "")
-  (if (<> "DF1:" #CI_cfg)
-    (if (getassign "DF1" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df1 "DF1:")))
-  )
-  (set #CI_df2 "")
-  (if (<> "DF2:" #CI_cfg)
-    (if (getassign "DF2" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df2 "DF2:")))
-  )
-  (set #CI_df3 "")
-  (if (<> "DF3:" #CI_cfg)
-    (if (getassign "DF3" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df3 "DF3:")))
-  )
-  (set #CI_rad "")
-  (if (<> "RAD:" #CI_cfg)
-    (if (getassign "RAD" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_rad "RAD:")))
-  )
-  (set #CI_ff0 "")
-  (if (<> "FF0:" #CI_cfg)
-    (if (getassign "FF0" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_ff0 "FF0:")))
-  )
-  (if (< #dcnt 1) (set #CI_cfg "DF0:"))
-  (set #CI_ask "Enter Device Name")
-  (set #CI_drive
-    (askchoice
-      (prompt "Select source drive for diskimages")
-      (choices #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3 #CI_rad #CI_ff0 #CI_ask)
-      (help @askchoice-help)
-    )
-  )
-  (select #CI_drive
-    (set #CI_drive #CI_cfg)
-    (set #CI_drive #CI_df0)
-    (set #CI_drive #CI_df1)
-    (set #CI_drive #CI_df2)
-    (set #CI_drive #CI_df3)
-    (set #CI_drive #CI_rad)
-    (set #CI_drive #CI_ff0)
-    (set #CI_drive
-      (askstring
-        (prompt "Select source drive for diskimages")
-        (default "DF0:")
-        (help @askstring-help)
+  (if #CI_drive
+    ("")
+    (
+      (set #dcnt 0)
+      (set #CI_cfg (getenv "WHDLSrcDrv"))
+      (if (#CI_cfg)
+        (if (getassign (substr #CI_cfg 0 (- (strlen #CI_cfg) 1)) "d")
+          (set #dcnt (+ 1 #dcnt)) (set #CI_cfg "")
+        )
       )
+      (set #CI_df0 "")
+      (if (<> "DF0:" #CI_cfg)
+        (if (getassign "DF0" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df0 "DF0:")))
+      )
+      (set #CI_df1 "")
+      (if (<> "DF1:" #CI_cfg)
+        (if (getassign "DF1" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df1 "DF1:")))
+      )
+      (set #CI_df2 "")
+      (if (<> "DF2:" #CI_cfg)
+        (if (getassign "DF2" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df2 "DF2:")))
+      )
+      (set #CI_df3 "")
+      (if (<> "DF3:" #CI_cfg)
+        (if (getassign "DF3" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_df3 "DF3:")))
+      )
+      (set #CI_rad "")
+      (if (<> "RAD:" #CI_cfg)
+        (if (getassign "RAD" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_rad "RAD:")))
+      )
+      (set #CI_ff0 "")
+      (if (<> "FF0:" #CI_cfg)
+        (if (getassign "FF0" "d") ((set #dcnt (+ 1 #dcnt)) (set #CI_ff0 "FF0:")))
+      )
+      (if (< #dcnt 1) (set #CI_cfg "DF0:"))
+      (set #CI_ask "Enter Device Name")
+      (set #CI_drive
+        (askchoice
+          (prompt "Select source drive for diskimages")
+          (choices #CI_cfg #CI_df0 #CI_df1 #CI_df2 #CI_df3 #CI_rad #CI_ff0 #CI_ask)
+          (help @askchoice-help)
+        )
+      )
+      (select #CI_drive
+        (set #CI_drive #CI_cfg)
+        (set #CI_drive #CI_df0)
+        (set #CI_drive #CI_df1)
+        (set #CI_drive #CI_df2)
+        (set #CI_drive #CI_df3)
+        (set #CI_drive #CI_rad)
+        (set #CI_drive #CI_ff0)
+        (set #CI_drive
+          (askstring
+            (prompt "Select source drive for diskimages")
+            (default "DF0:")
+            (help @askstring-help)
+          )
+        )
+      )
+      (run ("setenv WHDLSrcDrv \"%s\"\ncopy ENV:WHDLSrcDrv ENVARC:" #CI_drive))
     )
   )
-  (run ("setenv WHDLSrcDrv \"%s\"\ncopy ENV:WHDLSrcDrv ENVARC:" #CI_drive))
 )
 
 ;----------------------------
@@ -569,10 +616,33 @@
 ; #CI_drive    - drive to create image from
 
 (procedure P_CreateImage
-  (message
-    (cat
-	"\nInsert \"" #CI_diskname "\" into drive " #CI_drive "!\n\n"
-	"(make sure it's the right disk because it will not be checked)"
+  (PDI_AskMode)
+  (set #DI_diskname #CI_diskname)
+  (select #DI_mode
+    ;0 = floppy
+    (
+      (P_AskSrcDrv)
+      (message
+        (cat
+	  "\nInsert \"" #CI_diskname "\" into drive " #CI_drive "!\n\n"
+	  "(make sure it's the right disk because it will not be checked)"
+	)
+      )
+    )
+    ;1 = adf
+    (
+      (set #CI_drive ("%s:" #DI_dev))
+      (PDI_Mount)
+      (PDI_AskImage)
+      (PDI_Insert)
+    )
+    ;1 = warp
+    (
+      (set #CI_drive ("%s:" #DI_dev))
+      (PDI_Mount)
+      (PDI_AskImage)
+      (PDI_Convert)
+      (PDI_Insert)
     )
   )
   (if (= #CI_skiptrk "")
