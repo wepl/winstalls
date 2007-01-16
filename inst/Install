@@ -1,4 +1,4 @@
-; $Id: Install 1.11 2006/06/26 09:20:56 wepl Exp wepl $
+; $Id: Install 1.12 2006/11/16 08:21:03 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
@@ -260,7 +260,7 @@
 ; #program - to check
 
 (procedure P_ChkRun
-  (set #package "WHDLoad")
+  (set #package "WHDLoad (http://www.whdload.de)")
   (P_ChkRun_Package)
 )
 (procedure P_ChkRun_Package
@@ -270,7 +270,7 @@
       (cat
 	"You must install \"" #program "\" first!\n"
 	"It must be accessible via the path.\n"
-	"You can find it in the " #package " package."
+	"You can find it in the package " #package "."
       )
     )
   )
@@ -283,11 +283,11 @@
 
 (procedure P_XFDDecrunch
   (set #program "xfddecrunch")
-  (set #package "XFD")
+  (set #package "XFD (aminet:util/pack/xfdmaster.lha)")
   (P_ChkRun_Package)
   (if
-     (<> 0 (run ("%s \"%s\" >CON:///1000//CLOSE" #program #file)))
-     (abort ("\"%s\" has failed to decompress the file \"%s\"" #program #file))
+    (<> 0 (run ("%s \"%s\" >CON:///1000//CLOSE" #program #file)))
+    (abort ("\"%s\" has failed to decompress the file \"%s\"" #program #file))
   )
 )
 
@@ -297,15 +297,149 @@
 ;      #AD_diskname - optional name of disk to request
 ; OUT: -
 
+(set #AD_mode 9)
+(set #AD_image "SYS:")
+(set #AD_imagetmp "T:WHDI.image")
+(set #AD_mount "T:WHDI.mountlist")
+(set #AD_dev "WHDI:")
+
+(procedure P_disk_askimage
+  (if (getenv "WHDLImage")
+    (set #AD_image (getenv "WHDLImage"))
+  )
+  (set #AD_image
+    (askfile
+      (prompt "Please select disk image which is the disk named \"" #AD_diskname "\".\n"
+		"Beware the Installer has problems with long file names!")
+      (default #AD_image)
+      (help @askfile-help)
+    )
+  )
+  (run ("setenv WHDLImage \"%s\"\ncopy ENV:WHDLImage ENVARC:" #AD_image))
+)
+
+(procedure P_disk_insertimage
+  (if 
+    (<> 0 (run ("DiskImageCtrl Drive=%s ReadOnly Image=\"%s\" >CON:///1000//CLOSE/AUTO" #AD_dev #AD_image)))
+    (abort 
+	"Sorry, could not load the Image to the Device.\n"
+	"Make sure you have correctly installed aminet:disk/misc/diskimage.lha,\n"
+	"you have selected the right disk image\n"
+	"and there are enough free ressources."
+    )
+  )
+  (exists ("%s:" #AD_disk) (noreq))
+)
+
+(procedure P_disk_mount
+  (if (exists #AD_dev (noreq))
+    ("")
+    (
+      (textfile
+        (dest #AD_mount)
+        (append
+		"/**/\n"
+		#AD_dev "\n"
+		"\tDevice = diskimage.device\n"
+		"\tUnit = 9\n"
+		"\tFlags = 0\n"
+		"\tSurfaces = 2\n"
+		"\tBlocksPerTrack = 11\n"
+		"\tReserved = 2\n"
+		"\tLowCyl = 0\n"
+		"\tHighCyl = 79\n"
+		"\tStackSize = 4096\n"
+		"\tGlobVec = -1\n"
+		"\tActivate = 1\n"
+        )
+        (help @textfile-help)
+      )
+      (if 
+        (<> 0 (run ("mount %s FROM %s >CON:///1000//CLOSE/AUTO" #AD_dev #AD_mount)))
+        (abort 
+	  "Sorry, could not mount the Device " #AD_dev ".\n"
+	  "Make sure you have correctly installed the package " #package "\n"
+	  "and there are enough free ressources and Unit #9 is not already used."
+        )
+      )
+    )
+  )
+)
+
 (procedure P_disk
   (if #AD_diskname
     ("")
     (set #AD_diskname #AD_disk)
   )
-  (askdisk
-    (dest #AD_disk)
-    (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_diskname))
-    (help @askdisk-help)
+  (if (> #AD_mode 3)
+    (set #AD_mode
+      (askchoice
+	(prompt "In which form of media are your disks to install this program?")
+	(default 0)
+	(choices
+	  "real floppy disks"
+	  "standard disk images (adf, 901120 bytes)"
+	  "CAPS/SPS images or warp files (ipf,mfm,wrp,wwp,...)"
+	)
+	(help
+	  "To install from 'real floppy disks' you have to insert your physically disks into"
+	  " any of your floppy drives.\n\n"
+	  "To install from 'disk images' you must have installed the DiskImage package"
+	  " (aminet:disk/misc/diskimage.lha). Required is DEVS:diskimage.device and the"
+	  " program DiskImageCtrl in the path.\n\n"
+	  "To install from 'warp files' you must additionally have installed"
+	  " the TrackWarp package (http://www.whdload.de/whdload/TrackWarp15.lha). Required"
+	  " is LIBS:trackwarp.library and the program tw2adf in the path. tw2adf must have"
+	  " version 1.1 or better.\n\n"
+	  "To install from 'CAPS images' you must additionally have installed the"
+	  " capsimage.device in DEVS: (http://www.caps-project.org/)\n\n"
+	  @askchoice-help
+	)
+      )
+    )
+  )
+  (select #AD_mode
+    ;0 = floppy
+    (askdisk
+      (dest #AD_disk)
+      (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_diskname))
+      (help @askdisk-help)
+    )
+    ;1 = adf
+    (
+      (set #program "DiskImageCtrl")
+      (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
+      (P_ChkRun_Package)
+      (P_disk_mount)
+      (until
+        (exists ("%s:" #AD_disk) (noreq))
+        (P_disk_askimage)
+        (P_disk_insertimage)
+      )
+    )
+    ;1 = warp
+    (
+      (set #program "DiskImageCtrl")
+      (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
+      (P_ChkRun_Package)
+      (P_disk_mount)
+      (set #program "tw2adf")
+      (set #package "TrackWarp (http://www.whdload.de/whdload/TrackWarp15.lha)")
+      (P_ChkRun_Package)
+      (until
+        (exists ("%s:" #AD_disk) (noreq))
+        (P_disk_askimage)
+        (if 
+          (<> 0 (run ("tw2adf \"%s\" %s Quiet Overwrite >CON:///1000//CLOSE/AUTO" #AD_image #AD_imagetmp)))
+          (abort 
+	    "Sorry, could not convert the specified image file.\n"
+	    "Make sure you have correctly installed the package " #package 
+	    " and there is enough free memory."
+          )
+        )
+        (P_disk_insertimage)
+      )
+    )
   )
   (set #AD_diskname "")
 )
