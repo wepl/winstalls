@@ -3,8 +3,9 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.9 2006/05/07 19:01:59 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.1 2006/12/18 20:11:07 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
+;		07.01.07 version bumped for kick A600 support
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -30,7 +31,7 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $100000
+CHIPMEMSIZE	= $ff000
 FASTMEMSIZE	= $100000
 NUMDRIVES	= 1
 WPDRIVES	= %1111
@@ -86,7 +87,7 @@ slv_CurrentDir		dc.b	"data",0
 slv_name		dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.0 "
+		dc.b	"Version 1.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
