@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.16 2005/08/31 17:37:53 wepl Exp wepl $
+$Id: kick.readme 1.17 2006/05/07 18:53:57 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -183,7 +183,7 @@ processor, so that resulting slave do not require a 68020. It should be noted
 here that the kickstart images for A1200 and A4000 contain code for the 68020
 in the utility.library. Therefore the install is still not 68000 compatible if
 these kickstart images are used and the installed program uses these functions
-from utility.library.
+from utility.library. The kickstart image from A600 is 68000 compatible.
 
 POINTERTICKS
 
