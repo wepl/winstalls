@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.22 2006/05/07 18:53:43 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.23 2007/01/17 16:17:43 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -22,6 +22,7 @@
 ;		07.05.06 patches added to avoid overwriting the vector table (68000 support)
 ;		03.01.07 support for 40063.A600 started
 ;		16.01.07 support for 40063.A600 finished
+;		21.01.07 _keyboard patch added to allow quit/debugkey on 68000
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -242,6 +243,7 @@ kick_patch600	PL_START
 		PL_PS	$27b9c,dos_LoadSeg
 	ENDC
 		PL_CB	$35936				;dont init scsi.device
+		PL_PS	$4ed2,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$37c2,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -348,6 +350,7 @@ kick_patch1200	PL_START
 		PL_PS	$272b0,dos_LoadSeg
 	ENDC
 		PL_CB	$3504a				;dont init scsi.device
+		PL_PS	$3a7ea,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -456,6 +459,7 @@ kick_patch4000	PL_START
 		PL_PS	$1D6D8,dos_LoadSeg
 	ENDC
 		PL_CB	$7E3E				;dont init scsi.device
+		PL_PS	$d3ee,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$6D6C,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -671,6 +675,41 @@ gfx_initaga	move.l	#SETCHIPREV_BEST,d0
 		movem.l	(-$34,a5),d2/d6/d7/a2/a3/a6	;original
 		rts
 	ENDC
+
+;============================================================================
+
+_keyboard	moveq	#0,d4				;original
+		not.b	d2				;original
+		ror.b	#1,d2				;original
+		cmp.b	(_keyexit,pc),d2
+		beq	.exit
+		cmp.b	(_keydebug,pc),d2
+		beq	.debug
+		rts
+
+.exit		pea	TDREASON_OK
+.quit		move.l	(_resload,pc),-(a7)
+		addq.l	#resload_Abort,(a7)
+		rts
+.debug		addq.l	#4,a7				;skip return address
+		movem.l	(a7)+,d2-d4/a6			;keyboard interrupt
+		addq.l	#4,a7
+		movem.l	(a7)+,d2/a2
+		addq.l	#4,a7
+		movem.l	(a7)+,a1/a2
+		addq.l	#8,a7				;skip ExitIntr, ExecBase
+		move.l	(_attnflags,pc),d0
+		btst	#AFB_68010,d0
+		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
+	;transform stackframe to resload_Abort args
+		bne	.68010
+.68000		move.w	(a7),-(a7)			;sr
+		move.l	(4,a7),(2,a7)			;pc
+.68010		move.w	(a7),(6,a7)			;sr
+		move.l	(2,a7),(a7)			;pc
+		clr.w	(4,a7)
+		pea	TDREASON_DEBUG
+		bra	.quit
 
 ;============================================================================
 
