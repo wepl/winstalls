@@ -1,4 +1,4 @@
-; $Id: Install 1.12 2006/11/16 08:21:03 wepl Exp wepl $
+; $Id: Install 1.14 2007/01/16 14:19:03 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
@@ -465,21 +465,21 @@
     (
       (PDI_Mount)
       (until
-        (exists ("%s:" #AD_disk) (noreq))
+	(getassign #AD_disk "v")
 	(PDI_AskImage)
 	(PDI_Insert)
-	(exists ("%s:" #AD_disk) (noreq))     ; to refresh the dos list
+	(run "wait 1")
       )
     )
     ;1 = warp
     (
       (PDI_Mount)
       (until
-        (exists ("%s:" #AD_disk) (noreq))
+	(getassign #AD_disk "v")
 	(PDI_AskImage)
 	(PDI_Convert)
 	(PDI_Insert)
-	(exists ("%s:" #AD_disk) (noreq))     ; to refresh the dos list
+	(run "wait 1")
       )
     )
   )

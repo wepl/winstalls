@@ -10,8 +10,10 @@
 
  This install applies to "Xxx" © 19xx Xxx.
 
+ Requirements:
+ -------------
  This install requires WHDLoad, DIC, RawDIC and The Patcher to be in the path.
- The programs can be found in the WHDLoad package.
+ These programs can be found in the WHDLoad package.
  To install from a different drive than DF0: select installation mode Expert.
 
  The installed program requires x.x MB ChipMem and 0.5 MB OtherMem.
@@ -25,19 +27,21 @@
  an appropriate message.
  Additionally the file "kick34005.A500.RTB" must be installed in the same
  directory as the kickstart image. It can be found in the archive
- "util/boot/skick345.lha" on aminet.
+ "util/boot/skick346.lha" on aminet.
 
- The game requires an installed A1200/A4000 Kickstart 3.1 image.
+ The game requires an installed A600/A1200/A4000 Kickstart 3.1 image.
  The kickstart image must be located in the directory "Devs:Kickstarts" and
- must be named "kick40068.A1200" or "kick40068.A4000". The image can be
- extracted from a A1200/A4000 with tools like 'GrabKick' or similar which can
- be found on aminet.
+ must be named "kick40063.A600", "kick40068.A1200" or "kick40068.A4000". The
+ image can be extracted from a A600/A1200/A4000 with tools like 'GrabKick' or
+ similar which can be found on aminet.
  If the image is of wrong version or altered in any way WHDLoad will quit with
  an appropriate message.
- Additionally the file "kick40068.A1200.RTB" or "kick40068.A4000.RTB" must be
- installed in the same directory as the kickstart image. It can be found in
- the archive "util/boot/skick345.lha" on aminet.
+ Additionally the file "kick40063.A600.RTB", "kick40068.A1200.RTB" or
+ "kick40068.A4000.RTB" must be installed in the same directory as the kickstart
+ image. It can be found in the archive "util/boot/skick346.lha" on aminet.
 
+ Features:
+ ---------
  The game is designed for joypad use only. To make it playable with a joystick
  too, a joypad emulation via the keyboard has been implemented. The default
  joypad to keyboard assignment is as follows:
@@ -54,6 +58,15 @@
  To get lowlevel.library detect a joystick you must move the stick right/left
  or up/down a few times. After this the emulation will start to work.
 
+
+ History:
+ --------
+ version 1.0 (17.01.07) done by Xxx:
+ - initial release
+
+
+ Contact:
+ --------
  If you have problems with this installation please try and get a newer
  version of this package from the WHDLoad WWW-Page. If that doesn't help try
  some Tooltypes like NOCACHE, NOAUTOVEC, EXPCHIP, NOMMU, PAL or NTSC. If
@@ -65,5 +78,3 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
- version 1.0 (01.11.05) done by Xxx:
- - initial release
