@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Clara-Zetkin-Straﬂe 52, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 16.4 2006/05/07 19:36:47 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 16.7 2006/11/16 08:33:45 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -25,6 +25,7 @@
 ;		10.01.05 PL_OR's added
 ;		02.04.06 PL_GA added
 ;		02.05.06 made compatible to ASM-One
+;		05.05.07 some cleanup and minor comment fixes
 ;  :Copyright.	© 1996-2006 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
@@ -188,11 +189,11 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 		LABEL	whdlt_SIZEOF
 
 ;=============================================================================
-; Slave		Version 1..3
+; Slave		Version 1+
 ;=============================================================================
 
     STRUCTURE	WHDLoadSlave,0
-	STRUCT	ws_Security,4
+	STRUCT	ws_Security,4	;moveq #-1,d0 rts
 	STRUCT	ws_ID,8		;"WHDLOADS"
 	UWORD	ws_Version	;required WHDLoad version
 	UWORD	ws_Flags	;see below
@@ -203,18 +204,16 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	RPTR	ws_DontCache	;pattern for files not to cache
 
 ;=============================================================================
-; additional	Version 4..7
+; additional	Version 4+
 ;=============================================================================
 
 	UBYTE	ws_keydebug	;raw key code to quit with debug
-				;works only if vbr is moved !
 				;=0 means no key
 	UBYTE	ws_keyexit	;raw key code to exit
-				;works only if vbr is moved !
 				;=0 means no key
 
 ;=============================================================================
-; additional	Version 8..9
+; additional	Version 8+
 ;=============================================================================
 
 	ULONG	ws_ExpMem	;size of required expansions memory, during
@@ -223,7 +222,7 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 				;if negative it is optional
 
 ;=============================================================================
-; additional	Version 10..15
+; additional	Version 10+
 ;=============================================================================
 
 	RPTR	ws_name		;name of the installed program
@@ -231,12 +230,13 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	RPTR	ws_info		;additional informations (author, version...)
 
 ;=============================================================================
-; additional	Version 16
+; additional	Version 16+
 ;=============================================================================
 
 	RPTR	ws_kickname	;name of kickstart image
 	ULONG	ws_kicksize	;size of kickstart image
 	UWORD	ws_kickcrc	;crc16 of kickstart image
+
 	LABEL	ws_SIZEOF
 
 ;=============================================================================
@@ -710,6 +710,7 @@ PL_AL		MACRO			;add long
 ; for binary data you must use PL_DATA like the following example:
 ;	PL_DATA	$350,.stop-.strt
 ; .strt	dc.b	2,3,$ff,'a',0
+;	move.w	#$600,d0
 ; .stop	EVEN
 
 PL_DATA		MACRO			;write n bytes to specified address

@@ -3,14 +3,14 @@
 ;  :Contens.	useful macros for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
-;  :Address.	Franz-Liszt-Straﬂe 16, Rudolstadt, 07404, Germany
-;  :Version.	$Id: whdmacros.i 16.3 2004/07/16 13:56:18 wepl Exp wepl $
+;  :Version.	$Id: whdmacros.i 16.4 2004/12/09 08:28:21 wepl Exp wepl $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
 ;		04.06.04 macro 'blitz' improved
 ;		29.10.04 macro 'blitz' fixed (oh god what a mess)
-;  :Copyright.	© 1996-2001 Bert Jahn, All Rights Reserved
+;		27.02.07 waitvbs added
+;  :Copyright.	© 1996-2007 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
@@ -168,6 +168,34 @@ waitvb	MACRO
 .2\@		btst	#0,(_custom+vposr+1)
 		bne	.2\@
 	ENDC
+	ENDM
+***** this is the same as before but secure
+***** it also works when the code always run in only one half of
+***** the screen and therefore vertical bit pos 8 is unchanged
+***** (eg on programs with heavy interrupts or copper ints)
+waitvbs	MACRO
+		movem.l	d0-d2,-(a7)
+		bsr	.g\@
+.1\@		move.w	d0,d2
+		bsr	.g\@
+		cmp.w	d0,d2
+		bls	.1\@
+		bra	.q\@
+	IFEQ	NARG-1
+.g\@		move.w	(vposr,\1),d0
+		move.b	(vhposr,\1),d1
+		cmp.w	(vposr,\1),d0
+	ELSE
+.g\@		move.w	(_custom+vposr),d0
+		move.b	(_custom+vhposr),d1
+		cmp.w	(_custom+vposr),d0
+	ENDC
+		bne	.g\@
+		and.w	#1,d0
+		lsl.w	#8,d0
+		move.b	d1,d0
+		rts
+.q\@		movem.l	(a7)+,d0-d2
 	ENDM
 
 ****************************************************************

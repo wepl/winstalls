@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.23 2007/01/17 16:17:43 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.24 2007/01/21 18:25:33 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -23,6 +23,7 @@
 ;		03.01.07 support for 40063.A600 started
 ;		16.01.07 support for 40063.A600 finished
 ;		21.01.07 _keyboard patch added to allow quit/debugkey on 68000
+;		24.04.07 make exec.ColdReboot working by leaving the kick set the initial sp
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -173,7 +174,7 @@ kick_reboot
 	IFD slv_Version
 
 kick_patch600	PL_START
-		PL_S	$d2,$166-$d2			;kick chksum, hardware init
+		PL_S	$d6,$166-$d6			;kick chksum, hardware init
 		PL_PS	$166,kick_leaveled
 		PL_S	$1a6,$1d0-$1a6			;kick chksum, avoid overwriting vector table
 		PL_PS	$240,kick_detectchip
@@ -280,7 +281,7 @@ kick_patch600	PL_START
 	ENDC
 
 kick_patch1200	PL_START
-		PL_S	$d2,$166-$d2			;kick chksum, hardware init
+		PL_S	$d6,$166-$d6			;kick chksum, hardware init
 		PL_PS	$166,kick_leaveled
 		PL_S	$1a6,$1d0-$1a6			;kick chksum, avoid overwriting vector table
 		PL_PS	$240,kick_detectchip
@@ -387,7 +388,7 @@ kick_patch1200	PL_START
 	IFD slv_Version
 
 kick_patch4000	PL_START
-		PL_S	$d2,$10A-$d2			;kick chksum, hardware init
+		PL_S	$d6,$10A-$d6			;kick chksum, hardware init
 		PL_PS	$10A,kick_leaveled
 		PL_S	$146,$16C-$146			;A4000 DTack/bus stuff
 		PL_S	$174,$17C-$174			;A4000 DTack/bus stuff
