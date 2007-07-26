@@ -3,9 +3,10 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.4 2004/10/18 11:18:49 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.5 2004/11/16 21:01:22 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
+;		18.12.06 adapted for eab release
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -18,7 +19,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/Kick12.Slave"
+	OUTPUT	"awart:workbench12/Kick12.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -70,11 +71,11 @@ slv_keyexit	= $59	;F10
 .passchk
 	ENDC
 
-slv_CurrentDir	dc.b	"wb12",0
+slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Kickstarter for 33.192",0
 slv_copy	dc.b	"1986 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.2 "
+		dc.b	"Version 0.3 "
 		INCBIN	"T:date"
 		dc.b	0
 	EVEN
