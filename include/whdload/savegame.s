@@ -6,13 +6,20 @@
 ;		savegame, all savegames will be stored in one single file which
 ;		grows dynamically
 ;		the savegames must have always the same size
+;		it uses a standard amiga font file, default is the xen/8 font
+;		which can found in the MagicWB release, you may use any other
+;		font with a char size of width=6, height=8 by doing INCBIN of
+;		it prior including this source with a label _font and define
+;		a variable EXTSGFONT=1
 ;  :Author.	Wepl
-;  :Version.	$Id: savegame.s 1.3 2000/01/23 21:10:48 jah Exp $
+;  :Version.	$Id: savegame.s 1.4 2000/08/07 21:07:03 jah Exp $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed
 ;		23.01.00 better selection on loading
 ;		23.07.00 adapted for whdload v12 and WHDLTAG_KEYTRANS_GET
+;		29.07.07 name of the savegame file must be overgiven now
+;			 other font file can specified
 ;  :Requires.	_keyexit	byte variable containing rawkey code
 ;		_exit		function to quit
 ;  :Copyright.	Public Domain
@@ -30,6 +37,7 @@
 		move.l	#100,d0			;savegame size
 		lea	$3e900,a0		;address of savegame
 		lea	$65000,a1		;free mem for screen
+		lea	(_savename,pc),a2	;name of savegame file
 		bsr	_sg_load
 	;	move.w	#$4100,(_custom+bplcon0)
 	;	move.w	#320/8*3,(_custom+bpl1mod)
@@ -41,6 +49,7 @@
 ; IN:	d0 = ULONG size (only on function save required)
 ;	a0 = APTR  address of load/save area
 ;	a1 = APTR  space for the screen ($2800 bytes)
+;	a2 = CPTR  name of the savegame file
 ; OUT:	d0 = BOOL  success
 ;	d1/a0/a1 destroyed
 
@@ -57,6 +66,7 @@ CHARHEIGHT	= 8
 	NSTRUCTURE	SaveGame,0
 		NLONG	sg_screen
 		NLONG	sg_size
+		NLONG	sg_name
 		NLONG	sg_address
 		NLONG	sg_old68
 		NLONG	sg_old6c
@@ -258,7 +268,7 @@ _sg_save_in	bsr	_sg_loaddir
 
 		move.l	#SAVEDIRLEN,d0		;size
 		moveq	#0,d1			;offset
-		lea	(_sg_name,pc),a0	;filename
+		move.l	(sg_name,a5),a0		;filename
 		lea	(sg_save_id,a5),a1	;address
 		move.w	#resload_SaveFileOffset,a2
 		bsr	_sg_exec_resload
@@ -269,7 +279,7 @@ _sg_save_in	bsr	_sg_loaddir
 .loop		add.l	d0,d1			;offset
 .loopin		subq.w	#1,d6
 		bpl	.loop
-		lea	(_sg_name,pc),a0	;filename
+		move.l	(sg_name,a5),a0		;filename
 		move.l	(sg_address,a5),a1	;address
 		move.w	#resload_SaveFileOffset,a2
 		bsr	_sg_exec_resload
@@ -410,7 +420,7 @@ _sg_load_in	bsr	_sg_loaddir
 .loop		add.l	d0,d1			;offset
 .loopin		subq.w	#1,d6
 		bpl	.loop
-		lea	(_sg_name,pc),a0	;filename
+		move.l	(sg_name,a5),a0		;filename
 		move.l	(sg_address,a5),a1	;address
 		move.w	#resload_LoadFileOffset,a2
 		bsr	_sg_exec_resload
@@ -424,7 +434,7 @@ _sg_load_in	bsr	_sg_loaddir
 ; OUT:	D0 = BOOL success
 ;	flags on D0
 
-_sg_loaddir	lea	(_sg_name,pc),a0
+_sg_loaddir	move.l	(sg_name,a5),a0
 		move.w	#resload_GetFileSize,a2
 		bsr	_sg_exec_resload
 		tst.l	d0
@@ -432,7 +442,7 @@ _sg_loaddir	lea	(_sg_name,pc),a0
 
 		move.l	#SAVEDIRLEN,d0		;size
 		moveq	#0,d1			;offset
-		lea	(_sg_name,pc),a0	;filename
+		move.l	(sg_name,a5),a0		;filename
 		lea	(sg_save_id,a5),a1	;address
 		move.w	#resload_LoadFileOffset,a2
 		bsr	_sg_exec_resload
@@ -483,6 +493,7 @@ _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		move.l	d1,d7				;d7 = return
 		move.l	a0,(sg_address,a5)
 		move.l	a1,(sg_screen,a5)
+		move.l	a2,(sg_name,a5)
 		sf	(sg_c_on,a5)
 		sf	(sg_success,a5)
 		bsr	_sg_waitvb
@@ -741,7 +752,6 @@ _psc		movem.l	d1/a0,-(a7)
 .1		asr.w	#1,d0
 		add.w	#LINE*4,d0
 		move.l	(a7)+,a0
-		bra	_ps
 
 ;--------------------------------
 ; print string
@@ -835,13 +845,14 @@ _pc		movem.l	d0-d7/a0-a2,-(a7)
 		movem.l	(a7)+,d0-d7/a0-a2
 		rts
 
+	IFND EXTSGFONT
 _font		INCBIN	Fonts:xen/8
+	ENDC
 
 ;--------------------------------
 
-_sg_name	dc.b	"savegame",0
 _info1		dc.b	"Special multiple savegame support",0
-_info2		dc.b	"Written by Wepl 1998-2000",0
+_info2		dc.b	"v1.5 by Wepl 1998-2007",0
 _esc		dc.b	"press Esc to cancel",0
 _save		dc.b	"»»» Save a Game «««",0
 _saveselect	dc.b	"Select a save position using keyboard '1' - '9'",0
