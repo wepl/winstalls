@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.19 2005/01/27 08:44:38 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.20 2005/02/11 00:27:42 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -19,6 +19,7 @@
 ;		19.02.04 clearing ciasdr removed
 ;		16.11.04 _keydebug/exit check added
 ;		27.01.05 IO_ACTUAL fixed (JOTD)
+;		18.08.07 fix for snoopbug at $6e92 corrected (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -156,7 +157,8 @@ kick_patch	PL_START
 		PL_S	$4c66,4				;skip autoconfiguration at $e80000
 		PL_PS	$6d04,gfx_vbserver
 		PL_PS	$6d1a,gfx_snoop1
-		PL_L	$6e92,$08390005			;snoop bug ('and.w #$20,$DFF01E' -> 'btst #5,$DFF01E')
+		PL_DATA	$6e92,8				;snoop bug ('and.w #$20,$DFF01E')
+			btst #5,$dff01f
 		PL_PS	$ad9e,gfx_setcoplc
 		PL_S	$adc2,6				;avoid ChkBltWait problem
 		PL_S	$af16,$36-$16			;skip color stuff & strange gb_LOFlist set

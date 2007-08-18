@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.11 2006/08/19 wepl Exp wepl $
+;  :Version.	$Id: keyboard.s 1.11 2006/08/19 11:04:15 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -126,7 +126,7 @@ _SetupKeyboard
 
 	IFD _keycode
 		move.l	a0,-(a7)
-		lea	(_keycode,pc),a0
+		lea	(_keycode),a0			;no ',pc' because used absolut sometimes
 		move.b	d0,(a0)
 		move.l	(a7)+,a0
 	ENDC

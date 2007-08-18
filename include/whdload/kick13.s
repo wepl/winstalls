@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.56 2005/02/11 00:27:42 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.57 2006/05/07 18:53:10 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -55,6 +55,7 @@
 ;		26.01.05 trackdisk device IO_ACTUAL field set (Hacker uses this)
 ;		02.05.06 made compatible to ASM-One
 ;		04.05.06 patches added to avoid overwriting the vector table (68000 support)
+;		18.08.07 fix for snoopbug at $6efe corrected (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -203,7 +204,8 @@ kick_patch	PL_START
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
 		PL_PS	$6d70,gfx_vbserver
 		PL_PS	$6d86,gfx_snoop1
-		PL_L	$6efe,$08390005			;snoop bug ('and.w #$20,$DFF01E' -> 'btst #5,$DFF01E')
+		PL_DATA	$6efe,8				;snoop bug ('and.w #$20,$DFF01E')
+			btst #5,$dff01f
 		PL_PS	$ad5e,gfx_setcoplc
 		PL_S	$ad7a,6				;avoid ChkBltWait problem
 		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
