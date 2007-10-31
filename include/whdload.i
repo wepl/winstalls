@@ -4,7 +4,7 @@
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
 ;  :Address.	Clara-Zetkin-Straﬂe 52, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 16.7 2006/11/16 08:33:45 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 16.8 2007/07/26 18:53:33 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -26,13 +26,14 @@
 ;		02.04.06 PL_GA added
 ;		02.05.06 made compatible to ASM-One
 ;		05.05.07 some cleanup and minor comment fixes
+;		06.09.07 adapted to work with Devpac 3.18
 ;  :Copyright.	© 1996-2006 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;---------------------------------------------------------------------------*
 
  IFND WHDLOAD_I
-WHDLOAD_I=1
+WHDLOAD_I SET 1
 
 	IFND	EXEC_EXECBASE_I
 	INCLUDE	exec/execbase.i

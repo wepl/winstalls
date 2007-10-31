@@ -3,20 +3,22 @@
 ;  :Contens.	useful macros for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
-;  :Version.	$Id: whdmacros.i 16.4 2004/12/09 08:28:21 wepl Exp wepl $
+;  :Version.	$Id: whdmacros.i 16.8 2007/07/26 18:54:21 wepl Exp wepl $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
 ;		04.06.04 macro 'blitz' improved
 ;		29.10.04 macro 'blitz' fixed (oh god what a mess)
 ;		27.02.07 waitvbs added
+;		03.09.07 BLITWAIT macro improved
+;		06.09.07 adapted to work with Devpac 3.18
 ;  :Copyright.	© 1996-2007 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
 
  IFND WHDMACROS_I
-WHDMACROS_I=1
+WHDMACROS_I SET 1
 
 	IFND	HARDWARE_CIA_I
 	INCLUDE	hardware/cia.i
@@ -29,6 +31,9 @@ WHDMACROS_I=1
 	ENDC
 	IFND	HARDWARE_DMABITS_I
 	INCLUDE	hardware/dmabits.i
+	ENDC
+	IFND	EXEC_TYPES_I
+	INCLUDE	exec/types.i
 	ENDC
 
 ;=============================================================================
@@ -133,23 +138,31 @@ patchs	MACRO
 ****************************************************************
 ***** wait that blitter has finished his job
 ***** (this is adapted from graphics.WaitBlit, see autodocs for
-*****  hardware bugs and caveats)
+*****  hardware bugs/caveats and check eab thread 31758)
 ***** if \1 is given it must be an address register containing _custom
 BLITWAIT MACRO
 	IFEQ	NARG-1
 		tst.b	(dmaconr,\1)
-.waitb\@	tst.b	(_ciaa)		;this avoids blitter slow down
-		tst.b	(_ciaa)
 		btst	#DMAB_BLTDONE-8,(dmaconr,\1)
-		bne.b	.waitb\@
-		tst.b	(dmaconr,\1)
+		beq.b	.1\@
+.2\@		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		btst	#DMAB_BLTDONE-8,(dmaconr,\1)
+		bne.b	.2\@
+.1\@		tst.b	(dmaconr,\1)
 	ELSE
 		tst.b	(_custom+dmaconr)
-.waitb\@	tst.b	(_ciaa)		;this avoids blitter slow down
-		tst.b	(_ciaa)
 		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
-		bne.b	.waitb\@
-		tst.b	(_custom+dmaconr)
+		beq.b	.1\@
+.2\@		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
+		bne.b	.2\@
+.1\@		tst.b	(_custom+dmaconr)
 	ENDC
 	ENDM
 
