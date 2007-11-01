@@ -3,93 +3,17 @@
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
 ;  :Original	v1 
-;  :Version.	$Id: wildwestworld.asm 1.2 2002/02/08 01:18:39 wepl Exp wepl $
+;  :Version.	$Id: GenericKickHD.asm 1.1 2007/11/01 20:02:13 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta
+;		01.11.07 reworked for v16+ (Wepl)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Devpac 3.14, Barfly 2.9
 ;  :To Do.
 ;---------------------------------------------------------------------------*
-
-	INCDIR	Include:
-	INCDIR	osemu:
-	INCLUDE	whdload.i
-	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
-
-	IFD BARFLY
-	BOPT	O+				;enable optimizing
-	BOPT	OG+				;enable optimizing
-	BOPT	ODd-				;disable mul optimizing
-	BOPT	ODe-				;disable mul optimizing
-	BOPT	w4-				;disable 64k warnings
-	BOPT	wo-			;disable optimizer warnings
-	SUPER
-	ENDC
-
-;============================================================================
-
-NUMDRIVES	= 1
-WPDRIVES	= %0000
-
-;BLACKSCREEN
-;DEBUG
-;DISKSONBOOT
-DOSASSIGN
-HDINIT
-;HRTMON
-IOCACHE		= 10000
-;MEMFREE	= $200
-;NEEDFPU
-SETPATCH
-
-;============================================================================
-
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
-
-;============================================================================
-
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	15			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
-		dc.w	_data-_base		;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$5D			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
-
-;============================================================================
-
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
-
-_name		dc.b	"Generic KickStarter "
-	IFEQ	KICKSIZE-$40000
-	dc.b	"34.005"
-	ELSE
-	dc.b	"40.068"
-	ENDC
-		dc.b	0
-_copy		dc.b	"19xx Any Company",0
-_info		dc.b	"by JOTD using Wepl kick13 sources",10,10
-		dc.b	"Version 1.0 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
-		dc.b	0
-_data:
-	dc.b	"data",0
 
 STR_BUF_SIZE = 54
 
@@ -105,18 +29,10 @@ _arglen
 	EVEN
 
 ;============================================================================
-_start	;	A0 = resident loader
-;============================================================================
-
-	;initialize kickstart and environment
-		bra	_boot
 
 _bootdos
-	clr.l	$0.W
 
-	IFEQ	KICKSIZE-$40000
-	bsr	_patchkb
-	ENDC
+	clr.l	$0.W
 
 	move.l	(_resload),a2		;A2 = resload
 
@@ -226,40 +142,6 @@ _end
 		add.l	#resload_Abort,(a7)
 		rts
 
-	IFEQ	KICKSIZE-$40000
-_patchkb
-	lea	.ackkb(pc),A0
-	lea	.oldkb(pc),A1
-	move.l	$68.W,(A1)
-	move.l	A0,$68.W
-	rts
-
-.ackkb:
-	bset	#6,$BFEE01
-	movem.l	D0,-(A7)
-	moveq.l	#2,D0
-	bsr	_beamdelay
-	bclr	#6,$BFEE01
-	movem.l	(A7)+,D0
-	move.l	.oldkb(pc),-(A7)
-	rts
-
-.oldkb:
-	dc.l	0
-
-; < D0: numbers of vertical positions to wait
-_beamdelay
-.bd_loop1
-	move.w  d0,-(a7)
-        move.b	$dff006,d0	; VPOS
-.bd_loop2
-	cmp.b	$dff006,d0
-	beq.s	.bd_loop2
-	move.w	(a7)+,d0
-	dbf	d0,.bd_loop1
-	rts
-	ENDC
-
 ;< A0: start
 ;< A1: end
 ;< A2: bytes
@@ -290,16 +172,6 @@ _hexsearch:
 .exit:
 	movem.l	(A7)+,D1/D3/A1-A2
 	rts
-	ENDC
-
-
-;============================================================================
-
-
-	IFEQ	KICKSIZE-$40000
-	INCLUDE	kick13.s
-	ELSE
-	INCLUDE	kick31.s
 	ENDC
 
 ;============================================================================
