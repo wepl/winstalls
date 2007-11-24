@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.57 2006/05/07 18:53:10 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.58 2007/08/18 16:41:43 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -56,6 +56,7 @@
 ;		02.05.06 made compatible to ASM-One
 ;		04.05.06 patches added to avoid overwriting the vector table (68000 support)
 ;		18.08.07 fix for snoopbug at $6efe corrected (Psygore)
+;		07.11.07 _debug5 added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -956,6 +957,7 @@ _debug1		tst	-1	;unknown packet (=d2) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;invalid lock specified
+_debug5		tst	-5	;unable to alloc mem for iocache
 		illegal		;security if executed without mmu
 	ENDC
 

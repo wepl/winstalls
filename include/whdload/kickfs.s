@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
-;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kickfs.s 1.17 2005/02/11 00:28:45 wepl Exp wepl $
+;  :Author.	Wepl, JOTD, Psygore
+;  :Version.	$Id: kickfs.s 1.18 2006/05/07 18:52:31 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -22,6 +22,8 @@
 ;		08.02.05 ACTION_ADD_NOTIFY dummy added
 ;		04.05.06 fix for startup packet under v34
 ;			 ACTION_SET_DATE dummy added
+;		07.11.07 when DEBUG is set and there is no memory for IOCACHE it
+;			 faults with _debug5
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,7 +75,7 @@ HD_NumBuffers		= 5
 	IFD IOCACHE
 		LONG	mfl_cpos		;fileoffset cache points to
 		LONG	mfl_clen		;amount data in cache (valid only on write cache)
-		LONG	mfl_iocache
+		LONG	mfl_iocache		;pointer to cache memory
 	ENDC
 		LABEL	mfl_SIZEOF
 
@@ -742,7 +744,11 @@ HD_NumBuffers		= 5
 		jsr	(_LVOAllocMem,a6)
 		move.l	(dp_Arg1,a4),a0
 		move.l	d0,(mfl_iocache,a0)
+	IFD DEBUG
+		beq	_debug5
+	ELSE
 		beq	.read_d
+	ENDC
 	;read into cache
 .read_c1	move.l	d0,a1				;buffer
 		move.l	(mfl_fib+fib_Size,a0),d0
@@ -816,14 +822,14 @@ HD_NumBuffers		= 5
 		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
 .write_1
 	;check if fits into cache
-		move.l	d4,d0
+		move.l	d4,d0				;free space in cache
 		move.l	(mfl_cpos,a0),d1
 		add.l	(mfl_clen,a0),d1
 		cmp.l	d1,d7				;offsets match?
-		bne	.write2
+		bne	.write_2
 		add.l	d0,d0
 		sub.l	(mfl_clen,a0),d0
-.write2		cmp.l	(dp_Arg3,a4),d0
+.write_2	cmp.l	d6,d0
 		blo	.write_direct
 	;get memory if necessary
 .write_cache	move.l	(mfl_iocache,a0),d0
@@ -833,7 +839,11 @@ HD_NumBuffers		= 5
 		jsr	(_LVOAllocMem,a6)
 		move.l	(dp_Arg1,a4),a0			;lock
 		move.l	d0,(mfl_iocache,a0)
+	IFD DEBUG
+		beq	_debug5
+	ELSE
 		beq	.write_direct
+	ENDC
 	;into cache
 .write_memok	move.l	(mfl_cpos,a0),d1
 		add.l	(mfl_clen,a0),d1
