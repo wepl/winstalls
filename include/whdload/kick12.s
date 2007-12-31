@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.20 2005/02/11 00:27:42 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.21 2007/08/18 16:41:43 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -20,6 +20,7 @@
 ;		16.11.04 _keydebug/exit check added
 ;		27.01.05 IO_ACTUAL fixed (JOTD)
 ;		18.08.07 fix for snoopbug at $6e92 corrected (Psygore)
+;		04.12.07 patch for exec.ExitIntr improved
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -145,7 +146,7 @@ kick_patch	PL_START
 		PL_P	$592,kick_detectchip
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$61a,kick_detectfast
-		PL_P	$e80,exec_ExitIntr
+		PL_PS	$e60,exec_ExitIntr
 		PL_P	$1318,exec_snoop1
 		PL_PS	$147a,exec_SetFunction
 		PL_PS	$1576,exec_MakeFunctions
@@ -254,8 +255,8 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 		rts
 
 exec_ExitIntr	tst.w	(_custom+intreqr)	;delay to make sure int is cleared
-		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
-		rte
+		btst	#5,($18+4,a7)		;original code
+		rts
 
 	;move.w (a7)+,($dff09c) does not work with Snoop/S on 68060
 exec_snoop1	move.w	(a7),($dff09c)

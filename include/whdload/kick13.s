@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.58 2007/08/18 16:41:43 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.59 2007/11/24 19:39:41 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -57,6 +57,7 @@
 ;		04.05.06 patches added to avoid overwriting the vector table (68000 support)
 ;		18.08.07 fix for snoopbug at $6efe corrected (Psygore)
 ;		07.11.07 _debug5 added
+;		04.12.07 patch for exec.ExitIntr improved
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -191,7 +192,7 @@ kick_patch	PL_START
 		PL_P	$592,kick_detectchip
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$61a,kick_detectfast
-		PL_P	$ebc,exec_ExitIntr
+		PL_PS	$e9c,exec_ExitIntr
 		PL_C	$7b4,$7c0-$7b4			;avoid overwriting vector table
 		PL_C	$7c2,$7e2-$7c2			;avoid overwriting vector table
 		PL_P	$1354,exec_snoop1
@@ -312,8 +313,8 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 		rts
 
 exec_ExitIntr	tst.w	(_custom+intreqr)	;delay to make sure int is cleared
-		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
-		rte
+		btst	#5,($18+4,a7)		;original code
+		rts
 
 	;move.w (a7)+,($dff09c) does not work with Snoop/S on 68060
 exec_snoop1	move.w	(a7),($dff09c)

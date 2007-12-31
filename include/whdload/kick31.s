@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.25 2007/07/26 18:58:52 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.26 2007/11/24 19:39:41 wepl Exp $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -25,6 +25,7 @@
 ;		21.01.07 _keyboard patch added to allow quit/debugkey on 68000
 ;		24.04.07 make exec.ColdReboot working by leaving the kick set the initial sp
 ;		07.11.07 _debug5 added
+;		04.12.07 patch for exec.ExitIntr improved
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -199,7 +200,7 @@ kick_patch600	PL_START
 		PL_P	$c1c,kick_detectcpu
 		PL_P	$d36,_flushcache		;exec.CacheControl
 		PL_P	$db8,kick_reboot		;exec.ColdReboot
-		PL_P	$1394,exec_ExitIntr
+		PL_PS	$1380,exec_ExitIntr
 		PL_PS	$1c6c,_flushcache		;exec.MakeFunctions using exec.CacheClearU without
 							;proper init for cpu's providing CopyBack
 	IFD MEMFREE
@@ -306,7 +307,7 @@ kick_patch1200	PL_START
 		PL_P	$c1c,kick_detectcpu
 		PL_P	$d36,_flushcache		;exec.CacheControl
 		PL_P	$db8,kick_reboot		;exec.ColdReboot
-		PL_P	$1394,exec_ExitIntr
+		PL_PS	$1380,exec_ExitIntr
 		PL_PS	$1c6c,_flushcache		;exec.MakeFunctions using exec.CacheClearU without
 							;proper init for cpu's providing CopyBack
 	IFD MEMFREE
@@ -415,7 +416,7 @@ kick_patch4000	PL_START
 		PL_P	$c24,kick_detectcpu
 		PL_P	$d3e,_flushcache		;exec.CacheControl
 		PL_P	$dc0,kick_reboot		;exec.ColdReboot
-		PL_P	$139c,exec_ExitIntr
+		PL_PS	$1388,exec_ExitIntr
 		PL_PS	$1c74,_flushcache		;exec.MakeFunctions using exec.CacheClearU without
 							;proper init for cpu's providing CopyBack
 	IFD MEMFREE
@@ -544,8 +545,8 @@ kick_detectcpu	move.l	(_attnflags,pc),d0
 		rts
 
 exec_ExitIntr	tst.w	(_custom+intreqr)	;delay to make sure int is cleared
-		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
-		rte
+		btst	#5,($18+4,a7)		;original code
+		rts
 
 	IFD MEMFREE
 exec_AllocMem	move.l	d0,-(a7)
