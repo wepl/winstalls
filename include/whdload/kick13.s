@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.59 2007/11/24 19:39:41 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.60 2007/12/31 20:14:20 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -58,6 +58,9 @@
 ;		18.08.07 fix for snoopbug at $6efe corrected (Psygore)
 ;		07.11.07 _debug5 added
 ;		04.12.07 patch for exec.ExitIntr improved
+;		26.10.08 detect dependency between HDINIT and BOOTDOS
+;		16.11.08 traps via the operating system are allowed again, rewerting the
+;			 change from 04.05.06 partial (JOTD and Gravity)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -65,11 +68,19 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
+	INCLUDE	lvo/dos.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	graphics/gfxbase.i
+	INCLUDE	hardware/cia.i
+	INCLUDE	hardware/custom.i
+
+	IFND	_custom
+_custom		= $dff000
+_ciaa		= $bfe001
+	ENDC
 
 KICKVERSION	= 34
 KICKCRC		= $f9e3				;34.005
@@ -134,6 +145,12 @@ CBDOSLOADSEG = 1
 	ENDC
 	ENDC
 
+	IFD	BOOTDOS
+	IFND	HDINIT
+	FAIL	BOOTDOS/_bootdos requires HDINIT to be set
+	ENDC
+	ENDC
+
 ;============================================================================
 
 _boot		lea	(_resload,pc),a1
@@ -195,6 +212,7 @@ kick_patch	PL_START
 		PL_PS	$e9c,exec_ExitIntr
 		PL_C	$7b4,$7c0-$7b4			;avoid overwriting vector table
 		PL_C	$7c2,$7e2-$7c2			;avoid overwriting vector table
+		PL_CW	$7ee				;avoid overwriting vector table
 		PL_P	$1354,exec_snoop1
 		PL_PS	$14b6,exec_SetFunction
 		PL_PS	$15b2,exec_MakeFunctions
@@ -277,7 +295,7 @@ kick_setvecs	move.w	(a1)+,d0
 		lea	(a0,d0.w),a3
 		move.l	a3,(a2)
 .skip		addq.l	#4,a2
-		cmp.w	#$7c,a2			;stop at NMI
+		cmp.w	#$c0,a2			;stop after trap #15
 		bne	kick_setvecs
 		add.l	#$3e2-$3d6-6,(a7)
 		rts
