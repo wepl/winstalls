@@ -1,4 +1,4 @@
-; $Id: Install 1.14 2007/01/16 14:19:03 wepl Exp wepl $
+; $Id: Install 1.15 2007/01/23 08:04:46 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
@@ -91,7 +91,7 @@
       ; and icon. If you set #prefix-slave it only changes the slave name.
       ; You may also set the #sub-dir here if this is not required with all
       ; versions
-      ;
+      ;                                                                         §
       (select #version
 	; 0 = RawDIC
         ("")
@@ -177,7 +177,7 @@
         (pattern "~(c|devs|s|.#?|intro)")
       )
       (set #AD_disk "B")
-      (P_AskDisk)
+      (P_AskDiskDev)
       (copyfiles
         (help @copyfiles-help)
         (source ("%s:" #AD_disk))
@@ -471,7 +471,7 @@
 	(run "wait 1")
       )
     )
-    ;1 = warp
+    ;2 = warp
     (
       (PDI_Mount)
       (until
@@ -484,6 +484,46 @@
     )
   )
   (set #AD_diskname "")
+)
+
+;----------------------------
+; Wait for inserting a disk with a volume label not useable for P_AskDisk
+; IN:  #AD_diskname - name of disk to request
+; OUT: #AD_drive - device name in which the disk has been inserted
+
+(procedure P_AskDiskDev
+  (PDI_AskMode)
+  (set #DI_diskname #AD_diskname)
+  (select #DI_mode
+    ;0 = floppy
+    (
+      (P_AskSrcDrv)
+      (set #AD_drive #CI_drive)
+      (message
+        (cat
+	  "\nInsert \"" #AD_diskname "\" into drive " #AD_drive "!\n\n"
+	  "(make sure it's the right disk because it will not be checked)"
+	)
+      )
+    )
+    ;1 = adf
+    (
+      (PDI_Mount)
+      (PDI_AskImage)
+      (PDI_Insert)
+      (run "wait 1")
+      (set #AD_drive #DI_dev)
+    )
+    ;2 = warp
+    (
+      (PDI_Mount)
+      (PDI_AskImage)
+      (PDI_Convert)
+      (PDI_Insert)
+      (run "wait 1")
+      (set #AD_drive #DI_dev)
+    )
+  )
 )
 
 ;----------------------------

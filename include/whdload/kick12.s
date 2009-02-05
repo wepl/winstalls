@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.21 2007/08/18 16:41:43 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.22 2007/12/31 20:14:20 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -21,6 +21,7 @@
 ;		27.01.05 IO_ACTUAL fixed (JOTD)
 ;		18.08.07 fix for snoopbug at $6e92 corrected (Psygore)
 ;		04.12.07 patch for exec.ExitIntr improved
+;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -89,6 +90,12 @@ BOOTEARLY = 1
 	IFND CBDOSLOADSEG
 	IFD _cb_dosLoadSeg
 CBDOSLOADSEG = 1
+	ENDC
+	ENDC
+
+	IFD	BOOTDOS
+	IFND	HDINIT
+	FAIL	BOOTDOS/_bootdos requires HDINIT to be set
 	ENDC
 	ENDC
 
@@ -547,7 +554,7 @@ disk_getunitid
 		rts
 
 ;============================================================================
-; kick12 does not provide fast and fine access to cia timers, therfore we
+; kick12 does not provide fast and fine access to cia timers, therefore we
 ; use the rasterbeam, required minimum waiting is 75탎, one rasterline is
 ; 63.5탎 a this results in min=127탎 max=190.5탎
 
@@ -928,4 +935,3 @@ _cbswitch_cop2lc	dc.l	0
 
 ;============================================================================
 
-	END

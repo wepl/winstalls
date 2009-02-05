@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.17 2006/05/07 18:53:57 wepl Exp wepl $
+$Id: kick.readme 1.18 2007/01/17 16:21:54 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -93,7 +93,9 @@ If that symbol is defined a dos filesystem handler will be installed which
 mounts the actual directory as a drive called DH0: (volume has name
 'WHDLoad'). If there is no bootable disk inserted (check DISKSONBOOT) the
 dos.library will try to boot from that device. HDINIT requires that the flag
-WHDLF_Examine to be set!
+WHDLF_Examine is set (if you use the new style Slave examples where kicknn.s
+will be included in front of your own code the flag is automatically set by
+kicknn.s).
 
 HRTMON
 
@@ -109,7 +111,9 @@ option HDINIT. The cache will be allocated on request for each opened file
 seperately. If the installed program uses savegames you should probably set
 the IOCACHE to the size of the savegame (or at least half/quarter) to minimize
 the amount OS swaps. If you use large values you maybe need to increase the
-memory for the installed program.
+memory for the installed program. Be careful with large values of IOCACHE
+because it may cause memory fragmentation and if the installed program holds
+many files open it will need a lot of memory.
 
 INITAGA
 
@@ -257,6 +261,9 @@ _bootdos
 	  initial CLI window
 	* _bootdos requires option HDINIT, because it uses a virtual
 	  startup-sequence and a virtual program loaded from within
+	* _bootdos does not work with diskimages because it is handled via
+	  the virtual filesystem of HDINIT, if you boot from a diskimage it
+	  will simply never called
 
 _cb_dosLoadSeg
 
@@ -269,7 +276,9 @@ _cb_dosLoadSeg
 
 _cb_dosRead
 
-	* works only in conjunction with HDINIT
+	* works only in conjunction with HDINIT and only for files loaded
+	  via the virtual filesystem of HDINIT and not for files from
+	  disk images
 	* that label will be called after each successful execution of
 	  dos.Read and can be used to patch the loaded data
 	* Registers upon calling:
@@ -326,7 +335,7 @@ _attnflags
 _dosname
 	* only avaliable if HDINIT is defined
 	* containing "dos.library"
-	* maybe used to open dos.library
+	* can used to open dos.library
 
 _monitor
 	* a long word containing the actual monitor

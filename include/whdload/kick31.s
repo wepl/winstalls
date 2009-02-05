@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.26 2007/11/24 19:39:41 wepl Exp $
+;  :Version.	$Id: kick31.s 1.27 2007/12/31 20:14:20 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -26,6 +26,7 @@
 ;		24.04.07 make exec.ColdReboot working by leaving the kick set the initial sp
 ;		07.11.07 _debug5 added
 ;		04.12.07 patch for exec.ExitIntr improved
+;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -115,6 +116,12 @@ CBDOSREAD = 1
 	IFND CBDOSLOADSEG
 	IFD _cb_dosLoadSeg
 CBDOSLOADSEG = 1
+	ENDC
+	ENDC
+
+	IFD	BOOTDOS
+	IFND	HDINIT
+	FAIL	BOOTDOS/_bootdos requires HDINIT to be set
 	ENDC
 	ENDC
 
