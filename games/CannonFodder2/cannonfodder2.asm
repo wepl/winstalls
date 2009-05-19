@@ -6,7 +6,7 @@
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.9 2005/08/12 18:06:43 wepl Exp wepl $
+;  :Version.	$Id: cf2.asm 1.10 2005/09/08 21:01:17 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -24,6 +24,8 @@
 ;		20.07.03 keyboard fixed
 ;		10.08.05 support for french version added
 ;		08.09.05 save/load fixed for french version
+;		11.12.08 savepath changed for compatibility with WHDLoad 16.9
+;			 buffer in ExpMem, requires whdload v16.9 now
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -48,16 +50,15 @@ crc_v4	= $aa9f		;french
 	BOPT	w4-				;disable 64k warnings
 	SUPER
 
-BUFLEN = 256
+BUFLEN = $1000
 
 	STRUCTURE	globals,$100
 		LONG	_resload
-	;	STRUCT	_buffer,BUFLEN
 
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	14			;ws_Version
+		dc.w	16			;ws_Version
 		dc.w	WHDLF_NoError		;ws_flags
 		dc.l	$100000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -66,10 +67,13 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	0			;ws_ExpMem
+_expmem		dc.l	BUFLEN			;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0			;ws_kickname
+		dc.l	0			;ws_kicksize
+		dc.w	0			;ws_kickcrc
 
 ;============================================================================
 
@@ -81,7 +85,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.9 "
+		dc.b	"Version 1.11 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -90,7 +94,7 @@ _d1		dc.b	"DISK1",0
 _d2		dc.b	"DISK2",0
 _d3		dc.b	"DISK3",0
 _ds		dc.b	"CFSDISK",0
-_savepath	dc.b	"/save",0
+_savepath	dc.b	"save",0
 	EVEN
 
 ;======================================================================
@@ -328,14 +332,14 @@ _Loader		cmp.w	#3,d0		;list
 
 		cmp.l	#$8062a,a5		;only if savefile
 		bne	.load
-		lea	(_buffer),a0
+		move.l	(_expmem),a0
 		lea	(_savepath),a1
 .l1		move.b	(a1)+,(a0)+
 		bne	.l1
 		move.b	#"/",(-1,a0)
 .l2		move.b	(a4)+,(a0)+
 		bne	.l2
-		lea	(_buffer),a4
+		move.l	(_expmem),a4
 
 .load		move.l	a4,a0
 		move.l	a5,a1
@@ -364,14 +368,14 @@ _Loader		cmp.w	#3,d0		;list
 	;save file
 .cmd1		MOVEM.L	D2-A6,-(A7)
 		ADDQ.L	#4,A0
-		LEA	(_buffer),A2
+		move.l	(_expmem),A2
 		LEA	(_savepath),A3
 .l11		MOVE.B	(A3)+,(A2)+
 		BNE.B	.l11
 		MOVE.B	#"/",(-1,A2)
 .l12		MOVE.B	(A0)+,(A2)+
 		BNE.B	.l12
-		LEA	(_buffer),A0
+		move.l	(_expmem),A0
 		MOVE.L	D1,D0
 		move.l	(_resload),a2
 		jsr	(resload_SaveFile,a2)
@@ -383,7 +387,7 @@ _Loader		cmp.w	#3,d0		;list
 .cmd3		movem.l	d2-a6,-(a7)
 		lea	(_savepath),a0
 		move.l	a1,a6			;a6 = array
-		lea	(_buffer),a1
+		move.l	(_expmem),a1
 		move.l	#BUFLEN,d0
 		move.l	(_resload),a2
 		jsr	(resload_ListFiles,a2)
@@ -392,7 +396,7 @@ _Loader		cmp.w	#3,d0		;list
 		move.l	a0,d2
 
 		move.l	a6,a0
-		lea	(_buffer),a1
+		move.l	(_expmem),a1
 		move.w	d7,d0
 		beq	.cmd3_end
 		
@@ -414,11 +418,6 @@ _Loader		cmp.w	#3,d0		;list
 		movem.l	(a7)+,d2-a6
 		moveq	#0,d0
 		rts
-
-;======================================================================
-
-_buffer		dsb	BUFLEN
-		dc.b	0			;avoid 'illegal args' with whdload prior v16
 
 ;======================================================================
 
