@@ -6,7 +6,7 @@
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.10 2005/09/08 21:01:17 wepl Exp wepl $
+;  :Version.	$Id: cf2.asm 1.11 2009/05/19 22:39:37 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -42,7 +42,7 @@ crc_v4	= $aa9f		;french
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-	OUTPUT	wart:c/cannonfodder2/cf2.slave
+	OUTPUT	wart:c/cannonfodder2/CannonFodder2.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
