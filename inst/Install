@@ -1,4 +1,4 @@
-; $Id: Install 1.15 2007/01/23 08:04:46 wepl Exp wepl $
+; $Id: Install 1.16 2009/02/05 20:38:13 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
@@ -168,24 +168,49 @@
     )
 
     (				;----- 3 = DOS (Files) -----
-      (set #AD_disk "A")
+
+      ;if the disk can be requested by the volume name:
+      (set #AD_disk "cf2-1")
+      (set #AD_diskname "Disk 1")	;this optional, default is #AD_disk
       (P_AskDisk)
       (copyfiles
         (help @copyfiles-help)
         (source ("%s:" #AD_disk))
         (dest #dest)
-        (pattern "~(c|devs|s|.#?|intro)")
+	(pattern "~(disk1|mapm#?|s|cf2.rel|ssboot)")
       )
-      (set #AD_disk "B")
+
+      ;if the disk can be identified by a file on it:
+      (set #AD_filereq "disk1")
+      (set #AD_diskname "Disk #2")	;required
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_dev))
+        (dest #dest)
+	(pattern "~(disk2)")
+      )
+
+      ;if there is no way to identify the disk:
+      (set #AD_diskname "Disk Nª 3")
       (P_AskDiskDev)
       (copyfiles
         (help @copyfiles-help)
-        (source ("%s:" #AD_disk))
+        (source ("%s:" #AD_drive))
         (dest #dest)
-        (pattern "~(#?.info)")
+	(pattern "~(disk3|hi#?|ic#?|mapm1.spt|morp#?|ps#?|ra#?)")
       )
+
+      ;example: decompress a packed file
       (set #file (tackon #dest "Enemy"))
       (P_XFDDecrunch)
+
+      ;example: create additional save directory
+      (makedir 
+	(tackon #dest "save")
+	(help @makedir-help)
+      )
+
     )
 
     (				;----- 4 = CD (Files) -----
@@ -442,52 +467,88 @@
 )
 
 ;----------------------------
-; Wait for inserting a named disk
-; IN:  #AD_disk - name of disk
-;      #AD_diskname - optional name of disk to request
-; OUT: -
+; Wait for inserting a named disk or a disk with a named file on it
+; IN:  #AD_disk OR #AD_filereq must be specified!
+;      #AD_disk - name of disk
+;      #AD_filereq - name of a file on the disk which must exist (if all disks have same name,
+;		or there are multiple versions with different disk names)
+;      #AD_diskname - optional on #AD_disk: name of disk for the user requester
+; OUT: - on #AD_disk
+;      #AD_dev on #AD_filereq
 
 (procedure P_AskDisk
+  (set #AD_mode 0)
+  (if #AD_disk (set #AD_mode (+ #AD_mode 1)))
+  (if #AD_filereq (set #AD_mode (+ #AD_mode 2)))
+  (if (= #AD_mode 0) (abort "P_AskDisk: at least one of #AD_disk and #AD_filereq must be specified!"))
+  (if (= #AD_mode 3) (abort "P_AskDisk: only one of #AD_disk and #AD_filereq can be specified!"))
+  (set #AD_mode (- #AD_mode 1))		;becasue 'select' starts with 0
   (if #AD_diskname
     ("")
-    (set #AD_diskname #AD_disk)
+    (if #AD_disk (set #AD_diskname #AD_disk) (abort "P_AskDisk: #AD_diskname is required for #AD_filereq"))
   )
   (PDI_AskMode)
   (set #DI_diskname #AD_diskname)
   (select #DI_mode
     ;0 = floppy
-    (askdisk
-      (dest #AD_disk)
-      (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_diskname))
-      (help @askdisk-help)
+    (select #AD_mode
+      ;0 = identify by volume name
+      (askdisk
+        (dest #AD_disk)
+        (prompt ("\nInsert Disk \"%s\" in any drive!" #AD_diskname))
+        (help @askdisk-help)
+      )
+      ;0 = identify by a named file on the disk
+      (
+        (P_AskSrcDrv)
+        (set #AD_dev (substr #CI_drive 0 (- (strlen #CI_drive) 1)))	;without colon
+	(until
+	  (exists ("%s:%s" #AD_dev #AD_filereq) (noreq))
+          (message
+            (cat
+	      "\nInsert \"" #AD_diskname "\" into drive " #AD_dev "!"
+	    )
+          )
+	)
+      )
     )
     ;1 = adf
     (
       (PDI_Mount)
       (until
-	(getassign #AD_disk "v")
+	(select #AD_mode
+	  (getassign #AD_disk "v")
+	  (exists ("%s:%s" #DI_dev #AD_filereq) (noreq))
+	)
 	(PDI_AskImage)
 	(PDI_Insert)
 	(run "wait 1")
       )
+      (set #AD_dev #DI_dev)
     )
     ;2 = warp
     (
       (PDI_Mount)
       (until
-	(getassign #AD_disk "v")
+	(select #AD_mode
+	  (getassign #AD_disk "v")
+	  (exists ("%s:%s" #DI_dev #AD_filereq) (noreq))
+	)
 	(PDI_AskImage)
 	(PDI_Convert)
 	(PDI_Insert)
 	(run "wait 1")
       )
+      (set #AD_dev #DI_dev)
     )
   )
-  (set #AD_diskname "")
+  (set #AD_diskname "")		;reset for next call of this function
+  (set #AD_filereq "")		;reset for next call of this function
 )
 
 ;----------------------------
-; Wait for inserting a disk with a volume label not useable for P_AskDisk
+; Ask for inserting a disk without the possebility to check for the right disk
+; e.g. if the volume label not useable for P_AskDisk
 ; IN:  #AD_diskname - name of disk to request
 ; OUT: #AD_drive - device name in which the disk has been inserted
 
