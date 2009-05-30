@@ -2,12 +2,13 @@
 ;  :Program.	Flink.asm
 ;  :Contents.	Slave for "Flink" from Psygnosis
 ;  :Author.	Mr.Larmer of Wanted Team, Harry, Wepl
-;  :Version.	$Id: Flink.asm 1.5 2005/08/31 19:15:19 wepl Exp wepl $
+;  :Version.	$Id: Flink.asm 1.6 2005/12/14 18:39:28 wepl Exp wepl $
 ;  :History.	22.03.99/2.7.2000
 ;		08.04.04 rework for kickemu
 ;		23.08.05 JOYPADEMU added
 ;		30.08.05 auto set of correct language
 ;		03.12.05 chip memory increased to fix sound
+;		30.05.09 auto language fixed for italian->spanish
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -23,7 +24,7 @@ Trainer		=	0	; 0-off, 1-on
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:fl/flink/Flink.Slave"
+	OUTPUT	"wart:fi/flink/Flink.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -90,7 +91,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Flink",0
 slv_copy	dc.b	"1994 Psygnosis",0
 slv_info	dc.b	"adapted by Mr.Larmer, Harry, Wepl",10
-		dc.b	"Version 2.2 "
+		dc.b	"Version 2.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -140,7 +141,7 @@ _bootdos	move.l	(_resload),a2		;A2 = _resload
 		cmp.w	#LANG_GERMAN,d0
 		beq	.set
 		moveq	#12,d1
-		cmp.w	#LANG_ITALIAN,d0
+		cmp.w	#LANG_SPANISH,d0
 		beq	.set
 		moveq	#16,d1
 		cmp.w	#LANG_DUTCH,d0
