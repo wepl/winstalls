@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.18 2006/05/07 18:52:31 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.19 2007/11/24 19:39:41 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -24,6 +24,8 @@
 ;			 ACTION_SET_DATE dummy added
 ;		07.11.07 when DEBUG is set and there is no memory for IOCACHE it
 ;			 faults with _debug5
+;		12.08.09 now properly supports read and write on the same fh when
+;			 using IOCACHE (flushs cache added), some comments added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -643,6 +645,7 @@ HD_NumBuffers		= 5
 		move.l	(dp_Arg3,a4),d3			;d3 = readsize
 	IFD IOCACHE
 		moveq	#0,d4				;d4 = readcachesize
+		bsr	.flush_write_cache		;sets a0 again
 	ENDC
 		move.l	(mfl_pos,a0),d5			;d5 = pos
 	;correct readsize if necessary
@@ -695,18 +698,18 @@ HD_NumBuffers		= 5
 		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
 		move.l	#IOCACHE,d7			;d7 = IOCACHE
 	;try from cache
-		tst.l	(mfl_iocache,a0)		;buffer allocated?
+		tst.l	(mfl_iocache,a0)		;cache allocated?
 		beq	.read_1
-		cmp.l	d5,d6
+		cmp.l	d5,d6				;pos to read higher than in cache?
 		bhi	.read_1
 		move.l	d7,d0
 		add.l	d6,d0
-		sub.l	d5,d0
+		sub.l	d5,d0				;pos to read lower then end in cache?
 		bls	.read_1
 		move.l	d0,d4				;d4 = readcachesize
 		cmp.l	d4,d3
 		bhi	.read_2
-		move.l	d3,d4
+		move.l	d3,d4				;fully from cache
 .read_2		move.l	(mfl_iocache,a0),a0
 		add.l	d5,a0
 		sub.l	d6,a0				;source
@@ -720,9 +723,7 @@ HD_NumBuffers		= 5
 		sub.l	d4,d3
 		beq	.read_end
 	;decide if read through cache or direct
-.read_1		cmp.l	d2,d3
-		beq	.read_d				;read remaining/complete file -> doesn't make sense to cache it
-		cmp.l	d7,d3
+.read_1		cmp.l	d7,d3				;fits remaining data to read into cache?
 		blo	.read_c
 	;read direct
 .read_d		move.l	d3,d0				;length
@@ -750,7 +751,7 @@ HD_NumBuffers		= 5
 		beq	.read_d
 	ENDC
 	;read into cache
-.read_c1	move.l	d0,a1				;buffer
+.read_c1	move.l	d0,a1				;cache
 		move.l	(mfl_fib+fib_Size,a0),d0
 		sub.l	d5,d0				;length
 		cmp.l	d7,d0
@@ -821,11 +822,18 @@ HD_NumBuffers		= 5
 		bls	.write_1
 		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
 .write_1
-	;check if fits into cache
-		move.l	d4,d0				;free space in cache
+	;if there is a read cache flush it
+		tst.l	(mfl_clen,a0)
+		bne	.write_3
+		clr.l	(mfl_cpos,a0)
+.write_3
+	;check if fits into cache, if:
+	;- write length less cache size
+	;- current cached write + actual write <= 2 * cache size, and offset matches
+		move.l	d4,d0				;space in cache
 		move.l	(mfl_cpos,a0),d1
 		add.l	(mfl_clen,a0),d1
-		cmp.l	d1,d7				;offsets match?
+		cmp.l	d1,d7				;offsets matches to last cached write?
 		bne	.write_2
 		add.l	d0,d0
 		sub.l	(mfl_clen,a0),d0
@@ -870,16 +878,8 @@ HD_NumBuffers		= 5
 		move.l	a0,d5
 		tst.l	d6
 		beq	.write_end
-	;flush buffer
-.write_flush	move.l	(dp_Arg1,a4),a0			;lock
-		move.l	(mfl_clen,a0),d0		;len
-		move.l	(mfl_cpos,a0),d1		;offset
-		move.l	(mfl_iocache,a0),a1		;buffer
-		move.l	(fl_Key,a0),a0			;name
-		jsr	(resload_SaveFileOffset,a2)
-		move.l	(dp_Arg1,a4),a0			;lock
-		clr.l	(mfl_clen,a0)
-		clr.l	(mfl_cpos,a0)
+	;flush cache
+.write_flush	bsr	.flush_write_cache
 		bra	.write_cache
 	;write without cache
 .write_direct	move.l	d6,d0				;len
@@ -940,20 +940,32 @@ HD_NumBuffers		= 5
 		bne	_debug4
 	ENDC
 	IFD IOCACHE
-	;flush write buffer
-		move.l	(dp_Arg1,a4),a0		;lock
-		move.l	(mfl_clen,a0),d0	;len
-		beq	.end_nocache
-		move.l	(mfl_cpos,a0),d1	;offset
-		move.l	(mfl_iocache,a0),a1	;buffer
-		move.l	(fl_Key,a0),a0		;name
-		jsr	(resload_SaveFileOffset,a2)
-.end_nocache
+		bsr	.flush_write_cache
 	ENDC
 		move.l	(dp_Arg1,a4),d0		;APTR lock
 		bsr	.unlock
 		moveq	#DOSTRUE,d0
 		bra	.reply1
+
+;---------------
+
+	IFD IOCACHE
+	;dp_Arg1 must be the filelock
+	;a read cache remains intact!
+	;must return a0 = APTR lock (dp_Arg1)
+.flush_write_cache
+		move.l	(dp_Arg1,a4),a0		;lock
+		move.l	(mfl_clen,a0),d0	;len
+		beq	.fwc_nocache
+		move.l	(mfl_cpos,a0),d1	;offset
+		move.l	(mfl_iocache,a0),a1	;buffer
+		move.l	(fl_Key,a0),a0		;name
+		jsr	(resload_SaveFileOffset,a2)
+		move.l	(dp_Arg1,a4),a0		;lock
+		clr.l	(mfl_clen,a0)
+		clr.l	(mfl_cpos,a0)
+.fwc_nocache	rts
+	ENDC
 
 ;---------------
 

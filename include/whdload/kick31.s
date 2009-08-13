@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.27 2007/12/31 20:14:20 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.28 2009/02/05 20:40:49 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -27,6 +27,7 @@
 ;		07.11.07 _debug5 added
 ;		04.12.07 patch for exec.ExitIntr improved
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
+;		09.06.09 option Force/S to joypad emulation added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1001,14 +1002,14 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 	IFND BOOTDOS
 	FAIL	INIT_LOWLEVEL requires BOOTDOS
 	ENDC
-_lowlevel	movem.l	d0-d3/a0-a2/a5-a6,-(a7)
+_lowlevel	movem.l	d0-d3/d6/a0-a2/a5-a6,-(a7)
 		move.l	(_resload,pc),a5
 	;open lowlevel.library
 		moveq	#40,d0
 		lea	(_lowlevelname,pc),a1
 		move.l	(4),a6
 		jsr	(_LVOOpenLibrary,a6)
-		move.l	d0,d2
+		move.l	d0,d6			;D6 = lowlevel base
 		bne	.lowlevelok
 		pea	(_lowlevelname,pc)
 		pea	ERROR_OBJECT_NOT_FOUND
@@ -1018,29 +1019,29 @@ _lowlevel	movem.l	d0-d3/a0-a2/a5-a6,-(a7)
 .lowlevelok	lea	.getlanguage,a0
 		move.l	a0,d0
 		move.w	#_LVOGetLanguageSelection,a0
-		move.l	d2,a1
+		move.l	d6,a1
 		jsr	(_LVOSetFunction,a6)
 	IFD JOYPADEMU
 		lea	(.readjoyport,pc),a0
 		move.l	a0,d0
 		move.w	#_LVOReadJoyPort,a0
-		move.l	d2,a1
+		move.l	d6,a1
 		jsr	(_LVOSetFunction,a6)
 		lea	(.rjp_save,pc),a0
 		move.l	d0,(a0)
 	;do initial joyport read to init internal structures
-	;	move.l	d2,a6
+	;	move.l	d6,a6
 	;	moveq	#1,d0			;port 1
 	;	jsr	(_LVOReadJoyPort,a6)
 	;check for user defined keys
 JPARGBUFLEN = 100
 		sub.l	#JPARGBUFLEN,a7
-		moveq	#(RDA_SIZEOF+(6*4))/4-1,d0
+		moveq	#(RDA_SIZEOF+(7*4))/4-1,d0
 .clr		clr.l	-(a7)
 		dbf	d0,.clr
 		move.l	#JPARGBUFLEN,d0		;buffer length
 		moveq	#0,d1			;reserved
-		lea	(RDA_SIZEOF+(6*4),a7),a0
+		lea	(RDA_SIZEOF+(7*4),a7),a0
 		move.l	a0,(RDA_Source+CS_Buffer,a7)
 		jsr	(resload_GetCustom,a5)
 		tst.l	d0
@@ -1080,10 +1081,25 @@ JPARGBUFLEN = 100
 		dbf	d3,.loop
 		move.l	a7,d1
 		jsr	(_LVOFreeArgs,a6)
-		add.l	#RDA_SIZEOF+(6*4)+JPARGBUFLEN,a7
+	;force lowlevel.library to joystick mode for port0/1
+		tst.l	(a2)
+		beq	.noforce
+		move.l	d6,a6
+		clr.l	-(a7)
+		pea     SJA_TYPE_JOYSTK
+		pea	SJA_Type
+		moveq	#0,d0			;port 0
+		move.l	a7,a1
+		jsr	(_LVOSetJoyPortAttrsA,a6)
+		moveq	#1,d0			;port 1
+		move.l	a7,a1
+		jsr	(_LVOSetJoyPortAttrsA,a6)
+		add.w	#12,a7
+.noforce
+		add.l	#RDA_SIZEOF+(7*4)+JPARGBUFLEN,a7
 	ENDC
 	;call slave
-		movem.l	(a7)+,d0-d3/a0-a2/a5-a6
+		movem.l	(a7)+,d0-d3/d6/a0-a2/a5-a6
 		rts
 
 .getlanguage	move.l	(_language,pc),d0
@@ -1154,7 +1170,7 @@ JPARGBUFLEN = 100
 		dc.w	$54,0			;F5 Left Ear - Reverse
 		dc.w	$55,0			;F6 Right Ear - Forward
 
-.rjp_template	dc.b	"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K",0
+.rjp_template	dc.b	"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K,Force/S",0
 
 ;----------------------------------------
 ; ASCII to Integer
