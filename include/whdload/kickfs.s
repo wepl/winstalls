@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.19 2007/11/24 19:39:41 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.20 2009/08/13 21:43:56 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -26,6 +26,7 @@
 ;			 faults with _debug5
 ;		12.08.09 now properly supports read and write on the same fh when
 ;			 using IOCACHE (flushs cache added), some comments added
+;		16.08.09 flushing IOCACHE wasn't correct handled, fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -75,7 +76,7 @@ HD_NumBuffers		= 5
 		LONG	mfl_pos			;position in file
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
 	IFD IOCACHE
-		LONG	mfl_cpos		;fileoffset cache points to
+		LONG	mfl_cpos		;fileoffset cache points to, -1 means nothing cached
 		LONG	mfl_clen		;amount data in cache (valid only on write cache)
 		LONG	mfl_iocache		;pointer to cache memory
 	ENDC
@@ -695,8 +696,9 @@ HD_NumBuffers		= 5
 	ENDC
 		bra	.reply2
 	ELSE
-		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
 		move.l	#IOCACHE,d7			;d7 = IOCACHE
+		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
+		bmi	.read_1				;if no cache due .flush_write_cache
 	;try from cache
 		tst.l	(mfl_iocache,a0)		;cache allocated?
 		beq	.read_1
@@ -823,14 +825,15 @@ HD_NumBuffers		= 5
 		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
 .write_1
 	;if there is a read cache flush it
+		move.l	d4,d0				;space in cache
 		tst.l	(mfl_clen,a0)
 		bne	.write_3
-		clr.l	(mfl_cpos,a0)
+		move.l	#-1,(mfl_cpos,a0)
+		bra	.write_2
 .write_3
 	;check if fits into cache, if:
 	;- write length less cache size
 	;- current cached write + actual write <= 2 * cache size, and offset matches
-		move.l	d4,d0				;space in cache
 		move.l	(mfl_cpos,a0),d1
 		add.l	(mfl_clen,a0),d1
 		cmp.l	d1,d7				;offsets matches to last cached write?
@@ -854,12 +857,13 @@ HD_NumBuffers		= 5
 	ENDC
 	;into cache
 .write_memok	move.l	(mfl_cpos,a0),d1
+		bmi	.write_posset
 		add.l	(mfl_clen,a0),d1
 		cmp.l	d1,d7				;offsets match?
 		beq	.write_posok
 		tst.l	(mfl_clen,a0)			;any data stored?
 		bne	.write_flush
-		move.l	d7,(mfl_cpos,a0)
+.write_posset	move.l	d7,(mfl_cpos,a0)
 .write_posok	move.l	d0,a1
 		move.l	d4,d0
 		sub.l	(mfl_clen,a0),d0		;free space in cache
@@ -955,7 +959,7 @@ HD_NumBuffers		= 5
 	;must return a0 = APTR lock (dp_Arg1)
 .flush_write_cache
 		move.l	(dp_Arg1,a4),a0		;lock
-		move.l	(mfl_clen,a0),d0	;len
+		move.l	(mfl_clen,a0),d0	;len (only set on write cache)
 		beq	.fwc_nocache
 		move.l	(mfl_cpos,a0),d1	;offset
 		move.l	(mfl_iocache,a0),a1	;buffer
@@ -963,7 +967,7 @@ HD_NumBuffers		= 5
 		jsr	(resload_SaveFileOffset,a2)
 		move.l	(dp_Arg1,a4),a0		;lock
 		clr.l	(mfl_clen,a0)
-		clr.l	(mfl_cpos,a0)
+		move.l	#-1,(mfl_cpos,a0)
 .fwc_nocache	rts
 	ENDC
 
