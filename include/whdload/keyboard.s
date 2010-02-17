@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.11 2006/08/19 11:04:15 wepl Exp wepl $
+;  :Version.	$Id: keyboard.s 1.12 2007/08/18 16:46:18 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -11,13 +11,18 @@
 ;		04.03.04 clearing sdr removed, seems not required/causing
 ;			 problems
 ;		19.08.06 _key_check added (DJ Mike)
+;		15.02.10 restructured and made _KeyboardHandle a global
+;			 routine which doesn't affect interrupt acknowledge
+;			 to be able to call it from an existing PORTS
+;			 interrupt handler (PygmyProjects_Extension)
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
 ;		_key_help	function to execute on help pressed
 ;		_debug		function to quit with debug
 ;		_exit		function to quit
-;		_keycode
+;		_keycode	variable/memory filled with rawkey
+;		_key_check	routine will be called with rawkey in d0
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9
@@ -69,14 +74,23 @@ _SetupKeyboard
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena+_custom)
 		rts
 
-.int		movem.l	d0-d1/a0-a1,-(a7)
+	;check if keyboard has caused interrupt
+.int		btst	#INTB_PORTS,(intreqr+1+_custom)
+		beq	.end
+		btst	#CIAICRB_SP,(ciaicr+_ciaa)
+		beq	.end
+
+		bsr	_KeyboardHandle
+
+.end		move.w	#INTF_PORTS,(intreq+_custom)
+	;to avoid timing problems on very fast machines we do another
+	;custom access
+		tst.w	(intreqr+_custom)
+		rte
+
+_KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 		lea	(_custom),a0
 		lea	(_ciaa),a1
-	;check if keyboard has caused interrupt
-		btst	#INTB_PORTS,(intreqr+1,a0)
-		beq	.end
-		btst	#CIAICRB_SP,(ciaicr,a1)
-		beq	.end
 	;read keycode
 		move.b	(ciasdr,a1),d0
 	;set output mode (handshake)
@@ -143,12 +157,8 @@ _SetupKeyboard
 
 	;set input mode
 		and.b	#~(CIACRAF_SPMODE),(ciacra,a1)
-.end		move.w	#INTF_PORTS,(intreq,a0)
-	;to avoid timing problems on very fast machines we do another
-	;custom access
-		tst.w	(intreqr,a0)
 		movem.l	(a7)+,d0-d1/a0-a1
-		rte
+		rts
 
 	IFND _exit
 .debug		pea	TDREASON_DEBUG.w
