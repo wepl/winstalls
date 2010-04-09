@@ -3,9 +3,11 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.1 2006/12/18 20:11:07 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.2 2007/01/17 17:16:56 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
+;		09.04.10 supporting multiple slaves with different memory setups
+;			 e.g. basm -dMEM=32 workbench31.asm
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,7 +21,6 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"awart:workbench31/Workbench31.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -31,8 +32,34 @@
 
 ;============================================================================
 
+	IFD MEM
+	IFEQ MEM-1
 CHIPMEMSIZE	= $ff000
 FASTMEMSIZE	= $100000
+	OUTPUT	"awart:workbench31/Workbench31_1.Slave"
+	ELSE
+	IFEQ MEM-4
+CHIPMEMSIZE	= $1ff000
+FASTMEMSIZE	= $400000
+	OUTPUT	"awart:workbench31/Workbench31_4.Slave"
+	ELSE
+	IFEQ MEM-32
+CHIPMEMSIZE	= $1ff000
+FASTMEMSIZE	= $2000000
+	OUTPUT	"awart:workbench31/Workbench31_32.Slave"
+	ELSE
+	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
+CHIPMEMSIZE	= $1000
+FASTMEMSIZE	= $1000
+	ENDC
+	ENDC
+	ENDC
+	ELSE
+	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
+CHIPMEMSIZE	= $1000
+FASTMEMSIZE	= $1000
+	ENDC
+
 NUMDRIVES	= 1
 WPDRIVES	= %1111
 
@@ -87,7 +114,7 @@ slv_CurrentDir		dc.b	"data",0
 slv_name		dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.1 "
+		dc.b	"Version 1.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
