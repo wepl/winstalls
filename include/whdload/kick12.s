@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.22 2007/12/31 20:14:20 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.23 2009/02/05 20:40:49 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -22,6 +22,7 @@
 ;		18.08.07 fix for snoopbug at $6e92 corrected (Psygore)
 ;		04.12.07 patch for exec.ExitIntr improved
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
+;		13.11.10 patches added to avoid overwriting the vector table (68000 support)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -142,10 +143,14 @@ kick_patch	PL_START
 		PL_S	$d2,$fe-$d2
 		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
 		PL_CW	$132				;color00 $444 -> $000
+		PL_S	$136,$148-$136			;avoid overwriting vector table
+		PL_W	$22e,$400			;avoid overwriting vector table
 		PL_CW	$25a				;color00 $888 -> $000
 	IFD HRTMON
 		PL_PS	$286,kick_hrtmon
 	ENDC
+		PL_PS	$3d6,kick_setvecs
+		PL_S	$3ec,12				;avoid overwriting vector table
 		PL_PS	$422,exec_flush
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$50C,$514-$50C			;skip LED power on
@@ -154,6 +159,8 @@ kick_patch	PL_START
 		PL_P	$5f0,kick_reboot		;reboot (reset)
 		PL_P	$61a,kick_detectfast
 		PL_PS	$e60,exec_ExitIntr
+		PL_C	$778,$7c0-$7b4			;avoid overwriting vector table
+		PL_C	$784,$7e2-$7c2			;avoid overwriting vector table
 		PL_P	$1318,exec_snoop1
 		PL_PS	$147a,exec_SetFunction
 		PL_PS	$1576,exec_MakeFunctions
@@ -230,6 +237,16 @@ kick_patch	PL_START
 		PL_END
 
 ;============================================================================
+
+kick_setvecs	move.w	(a1)+,d0
+		beq	.skip
+		lea	(a0,d0.w),a3
+		move.l	a3,(a2)
+.skip		addq.l	#4,a2
+		cmp.w	#$c0,a2			;stop after trap #15
+		bne	kick_setvecs
+		add.l	#$3e2-$3d6-6,(a7)
+		rts
 
 kick_detectfast
 	IFEQ FASTMEMSIZE
