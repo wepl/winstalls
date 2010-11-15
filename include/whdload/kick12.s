@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.23 2009/02/05 20:40:49 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.24 2010/11/13 18:35:43 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -160,7 +160,7 @@ kick_patch	PL_START
 		PL_P	$61a,kick_detectfast
 		PL_PS	$e60,exec_ExitIntr
 		PL_C	$778,$7c0-$7b4			;avoid overwriting vector table
-		PL_C	$784,$7e2-$7c2			;avoid overwriting vector table
+		PL_C	$786,$7e2-$7c2			;avoid overwriting vector table
 		PL_P	$1318,exec_snoop1
 		PL_PS	$147a,exec_SetFunction
 		PL_PS	$1576,exec_MakeFunctions
