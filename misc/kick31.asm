@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.8 2005/08/31 19:37:22 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.9 2006/05/07 19:01:59 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -127,7 +127,9 @@ _bootblock	blitz
 
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
-; HDINIT is required
+; HDINIT is required, this will never called if booted from a diskimage, only
+; works in conjunction with the virtual filesystem of HDINIT
+; this routine replaces the loading and executing of the startup-sequence
 ;
 ; the following example is simple and wont work for BCPL programs and 
 ; programs build using MANX Aztec-C
@@ -157,7 +159,7 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		jsr	(_LVOOpen,a6)
 		move.l	d0,d1
 		beq	.program_err
-		move.l	#300,d3
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
 		sub.l	d3,a7
 		move.l	a7,d2
 		jsr	(_LVORead,a6)
@@ -237,8 +239,8 @@ _dosbase	dc.l	0
 
 ;============================================================================
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos, requires the presence of
-; "startup-sequence"
+; can also be used instead of _bootdos
+; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
 ; after they get loaded
@@ -341,6 +343,8 @@ _p_run2568	PL_START
 ;============================================================================
 ; callback/hook which gets executed after each successful call to
 ; dos.LoadRead
+; it only works for files loaded via the virtual filesystem of HDINIT not
+; for files loaded from diskimages
 
 ; the following example uses a parameter table to patch different files
 ; after they get loaded

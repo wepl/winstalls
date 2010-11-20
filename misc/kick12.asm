@@ -3,10 +3,11 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.6 2007/07/26 18:57:18 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.7 2007/11/24 19:38:27 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
+;		20.11.10 _cb_dosLoadSeg, _cb_keyboard added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -39,6 +40,8 @@ WPDRIVES	= %1111
 ;BLACKSCREEN
 ;BOOTBLOCK
 ;BOOTEARLY
+;CBDOSLOADSEG
+;CBKEYBOARD
 CACHE
 DEBUG
 DISKSONBOOT
@@ -101,6 +104,129 @@ _bootearly	blitz
 
 _bootblock	blitz
 		jmp	(12,a4)
+
+	ENDC
+
+;============================================================================
+; callback/hook which gets executed after each successful call to dos.LoadSeg
+; can also be used instead of _bootdos
+; if you use diskimages that is the way to patch the executables
+
+; the following example uses a parameter table to patch different executables
+; after they get loaded
+
+	IFD CBDOSLOADSEG
+
+; D0 = BSTR name of the loaded program as BCPL string
+; D1 = BPTR segment list of the loaded program as BCPL pointer
+
+_cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		move.l	d0,a0
+		moveq	#0,d0
+		move.b	(a0)+,d0	;D0 = name length
+	;remove leading path
+		move.l	a0,a1
+		move.l	d0,d2
+.2		move.b	(a1)+,d3
+		subq.l	#1,d2
+		cmp.b	#":",d3
+		beq	.1
+		cmp.b	#"/",d3
+		beq	.1
+		tst.l	d2
+		bne	.2
+		bra	.3
+.1		move.l	a1,a0		;A0 = name
+		move.l	d2,d0		;D0 = name length
+		bra	.2
+.3	;get hunk length sum
+		move.l	d1,a1		;D1 = segment
+		moveq	#0,d2
+.add		add.l	a1,a1
+		add.l	a1,a1
+		add.l	(-4,a1),d2	;D2 = hunks length
+		subq.l	#8,d2		;hunk header
+		move.l	(a1),a1
+		move.l	a1,d7
+		bne	.add
+	;search patch
+		lea	(_cbls_patch,pc),a1
+.next		move.l	(a1)+,d3
+		movem.w	(a1)+,d4-d5
+		beq	.end
+		cmp.l	d2,d3		;length match?
+		bne	.next
+	;compare name
+		lea	(_cbls_patch,pc,d4.w),a2
+		move.l	a0,a3
+		move.l	d0,d6
+.cmp		move.b	(a3)+,d7
+		cmp.b	#"a",d7
+		blo	.l
+		cmp.b	#"z",d7
+		bhi	.l
+		sub.b	#$20,d7
+.l		cmp.b	(a2)+,d7
+		bne	.next
+		subq.l	#1,d6
+		bne	.cmp
+		tst.b	(a2)
+		bne	.next
+	;set debug
+	IFD DEBUG
+		clr.l	-(a7)
+		move.l	d1,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_Control,a2)
+		move.l	(4,a7),d1
+		add.w	#12,a7
+	ENDC
+	;patch
+		lea	(_cbls_patch,pc,d5.w),a0
+		move.l	d1,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_PatchSeg,a2)
+	;end
+.end		rts
+
+LSPATCH	MACRO
+		dc.l	\1		;cumulated size of hunks (not filesize!)
+		dc.w	\2-_cbls_patch	;name
+		dc.w	\3-_cbls_patch	;patch list
+	ENDM
+
+_cbls_patch	LSPATCH	2516,.n_run,_p_run2568
+		LSPATCH	7080,.n_shellseg,_p_shellseg7080
+		dc.l	0
+
+	;all upper case!
+.n_run		dc.b	"RUN",0
+.n_shellseg	dc.b	"SHELL-SEG",0
+	EVEN
+
+_p_run2568	PL_START
+		PL_END
+_p_shellseg7080	PL_START
+		PL_AW	$1990,$1a4c-$19ae	;dereferences NULL (maybe dirlock because actual directory is broken)
+		PL_END
+
+	ENDC
+
+;============================================================================
+; callback/hook which gets executed on each keypress
+
+	IFD CBKEYBOARD
+
+; D0 = UBYTE rawkey code
+
+_cb_keyboard
+		cmp.b	#$40,d0		;space
+		bne	.ok
+		illegal
+.ok
+		rts
 
 	ENDC
 

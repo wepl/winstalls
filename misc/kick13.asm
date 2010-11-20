@@ -1,8 +1,8 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
-;  :Author.	Wepl
-;  :Version.	$Id: kick13.asm 1.12 2005/11/04 09:09:34 wepl Exp wepl $
+;  :Author.	Wepl, JOTD
+;  :Version.	$Id: kick13.asm 1.13 2006/05/07 19:01:54 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -13,6 +13,8 @@
 ;		23.02.05 startup init code for BCPL programs fixed
 ;		04.11.05 Shell-Seg access fault fixed
 ;		03.05.06 made compatible to ASM-One
+;		20.11.08 SETSEGMENT added (JOTD)
+;		20.11.10 _cb_keyboard added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -45,14 +47,15 @@ WPDRIVES	= %0000
 
 ;BLACKSCREEN
 ;BOOTBLOCK
-;BOOTDOS
+BOOTDOS
 ;BOOTEARLY
 ;CBDOSLOADSEG
 ;CBDOSREAD
+;CBKEYBOARD
 CACHE
 DEBUG
 ;DISKSONBOOT
-;DOSASSIGN
+DOSASSIGN
 FONTHEIGHT     = 8
 HDINIT
 HRTMON
@@ -120,8 +123,10 @@ _bootblock	blitz
 
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
-; HDINIT is required
-
+; HDINIT is required, this will never called if booted from a diskimage, only
+; works in conjunction with the virtual filesystem of HDINIT
+; this routine replaces the loading and executing of the startup-sequence
+;
 ; the following example is extensive because it preserves all registers and
 ; is able to start BCPL programs and programs build by MANX Aztec-C
 ;
@@ -167,7 +172,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		jsr	(_LVOOpen,a6)
 		move.l	d0,d1
 		beq	.program_err
-		move.l	#300,d3
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
 		sub.l	d3,a7
 		move.l	a7,d2
 		jsr	(_LVORead,a6)
@@ -202,6 +207,21 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	a7,a0
 		jsr	(resload_Control,a2)
 		add.w	#12,a7
+	ENDC
+
+	IFD SETSEGMENT
+	;store loaded segment list in current task
+	;to make programs work which autodetach itself
+	;but beware, kickstart will crash if the program does not
+	;detach and dos will try to UnloadSeg it
+		sub.l	a1,a1
+		move.l	4,A6
+		jsr	(_LVOFindTask,a6)
+		move.l	d0,a0
+		move.l	(pr_CLI,a0),d0
+		asl.l	#2,d0			;BPTR -> APTR
+		move.l	d0,a0
+		move.l	d7,(cli_Module,a0)
 	ENDC
 
 	;call
@@ -295,8 +315,8 @@ _callargs	ds.b	208
 
 ;============================================================================
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos, requires the presence of
-; "startup-sequence"
+; can also be used instead of _bootdos
+; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
 ; after they get loaded
@@ -403,6 +423,8 @@ _p_shellseg7080	PL_START
 ;============================================================================
 ; callback/hook which gets executed after each successful call to
 ; dos.LoadRead
+; it only works for files loaded via the virtual filesystem of HDINIT not
+; for files loaded from diskimages
 
 ; the following example uses a parameter table to patch different files
 ; after they get loaded
@@ -459,6 +481,22 @@ _cb_dosRead
 .data		dc.w	$4278,$c	;original = 0b
 		dc.w	$45b4,$c	;original = 0b
 		dc.w	0
+
+	ENDC
+
+;============================================================================
+; callback/hook which gets executed on each keypress
+
+	IFD CBKEYBOARD
+
+; D0 = UBYTE rawkey code
+
+_cb_keyboard
+		cmp.b	#$40,d0		;space
+		bne	.ok
+		illegal
+.ok
+		rts
 
 	ENDC
 
