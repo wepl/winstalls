@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.24 2010/11/13 18:35:43 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.25 2010/11/15 01:40:18 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -23,6 +23,7 @@
 ;		04.12.07 patch for exec.ExitIntr improved
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;		13.11.10 patches added to avoid overwriting the vector table (68000 support)
+;		20.11.10 _cb_keyboard added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -91,6 +92,11 @@ BOOTEARLY = 1
 	IFND CBDOSLOADSEG
 	IFD _cb_dosLoadSeg
 CBDOSLOADSEG = 1
+	ENDC
+	ENDC
+	IFND CBKEYBOARD
+	IFD _cb_keyboard
+CBKEYBOARD = 1
 	ENDC
 	ENDC
 
@@ -578,10 +584,16 @@ disk_getunitid
 keyboard_start	moveq	#0,d4
 		not.b	d0
 		ror.b	#1,d0
+		beq	.continue
 		cmp.b	(_keyexit,pc),d0
 		beq	.exit
 		cmp.b	(_keydebug,pc),d0
 		beq	.debug
+	IFD CBKEYBOARD
+		movem.l	d0-a6,-(a7)
+		bsr	_cb_keyboard
+		movem.l	(a7)+,d0-a6
+	ENDC
 .continue	lea	(_keyboarddelay,pc),a1
 		move.b	(_custom+vhposr),(a1)
 		rts
@@ -589,9 +601,7 @@ keyboard_start	moveq	#0,d4
 .exit		pea	TDREASON_OK
 		bra	.abort
 
-.debug		tst.b	d0
-		beq	.continue
-		addq.l	#4,a7			;rts from patchs
+.debug		addq.l	#4,a7			;rts from patchs
 		movem.l	(a7)+,d2-d4/a6
 		addq.l	#4,a7			;rts from keyboard int
 		movem.l	(a7)+,d2/a2
