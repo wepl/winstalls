@@ -4,11 +4,12 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.5 2001/03/11 23:09:01 jah Exp jah $
+;  :Version.	$Id: speed.asm 1.6 2003/06/16 06:47:08 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
 ;		17.02.03 WHDLTAG_Private5 added
+;		13.04.11 made 68000 compatible
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,7 +30,6 @@
 	BOPT	w4-			;disable 64k warnings
 	BOPT	wo-			;disable optimize warnings
 	SUPER
-	MC68060
 
 ;======================================================================
 
@@ -50,7 +50,7 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_info-_base		;ws_info
 
 _name		dc.b	"Memory Speed Benchmark Slave",0
-_copy		dc.b	"2000-2003 Wepl",0
+_copy		dc.b	"2000-2003,2011 Wepl",0
 _info		dc.b	"done by Wepl "
 	DOSCMD	"WDate  >T:date"
 	INCBIN	"T:date"
@@ -110,6 +110,7 @@ catcpu	MACRO
 		move.w	_attn+2,d7
 		btst	#AFB_68020,d7
 		beq	.q\@
+	MC68020
 		movec	cacr,d2
 		sub.w	#CHARWIDTH*8,d0
 		addq.w	#CHARHEIGHT+1,d1
@@ -117,12 +118,14 @@ catcpu	MACRO
 		sub.w	#CHARHEIGHT+1,d1
 		btst	#AFB_68060,d7
 		beq	.q\@
+	MC68060
 		movec	pcr,d2
 		sub.w	#CHARWIDTH*8,d0
 		add.w	#(CHARHEIGHT+1)*2,d1
 		bsr	_pi
 		sub.w	#(CHARHEIGHT+1)*2,d1
 .q\@		sub.w	#CHARHEIGHT+1,d1
+	MC68000
 	ENDM
 
 	;clear screen
@@ -179,7 +182,7 @@ catcpu	MACRO
 		bsr	_ps
 
 		moveq	#0,d0
-		moveq	#0,d1
+		moveq	#1,d1
 		lea	_top,a0
 		bsr	_ps
 
@@ -541,22 +544,49 @@ _pi2		movem.l	d2-d5,-(a7)
 
 ; IN:	d0 = word x
 ;	d1 = word y
-;	d2 = byte digit (0..15)
+;	d2 = ascii char
 
-_pc		movem.l	d0-d3/a0-a1,-(a7)
+_pc		movem.l	d0-d5/a0-a1,-(a7)
 		lea	(MEMSCREEN),a0
 		mulu	#SCREENWIDTH/8,d1
 		add.l	d1,a0
-		sub.w	#32,d2
+		sub.w	#32,d2				;starts at $20
 		mulu	#CHARWIDTH,d2
 		lea	(_font),a1
 		moveq	#CHARHEIGHT-1,d3
-.cp		bfextu	(a1){d2:CHARWIDTH},d1
+.cp
+	IFD _68020_
+		bfextu	(a1){d2:CHARWIDTH},d1
 		bfins	d1,(a0){d0:CHARWIDTH}
+	ELSE
+		move.l	d2,d1
+		lsr.l	#4,d1				;words
+		add.l	d1,d1				;bytes down rounded to word
+		move.l	(a1,d1.l),d1
+		move.l	d2,d4
+		and.w	#%1111,d4
+		lsl.l	d4,d1
+
+		moveq	#-1,d5
+		lsr.l	#CHARWIDTH,d5
+		not.l	d5
+		and.l	d5,d1
+		not.l	d5
+
+		move.l	d0,d4
+		and.w	#%1111,d4
+		lsr.l	d4,d1
+		ror.l	d4,d5
+		move.l	d0,d4
+		lsr.l	#4,d4				;words
+		add.l	d4,d4				;bytes down rounded to word
+		and.l	d5,(a0,d4.l)
+		or.l	d1,(a0,d4.l)
+	ENDC
 		add.l	#(_font_-_font)*8/CHARHEIGHT,d2
 		add.l	#SCREENWIDTH,d0
 		dbf	d3,.cp
-		movem.l	(a7)+,d0-d3/a0-a1
+		movem.l	(a7)+,d0-d5/a0-a1
 		rts
 
 _font		INCBIN	sources:pics/pic_font_5x6_br.bin
@@ -602,7 +632,7 @@ _top3		dc.b	"  Eclock=",0
 _top5		dc.b	"  whdload"
 _equ		dc.b	"=",0
 _dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.9  wepl "
+_quit		dc.b	"hold lmb to quit and save pic  v1.10 wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
