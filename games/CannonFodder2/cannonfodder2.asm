@@ -6,7 +6,7 @@
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.11 2009/05/19 22:39:37 wepl Exp wepl $
+;  :Version.	$Id: cf2.asm 1.12 2009/05/19 23:01:20 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -26,6 +26,8 @@
 ;		08.09.05 save/load fixed for french version
 ;		11.12.08 savepath changed for compatibility with WHDLoad 16.9
 ;			 buffer in ExpMem, requires whdload v16.9 now
+;		11.05.11 keyboard routine modified, issue #2422
+;		15.05.11 access fault on loading savegame fixed, issue #2438
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -85,7 +87,7 @@ _expmem		dc.l	BUFLEN			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.11 "
+		dc.b	"Version 1.12 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -251,15 +253,14 @@ _pl4		PL_START
 
 ;======================================================================
 
-_keyboard	movem.l	d0-d1/a0-a1,-(a7)
+_keyboard	movem.l	d0-d1/a0-a2,-(a7)
 		lea	_ciaa,a0
+		lea	_custom,a2
+		btst	#CIAICRB_SP,(ciaicr,a0)
+		beq	.end
 		lea	$814e9,a1
 		move.b	(ciasdr,a0),d0
-		move.b	#CIACRAF_RUNMODE|CIACRAF_SPMODE,(ciacra,a0)
-		moveq	#0,d1
-		move.b	d1,(ciasdr,a0)
-		move.b	#$4b,(ciatalo,a0)
-		move.b	d1,(ciatahi,a0)
+		or.b	#CIACRAF_SPMODE,(ciacra,a0)
 		ror.b	#1,d0
 		not.b	d0
 		bpl	.down
@@ -286,11 +287,15 @@ _keyboard	movem.l	d0-d1/a0-a1,-(a7)
 		move.w	#42,(a1)		;grenades
 		move.w	#42,(6,a1)		;bazookas
 
-.wait		btst	#CIAICRB_TA,(ciaicr,a0)
-		bne	.wait
-		clr.b	(ciacra,a0)
-		move.w	#INTF_PORTS,(_custom+intreq)
-		tst.w	(_custom+intreqr)
+.wait		moveq	#3-1,d1
+.wait1		move.b	(vhposr,a2),d0
+.wait2		cmp.b	(vhposr,a2),d0
+		beq	.wait2
+		dbf	d1,.wait1
+
+.end		and.b	#~(CIACRAF_SPMODE),(ciacra,a0)
+		move.w	#INTF_PORTS,(intreq,a2)
+		tst.w	(intreqr,a2)
 		movem.l	(a7)+,_MOVEMREGS
 		rte
 
@@ -384,6 +389,11 @@ _Loader		cmp.w	#3,d0		;list
 		RTS	
 
 	;list directory
+	;in:	a0 = source path
+	;	a1 = buffer to fill
+	;	a2 = mfm buffer
+	;out:	d0 = success=0
+	;	d1 = amount of entries
 .cmd3		movem.l	d2-a6,-(a7)
 		lea	(_savepath),a0
 		move.l	a1,a6			;a6 = array
@@ -392,13 +402,11 @@ _Loader		cmp.w	#3,d0		;list
 		move.l	(_resload),a2
 		jsr	(resload_ListFiles,a2)
 		move.l	d0,d7			;d7 = how many entries
-		lea	(_savepath),a0
-		move.l	a0,d2
 
 		move.l	a6,a0
 		move.l	(_expmem),a1
 		move.w	d7,d0
-		beq	.cmd3_end
+		beq	.cmd3_skip
 		
 .cmd3_lp	move.b	#-3,(a0)+		;FILE
 		addq.l	#1,a0
@@ -413,6 +421,14 @@ _Loader		cmp.w	#3,d0		;list
 		add.w	#31,a0
 		subq.l	#1,d0
 		bne	.cmd3_lp
+.cmd3_skip
+	;avoid issue #2438
+		moveq	#4,d1
+		sub.w	d7,d1
+		bcs	.cmd3_end
+.cmd3_clr	clr.b	(2,a0)
+		add.w	#32,a0
+		dbf	d1,.cmd3_clr
 
 .cmd3_end	move.l	d7,d1
 		movem.l	(a7)+,d2-a6
