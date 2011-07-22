@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.25 2010/11/15 01:40:18 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.26 2010/11/20 22:06:14 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -24,6 +24,7 @@
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;		13.11.10 patches added to avoid overwriting the vector table (68000 support)
 ;		20.11.10 _cb_keyboard added
+;		22.07.11 adapted for whdload v17
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -43,8 +44,8 @@ KICKCRC		= $e9c6				;33.180
 ;============================================================================
 
 	IFD	slv_Version
-	IFNE	slv_Version-16
-	FAIL	must be slave version 16
+	IFLT	slv_Version-16
+	FAIL	slv_Version must be 16 or higher
 	ENDC
 
 KICKSIZE	= $40000			;33.180
@@ -68,6 +69,9 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_kickname-slv_base	;ws_kickname
 		dc.l	KICKSIZE		;ws_kicksize
 		dc.w	KICKCRC			;ws_kickcrc
+	IFGE slv_Version-17
+		dc.w	slv_config-slv_base	;ws_info
+	ENDC
 	ENDC
 
 ;============================================================================

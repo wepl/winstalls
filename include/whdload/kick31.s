@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.28 2009/02/05 20:40:49 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.29 2009/08/13 21:44:16 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -28,6 +28,7 @@
 ;		04.12.07 patch for exec.ExitIntr improved
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;		09.06.09 option Force/S to joypad emulation added
+;		22.07.11 adapted for whdload v17
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -59,8 +60,8 @@ KICKCRC		= KICKCRC1200			;compatibility for old slaves
 ;============================================================================
 
 	IFD	slv_Version
-	IFNE	slv_Version-16
-	FAIL	must be slave version 16
+	IFLT	slv_Version-16
+	FAIL	slv_Version must be 16 or higher
 	ENDC
 
 KICKSIZE	= $80000
@@ -88,6 +89,9 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_kickname-slv_base	;ws_kickname
 		dc.l	KICKSIZE		;ws_kicksize
 _kickcrc	dc.w	-1			;ws_kickcrc
+	IFGE slv_Version-17
+		dc.w	slv_config-slv_base	;ws_info
+	ENDC
 	ENDC
 
 ;============================================================================

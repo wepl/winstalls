@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.61 2008/11/16 16:15:18 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.62 2010/11/20 22:06:14 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -62,6 +62,7 @@
 ;		16.11.08 traps via the operating system are allowed again, rewerting the
 ;			 change from 04.05.06 partial (JOTD and Gravity)
 ;		20.11.10 _cb_keyboard added
+;		22.07.11 adapted for whdload v17
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -89,8 +90,8 @@ KICKCRC		= $f9e3				;34.005
 ;============================================================================
 
 	IFD	slv_Version
-	IFNE	slv_Version-16
-	FAIL	must be slave version 16
+	IFLT	slv_Version-16
+	FAIL	slv_Version must be 16 or higher
 	ENDC
 
 KICKSIZE	= $40000			;34.005
@@ -114,6 +115,9 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_kickname-slv_base	;ws_kickname
 		dc.l	KICKSIZE		;ws_kicksize
 		dc.w	KICKCRC			;ws_kickcrc
+	IFGE slv_Version-17
+		dc.w	slv_config-slv_base	;ws_info
+	ENDC
 	ENDC
 
 ;============================================================================

@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.18 2007/01/17 16:21:54 wepl Exp wepl $
+$Id: kick.readme 1.19 2009/02/05 20:40:49 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -286,6 +286,15 @@ _cb_dosRead
 	  D1 = ULONG offset in file on start of current Read
 	  A0 = CPTR  full name of file
 	  A1 = APTR  buffer to the data has been read
+	* the routine may destroy all registers but must return via RTS
+
+_cb_keyboard
+
+	* this routine will be called on each key press, it is executed
+	  before the keyboard has been acknowledged, therefore no time
+	  intense tasks should be executed here
+	* Registers upon calling:
+	  D0 = UBYTE rawkey code of the actual pressed key
 	* the routine may destroy all registers but must return via RTS
 
 Functions in kick(12|13|31).s
