@@ -52,11 +52,14 @@
 	Left Ear - Reverse	- F5
 	Right Ear - Forward	- F6
  You can change the keys using the Custom tooltype. The template for the string
- is "Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K".
+ is "Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K,Force/S".
  Example to set Grey button to Space and Blue to Del:
-	Custom=grey $40 blue $46
+	Custom=grey $40 blue $46 force
  To get lowlevel.library detect a joystick you must move the stick right/left
  or up/down a few times. After this the emulation will start to work.
+ You can also add/use the option Force to the Custom tooltype to disable the
+ auto sensing of the lowlevel.library and to force it to assume a joystick is
+ connected.
 
 
  History:
