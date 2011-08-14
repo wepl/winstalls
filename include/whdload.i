@@ -2,9 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@whdload.de
-;  :Address.	Clara-Zetkin-Straﬂe 52, Zwickau, 08058, Germany
-;  :Version.	$Id: whdload.i 16.8 2007/07/26 18:53:33 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 16.9.1.2 2009/02/05 20:40:49 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -27,9 +25,12 @@
 ;		02.05.06 made compatible to ASM-One
 ;		05.05.07 some cleanup and minor comment fixes
 ;		06.09.07 adapted to work with Devpac 3.18
-;  :Copyright.	© 1996-2006 Bert Jahn, All Rights Reserved
+;		11.11.07 PL_BKPT, PL_BELL added
+;		28.07.08 PL_NOPS added
+;		22.07.11 new stuff for whdload v17
+;  :Copyright.	© 1996-2011 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
-;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
+;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
 ;---------------------------------------------------------------------------*
 
  IFND WHDLOAD_I
@@ -217,7 +218,7 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 ; additional	Version 8+
 ;=============================================================================
 
-	ULONG	ws_ExpMem	;size of required expansions memory, during
+	LONG	ws_ExpMem	;size of required expansions memory, during
 				;initialisation overwritten by WHDLoad with
 				;address of the memory (multiple of $1000)
 				;if negative it is optional
@@ -238,6 +239,11 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	ULONG	ws_kicksize	;size of kickstart image
 	UWORD	ws_kickcrc	;crc16 of kickstart image
 
+;=============================================================================
+; additional	Version 17+
+;=============================================================================
+
+	RPTR	ws_config	;configuration of splash window buttons
 	LABEL	ws_SIZEOF
 
 ;=============================================================================
@@ -543,7 +549,7 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_R			;set "rts"
 	EITEM	PLCMD_P			;set "jmp"
 	EITEM	PLCMD_PS		;set "jsr"
-	EITEM	PLCMD_S			;set "bra.w" (skip)
+	EITEM	PLCMD_S			;set "bra" (skip)
 	EITEM	PLCMD_I			;set "illegal"
 	EITEM	PLCMD_B			;write byte to specified address
 	EITEM	PLCMD_W			;write word to specified address
@@ -573,6 +579,9 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_ORL		;or long to specified address
 ; version 16.6
 	EITEM	PLCMD_GA		;get specified address and store in slave
+; version 16.9
+	EITEM	PLCMD_BKPT		;call freezer
+	EITEM	PLCMD_BELL		;visual bell
 
 ;=============================================================================
 ; macros to build patchlist
@@ -655,7 +664,11 @@ PL_PA		MACRO			;write address
 
 PL_NOP		MACRO			;fill area with nop's
 	PL_CMDADR PLCMD_NOP,\1
-	dc.w	\2			;distance
+	dc.w	\2			;distance given in bytes
+		ENDM
+PL_NOPS		MACRO			;fill area with nop's
+	PL_CMDADR PLCMD_NOP,\1
+	dc.w	2*\2			;distance given in nop count
 		ENDM
 
 ; version 15
@@ -708,7 +721,7 @@ PL_AL		MACRO			;add long
 ; there are two macros provided for the DATA command, if you want change a 
 ; string PL_STR can be used:
 ;	PL_STR	$340,<NewString!>
-; for binary data you must use PL_DATA like the following example:
+; for binary data you must use PL_DATA according the following example:
 ;	PL_DATA	$350,.stop-.strt
 ; .strt	dc.b	2,3,$ff,'a',0
 ;	move.w	#$600,d0
@@ -748,6 +761,34 @@ PL_ORL		MACRO			;or long
 PL_GA		MACRO			;get address
 	PL_CMDADR PLCMD_GA,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
+		ENDM
+
+; version 16.9
+
+; PL_BKPT sets a breakpoint:
+; WHDLoad will write an illegal ($4afc) to the address and remembers the
+; original contents, when the illegal is executed the original contents is
+; restored, a NMI stackframe is created and the detected freezer called
+; if there is no freezer nothing will be done, the vbr should be moved by
+; WHDLoad to allow catching the illegal instruction exception
+
+PL_BKPT		MACRO
+	IFNE	NARG-1
+	FAIL	PL_BKPT incorrect number of arguments
+	ENDC
+	PL_CMDADR PLCMD_BKPT,\1
+		ENDM
+
+; PL_BELL shows a visual bell:
+; similar to PL_BKPT, instead of entering a freezer a color cycle will be
+; shown for the given time or lmb pressed, time is given in 1/10s
+
+PL_BELL		MACRO
+	IFNE	NARG-2
+	FAIL	PL_BELL incorrect number of arguments
+	ENDC
+	PL_CMDADR PLCMD_BELL,\1
+	dc.w	\2			;time to wait
 		ENDM
 
 ;=============================================================================
