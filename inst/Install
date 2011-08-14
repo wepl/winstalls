@@ -1,7 +1,7 @@
-; $Id: Install 1.16 2009/02/05 20:38:13 wepl Exp wepl $
+; $Id: Install 1.17 2009/05/20 23:38:25 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
-(set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile
+(set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
 (set #sub-dir "")			;sub directory containing data files
 (set #highs-file "highs")		;name of high scores file
 
@@ -244,6 +244,46 @@
         (newname #SF_new_filename)
       )
     )
+
+    (				;----- 6 = Arcadia
+      (if (getenv "WHDLArcadiaCtrl")
+	(set #ArcadiaCtrl (getenv "WHDLArcadiaCtrl"))
+	(set #ArcadiaCtrl "")
+      )
+      (set #ArcadiaCtrl
+        (askdir
+	  (prompt "Please select the directory where the Arcadia control ROMs named 'scpav3_0.1h' and 'scpav3_0.1l' are located.")
+          (help @askdir-help)
+	  (default #ArcadiaCtrl)
+	)
+      )
+      (run ("setenv WHDLArcadiaCtrl \"%s\"\ncopy ENV:WHDLArcadiaCtrl ENVARC:" #ArcadiaCtrl))
+      (copyfiles
+        (help @copyfiles-help)
+	(source #ArcadiaCtrl)
+        (dest #dest)
+	(pattern "scpav3_0.1[hl]")
+      )
+      (if (getenv "WHDLArcadiaGame")
+	(set #ArcadiaGame (getenv "WHDLArcadiaGame"))
+	(set #ArcadiaGame "")
+      )
+      (set #ArcadiaGame
+        (askdir
+	  (prompt "Please select the directory where the Arcadia game ROMs named 'arcadia2.u#?' or 'lbg240#?' or 'ldrb_#?.bin' are located.")
+          (help @askdir-help)
+	  (default #ArcadiaGame)
+	)
+      )
+      (run ("setenv WHDLArcadiaGame \"%s\"\ncopy ENV:WHDLArcadiaGame ENVARC:" #ArcadiaGame))
+      (copyfiles
+        (help @copyfiles-help)
+	(source #ArcadiaGame)
+        (dest #dest)
+	(pattern "(arcadia2|ldbg240|ldrb_)#?")
+      )
+
+    )
   )
 )
 
@@ -260,6 +300,7 @@
   ; Uncomment the following lines if you have a separate intro slave/icon
   ;(set #icon_desc "intro")
   ;(set #icon_prefix ("%s%s" #prefix #icon_desc))
+  ;(set #icon_newname ("%s 1MB" #prefix))
   ;(set #icon_slave #prefix-slave)
   ;(set #icon_set_slave_preload "")
   ;(set #icon_set_deftool_stack "true")
@@ -462,6 +503,21 @@
 	  "and there are enough free ressources and Unit #9 is not already used."
         )
       )
+    )
+  )
+)
+
+;----------------------------
+; functions to handle disk image files
+; eject image from the virtual drive
+; IN:  -
+; OUT: -
+
+(procedure PDI_Eject
+  (if (or (= #DI_mode 1) (= #DI_mode 2))
+    (if
+      (<> 0 (run ("DiskImageCtrl Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_dev)))
+      (message "Could not eject the Image from the Device.")
     )
   )
 )
@@ -845,12 +901,14 @@
 
 ;----------------------------
 ; Select an icon by presenting the user with a list of all found icons
-; IN:  #icon_prefix - filename prefix for this icon (eg. intro, game)
-;      #icon_desc   - description of the icon (eg. intro, game)
-;      #icon_slave  - name of the slave the tooltype Slave= should be set 
-;                     to (without the .slave suffix)
+; IN:  #icon_prefix  - filename prefix for this icon (eg. intro, game)
+;      #icon_newname - destination filename for the icon (optional, default is #icon_prefix)
+;      #icon_desc    - description of the icon (eg. intro, game)
+;      #icon_slave   - name of the slave the tooltype Slave= should be set
+;                      to (without the .slave suffix)
 
 (procedure P_SelectIcon
+  (if #icon_newname ("") (set #icon_newname #icon_prefix))
   (set #icon 0)
   (set #icnt 0)
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_17)) ((set #icon 17)(set #icnt (+ 1 #icnt))(set #icon_17 #ico_desc_17)) (set #icon_17 ""))
@@ -934,24 +992,24 @@
     (copyfiles
       (help @copyfiles-help)
       (source ("%s.%s" #icon_prefix #icon))
-      (newname ("%s.info" #icon_prefix))
+      (newname ("%s.info" #icon_newname))
       (dest #dest)
     )
     ;installer has problems on deleting tooltypes with newicons
     (if (<> (substr #icon 0 3) "new")
       (tooltype
-        (dest (tackon #dest #icon_prefix))
+	(dest (tackon #dest #icon_newname))
         (settooltype "Slave")
         (settooltype "PreLoad")
       )
     )
     (tooltype
-      (dest (tackon #dest #icon_prefix))
+      (dest (tackon #dest #icon_newname))
       (settooltype "PreLoad" "")
       (settooltype "Slave" ("%s.Slave" #icon_slave))
     )
     (tooltype
-      (dest (tackon #dest #icon_prefix))
+      (dest (tackon #dest #icon_newname))
       (setdefaulttool "WHDLoad")
       (setstack 10240)
       (noposition)
@@ -974,7 +1032,7 @@
         "You may also use InstallerNG by Jens Tröger."
         "\n\n"
         "The installers can be obtained from the net:\n"
-        "http://www.amiga.com/3.9/download/NDK3.9.lha\n"
+	"http://www.haage-partner.de/download/AmigaOS/NDK3.9.lha\n"
         "aminet:util/sys/InstallerNG.lha"
       )
     )
@@ -1076,6 +1134,7 @@
 (set #copy-file #highs-file)
 (P_CopyFile)
 (P_MakeImages)
+(PDI_Eject)
 (if (= #newstuff 1)
   (openwbobject #dest-org)
 )
