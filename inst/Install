@@ -1,4 +1,4 @@
-; $Id: Install 1.17 2009/05/20 23:38:25 wepl Exp wepl $
+; $Id: Install 1.18 2011/08/14 23:43:31 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -32,7 +32,10 @@
 (set #ico_suffix_14 "colcfou")
 (set #ico_suffix_15 "colcfou2")
 (set #ico_suffix_16 "colzarkov")
-(set #ico_suffix_17 "boxicon")
+(set #ico_suffix_17 "colirek")
+(set #ico_suffix_18 "colirek2")
+(set #ico_suffix_19 "boxicon")
+(set #ico_suffix_20 "boxirek")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -54,7 +57,10 @@
 (set #ico_desc_14 "OS3.5 Icon by CFou!")
 (set #ico_desc_15 "OS3.5 Icon by CFou! 2")
 (set #ico_desc_16 "OS3.5 Icon by Dr.Zarkov")
-(set #ico_desc_17 "OS3.5 BoxIcon")
+(set #ico_desc_17 "OS3.5 Icon by Irek")
+(set #ico_desc_18 "OS3.5 Icon by Irek 2")
+(set #ico_desc_19 "OS3.5 BoxIcon")
+(set #ico_desc_20 "OS3.5 BoxIcon by Irek")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -151,9 +157,9 @@
     )
 
     (				;----- 2 = DIC (Disk Images) -----
-  
+
       ;the following lines must be copied and adjusted for multiple disk images
-  
+
       (set #CI_disknum 1)
       (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
       (set #CI_disklen 901120)
@@ -205,10 +211,23 @@
       (set #file (tackon #dest "Enemy"))
       (P_XFDDecrunch)
 
+      ;example: copy a file supplied with the install
+      (copyfiles
+        (help @copyfiles-help)
+	(source "supplied.file.name")
+        (dest #dest)
+      )
+
       ;example: create additional save directory
-      (makedir 
+      (makedir
 	(tackon #dest "save")
 	(help @makedir-help)
+      )
+
+      ;example: set additional tooltype in the icon
+      (tooltype
+	(dest (tackon #dest-org #icon_newname))
+	(settooltype "Config" "C1:L:Language:default,deutsch,english,français")
       )
 
     )
@@ -290,7 +309,7 @@
 ;----------------------------
 ; Create all the icons for the install. If the game requires multiple icons
 ; set them up here by calling P_SelectIcon multiple times, one for each
-; icon/slave that the game needs. For 99% of cases, you do not need to 
+; icon/slave that the game needs. For 99% of cases, you do not need to
 ; change this routine.
 ;
 ; If you have not setup the WHDLoad tooltypes in the icons, you should
@@ -430,9 +449,9 @@
 ; OUT: -
 
 (procedure PDI_Insert
-  (if 
+  (if
     (<> 0 (run ("DiskImageCtrl Drive=%s: ReadOnly Image=\"%s\" >CON:///1000//CLOSE/AUTO" #DI_dev #DI_image)))
-    (abort 
+    (abort
 	"Sorry, could not load the Image to the Device.\n"
 	"Make sure you have correctly installed aminet:disk/misc/diskimage.lha,\n"
 	"you have selected the right disk image\n"
@@ -495,9 +514,9 @@
         )
         (help @textfile-help)
       )
-      (if 
+      (if
 	(<> 0 (run ("mount %s: FROM %s >CON:///1000//CLOSE/AUTO" #DI_dev #DI_mount)))
-        (abort 
+        (abort
 	  "Sorry, could not mount the Device " #DI_dev ":.\n"
 	  "Make sure you have correctly installed the package " #package "\n"
 	  "and there are enough free ressources and Unit #9 is not already used."
@@ -911,6 +930,9 @@
   (if #icon_newname ("") (set #icon_newname #icon_prefix))
   (set #icon 0)
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_20)) ((set #icon 20)(set #icnt (+ 1 #icnt))(set #icon_20 #ico_desc_20)) (set #icon_20 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_19)) ((set #icon 19)(set #icnt (+ 1 #icnt))(set #icon_19 #ico_desc_19)) (set #icon_19 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_18)) ((set #icon 18)(set #icnt (+ 1 #icnt))(set #icon_18 #ico_desc_18)) (set #icon_18 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_17)) ((set #icon 17)(set #icnt (+ 1 #icnt))(set #icon_17 #ico_desc_17)) (set #icon_17 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_16)) ((set #icon 16)(set #icnt (+ 1 #icnt))(set #icon_16 #ico_desc_16)) (set #icon_16 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_15)) ((set #icon 15)(set #icnt (+ 1 #icnt))(set #icon_15 #ico_desc_15)) (set #icon_15 ""))
@@ -953,12 +975,17 @@
       (if #icon_15 ((set #icon-suf #ico_suffix_15) (set #icon-name #ico_desc_15) (P_Icon)))
       (if #icon_16 ((set #icon-suf #ico_suffix_16) (set #icon-name #ico_desc_16) (P_Icon)))
       (if #icon_17 ((set #icon-suf #ico_suffix_17) (set #icon-name #ico_desc_17) (P_Icon)))
+      (if #icon_18 ((set #icon-suf #ico_suffix_18) (set #icon-name #ico_desc_18) (P_Icon)))
+      (if #icon_19 ((set #icon-suf #ico_suffix_19) (set #icon-name #ico_desc_19) (P_Icon)))
+      (if #icon_20 ((set #icon-suf #ico_suffix_20) (set #icon-name #ico_desc_20) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     (set #icon
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
-	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16 #icon_17)
+	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09
+		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16 #icon_17 #icon_18 #icon_19
+		 #icon_20)
         (default #icon)
         (help @askchoice-help)
       )
@@ -988,6 +1015,9 @@
       (set #icon #ico_suffix_15)
       (set #icon #ico_suffix_16)
       (set #icon #ico_suffix_17)
+      (set #icon #ico_suffix_18)
+      (set #icon #ico_suffix_19)
+      (set #icon #ico_suffix_20)
     )
     (copyfiles
       (help @copyfiles-help)
@@ -1026,7 +1056,7 @@
         "Warning: your installer is outdated.\n"
         "Some features of this installation won't be available, "
         "such as icon show and drawer opening. "
-        "You have version " (/ @installer-version 65536) "." 
+        "You have version " (/ @installer-version 65536) "."
         (BITAND @installer-version 65535) ", recommended is version 44.10. "
         "The 'installer' 44.10 comes with OS 3.5 but is also contained in the NDK 3.9. "
         "You may also use InstallerNG by Jens Tröger."
