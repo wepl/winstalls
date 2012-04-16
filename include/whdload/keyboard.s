@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.12 2007/08/18 16:46:18 wepl Exp wepl $
+;  :Version.	$Id: keyboard.s 1.13 2010/02/17 20:46:18 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -15,6 +15,7 @@
 ;			 routine which doesn't affect interrupt acknowledge
 ;			 to be able to call it from an existing PORTS
 ;			 interrupt handler (PygmyProjects_Extension)
+;		21.03.12 pc-relative for _resload access removed, because W.O.C. uses absolut
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
@@ -162,7 +163,7 @@ _KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 
 	IFND _exit
 .debug		pea	TDREASON_DEBUG.w
-.quit		move.l	(_resload,pc),-(a7)
+.quit		move.l	(_resload),-(a7)		;no ',pc' because used absolut sometimes
 		addq.l	#resload_Abort,(a7)
 		rts
 .exit		pea	TDREASON_OK.w

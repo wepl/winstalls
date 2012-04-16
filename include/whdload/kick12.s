@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.26 2010/11/20 22:06:14 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.27 2011/07/22 15:49:44 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -25,6 +25,7 @@
 ;		13.11.10 patches added to avoid overwriting the vector table (68000 support)
 ;		20.11.10 _cb_keyboard added
 ;		22.07.11 adapted for whdload v17
+;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -583,7 +584,7 @@ disk_getunitid
 ;============================================================================
 ; kick12 does not provide fast and fine access to cia timers, therefore we
 ; use the rasterbeam, required minimum waiting is 75탎, one rasterline is
-; 63.5탎 a this results in min=127탎 max=190.5탎
+; 63.5탎, three loops results in min=127탎 max=190.5탎
 
 keyboard_start	moveq	#0,d4
 		not.b	d0
@@ -611,8 +612,8 @@ keyboard_start	moveq	#0,d4
 		movem.l	(a7)+,d2/a2
 		addq.l	#4,a7			;rts from ports int
 		move.l	(a7)+,a2
-		move.w	(a7)+,(_custom+intena)
-		addq.l	#4,a7			;rts from int handler
+		move.w	(a7),(_custom+intena)
+		addq.l	#6,a7			;rts from int handler
 		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
 		move.w	(a7),(6,a7)
 		move.l	(2,a7),(a7)

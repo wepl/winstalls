@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.62 2010/11/20 22:06:14 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.63 2011/07/22 15:49:44 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -59,10 +59,11 @@
 ;		07.11.07 _debug5 added
 ;		04.12.07 patch for exec.ExitIntr improved
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
-;		16.11.08 traps via the operating system are allowed again, rewerting the
+;		16.11.08 traps via the operating system are allowed again, reverting the
 ;			 change from 04.05.06 partial (JOTD and Gravity)
 ;		20.11.10 _cb_keyboard added
 ;		22.07.11 adapted for whdload v17
+;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -633,9 +634,9 @@ disk_getunitid
 		rts
 
 ;============================================================================
-; kick13 does not provide fast and fine access to cia timers, therfore we
+; kick13 does not provide fast and fine access to cia timers, therefore we
 ; use the rasterbeam, required minimum waiting is 75탎, one rasterline is
-; 63.5탎 a this results in min=127탎 max=190.5탎
+; 63.5탎, three loops results in min=127탎 max=190.5탎
 
 keyboard_start	moveq	#0,d4
 		not.b	d0
@@ -663,8 +664,8 @@ keyboard_start	moveq	#0,d4
 		movem.l	(a7)+,d2/a2
 		addq.l	#4,a7			;rts from ports int
 		move.l	(a7)+,a2
-		move.w	(a7)+,(_custom+intena)
-		addq.l	#4,a7			;rts from int handler
+		move.w	(a7),(_custom+intena)
+		addq.l	#6,a7			;rts from int handler
 		movem.l	(a7)+,d0-d1/a0-a1/a5-a6
 		move.w	(a7),(6,a7)
 		move.l	(2,a7),(a7)
