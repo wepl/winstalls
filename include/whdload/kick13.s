@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.63 2011/07/22 15:49:44 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.64 2012/04/16 21:08:01 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -117,7 +117,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.l	KICKSIZE		;ws_kicksize
 		dc.w	KICKCRC			;ws_kickcrc
 	IFGE slv_Version-17
-		dc.w	slv_config-slv_base	;ws_info
+		dc.w	slv_config-slv_base	;ws_config
 	ENDC
 	ENDC
 

@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.27 2011/07/22 15:49:44 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.28 2012/04/16 21:10:40 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -71,7 +71,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.l	KICKSIZE		;ws_kicksize
 		dc.w	KICKCRC			;ws_kickcrc
 	IFGE slv_Version-17
-		dc.w	slv_config-slv_base	;ws_info
+		dc.w	slv_config-slv_base	;ws_config
 	ENDC
 	ENDC
 

@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.29 2009/08/13 21:44:16 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.30 2011/07/22 15:49:44 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -90,7 +90,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.l	KICKSIZE		;ws_kicksize
 _kickcrc	dc.w	-1			;ws_kickcrc
 	IFGE slv_Version-17
-		dc.w	slv_config-slv_base	;ws_info
+		dc.w	slv_config-slv_base	;ws_config
 	ENDC
 	ENDC
 
