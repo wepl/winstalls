@@ -1,4 +1,4 @@
-; $Id: Install 1.18 2011/08/14 23:43:31 wepl Exp wepl $
+; $Id: Install 1.19 2011/09/04 23:12:35 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -35,7 +35,8 @@
 (set #ico_suffix_17 "colirek")
 (set #ico_suffix_18 "colirek2")
 (set #ico_suffix_19 "boxicon")
-(set #ico_suffix_20 "boxirek")
+(set #ico_suffix_20 "boxicon2")
+(set #ico_suffix_21 "boxirek")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -60,7 +61,8 @@
 (set #ico_desc_17 "OS3.5 Icon by Irek")
 (set #ico_desc_18 "OS3.5 Icon by Irek 2")
 (set #ico_desc_19 "OS3.5 BoxIcon")
-(set #ico_desc_20 "OS3.5 BoxIcon by Irek")
+(set #ico_desc_20 "OS3.5 BoxIcon 2")
+(set #ico_desc_21 "OS3.5 BoxIcon by Irek")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -316,16 +318,6 @@
 ; change the line(s) below to (set #icon_set_slave_preload "true")
 
 (procedure P_MakeIcons
-  ; Uncomment the following lines if you have a separate intro slave/icon
-  ;(set #icon_desc "intro")
-  ;(set #icon_prefix ("%s%s" #prefix #icon_desc))
-  ;(set #icon_newname ("%s 1MB" #prefix))
-  ;(set #icon_slave #prefix-slave)
-  ;(set #icon_set_slave_preload "")
-  ;(set #icon_set_deftool_stack "true")
-  ;(P_CopySlave)
-  ;(P_SelectIcon)
-
   (set #icon_desc "game")
   (set #icon_prefix #prefix)
   (set #icon_slave #prefix-slave)
@@ -333,6 +325,13 @@
   (set #icon_set_deftool_stack "true")
   (P_CopySlave)
   (P_SelectIcon)
+
+  ; Uncomment the following lines if you have a multiple slave/icon
+  ;(set #icon_desc "Extended RAM")
+  ;(set #icon_newname ("%s AGA" #prefix))
+  ;(set #icon_slave ("%sAGA" #prefix-slave))
+  ;(P_CopySlave)
+  ;(P_SelectIcon)
 )
 
 
@@ -930,6 +929,7 @@
   (if #icon_newname ("") (set #icon_newname #icon_prefix))
   (set #icon 0)
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_21)) ((set #icon 20)(set #icnt (+ 1 #icnt))(set #icon_21 #ico_desc_21)) (set #icon_21 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_20)) ((set #icon 20)(set #icnt (+ 1 #icnt))(set #icon_20 #ico_desc_20)) (set #icon_20 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_19)) ((set #icon 19)(set #icnt (+ 1 #icnt))(set #icon_19 #ico_desc_19)) (set #icon_19 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_18)) ((set #icon 18)(set #icnt (+ 1 #icnt))(set #icon_18 #ico_desc_18)) (set #icon_18 ""))
@@ -978,6 +978,7 @@
       (if #icon_18 ((set #icon-suf #ico_suffix_18) (set #icon-name #ico_desc_18) (P_Icon)))
       (if #icon_19 ((set #icon-suf #ico_suffix_19) (set #icon-name #ico_desc_19) (P_Icon)))
       (if #icon_20 ((set #icon-suf #ico_suffix_20) (set #icon-name #ico_desc_20) (P_Icon)))
+      (if #icon_21 ((set #icon-suf #ico_suffix_21) (set #icon-name #ico_desc_21) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     (set #icon
@@ -985,7 +986,7 @@
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
 	(choices #icon_00 #icon_01 #icon_02 #icon_03 #icon_04 #icon_05 #icon_06 #icon_07 #icon_08 #icon_09
 		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16 #icon_17 #icon_18 #icon_19
-		 #icon_20)
+		 #icon_20 #icon_21)
         (default #icon)
         (help @askchoice-help)
       )
@@ -1018,6 +1019,7 @@
       (set #icon #ico_suffix_18)
       (set #icon #ico_suffix_19)
       (set #icon #ico_suffix_20)
+      (set #icon #ico_suffix_21)
     )
     (copyfiles
       (help @copyfiles-help)
