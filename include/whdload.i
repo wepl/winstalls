@@ -2,7 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 16.9.1.2 2009/02/05 20:40:49 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 17.0 2011/08/14 23:39:54 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -28,7 +28,9 @@
 ;		11.11.07 PL_BKPT, PL_BELL added
 ;		28.07.08 PL_NOPS added
 ;		22.07.11 new stuff for whdload v17
-;  :Copyright.	© 1996-2011 Bert Jahn, All Rights Reserved
+;		22.05.12 PL_* added check for number of arguments
+;			 commentary reworked
+;  :Copyright.	© 1996-2012 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
 ;---------------------------------------------------------------------------*
@@ -72,8 +74,8 @@ TDREASON_DOSWRITE	= 2	;error caused by resload_SaveFile or
 				; primary   = dos errorcode
 				; secondary = file name
 TDREASON_DEBUG		= 5	;cause WHDLoad to make a coredump and quit
-				; primary   = PC (writing to dump files)
-				; secondary = SR (writing to dump files)
+				; primary   = PC (to be written to dump files)
+				; secondary = SR (to be written to dump files)
 TDREASON_DOSLIST	= 6	;error caused by resload_ListFiles
 				; primary   = dos errorcode
 				; secondary = directory name
@@ -82,7 +84,7 @@ TDREASON_DISKLOAD	= 7	;error caused by resload_DiskLoad
 				; secondary = disk number
 TDREASON_DISKLOADDEV	= 8	;error caused by resload_DiskLoadDev
 				; primary   = trackdisk errorcode
-TDREASON_WRONGVER	= 9	;an version check (e.g. crc16) has detected an
+TDREASON_WRONGVER	= 9	;an version check (e.g. CRC16) has detected an
 				;unsupported version of the installed program
 TDREASON_OSEMUFAIL	= 10	;error in the OS emulation module
 				; primary   = subsystem (e.g. "exec.library")
@@ -90,15 +92,15 @@ TDREASON_OSEMUFAIL	= 10	;error in the OS emulation module
 ; version 7
 TDREASON_REQ68020	= 11	;installed program requires a MC68020
 TDREASON_REQAGA		= 12	;installed program requires the AGA chip set
-TDREASON_MUSTNTSC	= 13	;installed program needs NTSC videomode to run
-TDREASON_MUSTPAL	= 14	;installed program needs PAL videomode to run
+TDREASON_MUSTNTSC	= 13	;installed program needs NTSC video mode to run
+TDREASON_MUSTPAL	= 14	;installed program needs PAL video mode to run
 ; version 8
 TDREASON_MUSTREG	= 15	;WHDLoad must be registered
 TDREASON_DELETEFILE	= 27	;error caused by resload_DeleteFile
 				; primary   = dos errorcode
 				; secondary = file name
 ; version 14.1
-TDREASON_FAILMSG	= 43	;failure with variable message text
+TDREASON_FAILMSG	= 43	;fail with a slave defined message text
 				; primary   = text
 
 ;=============================================================================
@@ -134,10 +136,10 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_BUILD_GET	;get WHDLoad build number
  EITEM	WHDLTAG_TIME_GET	;get current time and date
 ; version 11
- EITEM	WHDLTAG_BPLCON0_GET	;get system bplcon0
+ EITEM	WHDLTAG_BPLCON0_GET	;get operating system bplcon0
 ; version 12
  EITEM	WHDLTAG_KEYTRANS_GET	;get pointer to a 128 byte table to convert
-				;rawkey's to ascii-chars
+				;rawkeys to ASCII-chars
 ; version 13
  EITEM	WHDLTAG_CHKBLTWAIT	;enable/disable blitter wait check
  EITEM	WHDLTAG_CHKBLTSIZE	;enable/disable blitter size check
@@ -162,7 +164,7 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
  EITEM	WHDLTAG_CHIPPTR		;relocate MEMF_CHIP hunks to this address
  EITEM	WHDLTAG_FASTPTR		;relocate MEMF_FAST hunks to this address
 ; version 15.1
- EITEM	WHDLTAG_ALIGN		;round up hunk lengths to the given boundary
+ EITEM	WHDLTAG_ALIGN		;round up hunk lengths to the given multiple
 ; version 16.3
  EITEM	WHDLTAG_LOADSEG		;create a segment list like dos.LoadSeg
 
@@ -178,17 +180,17 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 ;	structure returned by WHDLTAG_TIME_GET
 ;=============================================================================
 
-	STRUCTURE whdload_time,0
-		ULONG	whdlt_days	;days since 1.1.1978
-		ULONG	whdlt_mins	;minutes since last day
-		ULONG	whdlt_ticks	;1/50 seconds since last minute
-		UBYTE	whdlt_year	;78..77 (1978..2077)
-		UBYTE	whdlt_month	;1..12
-		UBYTE	whdlt_day	;1..31
-		UBYTE	whdlt_hour	;0..23
-		UBYTE	whdlt_min	;0..59
-		UBYTE	whdlt_sec	;0..59
-		LABEL	whdlt_SIZEOF
+    STRUCTURE whdload_time,0
+	ULONG	whdlt_days	;days since 1978-01-01
+	ULONG	whdlt_mins	;minutes since last day
+	ULONG	whdlt_ticks	;1/50 seconds since last minute
+	UBYTE	whdlt_year	;78..77 (1978..2077)
+	UBYTE	whdlt_month	;1..12
+	UBYTE	whdlt_day	;1..31
+	UBYTE	whdlt_hour	;0..23
+	UBYTE	whdlt_min	;0..59
+	UBYTE	whdlt_sec	;0..59
+	LABEL	whdlt_SIZEOF
 
 ;=============================================================================
 ; Slave		Version 1+
@@ -210,16 +212,14 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 ;=============================================================================
 
 	UBYTE	ws_keydebug	;raw key code to quit with debug
-				;=0 means no key
 	UBYTE	ws_keyexit	;raw key code to exit
-				;=0 means no key
 
 ;=============================================================================
 ; additional	Version 8+
 ;=============================================================================
 
 	LONG	ws_ExpMem	;size of required expansions memory, during
-				;initialisation overwritten by WHDLoad with
+				;initialization overwritten by WHDLoad with
 				;address of the memory (multiple of $1000)
 				;if negative it is optional
 
@@ -229,7 +229,7 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 
 	RPTR	ws_name		;name of the installed program
 	RPTR	ws_copy		;year and owner of the copyright
-	RPTR	ws_info		;additional informations (author, version...)
+	RPTR	ws_info		;additional informations (author, version ...)
 
 ;=============================================================================
 ; additional	Version 16+
@@ -237,7 +237,7 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 
 	RPTR	ws_kickname	;name of kickstart image
 	ULONG	ws_kicksize	;size of kickstart image
-	UWORD	ws_kickcrc	;crc16 of kickstart image
+	UWORD	ws_kickcrc	;CRC16 of kickstart image
 
 ;=============================================================================
 ; additional	Version 17+
@@ -261,10 +261,10 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 	BITDEF WHDL,Req68020,4	;abort if no MC68020 or better is available
 	BITDEF WHDL,ReqAGA,5	;abort if no AGA chipset is available
 ; version 8
-	BITDEF WHDL,NoKbd,6	;says WHDLoad that it doesn't should get the
-				;keycode from the keyboard in conjunction with
-				;NoVBRMove, must be used if the installed
-				;program checks the keyboard from the VBI
+	BITDEF WHDL,NoKbd,6	;tells WHDLoad that it doesn't should
+				;acknowledge keyboard interrupts, must be used
+				;if the installed program checks the keyboard
+				;from the VBI
 	BITDEF WHDL,EmulLineA,7	;forward "line-a" exceptions to the handler
 				;of the installed program
 ; version 9
@@ -281,11 +281,11 @@ TDREASON_FAILMSG	= 43	;failure with variable message text
 ; version 13
 	BITDEF WHDL,ClearMem,12	;initialize BaseMem and ExpMem with 0
 ; version 15
-	BITDEF WHDL,Examine,13	;preload cache for Examine/ExNext
+	BITDEF WHDL,Examine,13	;enables usage of resload_Examine/ExNext
 ; version 16
-	BITDEF WHDL,EmulDivZero,14 ;forward "division by zero" exceptions to
+	BITDEF WHDL,EmulDivZero,14 ;forward 'division by zero' exceptions to
 				;the handler of the installed program
-	BITDEF WHDL,EmulIllegal,15 ;forward "illegal instruction" exceptions to
+	BITDEF WHDL,EmulIllegal,15 ;forward 'illegal instruction' exceptions to
 				;the handler of the installed program
 
 ;=============================================================================
@@ -331,7 +331,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; IN: (a7) = ULONG  reason for aborting
 		;   (4,a7) = ULONG  primary error code
 		;   (8,a7) = ULONG  secondary error code
-		; ATTENTION this routine must called via JMP! (not JSR)
+		; ATTENTION: this routine must be called via JMP (not JSR)
 	ULONG	resload_LoadFile
 		; load file to memory (8)
 		; IN :	a0 = CSTR   filename
@@ -351,11 +351,12 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;	d1 = ULONG  mask
 		; OUT :	d0 = ULONG  old setup
 	ULONG	resload_ListFiles
-		; list filenames of directory (14)
+		; list filenames of a directory (14)
 		; IN :	d0 = ULONG  buffer size
 		;	a0 = CSTR   name of directory to scan
-		;	a1 = APTR   buffer (must be located in Slave)
-		; OUT :	d0 = ULONG  amount of names in buffer
+		;	a1 = APTR   buffer (must be located inside Slave,
+		;	with WHDLoad 16.8+ also inside ExpMem)
+		; OUT :	d0 = ULONG  amount of names in buffer filled
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_Decrunch
 		; uncompress data in memory (18)
@@ -363,10 +364,10 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;	a1 = APTR   destination (can be equal to source)
 		; OUT :	d0 = ULONG  uncompressed size
 	ULONG	resload_LoadFileDecrunch
-		; load file and uncompress (1c)
+		; load file and uncompress it (1c)
 		; IN :	a0 = CSTR   filename
 		;	a1 = APTR   address
-		; OUT :	d0 = ULONG  success (size of file)
+		; OUT :	d0 = ULONG  success (size of file uncompressed)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_FlushCache
 		; clear CPU caches (20)
@@ -377,7 +378,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; IN :	a0 = CSTR   filename
 		; OUT :	d0 = ULONG  size of file
 	ULONG	resload_DiskLoad
-		; load part from diskimage (28)
+		; load part from disk image (28)
 		; IN :	d0 = ULONG  offset
 		;	d1 = ULONG  size
 		;	d2 = ULONG  disk number
@@ -445,7 +446,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; load part of file to memory (4c)
 		; IN :	d0 = ULONG  size
 		;	d1 = ULONG  offset
-		;	a0 = CSTR   name of file
+		;	a0 = CSTR   filename
 		;	a1 = APTR   destination
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
@@ -458,7 +459,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;	a1 = STRUCT taglist
 		; OUT :	d0 = ULONG  size
 	ULONG	resload_Delay
-		; wait some time (54)
+		; wait some time or button pressed (54)
 		; IN :	d0 = ULONG  time to wait in 1/10 seconds
 		; OUT :	-
 	ULONG	resload_DeleteFile
@@ -476,12 +477,12 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; OUT :	-
 	ULONG	resload_SetCPU
 		; control CPU setup (60)
-		; IN :	d0 = ULONG  properties
+		; IN :	d0 = ULONG  properties, see above
 		;	d1 = ULONG  mask
 		; OUT :	d0 = ULONG  old properties
 	ULONG	resload_Patch
 		; apply patchlist (64)
-		; IN :	a0 = APTR   patchlist
+		; IN :	a0 = APTR   patchlist, see below
 		;	a1 = APTR   destination address
 		; OUT :	-
 
@@ -494,7 +495,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;	a0 = CSTR   basename of image
 		; OUT :	-
 	ULONG	resload_Delta
-		; apply wdelta (6c)
+		; apply WDelta data to modify memory (6c)
 		; IN :	a0 = APTR   src data
 		;	a1 = APTR   dest data
 		;	a2 = APTR   wdelta data
@@ -502,25 +503,25 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 	ULONG	resload_GetFileSizeDec
 		; get size of a packed file (70)
 		; IN :	a0 = CSTR   filename
-		; OUT :	d0 = ULONG  size of file
+		; OUT :	d0 = ULONG  size of file uncompressed
 
 ******* the following functions require ws_Version >= 15
 
 	ULONG	resload_PatchSeg
 		; apply patchlist to a segment list (74)
-		; IN :	a0 = APTR   patchlist
+		; IN :	a0 = APTR   patchlist, see below
 		;	a1 = BPTR   segment list
 		; OUT :	-
 
 	ULONG	resload_Examine
-		; apply patchlist to a segment list (78)
+		; examine a file or directory (78)
 		; IN :	a0 = CSTR   name
 		;	a1 = APTR   struct FileInfoBlock (260 bytes)
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 	ULONG	resload_ExNext
-		; apply patchlist to a segment list (7c)
+		; examine next entry of a directory (7c)
 		; IN :	a0 = APTR   struct FileInfoBlock (260 bytes)
 		; OUT :	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
@@ -543,14 +544,16 @@ resload_CheckFileExist = resload_GetFileSize
 ; each command follows the address to modify, if bit 16 of the command is
 ; cleared address follows as 32 bit, if bit 16 of the command is set it
 ; follows as 16 bit (unsigned extended to 32 bit)
+; the following arguments differ for the various commands
+; see autodoc file whdload.doc for enhanced documentation and examples
 
 	ENUM	0
 	EITEM	PLCMD_END		;end of list
-	EITEM	PLCMD_R			;set "rts"
-	EITEM	PLCMD_P			;set "jmp"
-	EITEM	PLCMD_PS		;set "jsr"
-	EITEM	PLCMD_S			;set "bra" (skip)
-	EITEM	PLCMD_I			;set "illegal"
+	EITEM	PLCMD_R			;set RTS
+	EITEM	PLCMD_P			;set JMP
+	EITEM	PLCMD_PS		;set JSR
+	EITEM	PLCMD_S			;set BRA (skip)
+	EITEM	PLCMD_I			;set ILLEGAL
 	EITEM	PLCMD_B			;write byte to specified address
 	EITEM	PLCMD_W			;write word to specified address
 	EITEM	PLCMD_L			;write long to specified address
@@ -560,14 +563,14 @@ resload_CheckFileExist = resload_GetFileSize
 ; version 14
 	EITEM	PLCMD_PA		;write address given by argument to
 					;specified address
-	EITEM	PLCMD_NOP		;fill given area with nop instructions
+	EITEM	PLCMD_NOP		;fill given area with NOP instructions
 ; version 15
 	EITEM	PLCMD_C			;clear n bytes
 	EITEM	PLCMD_CB		;clear one byte
 	EITEM	PLCMD_CW		;clear one word
 	EITEM	PLCMD_CL		;clear one long
 ; version 16
-	EITEM	PLCMD_PSS		;set "jsr","nop..."
+	EITEM	PLCMD_PSS		;set JSR + NOP..
 	EITEM	PLCMD_NEXT		;continue with another patch list
 	EITEM	PLCMD_AB		;add byte to specified address
 	EITEM	PLCMD_AW		;add word to specified address
@@ -578,10 +581,10 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_ORW		;or word to specified address
 	EITEM	PLCMD_ORL		;or long to specified address
 ; version 16.6
-	EITEM	PLCMD_GA		;get specified address and store in slave
+	EITEM	PLCMD_GA		;get specified address and store it in the slave
 ; version 16.9
 	EITEM	PLCMD_BKPT		;call freezer
-	EITEM	PLCMD_BELL		;visual bell
+	EITEM	PLCMD_BELL		;show visual bell
 
 ;=============================================================================
 ; macros to build patchlist
@@ -605,20 +608,32 @@ PL_CMDADR	MACRO			;set cmd and address
 	ENDM
 
 PL_R		MACRO			;set "rts"
+	IFNE	NARG-1
+	FAIL	PL_R wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_R,\1
 		ENDM
 
 PL_PS		MACRO			;set "jsr"
+	IFNE	NARG-2
+	FAIL	PL_PS wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_PS,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
 
 PL_P		MACRO			;set "jmp"
+	IFNE	NARG-2
+	FAIL	PL_P wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_P,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
 
 PL_S		MACRO			;skip bytes, set "bra"
+	IFNE	NARG-2
+	FAIL	PL_S wrong number of arguments
+	ENDC
 	IFLT $8000-(\2)
 	FAIL PL_S positive distance \2 too large, max is $8000
 	ENDC
@@ -630,20 +645,32 @@ PL_S		MACRO			;skip bytes, set "bra"
 		ENDM
 
 PL_I		MACRO			;set "illegal"
+	IFNE	NARG-1
+	FAIL	PL_I wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_I,\1
 		ENDM
 
 PL_B		MACRO			;write byte
+	IFNE	NARG-2
+	FAIL	PL_B wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_B,\1
 	dc.w	\2			;data to write
 		ENDM
 
 PL_W		MACRO			;write word
+	IFNE	NARG-2
+	FAIL	PL_W wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_W,\1
 	dc.w	\2			;data to write
 		ENDM
 
 PL_L		MACRO			;write long
+	IFNE	NARG-2
+	FAIL	PL_L wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_L,\1
 	dc.l	\2			;data to write
 		ENDM
@@ -651,6 +678,9 @@ PL_L		MACRO			;write long
 ; version 11
 
 PL_A		MACRO			;write address (base+arg)
+	IFNE	NARG-2
+	FAIL	PL_A wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_A,\1
 	dc.l	\2			;data to write
 		ENDM
@@ -658,62 +688,98 @@ PL_A		MACRO			;write address (base+arg)
 ; version 14
 
 PL_PA		MACRO			;write address
+	IFNE	NARG-2
+	FAIL	PL_PA wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_PA,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
 
-PL_NOP		MACRO			;fill area with nop's
+PL_NOP		MACRO			;fill area with NOPs
+	IFNE	NARG-2
+	FAIL	PL_NOP wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_NOP,\1
 	dc.w	\2			;distance given in bytes
 		ENDM
-PL_NOPS		MACRO			;fill area with nop's
+PL_NOPS		MACRO			;fill area with NOPs
+	IFNE	NARG-2
+	FAIL	PL_NOPS wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_NOP,\1
-	dc.w	2*\2			;distance given in nop count
+	dc.w	2*\2			;distance given in NOP count
 		ENDM
 
 ; version 15
 
 PL_C		MACRO			;clear area
+	IFNE	NARG-2
+	FAIL	PL_C wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_C,\1
 	dc.w	\2			;length
 		ENDM
 
 PL_CB		MACRO			;clear one byte
+	IFNE	NARG-1
+	FAIL	PL_CB wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_CB,\1
 		ENDM
 
 PL_CW		MACRO			;clear one word
+	IFNE	NARG-1
+	FAIL	PL_CW wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_CW,\1
 		ENDM
 
 PL_CL		MACRO			;clear one long
+	IFNE	NARG-1
+	FAIL	PL_CL wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_CL,\1
 		ENDM
 
 ; version 16
 
-PL_PSS		MACRO			;set "jsr","nop..."
+PL_PSS		MACRO			;set JSR, NOP..
+	IFNE	NARG-3
+	FAIL	PL_PSS wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_PSS,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
-	dc.w	\3			;byte count of nop's to append
+	dc.w	\3			;byte count of NOPs to append
 		ENDM
 
 PL_NEXT		MACRO			;continue with another patch list
+	IFNE	NARG-1
+	FAIL	PL_NEXT wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_NEXT,0
 	dc.w	\1-.patchlist		;destination (inside slave!)
 		ENDM
 
 PL_AB		MACRO			;add byte
+	IFNE	NARG-2
+	FAIL	PL_AB wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_AB,\1
 	dc.w	\2			;data to add
 		ENDM
 
 PL_AW		MACRO			;add word
+	IFNE	NARG-2
+	FAIL	PL_AW wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_AW,\1
 	dc.w	\2			;data to add
 		ENDM
 
 PL_AL		MACRO			;add long
+	IFNE	NARG-2
+	FAIL	PL_AL wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_AL,\1
 	dc.l	\2			;data to add
 		ENDM
@@ -728,11 +794,17 @@ PL_AL		MACRO			;add long
 ; .stop	EVEN
 
 PL_DATA		MACRO			;write n bytes to specified address
+	IFNE	NARG-2
+	FAIL	PL_DATA wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_DATA,\1
 	dc.w	\2			;count of bytes to write
 		ENDM
 
 PL_STR		MACRO
+	IFNE	NARG-2
+	FAIL	PL_STR wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_DATA,\1
 	dc.w	.dat2\@-.dat1\@
 .dat1\@	dc.b	'\2'
@@ -742,16 +814,25 @@ PL_STR		MACRO
 ; version 16.5
 
 PL_ORB		MACRO			;or byte
+	IFNE	NARG-2
+	FAIL	PL_ORB wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_ORB,\1
 	dc.w	\2			;data to or
 		ENDM
 
 PL_ORW		MACRO			;or word
+	IFNE	NARG-2
+	FAIL	PL_ORW wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_ORW,\1
 	dc.w	\2			;data to or
 		ENDM
 
 PL_ORL		MACRO			;or long
+	IFNE	NARG-2
+	FAIL	PL_ORL wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_ORL,\1
 	dc.l	\2			;data to or
 		ENDM
@@ -759,6 +840,9 @@ PL_ORL		MACRO			;or long
 ; version 16.6
 
 PL_GA		MACRO			;get address
+	IFNE	NARG-2
+	FAIL	PL_GA wrong number of arguments
+	ENDC
 	PL_CMDADR PLCMD_GA,\1
 	dc.w	\2-.patchlist		;destination (inside slave!)
 		ENDM
@@ -766,15 +850,15 @@ PL_GA		MACRO			;get address
 ; version 16.9
 
 ; PL_BKPT sets a breakpoint:
-; WHDLoad will write an illegal ($4afc) to the address and remembers the
-; original contents, when the illegal is executed the original contents is
+; WHDLoad will write an ILLEGAL ($4afc) to the address and remembers the
+; original contents, when the ILLEGAL is executed the original contents is
 ; restored, a NMI stackframe is created and the detected freezer called
-; if there is no freezer nothing will be done, the vbr should be moved by
+; if there is no freezer nothing will be done, the VBR should be moved by
 ; WHDLoad to allow catching the illegal instruction exception
 
 PL_BKPT		MACRO
 	IFNE	NARG-1
-	FAIL	PL_BKPT incorrect number of arguments
+	FAIL	PL_BKPT wrong number of arguments
 	ENDC
 	PL_CMDADR PLCMD_BKPT,\1
 		ENDM
@@ -785,7 +869,7 @@ PL_BKPT		MACRO
 
 PL_BELL		MACRO
 	IFNE	NARG-2
-	FAIL	PL_BELL incorrect number of arguments
+	FAIL	PL_BELL wrong number of arguments
 	ENDC
 	PL_CMDADR PLCMD_BELL,\1
 	dc.w	\2			;time to wait
