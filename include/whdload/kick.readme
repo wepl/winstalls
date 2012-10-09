@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.19 2009/02/05 20:40:49 wepl Exp wepl $
+$Id: kick.readme 1.20 2011/07/22 15:50:46 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -300,6 +300,8 @@ _cb_keyboard
 Functions in kick(12|13|31).s
 *****************************
 
+as usual D0-D1/A0-A1 are scratch registers, except otherwise stated
+
 _dos_assign
 	* only avaliable if DOSASSIGN is defined
 	* performs a C:Assign like operation
@@ -335,7 +337,8 @@ Labels in kick(12|13|31).s
 **************************
 
 _attnflags
-	* a long word containing the exec.AttnFlags
+	* a long word containing the exec.AttnFlags with additional bits
+	  defined by WHDLoad
 	* EXAMPLE
 		move.l	(_attnflags,pc),d0
 		btst	#AFB_68020,d0
@@ -344,7 +347,7 @@ _attnflags
 _dosname
 	* only avaliable if HDINIT is defined
 	* containing "dos.library"
-	* can used to open dos.library
+	* can be used to open dos.library
 
 _monitor
 	* a long word containing the actual monitor
