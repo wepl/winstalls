@@ -1,5 +1,5 @@
 
-	;	Include file for RawDIC V3.0
+	;	Include file for RawDIC
 
 		ifnd	EXEC_TYPES_I
 		include	exec/types.i
@@ -96,8 +96,18 @@
 		; errors:
 		; IERR_NOWFILE
 
-	ULONG	rawdic_Reserved
-		; DO NOT USE!
+	ULONG	rawdic_AppendDiskFile
+		; Stores a part of the diskimage as file (append)
+		; An existing file will be appended with new data
+		; ONLY USE IN dsk_DiskCode!
+
+		; A0=filename
+		; D0.l=offset in diskimage
+		; D1.l=length
+		; => D0.l=errorcode
+
+		; errors:
+		; IERR_NOWFILE
 
 	ULONG	rawdic_DMFM_STANDARD
 		; Decodes the MFM buffer as standard DOS track.
@@ -111,6 +121,18 @@
 		; IERR_NOSYNC
 		; IERR_CHECKSUM
 		; IERR_NOSECTOR
+
+	ULONG	rawdic_Print
+		; print message to stdout, for debugging purposes (v4.6)
+		; all registers are preserved
+
+		; A0.l = CPTR format string
+		; A1.l = APTR arg array
+
+	ULONG	rawdic_Reserved_2
+	ULONG	rawdic_Reserved_3
+	ULONG	rawdic_Reserved_4
+		; DO NOT USE!
 
 	; error codes:
 
@@ -150,6 +172,7 @@ IERR_TABL_UNS	equ	-32	; wwarp table header version unsupported
 IERR_TRCK_UNS	equ	-33	; wwarp track header version unsupported
 IERR_TRCK_TYPE	equ	-34	; wwarp track type unsupported
 IERR_TRCK_FLAG	equ	-35	; wwarp track flags unsupported
+IERR_TWLIB	equ	-36	; trackwarp library not found or wrong version
 
  STRUCTURE	SlaveStructure,0
 
