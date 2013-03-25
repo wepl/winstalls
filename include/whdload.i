@@ -2,7 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 17.0 2011/08/14 23:39:54 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 17.1 2012/10/06 18:14:45 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -30,7 +30,9 @@
 ;		22.07.11 new stuff for whdload v17
 ;		22.05.12 PL_* added check for number of arguments
 ;			 commentary reworked
-;  :Copyright.	© 1996-2012 Bert Jahn, All Rights Reserved
+;		16.03.13 PL_CMDADR checks for negative destination address
+;		24.03.13 PL_IF,ELSE,ENDIF added
+;  :Copyright.	© 1996-2013 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
 ;---------------------------------------------------------------------------*
@@ -541,11 +543,16 @@ resload_CheckFileExist = resload_GetFileSize
 
 ;=============================================================================
 ; commands used in patchlist
-; each command follows the address to modify, if bit 16 of the command is
-; cleared address follows as 32 bit, if bit 16 of the command is set it
+; each command follows the address to modify, if bit #15 of the command is
+; cleared address follows as 32 bit, if bit #15 of the command is set it
 ; follows as 16 bit (unsigned extended to 32 bit)
 ; the following arguments differ for the various commands
+; control commands (END, IF*, ELSE, ENDIF) does not follow an address, on 
+; these commands (except END) bit #14 is set to indicate them
 ; see autodoc file whdload.doc for enhanced documentation and examples
+
+ BITDEF PLCMD,WORDADR,15
+ BITDEF PLCMD,CTRL,14
 
 	ENUM	0
 	EITEM	PLCMD_END		;end of list
@@ -585,24 +592,52 @@ resload_CheckFileExist = resload_GetFileSize
 ; version 16.9
 	EITEM	PLCMD_BKPT		;call freezer
 	EITEM	PLCMD_BELL		;show visual bell
+; version 17.2
+	EITEM	PLCMD_IFBW		;condition if ButtonWait/S
+	EITEM	PLCMD_IFC1		;condition if Custom1/N
+	EITEM	PLCMD_IFC2		;condition if Custom2/N
+	EITEM	PLCMD_IFC3		;condition if Custom3/N
+	EITEM	PLCMD_IFC4		;condition if Custom4/N
+	EITEM	PLCMD_IFC5		;condition if Custom5/N
+	EITEM	PLCMD_IFC1X		;condition if bit of Custom1/N
+	EITEM	PLCMD_IFC2X		;condition if bit of Custom2/N
+	EITEM	PLCMD_IFC3X		;condition if bit of Custom3/N
+	EITEM	PLCMD_IFC4X		;condition if bit of Custom4/N
+	EITEM	PLCMD_IFC5X		;condition if bit of Custom5/N
+	EITEM	PLCMD_ELSE		;condition alternative
+	EITEM	PLCMD_ENDIF		;end of condition block
 
 ;=============================================================================
 ; macros to build patchlist
 
+PLIFCNTCHK	MACRO
+	IFNE PLIFCNT
+	FAIL	\1 pairs of IF* and ENDIF do not match
+	ENDC
+	ENDM
+PLIFCNTINC	MACRO
+PLIFCNT SET PLIFCNT+1
+	ENDM
+
 PL_START	MACRO			;start of patchlist
+PLIFCNT SET 0				;counts if nesting
 .patchlist
 		ENDM
 
 PL_END		MACRO			;end of patchlist
+	PLIFCNTCHK PL_END
 	dc.w	PLCMD_END
 		ENDM
 
 PL_CMDADR	MACRO			;set cmd and address
+	IFMI \2
+	FAIL	PL_CMDADR patch address cannot be negative
+	ENDC
 	IFLT $ffff-\2
 	dc.w	\1
 	dc.l	\2
 	ELSE
-	dc.w	$8000+\1
+	dc.w	PLCMDF_WORDADR+\1
 	dc.w	\2
 	ENDC
 	ENDM
@@ -756,6 +791,7 @@ PL_NEXT		MACRO			;continue with another patch list
 	IFNE	NARG-1
 	FAIL	PL_NEXT wrong number of arguments
 	ENDC
+	PLIFCNTCHK PL_NEXT
 	PL_CMDADR PLCMD_NEXT,0
 	dc.w	\1-.patchlist		;destination (inside slave!)
 		ENDM
@@ -869,10 +905,124 @@ PL_BKPT		MACRO
 
 PL_BELL		MACRO
 	IFNE	NARG-2
-	FAIL	PL_BELL wrong number of arguments
+	FAIL	PL_BELL wrong number of arguments (adr,time)
 	ENDC
 	PL_CMDADR PLCMD_BELL,\1
 	dc.w	\2			;time to wait
+		ENDM
+
+; version 17.2
+
+PL_IFBW		MACRO
+	IFNE	NARG
+	FAIL	PL_IFBW no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFBW
+		ENDM
+PL_IFC1		MACRO
+	IFNE	NARG
+	FAIL	PL_IFC1 no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC1
+		ENDM
+PL_IFC2		MACRO
+	IFNE	NARG
+	FAIL	PL_IFC2 no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC2
+		ENDM
+PL_IFC3		MACRO
+	IFNE	NARG
+	FAIL	PL_IFC3 no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC3
+		ENDM
+PL_IFC4		MACRO
+	IFNE	NARG
+	FAIL	PL_IFC4 no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC4
+		ENDM
+PL_IFC5		MACRO
+	IFNE	NARG
+	FAIL	PL_IFC5 no arguments allowed
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC5
+		ENDM
+PL_IFC1X	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC1X wrong number of arguments
+	ENDC
+	IFGT	\1-31
+	FAIL	PL_IFC1X bit number must be 0..31
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC1X,\1
+		ENDM
+PL_IFC2X	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC2X wrong number of arguments
+	ENDC
+	IFGT	\1-31
+	FAIL	PL_IFC2X bit number must be 0..31
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC2X,\1
+		ENDM
+PL_IFC3X	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC3X wrong number of arguments
+	ENDC
+	IFGT	\1-31
+	FAIL	PL_IFC3X bit number must be 0..31
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC3X,\1
+		ENDM
+PL_IFC4X	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC4X wrong number of arguments
+	ENDC
+	IFGT	\1-31
+	FAIL	PL_IFC4X bit number must be 0..31
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC4X,\1
+		ENDM
+PL_IFC5X	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC5X wrong number of arguments
+	ENDC
+	IFGT	\1-31
+	FAIL	PL_IFC5X bit number must be 0..31
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC5X,\1
+		ENDM
+PL_ELSE		MACRO
+	IFNE	NARG
+	FAIL	PL_ELSE no arguments allowed
+	ENDC
+	IFLE PLIFCNT
+	FAIL	PL_ELSE there must be an PL_IF* before
+	ENDC
+	dc.w	PLCMDF_CTRL+PLCMD_ELSE
+		ENDM
+PL_ENDIF	MACRO
+	IFNE	NARG
+	FAIL	PL_ENDIF no arguments allowed
+	ENDC
+	IFLE PLIFCNT
+	FAIL	PL_ENDIF there must be an PL_IF* before
+	ENDC
+PLIFCNT SET PLIFCNT-1
+	dc.w	PLCMDF_CTRL+PLCMD_ENDIF
 		ENDM
 
 ;=============================================================================
