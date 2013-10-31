@@ -1,4 +1,4 @@
-; $Id: Install 1.19 2011/09/04 23:12:35 wepl Exp wepl $
+; $Id: Install 1.20 2012/10/06 18:31:34 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -6,6 +6,7 @@
 (set #highs-file "highs")		;name of high scores file
 
 (set #readme-file "ReadMe")		;name of readme file
+(set #readme2-file "ReadMe2")		;name of second readme file
 (set #man-file "Manual")		;name of manual file
 (set #hint-file "Hints")		;name of hint file
 (set #sol-file "Solution")		;name of solution file
@@ -108,12 +109,14 @@
 	; 2 = DIC
         ("")
 	; 3 = Files
-	(set #prefix ("%s%s" #prefix "AGA"))
+        ("")
+	;(set #prefix ("%s%s" #prefix "AGA"))
 	; 4 = CD Files
-	(
-	  (set #prefix-slave (cat #prefix "CDTV"))
-	  (set #sub-dir "data")
-	)
+        ("")
+	;(
+	;  (set #prefix-slave (cat #prefix "CDTV"))
+	;  (set #sub-dir "data")
+	;)
 	; 5 = Single File
 	("")
       )
@@ -408,7 +411,7 @@
 	  " (aminet:disk/misc/diskimage.lha). Required is DEVS:diskimage.device and the"
 	  " program DiskImageCtrl in the path.\n\n"
 	  "To install from 'warp files' you must additionally have installed"
-	  " the TrackWarp package (http://www.whdload.de/whdload/TrackWarp15.lha). Required"
+	  " the TrackWarp package (http://www.whdload.de/whdload/TrackWarp16.lha). Required"
 	  " is LIBS:trackwarp.library and the program tw2adf in the path. tw2adf must have"
 	  " version 1.1 or better.\n\n"
 	  "To install from 'CAPS images' you must additionally have installed the"
@@ -1079,6 +1082,12 @@
     (run ("SYS:Utilities/More %s" #readme-file))
   )
 )
+(if (exists #readme2-file)
+  (if (= 0 (run ("SYS:Utilities/Multiview \"%s\"" #readme2-file)))
+    ("")
+    (run ("SYS:Utilities/More \"%s\"" #readme2-file))
+  )
+)
 
 (set #program "WHDLoad")
 (P_ChkRun)
@@ -1140,6 +1149,8 @@
 
 (P_MakeIcons)
 (set #copy-file #readme-file)
+(P_CopyFile)
+(set #copy-file #readme2-file)
 (P_CopyFile)
 (set #copy-file #man-file)
 (P_CopyFile)
