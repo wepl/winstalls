@@ -405,17 +405,18 @@
 	  "CAPS/SPS images or warp files (ipf,mfm,wrp,wwp,...)"
 	)
 	(help
-	  "To install from 'real floppy disks' you have to insert your physically disks into"
+	  "To install from 'real floppy disks' you have to insert your physical disks into"
 	  " any of your floppy drives.\n\n"
-	  "To install from 'disk images' you must have installed the DiskImage package"
-	  " (aminet:disk/misc/diskimage.lha). Required is DEVS:diskimage.device and the"
-	  " program DiskImageCtrl in the path.\n\n"
+	  "To install from 'disk images' you must have installed one of the DiskImage packages"
+	  " (aminet:disk/misc/diskimage.lha or aminet:disk/misc/diskimage.mk68-aos.tar.bz2)."
+	  " Required is DEVS:diskimage.device and the program DiskImageCtrl/MountDiskImage"
+	  " in the path.\n\n"
 	  "To install from 'warp files' you must additionally have installed"
 	  " the TrackWarp package (http://www.whdload.de/whdload/TrackWarp16.lha). Required"
 	  " is LIBS:trackwarp.library and the program tw2adf in the path. tw2adf must have"
 	  " version 1.1 or better.\n\n"
-	  "To install from 'CAPS images' you must additionally have installed the"
-	  " capsimage.device in DEVS: (http://www.caps-project.org/)\n\n"
+	  "To install from 'SPS/CAPS images' you must additionally have installed the"
+	  " capsimage.device in DEVS: (http://www.softpres.org/)\n\n"
 	  @askchoice-help
 	)
       )
@@ -452,10 +453,10 @@
 
 (procedure PDI_Insert
   (if
-    (<> 0 (run ("DiskImageCtrl Drive=%s: ReadOnly Image=\"%s\" >CON:///1000//CLOSE/AUTO" #DI_dev #DI_image)))
+    (<> 0 (run ("%s Drive=%s: %s Insert=\"%s\" >CON:///1000//CLOSE/AUTO" #DI_cmd #DI_dev #DI_ro #DI_image)))
     (abort
 	"Sorry, could not load the Image to the Device.\n"
-	"Make sure you have correctly installed aminet:disk/misc/diskimage.lha,\n"
+	"Make sure you have correctly installed " #DI_package ",\n"
 	"you have selected the right disk image\n"
 	"and there are enough free ressources."
     )
@@ -472,7 +473,7 @@
   (set #program "tw2adf")
   (set #package "TrackWarp (http://www.whdload.de/whdload/TrackWarp15.lha)")
   (P_ChkRun_Package)
-  (run ("DiskImageCtrl Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_dev))
+  (run ("%s Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_cmd #DI_dev))
   (if
     (<> 0 (run ("tw2adf \"%s\" %s Quiet Overwrite >CON:///1000//CLOSE/AUTO" #DI_image #DI_imagetmp)))
     (abort
@@ -491,9 +492,21 @@
 ; OUT: -
 
 (procedure PDI_Mount
-  (set #program "DiskImageCtrl")
-  (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
+  (if (= 37 (/ (getversion "DEVS:diskimage.device") 65536))
+    (
+      (set #program "DiskImageCtrl")
+      (set #DI_ro "ReadOnly")
+      (set #package "DiskImage (aminet:disk/misc/diskimage.lha)")
+    )
+    (
+      (set #program "MountDiskImage")
+      (set #DI_ro "WP")
+      (set #package "DiskImage (aminet:disk/misc/diskimage.mk68-aos.tar.bz2)")
+    )
+  )
   (P_ChkRun_Package)
+  (set #DI_cmd #program)
+  (set #DI_package #package)
   (if (getassign #DI_dev "d")
     ("")
     (
@@ -520,7 +533,7 @@
 	(<> 0 (run ("mount %s: FROM %s >CON:///1000//CLOSE/AUTO" #DI_dev #DI_mount)))
         (abort
 	  "Sorry, could not mount the Device " #DI_dev ":.\n"
-	  "Make sure you have correctly installed the package " #package "\n"
+	  "Make sure you have correctly installed the package " #DI_package "\n"
 	  "and there are enough free ressources and Unit #9 is not already used."
         )
       )
@@ -537,8 +550,9 @@
 (procedure PDI_Eject
   (if (or (= #DI_mode 1) (= #DI_mode 2))
     (if
-      (<> 0 (run ("DiskImageCtrl Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_dev)))
+      (<> 0 (run ("%s Drive=%s: Eject >CON:///1000//CLOSE/AUTO" #DI_cmd #DI_dev)))
       (message "Could not eject the Image from the Device.")
+      (run ("assign %s: DISMOUNT" #DI_dev))
     )
   )
 )
