@@ -3,11 +3,13 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.7 2007/11/24 19:38:27 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.8 2010/11/20 21:49:58 wepl Exp $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
 ;		20.11.10 _cb_dosLoadSeg, _cb_keyboard added
+;		08.01.12 v17 config stuff added
+;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -69,18 +71,25 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
+	IFD BARFLY
 	IFND	.passchk
 	DOSCMD	"WDate  >T:date"
 .passchk
+	ENDC
 	ENDC
 
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Kickstarter for 33.180",0
 slv_copy	dc.b	"1986 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.3 "
+		dc.b	"Version 0.4 "
+	IFD BARFLY
 		INCBIN	"T:date"
+	ENDC
 		dc.b	0
+	IFGE slv_Version-17
+slv_config	dc.b	"C1:B:Trainer",0
+	ENDC
 	EVEN
 
 ;============================================================================
@@ -127,19 +136,17 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 	;remove leading path
 		move.l	a0,a1
 		move.l	d0,d2
-.2		move.b	(a1)+,d3
+.path		move.b	(a1)+,d3
 		subq.l	#1,d2
 		cmp.b	#":",d3
-		beq	.1
+		beq	.skip
 		cmp.b	#"/",d3
-		beq	.1
-		tst.l	d2
-		bne	.2
-		bra	.3
-.1		move.l	a1,a0		;A0 = name
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
 		move.l	d2,d0		;D0 = name length
-		bra	.2
-.3	;get hunk length sum
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
 		move.l	d1,a1		;D1 = segment
 		moveq	#0,d2
 .add		add.l	a1,a1

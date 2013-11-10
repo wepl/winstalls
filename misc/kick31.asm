@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.9 2006/05/07 19:01:59 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.10 2010/11/20 21:49:32 wepl Exp $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -13,6 +13,8 @@
 ;		23.08.05 JOYPADEMU added
 ;		03.05.06 made compatible to ASM-One
 ;			 NO68020 added
+;		08.01.12 v17 config stuff added
+;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -90,15 +92,18 @@ slv_keyexit	= $59	;F10
 	ENDC
 	ENDC
 
-slv_CurrentDir		dc.b	"wb31",0
-slv_name		dc.b	"Kickstarter for 40.068",0
-slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
-slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.4 "
+slv_CurrentDir	dc.b	"wb31",0
+slv_name	dc.b	"Kickstarter for 40.068",0
+slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
+slv_info	dc.b	"adapted for WHDLoad by Wepl",10
+		dc.b	"Version 0.5 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
 		dc.b	0
+	IFGE slv_Version-17
+slv_config	dc.b	"C1:B:Trainer",0
+	ENDC
 	EVEN
 
 ;============================================================================
@@ -257,19 +262,17 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 	;remove leading path
 		move.l	a0,a1
 		move.l	d0,d2
-.2		move.b	(a1)+,d3
+.path		move.b	(a1)+,d3
 		subq.l	#1,d2
 		cmp.b	#":",d3
-		beq	.1
+		beq	.skip
 		cmp.b	#"/",d3
-		beq	.1
-		tst.l	d2
-		bne	.2
-		bra	.3
-.1		move.l	a1,a0		;A0 = name
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
 		move.l	d2,d0		;D0 = name length
-		bra	.2
-.3	;get hunk length sum
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
 		move.l	d1,a1		;D1 = segment
 		moveq	#0,d2
 .add		add.l	a1,a1
