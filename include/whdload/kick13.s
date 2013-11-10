@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.64 2012/04/16 21:08:01 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.65 2012/09/30 17:13:32 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -64,6 +64,7 @@
 ;		20.11.10 _cb_keyboard added
 ;		22.07.11 adapted for whdload v17
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
+;		03.02.13 fix for LoadView(0)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -243,6 +244,7 @@ kick_patch	PL_START
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
 		PL_PS	$d5be,gfx_fix1			;gfx_LoadView
+		PL_S	$d5e2,6				;fix that LoadView(0) will set an corrupt clist to gb_LOFlist
 	IFD FONTHEIGHT
 		PL_B	$1b96c,FONTHEIGHT
 	ENDC
