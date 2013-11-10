@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.13 2006/05/07 19:01:54 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.14 2010/11/20 21:50:11 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -15,6 +15,8 @@
 ;		03.05.06 made compatible to ASM-One
 ;		20.11.08 SETSEGMENT added (JOTD)
 ;		20.11.10 _cb_keyboard added
+;		08.01.12 v17 config stuff added
+;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -56,13 +58,13 @@ CACHE
 DEBUG
 ;DISKSONBOOT
 DOSASSIGN
-FONTHEIGHT     = 8
+FONTHEIGHT	= 8
 HDINIT
 HRTMON
 IOCACHE		= 1024
 ;MEMFREE	= $200
 ;NEEDFPU
-POINTERTICKS   = 1
+POINTERTICKS	= 1
 SETPATCH
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
@@ -90,11 +92,14 @@ slv_CurrentDir	dc.b	"wb13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.8 "
+		dc.b	"Version 0.9 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
 		dc.b	0
+	IFGE slv_Version-17
+slv_config	dc.b	"C1:B:Trainer",0
+	ENDC
 	EVEN
 
 ;============================================================================
@@ -333,19 +338,17 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 	;remove leading path
 		move.l	a0,a1
 		move.l	d0,d2
-.2		move.b	(a1)+,d3
+.path		move.b	(a1)+,d3
 		subq.l	#1,d2
 		cmp.b	#":",d3
-		beq	.1
+		beq	.skip
 		cmp.b	#"/",d3
-		beq	.1
-		tst.l	d2
-		bne	.2
-		bra	.3
-.1		move.l	a1,a0		;A0 = name
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
 		move.l	d2,d0		;D0 = name length
-		bra	.2
-.3	;get hunk length sum
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
 		move.l	d1,a1		;D1 = segment
 		moveq	#0,d2
 .add		add.l	a1,a1
