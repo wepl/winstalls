@@ -3,11 +3,13 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.2 2007/01/17 17:16:56 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.3 2010/04/09 20:04:03 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
 ;			 e.g. basm -dMEM=32 workbench31.asm
+;		08.01.12 v17 config stuff added
+;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -110,15 +112,18 @@ slv_keyexit	= $59	;F10
 	ENDC
 	ENDC
 
-slv_CurrentDir		dc.b	"data",0
-slv_name		dc.b	"Workbech 3.1 Kickstart 40.063/068",0
-slv_copy		dc.b	"1985-93 Commodore-Amiga Inc.",0
-slv_info		dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.2 "
+slv_CurrentDir	dc.b	"data",0
+slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
+slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
+slv_info	dc.b	"adapted for WHDLoad by Wepl",10
+		dc.b	"Version 1.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
 		dc.b	0
+	IFGE slv_Version-17
+slv_config	dc.b	"C1:B:Trainer",0
+	ENDC
 	EVEN
 
 ;============================================================================
@@ -275,19 +280,17 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 	;remove leading path
 		move.l	a0,a1
 		move.l	d0,d2
-.2		move.b	(a1)+,d3
+.path		move.b	(a1)+,d3
 		subq.l	#1,d2
 		cmp.b	#":",d3
-		beq	.1
+		beq	.skip
 		cmp.b	#"/",d3
-		beq	.1
-		tst.l	d2
-		bne	.2
-		bra	.3
-.1		move.l	a1,a0		;A0 = name
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
 		move.l	d2,d0		;D0 = name length
-		bra	.2
-.3	;get hunk length sum
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
 		move.l	d1,a1		;D1 = segment
 		moveq	#0,d2
 .add		add.l	a1,a1
