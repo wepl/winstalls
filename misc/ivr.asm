@@ -1,12 +1,13 @@
 ;*---------------------------------------------------------------------------
-;  :Modul.	zeus.asm
-;  :Contents.	Zeus slave to test pseudo vbr functionality
+;  :Modul.	ivr.asm
+;  :Contents.	slave to test interrupt vector redirect functionality
 ;	Custom1=0 no interrupts active
 ;	Custom1=1 only vbi active performing color cycling
 ;	Custom1=2 also ports interrupt active, quitting on esc
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.asm 1.14 2010/11/20 21:50:11 wepl Exp wepl $
+;  :Version.	$Id: zeus.asm 1.1 2012/10/12 20:51:35 wepl Exp wepl $
 ;  :History.	26.09.12 started
+;		13.11.13 refresh for aca500
 ;  :Requires.
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -19,8 +20,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/Zeus.Slave"
-	OUTPUT	"Zeus.Slave"
+	OUTPUT	"wart:.debug/IVR.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -49,15 +49,21 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 		dc.w	0			;ws_kickname
 		dc.l	0			;ws_kicksize
 		dc.w	0			;ws_kickcrc
-		dc.w	0			;ws_config
+		dc.w	_config-_base		;ws_config
 
-_name		dc.b	"Zeus Test Slave",0
+_name		dc.b	"Interrupt Vector Redirect Test Slave",0
 _copy		dc.b	"Wepl",0
-_info		dc.b	"done by Wepl "
+_info		dc.b	"for testing interrupt hook with Zeus/ACA500 boards",10
+		dc.b	"build "
 	DOSCMD	"WDate  >T:date"
 	INCBIN	"T:date"
-		dc.b	0
-_badc1		dc.b	"unsuppoted Custom1 value",0
+		dc.b	-1
+		dc.b	"can be quit always using LMB",10
+		dc.b	"no ints: no keyboard quit possible",10
+		dc.b	"vbi: quitkey possible",10
+		dc.b	"vbi+ports: esc + quitkey possible",0
+_config		dc.b	"C1:L:mode:no ints,vbi,vbi+ports",0
+_badc1		dc.b	"unsupported Custom1 value",0
 _quitlmb	dc.b	"Exit because LMB pressed",0
 _quitesc	dc.b	"Exit because Esc pressed",0
 	EVEN
@@ -109,6 +115,7 @@ _1		move	.col,(color,a6)
 		addq.w	#1,(a0)
 		move.w	(a0),(color,a6)
 		move.w	#INTF_VERTB,(intreq,a6)
+		tst.w	(intreqr,a6)
 		movem.l	(a7)+,_MOVEMREGS
 		rte
 
