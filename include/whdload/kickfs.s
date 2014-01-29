@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.20 2009/08/13 21:43:56 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.21 2009/08/16 22:10:05 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -27,6 +27,8 @@
 ;		12.08.09 now properly supports read and write on the same fh when
 ;			 using IOCACHE (flushs cache added), some comments added
 ;		16.08.09 flushing IOCACHE wasn't correct handled, fixed
+;		12.01.14 minor optimizations
+;			 TRACEFS added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -225,6 +227,20 @@ HD_NumBuffers		= 5
 
 		move.l	(_resload,pc),a2	;A2 = resload
 
+	IFD TRACEFS
+	;create empty file to let WHDLoad cache all messages
+		moveq	#4,d0			;length
+		move.l	#$20000-4,d1		;offset
+		lea	(.tracefs_name,pc),a0	;name
+		sub.l	a1,a1			;address
+		jsr	(resload_SaveFileOffset,a2)
+		moveq	#0,d0			;length
+		lea	(.tracefs_name,pc),a0	;name
+		sub.l	a1,a1			;address
+		jsr	(resload_SaveFile,a2)
+		clr.l	-(a7)			;actual offset
+	ENDC
+
 	;fetch and reply startup message
 		move.l	a5,a0
 		jsr	(_LVOWaitPort,a6)
@@ -242,8 +258,7 @@ HD_NumBuffers		= 5
 		move.l  a5,(dn_Task,a0)	        ;signal: the handler is running
 .nodn
 	ENDC
-		moveq	#DOSTRUE,d0		;success
-		bra	.reply1
+		bra	.reply1true
 
 	;loop on receiving new packets
 .mainloop	move.l	a5,a0
@@ -252,6 +267,16 @@ HD_NumBuffers		= 5
 		jsr	(_LVOGetMsg,a6)
 		move.l	d0,a4
 		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
+
+	IFD TRACEFS
+	;trace message
+		moveq	#16*4,d0		;length
+		move.l	(a7),d1			;offset
+		lea	(.tracefs_name,pc),a0	;name
+		lea	(a4),a1			;address
+		jsr	(resload_SaveFileOffset,a2)
+		add.l	#16*4+16,(a7)		;actual offset
+	ENDC
 
 	;find and call appropriate action
 		moveq	#0,d0
@@ -265,24 +290,6 @@ HD_NumBuffers		= 5
 		cmp.w	d0,d2			;this should be cmp.l
 		bne	.next
 		jmp	(.action,pc,d1.w)
-
-;---------------
-; reply dos-packet
-; IN:	D0 = res1
-;	D1 = res2
-
-.reply2		move.l	d1,(dp_Res2,a4)
-
-;---------------
-; reply dos-packet
-; IN:	D0 = res1
-
-.reply1		move.l	d0,(dp_Res1,a4)
-		move.l	(dp_Port,a4),a0
-		move.l	(dp_Link,a4),a1
-		move.l	a5,(dp_Port,a4)
-		jsr	(_LVOPutMsg,a6)
-		bra	.mainloop
 
 .action		dc.w	ACTION_CURRENT_VOLUME,.a_current_volume-.action		;7	7
 		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8	8
@@ -317,6 +324,24 @@ HD_NumBuffers		= 5
 	ENDC
 		dc.w	0
 
+;---------------
+; reply dos-packet
+; IN:	D0 = res1
+;	D1 = res2
+
+.reply2		move.l	d1,(dp_Res2,a4)
+
+;---------------
+; reply dos-packet
+; IN:	D0 = res1
+
+.reply1		move.l	d0,(dp_Res1,a4)
+		move.l	(dp_Port,a4),a0
+		move.l	(dp_Link,a4),a1
+		move.l	a5,(dp_Port,a4)
+		jsr	(_LVOPutMsg,a6)
+		bra	.mainloop
+
 	; conventions for action functions:
 	; IN:	a2 = resload
 	;	a3 = BPTR volume node
@@ -349,8 +374,7 @@ HD_NumBuffers		= 5
 .a_free_lock	bsr	.getarg1
 		move.l	d7,d0
 		bsr	.unlock
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 
 ;---------------
 
@@ -376,8 +400,7 @@ HD_NumBuffers		= 5
 		jsr	(resload_DeleteFile,a2)
 		move.l	d7,d0
 		bsr	.unlock
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 
 .delete_dirnotempty
 		move.l	d7,d0
@@ -483,8 +506,7 @@ HD_NumBuffers		= 5
 		lea	(fib_Comment,a1),a0
 		bsr	.bstr
 	;return
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 
 	;special handling of NULL lock
 .examine_root	clr.l	-(a7)
@@ -538,7 +560,8 @@ HD_NumBuffers		= 5
 .a_set_comment
 .a_set_date
 .a_flush
-.a_inhibit	moveq	#DOSTRUE,d0
+.a_inhibit
+.reply1true	moveq	#DOSTRUE,d0
 		bra	.reply1
 
 ;---------------
@@ -623,8 +646,7 @@ HD_NumBuffers		= 5
 		bne	.samelock_neq
 		tst.b	d0
 		bne	.samelock_cmp
-.samelock_equ	moveq	#DOSTRUE,d0
-		bra	.reply1
+.samelock_equ   bra	.reply1true
 
 .samelock_zero	move.l	a1,d0
 		beq	.samelock_equ
@@ -914,8 +936,7 @@ HD_NumBuffers		= 5
 		move.l	d7,a0			;fh
 		move.l	d0,(fh_Arg1,a0)		;using the lock we refer the filename later
 	;return
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 
 .a_findoutput	bsr	.getarg2
 		move.l	d7,d0			;APTR lock
@@ -948,8 +969,7 @@ HD_NumBuffers		= 5
 	ENDC
 		move.l	(dp_Arg1,a4),d0		;APTR lock
 		bsr	.unlock
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 
 ;---------------
 
@@ -1003,8 +1023,7 @@ HD_NumBuffers		= 5
 		move.l	d7,a0
 		bsr	.getarg2		;lock
 		move.l	d7,(fh_Arg1,a0)		;using the lock we refer the filename later
-		moveq	#DOSTRUE,d0
-		bra	.reply1
+		bra	.reply1true
 	ENDC
 
 ;---------------
@@ -1313,6 +1332,9 @@ HD_NumBuffers		= 5
 .devicename	dc.b	"whdload.device",0
 .handlername	dc.b	"DH0",0
 .expansionname	dc.b	"expansion.library",0
+	IFD TRACEFS
+.tracefs_name	dc.b	".tracefs",0
+	ENDC
 _dosname	dc.b	"dos.library",0
 
 ;---------------
