@@ -2,7 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 17.1 2012/10/06 18:14:45 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 17.2 2013/03/25 21:20:36 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -32,6 +32,7 @@
 ;			 commentary reworked
 ;		16.03.13 PL_CMDADR checks for negative destination address
 ;		24.03.13 PL_IF,ELSE,ENDIF added
+;		19.01.14 resload_VSNPrintF and resload_Log added
 ;  :Copyright.	© 1996-2013 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
@@ -336,204 +337,222 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; ATTENTION: this routine must be called via JMP (not JSR)
 	ULONG	resload_LoadFile
 		; load file to memory (8)
-		; IN :	a0 = CSTR   filename
+		; IN:	a0 = CSTR   filename
 		;	a1 = APTR   address
-		; OUT :	d0 = ULONG  success (size of file)
+		; OUT:	d0 = ULONG  success (size of file)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_SaveFile
 		; write memory to file (c)
-		; IN :	d0 = ULONG  size
+		; IN:	d0 = ULONG  size
 		;	a0 = CSTR   filename
 		;	a1 = APTR   address
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_SetCACR
 		; set cachebility for BaseMem (10)
-		; IN :	d0 = ULONG  new setup
+		; IN:	d0 = ULONG  new setup
 		;	d1 = ULONG  mask
-		; OUT :	d0 = ULONG  old setup
+		; OUT:	d0 = ULONG  old setup
 	ULONG	resload_ListFiles
 		; list filenames of a directory (14)
-		; IN :	d0 = ULONG  buffer size
+		; IN:	d0 = ULONG  buffer size
 		;	a0 = CSTR   name of directory to scan
 		;	a1 = APTR   buffer (must be located inside Slave,
 		;	with WHDLoad 16.8+ also inside ExpMem)
-		; OUT :	d0 = ULONG  amount of names in buffer filled
+		; OUT:	d0 = ULONG  amount of names in buffer filled
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_Decrunch
 		; uncompress data in memory (18)
-		; IN :	a0 = APTR   source
+		; IN:	a0 = APTR   source
 		;	a1 = APTR   destination (can be equal to source)
-		; OUT :	d0 = ULONG  uncompressed size
+		; OUT:	d0 = ULONG  uncompressed size
 	ULONG	resload_LoadFileDecrunch
 		; load file and uncompress it (1c)
-		; IN :	a0 = CSTR   filename
+		; IN:	a0 = CSTR   filename
 		;	a1 = APTR   address
-		; OUT :	d0 = ULONG  success (size of file uncompressed)
+		; OUT:	d0 = ULONG  success (size of file uncompressed)
 		;	d1 = ULONG  dos errorcode
 	ULONG	resload_FlushCache
 		; clear CPU caches (20)
-		; IN :	-
-		; OUT :	-
+		; IN:	-
+		; OUT:	-
 	ULONG	resload_GetFileSize
 		; get size of a file (24)
-		; IN :	a0 = CSTR   filename
-		; OUT :	d0 = ULONG  size of file
+		; IN:	a0 = CSTR   filename
+		; OUT:	d0 = ULONG  size of file
 	ULONG	resload_DiskLoad
 		; load part from disk image (28)
-		; IN :	d0 = ULONG  offset
+		; IN:	d0 = ULONG  offset
 		;	d1 = ULONG  size
 		;	d2 = ULONG  disk number
 		;	a0 = APTR   destination
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 ******* the following functions require ws_Version >= 2
 
 	ULONG	resload_DiskLoadDev
 		; load part from physical disk via trackdisk (2c)
-		; IN :	d0 = ULONG  offset
+		; IN:	d0 = ULONG  offset
 		;	d1 = ULONG  size
 		;	a0 = APTR   destination
 		;	a1 = STRUCT taglist
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  trackdisk errorcode
 
 ******* the following functions require ws_Version >= 3
 
 	ULONG	resload_CRC16
 		; calculate 16 bit CRC checksum (30)
-		; IN :	d0 = ULONG  size
+		; IN:	d0 = ULONG  size
 		;	a0 = APTR   address
-		; OUT :	d0 = UWORD  CRC checksum
+		; OUT:	d0 = UWORD  CRC checksum
 
 ******* the following functions require ws_Version >= 5
 
 	ULONG	resload_Control
 		; misc control, get/set variables (34)
-		; IN :	a0 = STRUCT taglist
-		; OUT :	d0 = BOOL   success
+		; IN:	a0 = STRUCT taglist
+		; OUT:	d0 = BOOL   success
 	ULONG	resload_SaveFileOffset
 		; write memory to file at offset (38)
-		; IN :	d0 = ULONG  size
+		; IN:	d0 = ULONG  size
 		;	d1 = ULONG  offset
 		;	a0 = CSTR   filename
 		;	a1 = APTR   address
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errcode
 
 ******* the following functions require ws_Version >= 6
 
 	ULONG	resload_ProtectRead
 		; mark memory as read protected (3c)
-		; IN :	d0 = ULONG  length
+		; IN:	d0 = ULONG  length
 		;	a0 = APTR   address
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_ProtectReadWrite
 		; mark memory as read and write protected (40)
-		; IN :	d0 = ULONG  length
+		; IN:	d0 = ULONG  length
 		;	a0 = APTR   address
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_ProtectWrite
 		; mark memory as write protected (44)
-		; IN :	d0 = ULONG  length
+		; IN:	d0 = ULONG  length
 		;	a0 = APTR   address
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_ProtectRemove
 		; remove memory protection (48)
-		; IN :	d0 = ULONG  length
+		; IN:	d0 = ULONG  length
 		;	a0 = APTR   address
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_LoadFileOffset
 		; load part of file to memory (4c)
-		; IN :	d0 = ULONG  size
+		; IN:	d0 = ULONG  size
 		;	d1 = ULONG  offset
 		;	a0 = CSTR   filename
 		;	a1 = APTR   destination
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 ******* the following functions require ws_Version >= 8
 
 	ULONG	resload_Relocate
 		; relocate AmigaDOS executable (50)
-		; IN :	a0 = APTR   address (source=destination)
+		; IN:	a0 = APTR   address (source=destination)
 		;	a1 = STRUCT taglist
-		; OUT :	d0 = ULONG  size
+		; OUT:	d0 = ULONG  size
 	ULONG	resload_Delay
 		; wait some time or button pressed (54)
-		; IN :	d0 = ULONG  time to wait in 1/10 seconds
-		; OUT :	-
+		; IN:	d0 = ULONG  time to wait in 1/10 seconds
+		; OUT:	-
 	ULONG	resload_DeleteFile
 		; delete file (58)
-		; IN :	a0 = CSTR   filename
-		; OUT :	d0 = BOOL   success
+		; IN:	a0 = CSTR   filename
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 ******* the following functions require ws_Version >= 10
 
 	ULONG	resload_ProtectSMC
 		; detect self modifying code (5c)
-		; IN :	d0 = ULONG  length
+		; IN:	d0 = ULONG  length
 		;	a0 = APTR   address
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_SetCPU
 		; control CPU setup (60)
-		; IN :	d0 = ULONG  properties, see above
+		; IN:	d0 = ULONG  properties, see above
 		;	d1 = ULONG  mask
-		; OUT :	d0 = ULONG  old properties
+		; OUT:	d0 = ULONG  old properties
 	ULONG	resload_Patch
 		; apply patchlist (64)
-		; IN :	a0 = APTR   patchlist, see below
+		; IN:	a0 = APTR   patchlist, see below
 		;	a1 = APTR   destination address
-		; OUT :	-
+		; OUT:	-
 
 ******* the following functions require ws_Version >= 11
 
 	ULONG	resload_LoadKick
 		; load kickstart image (68)
-		; IN :	d0 = ULONG  length of image
+		; IN:	d0 = ULONG  length of image
 		;	d1 = UWORD  crc16 of image
 		;	a0 = CSTR   basename of image
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_Delta
 		; apply WDelta data to modify memory (6c)
-		; IN :	a0 = APTR   src data
+		; IN:	a0 = APTR   src data
 		;	a1 = APTR   dest data
 		;	a2 = APTR   wdelta data
-		; OUT :	-
+		; OUT:	-
 	ULONG	resload_GetFileSizeDec
 		; get size of a packed file (70)
-		; IN :	a0 = CSTR   filename
-		; OUT :	d0 = ULONG  size of file uncompressed
+		; IN:	a0 = CSTR   filename
+		; OUT:	d0 = ULONG  size of file uncompressed
 
 ******* the following functions require ws_Version >= 15
 
 	ULONG	resload_PatchSeg
 		; apply patchlist to a segment list (74)
-		; IN :	a0 = APTR   patchlist, see below
+		; IN:	a0 = APTR   patchlist, see below
 		;	a1 = BPTR   segment list
-		; OUT :	-
+		; OUT:	-
 
 	ULONG	resload_Examine
 		; examine a file or directory (78)
-		; IN :	a0 = CSTR   name
+		; IN:	a0 = CSTR   name
 		;	a1 = APTR   struct FileInfoBlock (260 bytes)
-		; OUT :	d0 = BOOL   success
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 	ULONG	resload_ExNext
 		; examine next entry of a directory (7c)
-		; IN :	a0 = APTR   struct FileInfoBlock (260 bytes)
-		; OUT :	d0 = BOOL   success
+		; IN:	a0 = APTR   struct FileInfoBlock (260 bytes)
+		; OUT:	d0 = BOOL   success
 		;	d1 = ULONG  dos errorcode
 
 	ULONG	resload_GetCustom
 		; get Custom argument (80)
-		; IN :	d0 = ULONG  length of buffer
+		; IN:	d0 = ULONG  length of buffer
 		;	d1 = ULONG  reserved, must be 0
 		;	a0 = APTR   buffer
-		; OUT :	d0 = BOOL   true if Custom has fit into buffer
+		; OUT:	d0 = BOOL   true if Custom has fit into buffer
+
+******* the following functions require ws_Version >= 18
+
+	ULONG	resload_VSNPrintF
+		; format string like clib.vsnprintf/exec.RawDoFmt (84)
+		; IN:	d0 = ULONG  length of buffer
+		;	a0 = APTR   buffer to fill
+		;	a1 = CPTR   format string
+		;	a2 = APTR   argument array
+		; OUT:	d0 = ULONG  length of created string with unlimited
+		;		    buffer without final '\0'
+		;	a0 = APTR   pointer to final '\0'
+
+	ULONG	resload_Log
+		; write log message (88)
+		; IN:	a0 = CSTR   format string
+		;   (4,a7) = LABEL  argument array
+		; OUT:	-
 
 	LABEL	resload_SIZEOF
 
