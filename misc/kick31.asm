@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.10 2010/11/20 21:49:32 wepl Exp $
+;  :Version.	$Id: kick31.asm 1.11 2013/11/10 15:56:50 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -15,6 +15,7 @@
 ;			 NO68020 added
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
+;		30.01.14 version check optimized
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -70,6 +71,7 @@ IOCACHE		= 1024
 NO68020
 POINTERTICKS	= 1
 ;PROMOTE_DISPLAY
+;SNOOPFS
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
 
@@ -158,21 +160,18 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		bsr	_dos_assign
 
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d1
-		beq	.program_err
+		lea	(_program,pc),a0	;name
 		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
-		
+
 		cmp.w	#$e99a,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER

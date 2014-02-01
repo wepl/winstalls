@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.14 2010/11/20 21:50:11 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.15 2013/11/10 15:50:12 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -17,6 +17,7 @@
 ;		20.11.10 _cb_keyboard added
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
+;		30.01.14 version check optimized
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -66,6 +67,7 @@ IOCACHE		= 1024
 ;NEEDFPU
 POINTERTICKS	= 1
 SETPATCH
+;SNOOPFS
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
 
@@ -171,16 +173,13 @@ _bootdos	lea	(_saveregs,pc),a0
 		bsr	_dos_assign
 
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d1
-		beq	.program_err
+		lea	(_program,pc),a0	;name
 		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
