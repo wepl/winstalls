@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.20 2011/07/22 15:50:46 wepl Exp wepl $
+$Id: kick.readme 1.21 2012/10/09 01:42:08 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -207,6 +207,15 @@ If that symbol is defined nearly all patches done by the SetPatch v1.38
 program will be performed. Usually that is not necessary and omitting the
 option makes the Slave around 400 bytes shorter. Only available in kick12.s
 and kick13.s.
+
+SNOOPFS
+
+In conjunction with HDINIT this will log all dos packets after been processed
+by the installed filesystem handler. Logging uses resload_Log and therefore
+requires slv_Version >= 18. That log entries are actually written requires that
+WHDLoad's option FileLog has been set.
+The supplied perl script chkunlock.pl can be used to search the log file for
+missing dos.UnLock and dos.Close calls.
 
 STACKSIZE
 

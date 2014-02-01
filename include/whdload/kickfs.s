@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.21 2009/08/16 22:10:05 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.22 2014/01/29 19:35:39 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -28,7 +28,7 @@
 ;			 using IOCACHE (flushs cache added), some comments added
 ;		16.08.09 flushing IOCACHE wasn't correct handled, fixed
 ;		12.01.14 minor optimizations
-;			 TRACEFS added
+;		29.01.14 SNOOPFS added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -42,6 +42,12 @@
 	INCLUDE	exec/resident.i
 	INCLUDE	libraries/configvars.i
 	INCLUDE	libraries/expansionbase.i
+
+	IFD SNOOPFS
+	IFLT slv_Version-18
+	FAIL SNOOPFS require slv_Version >= 18
+	ENDC
+	ENDC
 
 ;---------------------------------------------------------------------------*
 ;
@@ -227,20 +233,6 @@ HD_NumBuffers		= 5
 
 		move.l	(_resload,pc),a2	;A2 = resload
 
-	IFD TRACEFS
-	;create empty file to let WHDLoad cache all messages
-		moveq	#4,d0			;length
-		move.l	#$20000-4,d1		;offset
-		lea	(.tracefs_name,pc),a0	;name
-		sub.l	a1,a1			;address
-		jsr	(resload_SaveFileOffset,a2)
-		moveq	#0,d0			;length
-		lea	(.tracefs_name,pc),a0	;name
-		sub.l	a1,a1			;address
-		jsr	(resload_SaveFile,a2)
-		clr.l	-(a7)			;actual offset
-	ENDC
-
 	;fetch and reply startup message
 		move.l	a5,a0
 		jsr	(_LVOWaitPort,a6)
@@ -258,69 +250,94 @@ HD_NumBuffers		= 5
 		move.l  a5,(dn_Task,a0)	        ;signal: the handler is running
 .nodn
 	ENDC
+	IFD SNOOPFS
+		clr.l	-(a7)			;place for function infos
+	ENDC
 		bra	.reply1true
 
 	;loop on receiving new packets
-.mainloop	move.l	a5,a0
+.mainloop
+	IFD SNOOPFS
+	;log the message
+		move.w	(a7),d2			;skip startup package
+		beq	.skipsnoop
+		move.l	(dp_Arg5,a4),-(a7)
+		move.l	(dp_Arg4,a4),-(a7)
+		move.l	(dp_Arg3,a4),-(a7)
+		move.l	(dp_Arg2,a4),-(a7)
+		move.l	(dp_Arg1,a4),-(a7)
+		move.l	(dp_Res2,a4),-(a7)
+		move.l	(dp_Res1,a4),-(a7)
+		pea	(.snoopfshead,pc)
+		lea	(.action,pc,d2.w),a0
+		jsr	(resload_Log,a2)
+		add.w	#8*4,a7
+.skipsnoop
+	ENDC
+		move.l	a5,a0
 		jsr	(_LVOWaitPort,a6)
 		move.l	a5,a0
 		jsr	(_LVOGetMsg,a6)
 		move.l	d0,a4
 		move.l	(LN_NAME,a4),a4		;A4 = DosPacket
 
-	IFD TRACEFS
-	;trace message
-		moveq	#16*4,d0		;length
-		move.l	(a7),d1			;offset
-		lea	(.tracefs_name,pc),a0	;name
-		lea	(a4),a1			;address
-		jsr	(resload_SaveFileOffset,a2)
-		add.l	#16*4+16,(a7)		;actual offset
-	ENDC
-
 	;find and call appropriate action
 		moveq	#0,d0
-		move.l	(dp_Type,a4),d2
+		move.l	(dp_Type,a4),d4
 		lea	(.action,pc),a0
+	IFND SNOOPFS
 .next		movem.w	(a0)+,d0-d1
+	ELSE
+.next		movem.w	(a0)+,d0-d2
+		move.w	d2,(a7)			;save
+	ENDC
 	IFD DEBUG
 		tst.l	d0
 		beq	_debug1			;unknown packet
 	ENDC
-		cmp.w	d0,d2			;this should be cmp.l
+		cmp.w	d0,d4			;this should be cmp.l
 		bne	.next
 		jmp	(.action,pc,d1.w)
 
-.action		dc.w	ACTION_CURRENT_VOLUME,.a_current_volume-.action		;7	7
-		dc.w	ACTION_LOCATE_OBJECT,.a_locate_object-.action		;8	8
-		dc.w	ACTION_FREE_LOCK,.a_free_lock-.action			;f	15
-		dc.w	ACTION_DELETE_OBJECT,.a_delete_object-.action		;10	16
-		dc.w	ACTION_COPY_DIR,.a_copy_dir-.action			;13	19
-		dc.w	ACTION_SET_PROTECT,.a_set_protect-.action		;15	21
-		dc.w	ACTION_CREATE_DIR,.a_create_dir-.action			;16	22
-		dc.w	ACTION_EXAMINE_OBJECT,.a_examine_object-.action		;17	23
-		dc.w	ACTION_EXAMINE_NEXT,.a_examine_next-.action		;18	24
-		dc.w	ACTION_DISK_INFO,.a_disk_info-.action			;19	25
-		dc.w	ACTION_INFO,.a_info-.action				;1a	26
-		dc.w	ACTION_FLUSH,.a_flush-.action				;1b	27
-		dc.w	ACTION_SET_COMMENT,.a_set_comment-.action		;1c	28
-		dc.w	ACTION_PARENT,.a_parent-.action				;1d	29
-		dc.w	ACTION_INHIBIT,.a_inhibit-.action			;1f	31
-		dc.w	ACTION_SET_DATE,.a_set_date-.action			;22	34
-		dc.w	ACTION_READ,.a_read-.action				;52	82
-		dc.w	ACTION_WRITE,.a_write-.action				;57	87
-		dc.w	ACTION_FINDUPDATE,.a_findupdate-.action			;3ec	1004
-		dc.w	ACTION_FINDINPUT,.a_findinput-.action			;3ed	1005
-		dc.w	ACTION_FINDOUTPUT,.a_findoutput-.action			;3ee	1006
-		dc.w	ACTION_END,.a_end-.action				;3ef	1007
-		dc.w	ACTION_SEEK,.a_seek-.action				;3f0	1008
+KFSDPKT	MACRO
+		dc.w	ACTION_\1
+		dc.w	.a_\2-.action
+	IFD SNOOPFS
+		dc.w	.f_\2-.action
+	ENDC
+	ENDM
+
+	CNOP 0,4
+.action		KFSDPKT	CURRENT_VOLUME,current_volume	      ;7      7
+		KFSDPKT	LOCATE_OBJECT,locate_object	      ;8      8
+		KFSDPKT	FREE_LOCK,free_lock		      ;f      15
+		KFSDPKT	DELETE_OBJECT,delete_object	      ;10     16
+		KFSDPKT	COPY_DIR,copy_dir		      ;13     19
+		KFSDPKT	SET_PROTECT,set_protect		      ;15     21
+		KFSDPKT	CREATE_DIR,create_dir		      ;16     22
+		KFSDPKT	EXAMINE_OBJECT,examine_object	      ;17     23
+		KFSDPKT	EXAMINE_NEXT,examine_next	      ;18     24
+		KFSDPKT	DISK_INFO,disk_info		      ;19     25
+		KFSDPKT	INFO,info			      ;1a     26
+		KFSDPKT	FLUSH,flush			      ;1b     27
+		KFSDPKT	SET_COMMENT,set_comment		      ;1c     28
+		KFSDPKT	PARENT,parent			      ;1d     29
+		KFSDPKT	INHIBIT,inhibit			      ;1f     31
+		KFSDPKT	SET_DATE,set_date		      ;22     34
+		KFSDPKT	READ,read			      ;52     82
+		KFSDPKT	WRITE,write			      ;57     87
+		KFSDPKT	FINDUPDATE,findupdate		      ;3ec    1004
+		KFSDPKT	FINDINPUT,findinput		      ;3ed    1005
+		KFSDPKT	FINDOUTPUT,findoutput		      ;3ee    1006
+		KFSDPKT	END,end				      ;3ef    1007
+		KFSDPKT	SEEK,seek			      ;3f0    1008
 	IFGT KICKVERSION-36
-		dc.w	ACTION_SAME_LOCK,.a_same_lock-.action			;28	40
-		dc.w	ACTION_FH_FROM_LOCK,.a_fh_from_lock-.action		;402	1026
-		dc.w	ACTION_IS_FILESYSTEM,.a_is_filesystem-.action		;403	1027
-		dc.w	ACTION_EXAMINE_ALL,.a_examine_all-.action		;409	1033
-		dc.w	ACTION_EXAMINE_FH,.a_examine_fh-.action			;40A	1034
-		dc.w	ACTION_ADD_NOTIFY,.a_add_notify-.action			;1001	4097
+		KFSDPKT	SAME_LOCK,same_lock		      ;28     40
+		KFSDPKT	FH_FROM_LOCK,fh_from_lock	      ;402    1026
+		KFSDPKT	IS_FILESYSTEM,is_filesystem	      ;403    1027
+		KFSDPKT	EXAMINE_ALL,examine_all		      ;409    1033
+		KFSDPKT	EXAMINE_FH,examine_fh		      ;40A    1034
+		KFSDPKT	ADD_NOTIFY,add_notify		      ;1001   4097
 	ENDC
 		dc.w	0
 
@@ -935,6 +952,17 @@ HD_NumBuffers		= 5
 		bsr	.getarg1
 		move.l	d7,a0			;fh
 		move.l	d0,(fh_Arg1,a0)		;using the lock we refer the filename later
+	;log the lock to allow check for Open/Close pair
+	IFD SNOOPFS
+		move.l	(dp_Arg3,a4),-(a7)
+		move.l	(dp_Arg2,a4),-(a7)
+		move.l	(dp_Arg1,a4),-(a7)
+		move.l	d0,-(a7)
+		pea	(.snoopfshead,pc)
+		lea	(.f_find,pc),a0
+		jsr	(resload_Log,a2)
+		add.w	#5*4,a7
+	ENDC
 	;return
 		bra	.reply1true
 
@@ -1334,6 +1362,41 @@ HD_NumBuffers		= 5
 .expansionname	dc.b	"expansion.library",0
 	IFD TRACEFS
 .tracefs_name	dc.b	".tracefs",0
+	ENDC
+	IFD SNOOPFS
+.snoopfshead		dc.b	"[KICKFS] ",0
+.f_current_volume	dc.b	"%sCURRENT_VOLUME ErrorReport() dl=$%B r2=%ld fha1=$%lx",0
+.f_locate_object	dc.b	"%sLOCATE_OBJECT         Lock() fl=$%B r2=%ld fl=$%B name=%b mode=%ld",0
+.f_free_lock		dc.b	"%sFREE_LOCK           UnLock() succ=%ld r2=%ld fl=$%B",0
+.f_delete_object	dc.b	"%sDELETE_OBJECT   DeleteFile() succ=%ld r2=%ld fl=$%B name=%b",0
+.f_copy_dir		dc.b	"%sCOPY_DIR           DupLock() fl=$%B r2=%ld fl=$%B",0
+.f_set_protect		dc.b	"%sSET_PROTECT  SetProtection() succ=%ld r2=%ld nul=%ld fl=$%B name=%b mask=$%lx",0
+.f_create_dir		dc.b	"%sCREATE_DIR       CreateDir() fl=$%B r2=%ld fl=$%B name=%b",0
+.f_examine_object	dc.b	"%sEXAMINE_OBJECT     Examine() succ=%ld r2=%ld fl=$%B fib=$%B",0
+.f_examine_next		dc.b	"%sEXAMINE_NEXT        ExNext() succ=%ld r2=%ld fl=$%B fib=$%B",0
+.f_disk_info		dc.b	"%sDISK_INFO           cmd.info succ=%ld r2=%ld id=$%B",0
+.f_info			dc.b	"%sINFO                  Info() succ=%ld r2=%ld fl=$%B id=$%B",0
+.f_flush		dc.b	"%sFLUSH               cmd.sync succ=%ld",0
+.f_set_comment		dc.b	"%sSET_COMMENT     SetComment() succ=%ld r2=%ld nul=%ld fl=$%B name=%b comm=%b",0
+.f_parent		dc.b	"%sPARENT           ParentDir() fl=$%B r2=%ld fl=$%B",0
+.f_inhibit		dc.b	"%sINHIBIT            Inhibit() succ=%ld r2=%ld bool=%ld",0
+.f_set_date		dc.b	"%sSET_DATE       SetFileDate() succ=%ld r2=%ld nul=%ld fl=$%B name=%b ds=$%lx",0
+.f_read			dc.b	"%sREAD                  Read() len=$%lx r2=%ld fha1=$%lx buf=$%lx len=$%lx",0
+.f_write		dc.b	"%sWRITE                Write() len=$%lx r2=%ld fha1=$%lx buf=$%lx len=$%lx",0
+.f_findupdate		dc.b	"%sFINDUPDATE      Open(UPDATE) succ=%ld r2=%ld fh=$%B fl=$%B name=%b",0
+.f_findinput		dc.b	"%sFINDINPUT      Open(OLDFILE) succ=%ld r2=%ld fh=$%B fl=$%B name=%b",0
+.f_findoutput		dc.b	"%sFINDOUTPUT     Open(NEWFILE) succ=%ld r2=%ld fh=$%B fl=$%B name=%b",0
+.f_find			dc.b	"%sFIND* internal lock  Open(*) fl=$%lx <- fh=$%B fl=$%B name=%b",0
+.f_end			dc.b	"%sEND                  Close() succ=%ld r2=%ld fha1=$%lx",0
+.f_seek			dc.b	"%sSEEK                  Seek() pos=$%lx r2=%ld fha1=$%lx pos=$%lx mode=%ld",0
+	IFGT KICKVERSION-36
+.f_same_lock		dc.b	"%sSAME_LOCK         SameLock() succ=%ld r2=%ld fl=$%B fl=$%B",0
+.f_fh_from_lock		dc.b	"%sFH_FROM_LOCK  OpenFromLock() succ=%ld r2=%ld fh=$%B fl=$%B",0
+.f_is_filesystem	dc.b	"%sIS_FILESYSTEM IsFileSystem() succ=%ld r2=%ld",0
+.f_examine_all		dc.b	"%sEXAMINE_ALL          ExAll() succ=%ld r2=%ld fl=$%B ead=$%lx len=$%lx typ=%ld eac=$%lx",0
+.f_examine_fh		dc.b	"%sEXAMINE_FH       ExamineFH() succ=%ld r2=%ld fha1=$%lx fib=$%B",0
+.f_add_notify		dc.b	"%sADD_NOTIFY     StartNotify() succ=%ld r2=%ld nr=$%lx",0
+	ENDC
 	ENDC
 _dosname	dc.b	"dos.library",0
 
