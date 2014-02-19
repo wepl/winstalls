@@ -1,4 +1,4 @@
-; $Id: Install 1.22 2013/11/04 23:31:54 wepl Exp wepl $
+; $Id: Install 1.23 2014/02/01 02:02:14 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -47,31 +47,31 @@
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
 ;		  "123456789012345678901234567"
 (set #ico_desc_00 "Normal")
-(set #ico_desc_01 "MagicWB Icon")
+(set #ico_desc_01 "MagicWB")
 (set #ico_desc_02 "RomIcon")
-(set #ico_desc_03 "RomIcon by Irek")
+(set #ico_desc_03 "RomIcon Irek")
 (set #ico_desc_10 "NewIcon")
 (set #ico_desc_11 "NewIcon 2")
-(set #ico_desc_12 "NewIcon by Exotica")
-(set #ico_desc_13 "NewIcon by CFou!")
-(set #ico_desc_14 "NewIcon by Irek")
-(set #ico_desc_15 "NewIcon by Irek 2")
+(set #ico_desc_12 "NewIcon Exotica")
+(set #ico_desc_13 "NewIcon CFou!")
+(set #ico_desc_14 "NewIcon Irek")
+(set #ico_desc_15 "NewIcon Irek 2")
 (set #ico_desc_20 "OS3.5 Icon")
 (set #ico_desc_21 "OS3.5 Icon 2")
 (set #ico_desc_22 "OS3.5 Icon 3")
-(set #ico_desc_23 "OS3.5 Icon by Exotica")
-(set #ico_desc_24 "OS3.5 Icon by Frank")
-(set #ico_desc_25 "OS3.5 Icon by Chris Vella")
-(set #ico_desc_26 "OS3.5 Icon by Codetapper")
-(set #ico_desc_27 "OS3.5 Icon by CFou!")
-(set #ico_desc_28 "OS3.5 Icon by CFou! 2")
-(set #ico_desc_29 "OS3.5 Icon by Dr.Zarkov")
-(set #ico_desc_30 "OS3.5 Icon by Irek")
-(set #ico_desc_31 "OS3.5 Icon by Irek 2")
-(set #ico_desc_32 "OS3.5 Icon by Murakami")
+(set #ico_desc_23 "OS3.5 Exotica")
+(set #ico_desc_24 "OS3.5 Frank")
+(set #ico_desc_25 "OS3.5 Chris Vella")
+(set #ico_desc_26 "OS3.5 Codetapper")
+(set #ico_desc_27 "OS3.5 CFou!")
+(set #ico_desc_28 "OS3.5 CFou! 2")
+(set #ico_desc_29 "OS3.5 Dr.Zarkov")
+(set #ico_desc_30 "OS3.5 Irek")
+(set #ico_desc_31 "OS3.5 Irek 2")
+(set #ico_desc_32 "OS3.5 Murakami")
 (set #ico_desc_40 "OS3.5 BoxIcon")
 (set #ico_desc_41 "OS3.5 BoxIcon 2")
-(set #ico_desc_42 "OS3.5 BoxIcon by Irek")
+(set #ico_desc_42 "OS3.5 BoxIcon Irek")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -1014,6 +1014,9 @@
       (if #icon_42 ((set #icon-suf #ico_suffix_42) (set #icon-name #ico_desc_42) (P_Icon)))
       (openwbobject #icon-dir)
     ))
+    ;the following statement should enable proportional font for 'askchoice'
+    ;according to the docs, but doesn't seems to change anything
+    ;(set #icon_00 ("%c[2p%s" 27 #icon_00))
     (set #icon
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
