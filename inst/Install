@@ -1,4 +1,4 @@
-; $Id: Install 1.23 2014/02/01 02:02:14 wepl Exp wepl $
+; $Id: Install 1.24 2014/02/19 23:43:44 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -22,10 +22,11 @@
 (set #ico_suffix_03 "romirek")
 (set #ico_suffix_10 "newicon")
 (set #ico_suffix_11 "newicon2")
-(set #ico_suffix_12 "newexot")
-(set #ico_suffix_13 "newcfou")
-(set #ico_suffix_14 "newirek")
-(set #ico_suffix_15 "newirek2")
+(set #ico_suffix_12 "newicon3")
+(set #ico_suffix_13 "newexot")
+(set #ico_suffix_14 "newcfou")
+(set #ico_suffix_15 "newirek")
+(set #ico_suffix_16 "newirek2")
 (set #ico_suffix_20 "colicon")
 (set #ico_suffix_21 "colicon2")
 (set #ico_suffix_22 "colicon3")
@@ -52,10 +53,11 @@
 (set #ico_desc_03 "RomIcon Irek")
 (set #ico_desc_10 "NewIcon")
 (set #ico_desc_11 "NewIcon 2")
-(set #ico_desc_12 "NewIcon Exotica")
-(set #ico_desc_13 "NewIcon CFou!")
-(set #ico_desc_14 "NewIcon Irek")
-(set #ico_desc_15 "NewIcon Irek 2")
+(set #ico_desc_12 "NewIcon 3")
+(set #ico_desc_13 "NewIcon Exotica")
+(set #ico_desc_14 "NewIcon CFou!")
+(set #ico_desc_15 "NewIcon Irek")
+(set #ico_desc_16 "NewIcon Irek 2")
 (set #ico_desc_20 "OS3.5 Icon")
 (set #ico_desc_21 "OS3.5 Icon 2")
 (set #ico_desc_22 "OS3.5 Icon 3")
@@ -970,6 +972,7 @@
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_22)) ((set #icon 22)(set #icnt (+ 1 #icnt))(set #icon_22 #ico_desc_22)) (set #icon_22 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_21)) ((set #icon 21)(set #icnt (+ 1 #icnt))(set #icon_21 #ico_desc_21)) (set #icon_21 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_20)) ((set #icon 20)(set #icnt (+ 1 #icnt))(set #icon_20 #ico_desc_20)) (set #icon_20 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_16)) ((set #icon 16)(set #icnt (+ 1 #icnt))(set #icon_16 #ico_desc_16)) (set #icon_16 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_15)) ((set #icon 15)(set #icnt (+ 1 #icnt))(set #icon_15 #ico_desc_15)) (set #icon_15 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_14)) ((set #icon 14)(set #icnt (+ 1 #icnt))(set #icon_14 #ico_desc_14)) (set #icon_14 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_13)) ((set #icon 13)(set #icnt (+ 1 #icnt))(set #icon_13 #ico_desc_13)) (set #icon_13 ""))
@@ -996,6 +999,7 @@
       (if #icon_13 ((set #icon-suf #ico_suffix_13) (set #icon-name #ico_desc_13) (P_Icon)))
       (if #icon_14 ((set #icon-suf #ico_suffix_14) (set #icon-name #ico_desc_14) (P_Icon)))
       (if #icon_15 ((set #icon-suf #ico_suffix_15) (set #icon-name #ico_desc_15) (P_Icon)))
+      (if #icon_16 ((set #icon-suf #ico_suffix_16) (set #icon-name #ico_desc_16) (P_Icon)))
       (if #icon_20 ((set #icon-suf #ico_suffix_20) (set #icon-name #ico_desc_20) (P_Icon)))
       (if #icon_21 ((set #icon-suf #ico_suffix_21) (set #icon-name #ico_desc_21) (P_Icon)))
       (if #icon_22 ((set #icon-suf #ico_suffix_22) (set #icon-name #ico_desc_22) (P_Icon)))
@@ -1021,7 +1025,7 @@
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
 	(choices #icon_00 #icon_01 #icon_02 #icon_03
-		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15
+		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16
 		 #icon_20 #icon_21 #icon_22 #icon_23 #icon_24 #icon_25 #icon_26 #icon_27 #icon_28 #icon_29
 		 #icon_30 #icon_31 #icon_32
 		 #icon_40 #icon_41 #icon_42)
@@ -1046,6 +1050,7 @@
       (set #icon #ico_suffix_13)
       (set #icon #ico_suffix_14)
       (set #icon #ico_suffix_15)
+      (set #icon #ico_suffix_16)
       (set #icon #ico_suffix_20)
       (set #icon #ico_suffix_21)
       (set #icon #ico_suffix_22)
