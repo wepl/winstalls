@@ -1,12 +1,12 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: ddf.asm 1.1 2001/01/03 23:58:20 jah Exp jah $
+;  :Version.	$Id: ddf.asm 1.1 2014/04/12 01:00:43 wepl Exp wepl $
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-	OUTPUT	"ram:ddf.slave"
+	OUTPUT	"smbfs0:ddf.slave"
 
 	BOPT	O+			;enable optimizing
 	;BOPT	OG+			;enable optimizing
@@ -57,7 +57,10 @@ _start	;	A0 = resident loader
 	;lores 320
 		move.l	a3,a0
 		moveq	#0,d0
-		moveq	#-1,d1
+			; 33222222222211111111110000000000
+			; 10987654321098765432109876543210
+		move.l	#%11100110011001110000011001100111,d1
+		move.l	#%11111111111111111100001111001101,d1
 		move.w	#3-1,d3
 .b		move.l	d1,(a0)+
 		move.w	#40/4-2,d2
@@ -103,96 +106,54 @@ _shres		lea	($4000,a3),a0
 		move.w	#diwstop,(a5)+
 		move.w	#$29c1,(a5)+
 
-;		move.l	#fmode<<16+1,(a5)+
+DSI = $38	;ddfstrt init, start value
+DEI = $d0	;ddfstop init, start value
 
+		move.l	#fmode<<16+1,(a5)+
 		move.l	#bplcon0<<16+$1200,(a5)+
+		move.w	#ddfstrt,(a5)+
+		move.w	#DSI,(a5)+
+		move.w	#ddfstop,(a5)+
+		move.w	#DEI,(a5)+
+		sub.w	#$2000,a3
+		bsr	bpl
 
-L SET 41
-DS SET $38
-DE SET $d0
+L SET 43	;vertical line for cwait
 
-X MACRO
-		move.l	#L<<24+$1fffe,(a5)+
+X	MACRO
+		move.l	#L<<24+$1fffe,(a5)+	;wait
 L SET L+4
 		move.w	#ddfstrt,(a5)+
 		move.w	#DS,(a5)+
-DS SET DS+1
-DE SET DE+1
 		move.w	#ddfstop,(a5)+
 		move.w	#DE,(a5)+
+DS SET DS+1
+;DE SET DE+1
 		bsr	bpl
 		move.w	#bpl1mod,(a5)+
 		move.w	#0,(a5)+
 	ENDM
+X4	MACRO
 		X
 		X
 		X
 		X
-		X
-		X
-		X
-		X
-
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-
-		move.l	#L<<24+$1fffe,(a5)+
-		move.l	#bplcon0<<16+$9200,(a5)+
+	ENDM
+C	MACRO
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#bplcon0<<16+\1,(a5)+
 		add.w	#$2000,a3
-DS SET $38
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-		X
+DS SET DSI	;ddfstrt
+DE SET DEI	;ddfstop
+		X4
+		X4
+		X4
+		X4
+	ENDM
 
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-
-		move.l	#L<<24+$1fffe,(a5)+
-		move.l	#bplcon0<<16+$9240,(a5)+	;shres
-		add.w	#$2000,a3
-DS SET $38
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-		X
-
-		move.l	#L<<24+$1fffe,(a5)+
-		move.l	#bplcon0<<16+$1240,(a5)+	;shres
-DS SET $38
-		X
-		X
-		X
-		X
+		C $1200			;lores
+		C $9200			;hires
+		C $9240			;shres
 
 		move.l	#-2,(A5)+
 		move.w	#DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER,(dmacon,a6)
