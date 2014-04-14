@@ -1,5 +1,5 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: ddf.asm 1.1 2014/04/12 01:00:43 wepl Exp wepl $
+;  :Version.	$Id: ddf.asm 1.2 2014/04/13 00:13:22 wepl Exp wepl $
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
@@ -16,7 +16,7 @@
 	
 	STRUCTURE globals,$400
 		LONG	_resload
-EXPMEM = $10000
+EXPMEM = $1000
 
 ;======================================================================
 
@@ -53,16 +53,19 @@ _start	;	A0 = resident loader
 
 		move.l	a0,(_resload)		;save for later use
 
-		lea	$10000,a3		;A3 biplane
+BLORES = $10000
+BHIRES = $12000
+BSHRES = $14000
+BDUMMY = $20000
+
 	;lores 320
-		move.l	a3,a0
+_lores		lea	BLORES,a0
 		moveq	#0,d0
 			; 33222222222211111111110000000000
 			; 10987654321098765432109876543210
-		move.l	#%11100110011001110000011001100111,d1
 		move.l	#%11111111111111111100001111001101,d1
 		move.w	#3-1,d3
-.b		move.l	d1,(a0)+
+.b		move.l	d1,(a0)+		;32 pixel, 4 byte
 		move.w	#40/4-2,d2
 .c		move.l	d0,(a0)+
 		dbf	d2,.c
@@ -71,9 +74,9 @@ _start	;	A0 = resident loader
 .d		move.l	d0,(a0)+
 		dbf	d2,.d
 	;hires 640
-_hires		lea	($2000,a3),a0
+_hires		lea	BHIRES,a0
 		move.w	#3-1,d3
-.b		move.l	d1,(a0)+
+.b		move.l	d1,(a0)+		;64 pixel, 8 byte
 		move.l	d1,(a0)+
 		move.w	#80/4-3,d2
 .c		move.l	d0,(a0)+
@@ -83,9 +86,9 @@ _hires		lea	($2000,a3),a0
 .d		move.l	d0,(a0)+
 		dbf	d2,.d
 	;shres 1280
-_shres		lea	($4000,a3),a0
+_shres		lea	BSHRES,a0
 		move.w	#3-1,d3
-.b		move.l	d1,(a0)+
+.b		move.l	d1,(a0)+		;128 pixel, 16 byte
 		move.l	d1,(a0)+
 		move.l	d1,(a0)+
 		move.l	d1,(a0)+
@@ -101,60 +104,89 @@ _shres		lea	($4000,a3),a0
 		move.l	#$FFF,(color,a6)
 		lea	$1000,a5
 		move.l	a5,(cop1lc,a6)
-		move.w	#diwstrt,(a5)+
-		move.w	#$2981,(a5)+
-		move.w	#diwstop,(a5)+
-		move.w	#$29c1,(a5)+
+		move.l	#diwstrt<<16+$2981,(a5)+
+		move.l	#diwstop<<16+$2dc1,(a5)+
+		move.l	#color<<16,(a5)+
+		move.l	#(color+2)<<16+$fff,(a5)+
 
-DSI = $38	;ddfstrt init, start value
-DEI = $d0	;ddfstop init, start value
+DSB = $38	;ddfstrt init, start value
+DEB = $d0	;ddfstop init, start value
 
-		move.l	#fmode<<16+1,(a5)+
+DSI = DSB	;ddfstrt init, start value
+DEI = DEB	;ddfstop init, start value
+
+		move.l	#fmode<<16+0,(a5)+
 		move.l	#bplcon0<<16+$1200,(a5)+
-		move.w	#ddfstrt,(a5)+
-		move.w	#DSI,(a5)+
-		move.w	#ddfstop,(a5)+
-		move.w	#DEI,(a5)+
-		sub.w	#$2000,a3
+		move.l	#ddfstrt<<16+DSB,(a5)+
+		move.l	#ddfstop<<16+DEB,(a5)+
+		lea	BDUMMY,a3
 		bsr	bpl
-
 L SET 43	;vertical line for cwait
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#fmode<<16+3,(a5)+
 
 X	MACRO
+	IFGT L-256
+		move.l	#$ffe1fffe,(a5)+	;255,224
+L SET L-256
+	ENDC
 		move.l	#L<<24+$1fffe,(a5)+	;wait
 L SET L+4
-		move.w	#ddfstrt,(a5)+
-		move.w	#DS,(a5)+
-		move.w	#ddfstop,(a5)+
-		move.w	#DE,(a5)+
+		move.l	#ddfstrt<<16+DS,(a5)+
+		move.l	#ddfstop<<16+DE,(a5)+
 DS SET DS+1
 ;DE SET DE+1
 		bsr	bpl
-		move.w	#bpl1mod,(a5)+
-		move.w	#0,(a5)+
+		move.l	#bpl1mod<<16,(a5)+
 	ENDM
 X4	MACRO
 		X
+		move.l	#color<<16+$700,(a5)+
 		X
+		move.l	#color<<16+$070,(a5)+
 		X
+		move.l	#color<<16+$000,(a5)+
 		X
+		move.l	#color<<16+$007,(a5)+
+	ENDM
+X16	MACRO
+		X4
+		X4
+		X4
+		X4
 	ENDM
 C	MACRO
 		move.l	#L<<24+$1fffe,(a5)+	;wait
 		move.l	#bplcon0<<16+\1,(a5)+
-		add.w	#$2000,a3
+		move.l	#(color+2)<<16+$f8f,(a5)+
+		lea	\2,a3
 DS SET DSI	;ddfstrt
 DE SET DEI	;ddfstop
-		X4
-		X4
-		X4
-		X4
+		X16
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#(color+2)<<16+$f88,(a5)+
+		X16
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#(color+2)<<16+$88f,(a5)+
+		X16
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#(color+2)<<16+$8f8,(a5)+
+		X16
 	ENDM
 
-		C $1200			;lores
-		C $9200			;hires
-		C $9240			;shres
+		C $1200,BLORES			;lores
+	;	C $9200,BHIRES			;hires
+	;	C $1240,BSHRES			;shres, hires bit must not be set!
 
+		move.l	#L<<24+$1fffe,(a5)+	;wait
+		move.l	#fmode<<16+0,(a5)+
+		move.l	#bplcon0<<16+$1200,(a5)+
+		move.l	#ddfstrt<<16+DSB,(a5)+
+		move.l	#ddfstop<<16+DEB,(a5)+
+		lea	BDUMMY,a3
+		bsr	bpl
+		move.l	#color<<16,(a5)+
+		move.l	#(color+2)<<16+$fff,(a5)+
 		move.l	#-2,(A5)+
 		move.w	#DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER,(dmacon,a6)
 		waitvb	a6
