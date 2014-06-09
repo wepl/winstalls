@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.2 2007/01/18 15:32:04 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.3 2013/11/10 16:18:51 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -158,21 +158,18 @@ _bootdos	lea	(_saveregs,pc),a0
 		bsr	_dos_assign
 
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d1
-		beq	.program_err
-		move.l	#300,d3
+		lea	(_program,pc),a0	;name
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
-		
+
 		cmp.w	#$0ac4,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER
