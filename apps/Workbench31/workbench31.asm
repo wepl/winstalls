@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.3 2010/04/09 20:04:03 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.4 2013/11/10 16:22:55 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -176,21 +176,18 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		bsr	_dos_assign
 
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d1
-		beq	.program_err
-		move.l	#300,d3
+		lea	(_program,pc),a0	;name
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
-		
+
 		cmp.w	#$e99a,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER
