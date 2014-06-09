@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.15 2013/11/10 15:50:12 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.16 2014/02/01 01:42:13 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -184,7 +184,7 @@ _bootdos	lea	(_saveregs,pc),a0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
-		
+
 		cmp.w	#$0ac4,d0
 		beq	.versionok
 		pea	TDREASON_WRONGVER
