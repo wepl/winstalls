@@ -2,7 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 17.2 2013/03/25 21:20:36 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 17.3 2014/02/01 02:01:26 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -33,7 +33,8 @@
 ;		16.03.13 PL_CMDADR checks for negative destination address
 ;		24.03.13 PL_IF,ELSE,ENDIF added
 ;		19.01.14 resload_VSNPrintF and resload_Log added
-;  :Copyright.	© 1996-2013 Bert Jahn, All Rights Reserved
+;		11.03.14 WHDLTAG_CUST_#? added
+;  :Copyright.	© 1996-2014 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
 ;---------------------------------------------------------------------------*
@@ -157,6 +158,12 @@ TDREASON_FAILMSG	= 43	;fail with a slave defined message text
 ; version 15.2
  EITEM	WHDLTAG_CHKCOPCON	;enable/disable copcon check
  EITEM	WHDLTAG_Private5	;allows setting WCPU_Base_CB using SetCPU
+; version 18
+ EITEM	WHDLTAG_CUST_DISABLE	;marks a custom register invalid for Snoop
+ EITEM	WHDLTAG_CUST_READ	;marks a custom register readable for Snoop
+ EITEM	WHDLTAG_CUST_WRITE	;marks a custom register writable for Snoop
+ EITEM	WHDLTAG_CUST_STROBE	;marks a custom register read/writable for Snoop
+ EITEM	WHDLTAG_Private6
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
