@@ -12,7 +12,7 @@
 
  Requirements:
  -------------
- This install requires WHDLoad version 17.2, DIC, RawDIC and The Patcher to be in the path.
+ This install requires WHDLoad version 18.0, DIC, RawDIC and The Patcher to be in the path.
  These programs can be found in the WHDLoad package.
  To install from a different drive than DF0: select installation mode Expert.
 
@@ -64,7 +64,7 @@
 
  History:
  --------
- version 1.0 (17.01.07) done by Xxx:
+ version 1.0 (17.01.2015) done by Xxx:
  - initial release
 
 
