@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.13 2010/02/17 20:46:18 wepl Exp wepl $
+;  :Version.	$Id: keyboard.s 1.14 2012/04/16 21:07:46 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -102,7 +102,8 @@ _KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 
 		cmp.b	(_keydebug,pc),d0
 		bne	.1
-		movem.l	(a7)+,d0-d1/a0-a1
+		movem.l	(a7)+,d0-d1/a0-a1		;restore
+	;transform stackframe to resload_Abort arguments
 		move.w	(a7),(6,a7)			;sr
 		move.l	(2,a7),(a7)			;pc
 		clr.w	(4,a7)				;ext.l sr
@@ -146,7 +147,7 @@ _KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 		move.l	(a7)+,a0
 	ENDC
 
-	;better would be to use the cia-timer to wait, but we arn't know if
+	;better would be to use the cia-timer to wait, but we aren't know if
 	;they are otherwise used, so using the rasterbeam
 	;required minimum waiting is 75 탎, one rasterline is 63.5 탎
 	;a loop of 3 results in min=127탎 max=190.5탎
