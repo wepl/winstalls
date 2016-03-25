@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.65 2012/09/30 17:13:32 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.66 2013/11/10 16:46:08 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -65,6 +65,7 @@
 ;		22.07.11 adapted for whdload v17
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;		03.02.13 fix for LoadView(0)
+;		14.02.16 with option CACHE chip-memory is now WT instead NC
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -171,7 +172,7 @@ _boot		lea	(_resload,pc),a1
 
 	IFD CACHE
 	;enable caches
-		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
 	ENDC

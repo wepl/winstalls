@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.30 2011/07/22 15:49:44 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.31 2012/09/30 17:13:32 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -29,6 +29,7 @@
 ;		26.10.08 detect dependency between HDINIT and BOOTDOS
 ;		09.06.09 option Force/S to joypad emulation added
 ;		22.07.11 adapted for whdload v17
+;		14.02.16 with option CACHE chip-memory is now WT instead NC
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -138,7 +139,7 @@ _boot		lea	(_resload,pc),a1
 
 	IFD CACHE
 	;enable cache
-		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
 	ENDC

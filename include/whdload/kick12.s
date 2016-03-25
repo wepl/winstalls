@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.28 2012/04/16 21:10:40 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.29 2012/09/30 17:13:32 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -26,6 +26,7 @@
 ;		20.11.10 _cb_keyboard added
 ;		22.07.11 adapted for whdload v17
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
+;		14.02.16 with option CACHE chip-memory is now WT instead NC
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -119,7 +120,7 @@ _boot		lea	(_resload,pc),a1
 
 	IFD CACHE
 	;enable cache
-		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
 	ENDC
