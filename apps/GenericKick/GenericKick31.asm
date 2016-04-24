@@ -3,11 +3,12 @@
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
 ;  :Original	v1 
-;  :Version.	$Id: GenericKick31HD.asm 1.1 2007/11/01 20:02:13 wepl Exp wepl $
+;  :Version.	$Id: GenericKick31HD.asm 1.2 2007/11/01 20:34:25 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta
 ;		01.11.07 reworked for v16+ (Wepl)
+;		24.04.16 version bump
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -34,7 +35,7 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $1FF000
-FASTMEMSIZE	= $400000
+FASTMEMSIZE	= $0000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
@@ -44,7 +45,7 @@ BOOTDOS
 ;BOOTEARLY
 ;CBDOSLOADSEG
 ;CBDOSREAD
-CACHE
+;CACHE
 DEBUG
 ;DISKSONBOOT
 ;DOSASSIGN
@@ -60,9 +61,10 @@ IOCACHE		= 10000
 ;JOYPADEMU
 ;MEMFREE	= $200
 ;NEEDFPU
-;NO68020
+NO68020
 POINTERTICKS	= 1
 ;PROMOTE_DISPLAY
+;SNOOPFS
 ;STACKSIZE	= 6000
 ;TRDCHANGEDISK
 
@@ -88,8 +90,8 @@ slv_keyexit	= $5D
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 40.068",0
 slv_copy	dc.b	"19xx Any Company",0
-slv_info	dc.b	"by JOTD using Wepl kick31 sources",10,10
-		dc.b	"Version 1.1 "
+slv_info	dc.b	"by JOTD, Wepl",10
+		dc.b	"Version 1.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
