@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.31 2012/09/30 17:13:32 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.32 2016/03/25 15:28:10 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -30,6 +30,7 @@
 ;		09.06.09 option Force/S to joypad emulation added
 ;		22.07.11 adapted for whdload v17
 ;		14.02.16 with option CACHE chip-memory is now WT instead NC
+;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -681,7 +682,7 @@ gfx_readvpos	move	(_custom+vposr),d0
 .end		rts
 
 gfx_detectgenlock
-		moveq	#0,d0
+		move.l	_bplcon0,d0
 		rts
 
 	IFD INITAGA					;enable enhanced gfx modes
@@ -1375,6 +1376,8 @@ _cbswitch_tag	dc.l	0
 _attnflags	dc.l	0
 		dc.l	WHDLTAG_MONITOR_GET
 _monitor	dc.l	0
+		dc.l	WHDLTAG_BPLCON0_GET
+_bplcon0	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
 	IFLT NUMDRIVES

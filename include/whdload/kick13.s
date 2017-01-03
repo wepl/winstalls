@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.66 2013/11/10 16:46:08 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.67 2016/03/25 15:28:05 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -66,6 +66,7 @@
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;		03.02.13 fix for LoadView(0)
 ;		14.02.16 with option CACHE chip-memory is now WT instead NC
+;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -516,7 +517,7 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 		rts
 
 gfx_detectgenlock
-		moveq	#0,d0
+		move.l	_bplcon0,d0
 		rts
 
 gfx_detectdisplay
@@ -1009,6 +1010,8 @@ _cbswitch_tag	dc.l	0
 _attnflags	dc.l	0
 		dc.l	WHDLTAG_MONITOR_GET
 _monitor	dc.l	0
+		dc.l	WHDLTAG_BPLCON0_GET
+_bplcon0	dc.l	0
 		dc.l	WHDLTAG_TIME_GET
 _time		dc.l	0
 	IFLT NUMDRIVES
