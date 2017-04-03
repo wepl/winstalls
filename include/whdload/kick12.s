@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.30 2016/03/25 15:28:00 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.31 2017/01/03 00:21:07 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -28,6 +28,7 @@
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;		14.02.16 with option CACHE chip-memory is now WT instead NC
 ;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
+;		29.03.17 NEEDFPU enables FPU with SetCPU now
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -120,8 +121,16 @@ _boot		lea	(_resload,pc),a1
 		move.l	a0,a5				;A5 = resload
 
 	IFD CACHE
-	;enable cache
-		move.l	#WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
+	ELSE
+WCPU_VAL SET 0
+	ENDC
+	IFD NEEDFPU
+WCPU_VAL SET WCPU_VAL|WCPUF_FPU
+	ENDC
+	IFNE WCPU_VAL
+	;enable cache/fpu if requested
+		move.l	#WCPU_VAL,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
 	ENDC
