@@ -3,13 +3,14 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.4 2013/11/10 16:22:55 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.5 2014/06/09 13:54:51 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
 ;			 e.g. basm -dMEM=32 workbench31.asm
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
+;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -36,23 +37,23 @@
 
 	IFD MEM
 	IFEQ MEM-1
-CHIPMEMSIZE	= $ff000
-FASTMEMSIZE	= $100000
+CHIPMEMSIZE	= $ff000	;size of chip memory
+FASTMEMSIZE	= $100000	;size of fast memory
 	OUTPUT	"awart:workbench31/Workbench31_1.Slave"
 	ELSE
 	IFEQ MEM-4
-CHIPMEMSIZE	= $1ff000
-FASTMEMSIZE	= $400000
+CHIPMEMSIZE	= $1ff000	;size of chip memory
+FASTMEMSIZE	= $400000	;size of fast memory
 	OUTPUT	"awart:workbench31/Workbench31_4.Slave"
 	ELSE
 	IFEQ MEM-32
-CHIPMEMSIZE	= $1ff000
-FASTMEMSIZE	= $2000000
+CHIPMEMSIZE	= $1ff000	;size of chip memory
+FASTMEMSIZE	= $2000000	;size of fast memory
 	OUTPUT	"awart:workbench31/Workbench31_32.Slave"
 	ELSE
 	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
-CHIPMEMSIZE	= $1000
-FASTMEMSIZE	= $1000
+CHIPMEMSIZE	= $1000		;size of chip memory
+FASTMEMSIZE	= $1000		;size of fast memory
 	ENDC
 	ENDC
 	ENDC
@@ -62,36 +63,40 @@ CHIPMEMSIZE	= $1000
 FASTMEMSIZE	= $1000
 	ENDC
 
-NUMDRIVES	= 1
-WPDRIVES	= %1111
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %1111		;write protection of floppy drives
 
-;BLACKSCREEN
-;BOOTBLOCK
-;BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-CACHE
-DEBUG
-;DISKSONBOOT
-;DOSASSIGN
-;FONTHEIGHT	 = 8
-HDINIT
-HRTMON
-;INITAGA
-;INIT_AUDIO
-;INIT_GADTOOLS
-;INIT_LOWLEVEL
-;INIT_MATHFFP
-IOCACHE		= 1024
-;JOYPADEMU
-;MEMFREE	= $200
-;NEEDFPU
-;NO68020
-;POINTERTICKS	 = 1
-;PROMOTE_DISPLAY
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+;BOOTDOS			;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data caches for fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+;INITAGA			;enable AGA features
+;INIT_AUDIO			;enable audio.device
+;INIT_GADTOOLS			;enable gadtools.library
+;INIT_LOWLEVEL			;load lowlevel.library
+;INIT_MATHFFP			;enable mathffp.library
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;JOYPADEMU			;use keyboard for joypad buttons
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+NO68020				;remain 68000 compatible
+;POINTERTICKS	= 1		;set mouse speed
+;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
@@ -116,7 +121,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.3 "
+		dc.b	"Version 1.4 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -152,7 +157,9 @@ _bootblock	blitz
 
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
-; HDINIT is required
+; HDINIT is required, this will never called if booted from a diskimage, only
+; works in conjunction with the virtual filesystem of HDINIT
+; this routine replaces the loading and executing of the startup-sequence
 ;
 ; the following example is simple and wont work for BCPL programs and 
 ; programs build using MANX Aztec-C
@@ -261,6 +268,7 @@ _dosbase	dc.l	0
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
 ; can also be used instead of _bootdos, requires the presence of
 ; "startup-sequence"
+; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
 ; after they get loaded
@@ -361,6 +369,8 @@ _p_run2568	PL_START
 ;============================================================================
 ; callback/hook which gets executed after each successful call to
 ; dos.LoadRead
+; it only works for files loaded via the virtual filesystem of HDINIT not
+; for files loaded from diskimages
 
 ; the following example uses a parameter table to patch different files
 ; after they get loaded
