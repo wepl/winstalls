@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.32 2017/04/03 01:22:39 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.33 2017/07/25 22:14:41 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -29,6 +29,9 @@
 ;		14.02.16 with option CACHE chip-memory is now WT instead NC
 ;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;		29.03.17 NEEDFPU enables FPU with SetCPU now
+;		03.10.17 reverted change from 14.02.16: option CACHE sets chip memory NC
+;			 new option CACHECHIP enables only IC and sets chip memory WT
+;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -120,10 +123,15 @@ _boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
 
-	IFD CACHE
-WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
-	ELSE
 WCPU_VAL SET 0
+	IFD CACHE
+WCPU_VAL SET WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
+	ENDC
+	IFD CACHECHIP
+WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_BC|WCPUF_SS|WCPUF_SB
+	ENDC
+	IFD CACHECHIPDATA
+WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
 	ENDC
 	IFD NEEDFPU
 WCPU_VAL SET WCPU_VAL|WCPUF_FPU

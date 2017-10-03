@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.69 2017/04/03 01:22:39 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.70.1.1 2017/10/03 15:25:10 wepl Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -65,9 +65,14 @@
 ;		22.07.11 adapted for whdload v17
 ;		16.04.12 keyboard_start fixed for Snoop on 68060 (Psygore)
 ;		03.02.13 fix for LoadView(0)
-;		14.02.16 with option CACHE chip-memory is now WT instead NC
+;		14.02.16 with option CACHE chip memory is now WT instead NC
 ;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;		29.03.17 NEEDFPU enables FPU with SetCPU now
+;		03.10.17 gfx.WaitBlit replaced with routine from kick31
+;			 gfx.Text fixed to work with data cache enabled in chip memory
+;			 reverted change from 14.02.16: option CACHE sets chip memory NC
+;			 new option CACHECHIP enables only IC and sets chip memory WT
+;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -172,10 +177,15 @@ _boot		lea	(_resload,pc),a1
 		move.l	a0,(a1)				;save for later use
 		move.l	a0,a5				;A5 = resload
 
-	IFD CACHE
-WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
-	ELSE
 WCPU_VAL SET 0
+	IFD CACHE
+WCPU_VAL SET WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
+	ENDC
+	IFD CACHECHIP
+WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_BC|WCPUF_SS|WCPUF_SB
+	ENDC
+	IFD CACHECHIPDATA
+WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB
 	ENDC
 	IFD NEEDFPU
 WCPU_VAL SET WCPU_VAL|WCPUF_FPU
@@ -245,10 +255,12 @@ kick_patch	PL_START
 		PL_S	$4964,$4978-$4964		;skip disk unit detect
 		PL_P	$4adc,disk_getunitid
 		PL_S	$4cce,4				;skip autoconfiguration at $e80000
+		PL_P	$5a58,gfx_waitblit
 		PL_PS	$6d70,gfx_vbserver
 		PL_PS	$6d86,gfx_snoop1
 		PL_DATA	$6efe,8				;snoop bug ('and.w #$20,$DFF01E')
 			btst #5,$dff01f
+		PL_PS	$80d0,gfx_text
 		PL_PS	$ad5e,gfx_setcoplc
 		PL_S	$ad7a,6				;avoid ChkBltWait problem
 		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
@@ -512,6 +524,18 @@ kick_bootblock	movem.l	d2-d7/a2-a6,-(a7)
 
 ;============================================================================
 
+	;use routine from kick31 instead
+gfx_waitblit	tst.b	(_custom+dmaconr)
+		btst	#DMAB_BLITTER,(_custom+dmaconr)
+		bne	.loop
+		rts
+.loop		tst.b	(_ciaa)
+		tst.b	(_ciaa)
+		btst	#DMAB_BLITTER,(_custom+dmaconr)
+		bne	.loop
+		tst.b	(_custom+dmaconr)
+		rts
+
 gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
 		move.l	d0,(a6)
 		lea	($bfd000),a6		;original
@@ -523,6 +547,18 @@ _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
 	;move (custom),(cia) does not work with Snoop/S on 68060
 gfx_snoop1	move.b	(vhposr,a0),d0
 		move.b	d0,(ciatodlow,a6)
+		rts
+
+	;gfx.Text uses gfx.BltClear to clear temporary buffer
+	;later cpu is used to form output from font data with 'or' to
+	;existing bitmap data, this fails with data cache in chip memory
+	;-> gfx.BltClear replaced with cpu routine
+gfx_text	move.w	(-2,a6),d0
+		lsr.w	#2,d0
+		subq.w	#1,d0
+.clr		clr.l	(a1)+
+		dbf	d0,.clr
+		addq.l	#$80de-$80d0-6,(a7)
 		rts
 
 gfx_detectgenlock
