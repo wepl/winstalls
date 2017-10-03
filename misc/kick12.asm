@@ -3,13 +3,14 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.8 2010/11/20 21:49:58 wepl Exp $
+;  :Version.	$Id: kick12.asm 1.9 2013/11/10 15:56:16 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
 ;		20.11.10 _cb_dosLoadSeg, _cb_keyboard added
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
+;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -22,7 +23,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/Kick12.Slave"
+	OUTPUT	"awart:workbench12/Kick12.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -34,30 +35,32 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $0000
-NUMDRIVES	= 1
-WPDRIVES	= %1111
+CHIPMEMSIZE	= $80000	;size of chip memory
+FASTMEMSIZE	= $0000		;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %1111		;write protection of floppy drives
 
-;BLACKSCREEN
-;BOOTBLOCK
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBKEYBOARD
-CACHE
-DEBUG
-DISKSONBOOT
-;DOSASSIGN
-;FONTHEIGHT	= 8
-;HDINIT
-;HRTMON
-IOCACHE		= 1024
-;MEMFREE	= $100
-;NEEDFPU
-;POINTERTICKS	= 1
-SETPATCH
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+;BOOTEARLY			;enable _bootearly routine
+CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data caches for fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+DEBUG				;add more internal checks
+DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign
+;FONTHEIGHT	= 8		;enable 80 chars per line
+;HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $100		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+SETPATCH			;enable patches from SetPatch 1.38
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
@@ -82,7 +85,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Kickstarter for 33.180",0
 slv_copy	dc.b	"1986 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.4 "
+		dc.b	"Version 0.5 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -118,7 +121,8 @@ _bootblock	blitz
 
 ;============================================================================
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos
+; can also be used instead of _bootdos, requires the presence of
+; "startup-sequence"
 ; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
@@ -205,15 +209,20 @@ LSPATCH	MACRO
 	ENDM
 
 _cbls_patch	LSPATCH	2516,.n_run,_p_run2568
+		LSPATCH	4096,.n_setclock,_p_setclock4096
 		LSPATCH	7080,.n_shellseg,_p_shellseg7080
 		dc.l	0
 
 	;all upper case!
 .n_run		dc.b	"RUN",0
+.n_setclock	dc.b	"SETCLOCK",0
 .n_shellseg	dc.b	"SHELL-SEG",0
 	EVEN
 
 _p_run2568	PL_START
+		PL_END
+_p_setclock4096	PL_START
+		PL_R	0			;'setclock load' causes access fault
 		PL_END
 _p_shellseg7080	PL_START
 		PL_AW	$1990,$1a4c-$19ae	;dereferences NULL (maybe dirlock because actual directory is broken)
