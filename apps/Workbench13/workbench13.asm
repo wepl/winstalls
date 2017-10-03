@@ -2,11 +2,12 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.3 2013/11/10 16:18:51 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.4 2014/06/09 13:54:51 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
+;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -32,31 +33,35 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $ff000
-FASTMEMSIZE	= $100000
-NUMDRIVES	= 1
-WPDRIVES	= %0000
+CHIPMEMSIZE	= $ff000	;size of chip memory
+FASTMEMSIZE	= $100000	;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-;BLACKSCREEN
-;BOOTBLOCK
-;BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-CACHE
-DEBUG
-;DISKSONBOOT
-;DOSASSIGN
-;FONTHEIGHT     = 8
-HDINIT
-HRTMON
-IOCACHE		= 1024
-;MEMFREE	= $200
-;NEEDFPU
-;POINTERTICKS   = 1
-SETPATCH
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+;BOOTDOS			;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data caches for fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
@@ -81,7 +86,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.2 "
+		dc.b	"Version 1.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -117,7 +122,9 @@ _bootblock	blitz
 
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
-; HDINIT is required
+; HDINIT is required, this will never called if booted from a diskimage, only
+; works in conjunction with the virtual filesystem of HDINIT
+; this routine replaces the loading and executing of the startup-sequence
 
 ; the following example is extensive because it preserves all registers and
 ; is able to start BCPL programs and programs build by MANX Aztec-C
@@ -272,7 +279,7 @@ _pl_program	PL_START
 		PL_END
 
 _disk1		dc.b	"DF0",0		;for Assign
-_program	dc.b	"C:Echo",0
+_program	dc.b	"C/Echo",0
 _args		dc.b	"Test!",10	;must be LF terminated
 _args_end
 	EVEN
@@ -291,6 +298,7 @@ _callargs	ds.b	208
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
 ; can also be used instead of _bootdos, requires the presence of
 ; "startup-sequence"
+; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
 ; after they get loaded
@@ -377,13 +385,19 @@ LSPATCH	MACRO
 
 _cbls_patch	LSPATCH	2516,.n_run,_p_run2568
 		LSPATCH	7080,.n_shellseg,_p_shellseg7080
+		LSPATCH	2956,.n_assign,_p_assign3008
 		dc.l	0
 
 	;all upper case!
 .n_run		dc.b	"RUN",0
 .n_shellseg	dc.b	"SHELL-SEG",0
+.n_assign	dc.b	"ASSIGN",0
 	EVEN
 
+_p_assign3008	PL_START
+	;	PL_BKPT	$542			;access fault follows
+		PL_B	$546,$60		;beq -> bra
+		PL_END
 _p_run2568	PL_START
 		PL_END
 _p_shellseg7080	PL_START
@@ -395,6 +409,8 @@ _p_shellseg7080	PL_START
 ;============================================================================
 ; callback/hook which gets executed after each successful call to
 ; dos.LoadRead
+; it only works for files loaded via the virtual filesystem of HDINIT not
+; for files loaded from diskimages
 
 ; the following example uses a parameter table to patch different files
 ; after they get loaded
@@ -451,6 +467,22 @@ _cb_dosRead
 .data		dc.w	$4278,$c	;original = 0b
 		dc.w	$45b4,$c	;original = 0b
 		dc.w	0
+
+	ENDC
+
+;============================================================================
+; callback/hook which gets executed on each keypress
+
+	IFD CBKEYBOARD
+
+; D0 = UBYTE rawkey code
+
+_cb_keyboard
+		cmp.b	#$40,d0		;space
+		bne	.ok
+		illegal
+.ok
+		rts
 
 	ENDC
 
