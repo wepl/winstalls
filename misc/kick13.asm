@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.16 2014/02/01 01:42:13 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.17 2014/06/09 13:54:51 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -18,6 +18,7 @@
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		30.01.14 version check optimized
+;		01.07.14 fix for Assign command via _cb_dosLoadSeg added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -407,13 +408,19 @@ LSPATCH	MACRO
 
 _cbls_patch	LSPATCH	2516,.n_run,_p_run2568
 		LSPATCH	7080,.n_shellseg,_p_shellseg7080
+		LSPATCH	2956,.n_assign,_p_assign3008
 		dc.l	0
 
 	;all upper case!
 .n_run		dc.b	"RUN",0
 .n_shellseg	dc.b	"SHELL-SEG",0
+.n_assign	dc.b	"ASSIGN",0
 	EVEN
 
+_p_assign3008	PL_START
+	;	PL_BKPT	$542			;access fault follows
+		PL_B	$546,$60		;beq -> bra
+		PL_END
 _p_run2568	PL_START
 		PL_END
 _p_shellseg7080	PL_START
