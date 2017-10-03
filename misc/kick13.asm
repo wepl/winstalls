@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.17 2014/06/09 13:54:51 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.18 2017/10/03 17:22:56 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -19,6 +19,7 @@
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		30.01.14 version check optimized
 ;		01.07.14 fix for Assign command via _cb_dosLoadSeg added
+;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -32,7 +33,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/Kick13.Slave"
+	OUTPUT	"awart:workbench13/Kick13.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -44,33 +45,35 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
-NUMDRIVES	= 1
-WPDRIVES	= %0000
+CHIPMEMSIZE	= $80000	;size of chip memory
+FASTMEMSIZE	= $80000		;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-;BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-;CBKEYBOARD
-CACHE
-DEBUG
-;DISKSONBOOT
-DOSASSIGN
-FONTHEIGHT	= 8
-HDINIT
-HRTMON
-IOCACHE		= 1024
-;MEMFREE	= $200
-;NEEDFPU
-POINTERTICKS	= 1
-SETPATCH
-;SNOOPFS
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data caches for fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign
+FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+POINTERTICKS	= 1		;set mouse speed
+SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
@@ -95,7 +98,7 @@ slv_CurrentDir	dc.b	"wb13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.9 "
+		dc.b	"Version 0.10 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -303,7 +306,7 @@ _pl_program	PL_START
 		PL_END
 
 _disk1		dc.b	"DF0",0		;for Assign
-_program	dc.b	"C:Echo",0
+_program	dc.b	"C/Echo",0
 _args		dc.b	"Test!",10	;must be LF terminated
 _args_end
 	EVEN
@@ -320,7 +323,8 @@ _callargs	ds.b	208
 
 ;============================================================================
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos
+; can also be used instead of _bootdos, requires the presence of
+; "startup-sequence"
 ; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables

@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.11 2013/11/10 15:56:50 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.12 2014/02/01 01:42:13 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -16,6 +16,7 @@
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		30.01.14 version check optimized
+;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,7 +30,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/Kick31.Slave"
+	OUTPUT	"awart:workbench31/Kick31.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -41,39 +42,42 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $100000
-FASTMEMSIZE	= $100000
-NUMDRIVES	= 1
-WPDRIVES	= %0000
+CHIPMEMSIZE	= $100000	;size of chip memory
+FASTMEMSIZE	= $100000	;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-;BLACKSCREEN
-;BOOTBLOCK
-;BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-CACHE
-DEBUG
-;DISKSONBOOT
-;DOSASSIGN
-FONTHEIGHT	= 8
-HDINIT
-HRTMON
-;INITAGA
-;INIT_AUDIO
-;INIT_GADTOOLS
-;INIT_LOWLEVEL
-;INIT_MATHFFP
-IOCACHE		= 1024
-;JOYPADEMU
-;MEMFREE	= $200
-;NEEDFPU
-NO68020
-POINTERTICKS	= 1
-;PROMOTE_DISPLAY
-;SNOOPFS
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+;BOOTDOS			;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data caches for fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign
+FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+;INITAGA			;enable AGA features
+;INIT_AUDIO			;enable audio.device
+;INIT_GADTOOLS			;enable gadtools.library
+;INIT_LOWLEVEL			;load lowlevel.library
+;INIT_MATHFFP			;enable mathffp.library
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;JOYPADEMU			;use keyboard for joypad buttons
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+NO68020				;remain 68000 compatible
+POINTERTICKS	= 1		;set mouse speed
+;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
@@ -98,7 +102,7 @@ slv_CurrentDir	dc.b	"wb31",0
 slv_name	dc.b	"Kickstarter for 40.068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.5 "
+		dc.b	"Version 0.6 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -243,7 +247,8 @@ _dosbase	dc.l	0
 
 ;============================================================================
 ; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos
+; can also be used instead of _bootdos, requires the presence of
+; "startup-sequence"
 ; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
