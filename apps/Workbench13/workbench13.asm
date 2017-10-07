@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.4 2014/06/09 13:54:51 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.5 2017/10/03 23:16:30 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -45,9 +45,9 @@ WPDRIVES	= %0000		;write protection of floppy drives
 ;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
-;CACHE				;enable inst/data caches for fast memory
+;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
-;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign
