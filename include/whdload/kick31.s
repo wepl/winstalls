@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.35 2017/07/25 22:14:41 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.36 2017/10/03 17:21:12 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -33,7 +33,8 @@
 ;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;		29.03.17 NEEDFPU enables FPU with SetCPU now
 ;		25.07.17 fixed 68000 compatibility in dos_LoadSeg
-;		03.10.17 reverted change from 14.02.16: option CACHE sets chip memory NC
+;		07.10.17 reverted change from 14.02.16: option CACHE sets chip memory NC
+;			 without a CACHE* option caches are switched off now!
 ;			 new option CACHECHIP enables only IC and sets chip memory WT
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;  :Requires.	-
@@ -156,12 +157,10 @@ WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_B
 	IFD NEEDFPU
 WCPU_VAL SET WCPU_VAL|WCPUF_FPU
 	ENDC
-	IFNE WCPU_VAL
-	;enable cache/fpu if requested
+	;setup cache/fpu
 		move.l	#WCPU_VAL,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
-	ENDC
 
 	;relocate some addresses
 		lea	(_cbswitch,pc),a0

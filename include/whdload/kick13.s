@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.70.1.1 2017/10/03 15:25:10 wepl Exp $
+;  :Version.	$Id: kick13.s 0.71 2017/10/03 17:21:59 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -68,9 +68,10 @@
 ;		14.02.16 with option CACHE chip memory is now WT instead NC
 ;		02.01.17 host system gb_bplcon0 is now honored (genlock/lace)
 ;		29.03.17 NEEDFPU enables FPU with SetCPU now
-;		03.10.17 gfx.WaitBlit replaced with routine from kick31
+;		07.10.17 gfx.WaitBlit replaced with routine from kick31
 ;			 gfx.Text fixed to work with data cache enabled in chip memory
 ;			 reverted change from 14.02.16: option CACHE sets chip memory NC
+;			 without a CACHE* option caches are switched off now!
 ;			 new option CACHECHIP enables only IC and sets chip memory WT
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;  :Requires.	-
@@ -190,12 +191,10 @@ WCPU_VAL SET WCPUF_Base_WT|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_B
 	IFD NEEDFPU
 WCPU_VAL SET WCPU_VAL|WCPUF_FPU
 	ENDC
-	IFNE WCPU_VAL
-	;enable cache/fpu if requested
+	;setup cache/fpu
 		move.l	#WCPU_VAL,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a5)
-	ENDC
 
 	;relocate some addresses
 		lea	(_cbswitch,pc),a0
