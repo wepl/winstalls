@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.12 2014/02/01 01:42:13 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.13 2017/10/03 23:16:48 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -54,9 +54,9 @@ WPDRIVES	= %0000		;write protection of floppy drives
 ;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
-;CACHE				;enable inst/data caches for fast memory
+;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
-;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 DOSASSIGN			;enable _dos_assign

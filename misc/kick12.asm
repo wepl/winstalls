@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.9 2013/11/10 15:56:16 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.10 2017/10/03 22:29:57 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
@@ -45,9 +45,9 @@ WPDRIVES	= %1111		;write protection of floppy drives
 ;BOOTEARLY			;enable _bootearly routine
 CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
-;CACHE				;enable inst/data caches for fast memory
+;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
-;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign
