@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.22 2014/02/01 01:39:41 wepl Exp wepl $
+$Id: kick.readme 1.23 2017/10/03 17:21:12 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -64,21 +64,25 @@ before the kickstart is booting. Chip memory remains uncached.
 If there is no MMU or it isn't used by WHDLoad the caches cannot be set
 separately for chip and expansion memory. This will result in no caches are
 active for all memory.
+Without any of the CACHE* options all caches are switched off.
 
 CACHECHIP
 
 The presence of that symbol enables only the instruction cache for the chip and
 expansion memory before the kickstart is booting. The data cache is switched
-off.
+off. Whether the MMU is used by WHDLoad makes no difference for this option.
+Without any of the CACHE* options all caches are switched off.
 
 CACHECHIPDATA
 
 The presence of that symbol enables full cpu caches for the chip and expansion
-memory before the kickstart is booting.
+memory before the kickstart is booting. Whether the MMU is used by WHDLoad makes
+no difference for this option.
 Beware: in difference to the options CACHE/CACHECHIP this enables also the data
 cache in chip memory. This will cause problems if the cpu uses the same memory
 as dma masters like the blitter (cpu will not see changes made by the blitter
 if memory is cached).
+Without any of the CACHE* options all caches are switched off.
 
 DEBUG
 
