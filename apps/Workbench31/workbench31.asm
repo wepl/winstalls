@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.5 2014/06/09 13:54:51 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.6 2017/10/03 23:17:19 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -73,9 +73,9 @@ WPDRIVES	= %1111		;write protection of floppy drives
 ;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
-;CACHE				;enable inst/data caches for fast memory
+;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
-;CACHECHIPDATA			;enable inst/data caches for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign
