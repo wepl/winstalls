@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.5 2017/10/03 23:16:30 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.6 2017/10/07 17:13:09 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -50,7 +50,7 @@ CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
-;DOSASSIGN			;enable _dos_assign
+;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
