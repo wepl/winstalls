@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.6 2017/10/03 23:17:19 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.7 2017/10/07 17:13:09 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -78,7 +78,7 @@ CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
-;DOSASSIGN			;enable _dos_assign
+;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
