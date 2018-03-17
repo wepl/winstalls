@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.22 2014/01/29 19:35:39 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.23 2014/02/01 01:39:34 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -29,6 +29,12 @@
 ;		16.08.09 flushing IOCACHE wasn't correct handled, fixed
 ;		12.01.14 minor optimizations
 ;		29.01.14 SNOOPFS added
+;		07.03.18 IOCACHE handling fixed, if a write doesn't fit into the
+;			 cache after a previous cached write the cache is now
+;			 flushed before the actual write - this preserves the
+;			 sequence and avoids possible WHDLoad switches because
+;			 performing a resload_SaveFileOffset on not yet existing
+;			 file offset
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -85,7 +91,10 @@ HD_NumBuffers		= 5
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
 	IFD IOCACHE
 		LONG	mfl_cpos		;fileoffset cache points to, -1 means nothing cached
-		LONG	mfl_clen		;amount data in cache (valid only on write cache)
+		LONG	mfl_clen		;amount of dirty data in cache
+						;on read cache this is 0 and cache if filled completely
+						;on write this is the amount of cached data
+						;reads and writes can be mixed, the cache not!
 		LONG	mfl_iocache		;pointer to cache memory
 	ENDC
 		LABEL	mfl_SIZEOF
@@ -685,7 +694,7 @@ KFSDPKT	MACRO
 		move.l	(dp_Arg3,a4),d3			;d3 = readsize
 	IFD IOCACHE
 		moveq	#0,d4				;d4 = readcachesize
-		bsr	.flush_write_cache		;sets a0 again
+		bsr	.flush_write_cache		;cannot mix read/write, sets a0 again
 	ENDC
 		move.l	(mfl_pos,a0),d5			;d5 = pos
 	;correct readsize if necessary
@@ -737,10 +746,8 @@ KFSDPKT	MACRO
 	ELSE
 		move.l	#IOCACHE,d7			;d7 = IOCACHE
 		move.l	(mfl_cpos,a0),d6		;d6 = cachepos
-		bmi	.read_1				;if no cache due .flush_write_cache
+		bmi	.read_1				;skip if nothing cached yet
 	;try from cache
-		tst.l	(mfl_iocache,a0)		;cache allocated?
-		beq	.read_1
 		cmp.l	d5,d6				;pos to read higher than in cache?
 		bhi	.read_1
 		move.l	d7,d0
@@ -837,17 +844,18 @@ KFSDPKT	MACRO
 	ENDC
 	IFND IOCACHE
 		move.l	(dp_Arg3,a4),d0			;len
+		beq	.write_end
 		move.l	(mfl_pos,a0),d1			;offset
 		move.l	d1,d2
 		add.l	d0,d2
-		move.l	d2,(mfl_pos,a0)
+		move.l	d2,(mfl_pos,a0)			;new position
 		cmp.l	(mfl_fib+fib_Size,a0),d2
-		bls	.write1
+		bls	.write_inside
 		move.l	d2,(mfl_fib+fib_Size,a0)	;new length
-.write1		move.l	(fl_Key,a0),a0			;name
+.write_inside	move.l	(fl_Key,a0),a0			;name
 		move.l	(dp_Arg2,a4),a1			;buffer
 		jsr	(resload_SaveFileOffset,a2)
-		move.l	(dp_Arg3,a4),d0			;bytes written
+.write_end	move.l	(dp_Arg3,a4),d0			;bytes written
 		bra	.reply1
 	ELSE
 	;set new pos and correct size if necessary
@@ -855,34 +863,41 @@ KFSDPKT	MACRO
 		move.l	(dp_Arg2,a4),d5			;d5 = buffer
 		move.l	(dp_Arg3,a4),d6			;d6 = len
 		beq	.write_end
-		move.l	(mfl_pos,a0),d7			;d7 = offset
+		move.l	(mfl_pos,a0),d7			;d7 = offset before write
 		move.l	d6,d0
 		add.l	d7,d0
-		move.l	d0,(mfl_pos,a0)
+		move.l	d0,(mfl_pos,a0)			;new position
 		cmp.l	(mfl_fib+fib_Size,a0),d0
-		bls	.write_1
+		bls	.write_inside
 		move.l	d0,(mfl_fib+fib_Size,a0)	;new length
-.write_1
-	;if there is a read cache flush it
-		move.l	d4,d0				;space in cache
-		tst.l	(mfl_clen,a0)
-		bne	.write_3
-		move.l	#-1,(mfl_cpos,a0)
-		bra	.write_2
-.write_3
-	;check if fits into cache, if:
-	;- write length less cache size
-	;- current cached write + actual write <= 2 * cache size, and offset matches
-		move.l	(mfl_cpos,a0),d1
-		add.l	(mfl_clen,a0),d1
-		cmp.l	d1,d7				;offsets matches to last cached write?
-		bne	.write_2
-		add.l	d0,d0
-		sub.l	(mfl_clen,a0),d0
-.write_2	cmp.l	d6,d0
-		blo	.write_direct
+.write_inside
+	;is there already a write cache?
+		move.l	(mfl_clen,a0),d0
+		bne	.write_chkapp
+	;invalidate possible read cache
+		moveq	#-1,d0
+		move.l	d0,(mfl_cpos,a0)
+		bra	.write_checkfit
+	;matches the offset the end of the last cached write?
+.write_chkapp	add.l	(mfl_cpos,a0),d0
+		cmp.l	d0,d7
+		bne	.write_flush
+	;does fit existing cache + new write in 2*IOCACHE
+		move.l	(mfl_clen,a0),d0
+		add.l	d6,d0
+		move.l	d4,d1
+		add.l	d4,d1
+		cmp.l	d1,d0
+		blo	.write_fill
+	;flush existing write cache
+.write_flush	bsr	.flush_write_cache
+	;check if write fits into the cache
+.write_checkfit	cmp.l	d6,d4
+		bls	.write_direct
+	;fill cache
+.write_fill
 	;get memory if necessary
-.write_cache	move.l	(mfl_iocache,a0),d0
+		move.l	(mfl_iocache,a0),d0
 		bne	.write_memok
 		move.l	d4,d0
 		moveq	#MEMF_ANY,d1
@@ -894,36 +909,30 @@ KFSDPKT	MACRO
 	ELSE
 		beq	.write_direct
 	ENDC
-	;into cache
-.write_memok	move.l	(mfl_cpos,a0),d1
-		bmi	.write_posset
-		add.l	(mfl_clen,a0),d1
-		cmp.l	d1,d7				;offsets match?
-		beq	.write_posok
-		tst.l	(mfl_clen,a0)			;any data stored?
-		bne	.write_flush
-.write_posset	move.l	d7,(mfl_cpos,a0)
-.write_posok	move.l	d0,a1
-		move.l	d4,d0
-		sub.l	(mfl_clen,a0),d0		;free space in cache
-		beq	.write_flush
-		cmp.l	d0,d6
-		bhs	.write_4
+.write_memok	move.l	d0,a1
+	;determine bytes to copy
+		move.l	d4,d0				;IOCACHE
+		sub.l	(mfl_clen,a0),d0
+		cmp.l	d6,d0				;len
+		blo	.write_fill_len
 		move.l	d6,d0
-.write_4	add.l	(mfl_clen,a0),a1
-		add.l	d0,(mfl_clen,a0)
-		sub.l	d0,d6
-		add.l	d0,d7
-		move.l	d5,a0
+.write_fill_len
+	;copy to cache
+		tst.l	(mfl_cpos,a0)
+		bpl	.write_cpos_set
+		move.l	d7,(mfl_cpos,a0)		;new position
+.write_cpos_set add.l	(mfl_clen,a0),a1
+		add.l	d0,(mfl_clen,a0)		;new length
+		sub.l	d0,d6				;len
+		add.l	d0,d7				;position
+		exg.l	d5,a0				;lock<>buffer
 .write_cpy	move.b	(a0)+,(a1)+
 		subq.l	#1,d0
 		bne	.write_cpy
-		move.l	a0,d5
-		tst.l	d6
+		exg.l	a0,d5				;lock<>buffer
+		tst.l	d6				;all written?
 		beq	.write_end
-	;flush cache
-.write_flush	bsr	.flush_write_cache
-		bra	.write_cache
+		bra	.write_flush			;loop for 2nd cycle
 	;write without cache
 .write_direct	move.l	d6,d0				;len
 		move.l	d7,d1				;offset
@@ -1008,15 +1017,16 @@ KFSDPKT	MACRO
 .flush_write_cache
 		move.l	(dp_Arg1,a4),a0		;lock
 		move.l	(mfl_clen,a0),d0	;len (only set on write cache)
-		beq	.fwc_nocache
+		beq	.fwc_nowcache
 		move.l	(mfl_cpos,a0),d1	;offset
 		move.l	(mfl_iocache,a0),a1	;buffer
 		move.l	(fl_Key,a0),a0		;name
 		jsr	(resload_SaveFileOffset,a2)
 		move.l	(dp_Arg1,a4),a0		;lock
 		clr.l	(mfl_clen,a0)
-		move.l	#-1,(mfl_cpos,a0)
-.fwc_nocache	rts
+		moveq	#-1,d0
+		move.l	d0,(mfl_cpos,a0)
+.fwc_nowcache	rts
 	ENDC
 
 ;---------------
@@ -1036,7 +1046,7 @@ KFSDPKT	MACRO
 		cmp.l	(mfl_fib+fib_Size,a0),d2
 		bhi	.seek_err
 	;set new
-		move.l	(mfl_pos,a0),d0
+		move.l	(mfl_pos,a0),d0		;return old position
 		move.l	d2,(mfl_pos,a0)
 		moveq	#0,d1
 		bra	.reply2
@@ -1137,6 +1147,9 @@ KFSDPKT	MACRO
 		move.l	a4,d0
 		moveq	#0,d1
 	;fill lock structure
+	IFD IOCACHE
+		subq.l	#1,(mfl_cpos,a4)	;nothing cached yet
+	ENDC
 		addq.l	#4,a4			;fl_Link
 		move.l	d4,(a4)+		;fl_Key (name)
 		move.l	d2,(a4)+		;fl_Access
@@ -1409,10 +1422,10 @@ BOOTFILENAME	MACRO
 	ENDM
 	ENDC
 	CNOP 0,4
-bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2
+bootfile_exe	dc.l	$3f3,0,1,0,0,2,$3e9,2	;exe header
 bootfile_exe_j	jmp	$99999999		;avoid optimizing!
 		dc.w	0			;pad to longword
-		dc.l	$3f2
+		dc.l	$3f2			;exe footer
 bootfile_exe_e
 bootname_ss_b	dc.b	10			;BSTR
 bootname_ss	dc.b	"WHDBoot.ss",0		;name of ':s/startup-sequence'
