@@ -1,10 +1,11 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.      kick31.asm
 ;  :Contents.   kickstart 3.1 booter
-;  :Author.     Wepl
-;  :Version.    $Id: kick31.asm 1.2 2003/04/06 20:30:52 wepl Exp $
+;  :Author.     Cfou!
+;  :Version.    $Id: UFO_All.asm 1.1 2015/07/12 18:18:09 wepl Exp wepl $
 ;  :History.    04.03.03 started
 ;               22.06.03 rework for whdload v16
+;		12.07.15 IOCACHE set
 ;  :Requires.   kick31.s
 ;  :Copyright.  Public Domain
 ;  :Language.   68000 Assembler
@@ -23,7 +24,7 @@ _CD32 ; same like aga
 
         IFD BARFLY
         IFD _CD32
-        OUTPUT  "sdh2:UFOAGA/UFO.Slave"
+        OUTPUT  "wart:u/UFO/UFO.Slave"
         ENDC
         IFD _ECS
         OUTPUT  "sdh2:UFOEcs/UFO.Slave"
@@ -67,7 +68,7 @@ HDINIT
 ;INIT_GADTOOLS
 ;INIT_MATHFFP
 HRTMON
-;IOCACHE        = 70*1024
+IOCACHE		= 17000
 ;MEMFREE        = $200
 ;NEEDFPU
 ;POINTERTICKS   = 1
@@ -91,7 +92,7 @@ QUIT_AFTER_PROGRAM_EXIT
 _PATCH_NV_GETLIST
  ENDC
         IFD _CD32
-        INCLUDE osemu:kick31cd32.s
+        INCLUDE sources:whdload/jotd/kick31cd32.s
         ENDC
         IFD _AGA
         INCLUDE osemu:kick31.s
@@ -471,7 +472,6 @@ _args_end2       dc.b    0
 
 _saveregs       ds.l    11
 _saverts        dc.l    0
-_dosbase        dc.l    0
 
         ENDC
 
@@ -855,24 +855,10 @@ changebinNV2:
   rts
  ENDC
 
-
-
- IFD BOOTDOS
- ;rien
- else
-_dosbase
- dc.l 0
- ENDC
 _tag            dc.l    WHDLTAG_CUSTOM1_GET
 _custom1        dc.l    0
                 dc.l    WHDLTAG_CUSTOM2_GET
 _custom2        dc.l    0
-                dc.l    WHDLTAG_CUSTOM3_GET
-_custom3        dc.l    0
-                dc.l    WHDLTAG_CUSTOM4_GET
-_custom4        dc.l    0
-                dc.l    WHDLTAG_CUSTOM5_GET
-_custom5        dc.l    0
                 dc.l    0
                                
 
