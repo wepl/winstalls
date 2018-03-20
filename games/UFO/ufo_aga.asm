@@ -1,11 +1,13 @@
 ;*---------------------------------------------------------------------------
-;  :Modul.      kick31.asm
-;  :Contents.   kickstart 3.1 booter
+;  :Modul.	ufo_aga.asm
+;  :Contents.	UFO Enemy Unknown AGA/CD32
 ;  :Author.     Cfou!
-;  :Version.    $Id: UFO_All.asm 1.1 2015/07/12 18:18:09 wepl Exp wepl $
+;  :Version.    $Id: UFO_All.asm 1.2 2018/03/19 17:22:09 wepl Exp wepl $
 ;  :History.    04.03.03 started
 ;               22.06.03 rework for whdload v16
 ;		12.07.15 IOCACHE set
+;		19.03.18 general cleanup and update!
+;			 v17 button infos added
 ;  :Requires.   kick31.s
 ;  :Copyright.  Public Domain
 ;  :Language.   68000 Assembler
@@ -13,22 +15,13 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-_CD32 ; same like aga
-;_ECS
-;_AGA
-
         INCDIR  Includes:
         INCLUDE whdload.i
         INCLUDE whdmacros.i
         INCLUDE lvo/dos.i
 
         IFD BARFLY
-        IFD _CD32
-        OUTPUT  "wart:u/UFO/UFO.Slave"
-        ENDC
-        IFD _ECS
-        OUTPUT  "sdh2:UFOEcs/UFO.Slave"
-        ENDC
+        OUTPUT  "wart:u/UFO/UFO_AGA.Slave"
         BOPT    O+                              ;enable optimizing
         BOPT    OG+                             ;enable optimizing
         BOPT    ODd-                            ;disable mul optimizing
@@ -38,608 +31,317 @@ _CD32 ; same like aga
         SUPER
         ENDC
 
-;  ============================================================================
-
- IFD _ECS
-CHIPMEMSIZE     = $100000
-FASTMEMSIZE     = $0000
- else
-CHIPMEMSIZE     = $1f0000
-FASTMEMSIZE     = $100000
-INITAGA
- ENDC
-
-NUMDRIVES       = 1
-WPDRIVES        = %1000
-
-;BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-;CACHE
-;DEBUG;
-DOSASSIGN
-;DISKSONBOOT
-;;FONTHEIGHT     = 8
-HDINIT
-;INIT_AUDIO
-;INIT_GADTOOLS
-;INIT_MATHFFP
-HRTMON
-IOCACHE		= 17000
-;MEMFREE        = $200
-;NEEDFPU
-;POINTERTICKS   = 1
-;STACKSIZE      = 8000
-;TRDCHANGEDISK
-;SETPATCH
 ;============================================================================
 
-slv_Version     = 16
-slv_Flags       = WHDLF_NoError|WHDLF_Examine|WHDLF_EmulTrap
-slv_keyexit     = $59   ;F10
+CHIPMEMSIZE	= $1f0000	;size of chip memory
+FASTMEMSIZE	= $100000	;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
+
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+;CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+INITAGA				;enable AGA features
+;INIT_AUDIO			;enable audio.device
+;INIT_GADTOOLS			;enable gadtools.library
+;INIT_LOWLEVEL			;load lowlevel.library
+;INIT_MATHFFP			;enable mathffp.library
+IOCACHE		= 17000		;cache for the filesystem handler (per fh)
+;JOYPADEMU			;use keyboard for joypad buttons
+MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;NO68020				;remain 68000 compatible
+;POINTERTICKS	= 1		;set mouse speed
+;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
- IFD _CD32
-DUMMY_CD_DEVICE = 1
-;USE_DISK_LOWLEVEL_LIB
-;USE_DISK_NONVOLATILE_LIB
-QUIT_AFTER_PROGRAM_EXIT
-;_PATCH_LOWLEV_LANGUAGE
-_PATCH_NV_GETLIST
- ENDC
-        IFD _CD32
-        INCLUDE sources:whdload/jotd/kick31cd32.s
-        ENDC
-        IFD _AGA
-        INCLUDE osemu:kick31.s
-        ENDC
-        IFD _ECS
-        INCLUDE osemu:kick13.s
-        ENDC
+slv_Version	= 17
+slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-        IFD BARFLY
-        IFND    .passchk
-        DOSCMD  "WDate  >T:date"
+	INCLUDE	Sources:whdload/kick31.s
+
+;============================================================================
+
+	IFD BARFLY
+	IFND	.passchk
+	DOSCMD	"WDate  >T:date"
 .passchk
-        ENDC
-        ENDC
+	ENDC
+	ENDC
 
-slv_CurrentDir          dc.b    "data",0
-
- IFD _CD32
-slv_name                dc.b    "UFO AGA/CD32 ",0
- ENDC
- IFD _ECS
-slv_name                dc.b    "Diggers ECS ",0
- ENDC
-slv_copy                dc.b    "Microprose",0
-slv_info                dc.b    "Coded by CFou! using Wepl's KickEmul",10
-                dc.b    "Version 1.0 "
-        IFD BARFLY
-                INCBIN  "T:date"
-        ENDC
-                dc.b    0
-        EVEN
-
-;============================================================================
-; entry before any diskaccess is performed, no dos.library available
-
-        IFD BOOTEARLY
-
-_bootearly
-                IFD _CD32
-                bsr     _patch_cd32_libs
-                IFD _PATCH_LOWLEV_LANGUAGE
-                bsr _patch_lowlevel_lang
-                ENDC
-                ENDC
-
-                blitz
-                rts
-
-        ENDC
-
-;============================================================================
-; bootblock from "Disk.1" has been loaded, no dos.library available
-
-        IFD BOOTBLOCK
-
-; A0 = buffer (1024 bytes)
-; A1 = ioreq
-; A6 = execbase
-
-_bootblock      blitz
-                jmp     (12,a4)
-
-        ENDC
-
-
-
-                                            
+slv_CurrentDir	dc.b	"data",0
+slv_name	dc.b	"UFO Enemy Unknown",0
+slv_copy	dc.b	"1994 Microprose",0
+slv_info	dc.b	"adapted for WHDLoad by CFou!/Wepl",10
+		dc.b	"AGA/CD³² Version 1.1 "
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
+		dc.b	0
+	IFGE slv_Version-17
+slv_config	dc.b	"C1:B:Skip Intro",0
+	ENDC
+	EVEN
 
 ;============================================================================
 ; like a program from "startup-sequence" executed, full dos process,
-; HDINIT is required
+; HDINIT is required, this will never called if booted from a diskimage, only
+; works in conjunction with the virtual filesystem of HDINIT
+; this routine replaces the loading and executing of the startup-sequence
+;
+; the following example is simple and wont work for BCPL programs and 
+; programs build using MANX Aztec-C
+; for a more compatible routine check kick13.s
 
-; the following example is extensive because it saves all registers and
-;   restores them before executing the program, the reason for this that some
-;   programs (e.g. MANX Aztec-C) require specific registers properly setup on
-;   calling
-; in most cases a simpler routine is sufficient :-)
+	IFD BOOTDOS
 
-        IFD BOOTDOS
+_bootdos	move.l	(_resload,pc),a2	;A2 = resload
 
-_bootdos      
+	;get tags
+		lea	_tags,a0
+		jsr	(resload_Control,a2)
 
-        clr.l   $0.W
-        move.l  (_resload),a2           ;A2 = resload
+	;open doslib
+		lea	(_dosname,pc),a1
+		move.l	(4),a6
+		jsr	(_LVOOldOpenLibrary,a6)
+		lea	(_dosbase,pc),a0
+		move.l	d0,(a0)
+		move.l	d0,a6			;A6 = dosbase
 
+	;assigns
+		lea     (_disk0,pc),a0
+		sub.l   a1,a1
+		bsr     _dos_assign
+		lea     (_disk1,pc),a0
+		sub.l   a1,a1
+		bsr     _dos_assign
+		lea     (_disk2,pc),a0
+		sub.l   a1,a1
+		bsr     _dos_assign
+		lea     (_disk3,pc),a0
+		sub.l   a1,a1
+		bsr     _dos_assign
+		lea     (_disk4,pc),a0
+		sub.l   a1,a1
+		bsr     _dos_assign
+		lea     (_disk6,pc),a0
+		move.l	a0,a1
+		bsr     _dos_assign
 
-        ;get tags
-                lea     (_tag,pc),a0
-                jsr     (resload_Control,a2)
-        
-      ;  ;enable cache
-      ;          move.l  #WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
-      ;          move.l  #WCPUF_All,d1
-      ;          jsr     (resload_SetCPU,a2)
+	;intro
+		move.l	_custom1,d0
+		bne	.skipintro
 
+		lea	_program_intro,a0
+		jsr	(resload_GetFileSize,a2)
+		beq	.skipintro		;AGA version hasn't intro
 
-
-        ;open doslib
-
-                lea     (_dosname,pc),a1
-                move.l  (4),a6
-                jsr     (_LVOOldOpenLibrary,a6)
-                lea     (_dosbase,pc),a0
-                move.l  d0,(a0)
-                move.l  d0,a6                   ;A6 = dosbase
-
-        ;assigns
-                lea     (_disk0,pc),a0
-                sub.l   a1,a1
-                bsr     _dos_assign
-                lea     (_disk1,pc),a0
-                sub.l   a1,a1
-                bsr     _dos_assign
-                lea     (_disk2,pc),a0
-                sub.l   a1,a1
-                bsr     _dos_assign
-                lea     (_disk3,pc),a0
-                sub.l   a1,a1
-                bsr     _dos_assign
-                lea     (_disk4,pc),a0
-                sub.l   a1,a1
-                bsr     _dos_assign
-
-                lea     (_disk6,pc),a0
-                lea     (_disk6b,pc),a1
-                bsr     _dos_assign
-
-
-
-
-                IFD _CD32
-                bsr     _patch_cd32_libs
-                  IFD _PATCH_LOWLEV_LANGUAGE
-                  bsr _patch_lowlevel_lang
-                  ENDC
-
-                  IFD _PATCH_NV_GETLIST
-                  bsr _patch_nv_getlist
-                  ENDC
-                ENDC
-
-                move.l _custom1(pc),d0
-                tst.l d0
-                bne .skip
-
-                lea     _program0(pc),a0
-                move.l  (_resload,pc),a2
-                jsr     resload_GetFileSize(a2)
-                tst.l  d0
-                beq .skip
-
-                lea     _program0(pc),a0        ; "intro"
-                lea     _args0(pc),a1
-                moveq   #_args_end0-_args0,d0
-                lea _patch_game(pc),a5
- ;               lea 0,a5
-                bsr     _load_exe
-
-.skip
-                lea     _program1(pc),a0        ; "geo "0" "0""
-                lea     _args1(pc),a1
-                moveq   #_args_end1-_args1,d0
-                lea _patch_game(pc),a5
-;                lea 0,a5
-                bsr     _load_exe
-                move.l out_d0(pc),d0
-                tst.l d0
-                beq .quit
-
+		lea	_args_intro,a0
+		moveq	#_args_end_intro-_args_intro,d0
+		move.w	#0,d1
+		lea	_program_intro,a1
+		lea	_pl_intro,a3
+		bsr	_exec
+.skipintro
+		lea	_args_00,a0
+		moveq	#_args_end_00-_args_00,d0
+		move.w	#$3625,d1
+		lea	_program_geo,a1		; "geo "0" "0""
+		lea	_pl_geo,a3
+		bsr	_exec
+		tst.l	d0
+		beq	.quit
 .loop
-                lea     _program2(pc),a0        ; "tactical "1" "0""
-                lea     _args2(pc),a1
-                moveq   #_args_end2-_args2,d0
-;                lea _patch_game(pc),a5
-                lea 0,a5
-                bsr     _load_exe
+		lea	_args_10,a0
+		moveq	#_args_end_10-_args_10,d0
+		move.w	#0,d1
+		lea	_program_tact,a1	; "tactical "1" "0""
+		lea	_pl_tact,a3
+		bsr	_exec
 
-                lea     _program1(pc),a0        ; "geo "1" "0""
-                lea     _args2(pc),a1
-                moveq   #_args_end2-_args2,d0
-                lea _patch_game(pc),a5
-;                lea 0,a5
-                bsr     _load_exe
-                move.l out_d0(pc),d0
-                tst.l d0
-                beq .quit
-
-                bra .loop
+		lea	_args_10,a0
+		moveq	#_args_end_10-_args_10,d0
+		move.w	#0,d1
+		lea	_program_geo,a1		; "geo "1" "0""
+		lea	_pl_geo,a3
+		bsr	_exec
+		tst.l	d0
+		bne	.loop
 .quit
-        IFD QUIT_AFTER_PROGRAM_EXIT
-                pea     TDREASON_OK
-                move.l  (_resload,pc),a2
-                jmp     (resload_Abort,a2)
-        ELSE
-                rts
-        ENDC
+		pea	TDREASON_OK
+		move.l	(_resload,pc),a2
+		jmp	(resload_Abort,a2)
 
-                rts
-_quit
-       pea     TDREASON_OK
-                move.l  (_resload,pc),a2
-                jmp     (resload_Abort,a2)
+_exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 
+	;check version
+		move.l	a1,a0			;name
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
+		sub.l	d3,a7
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
+		move.l	d3,d0
+		move.l	a7,a0
+		jsr	(resload_CRC16,a2)
+		add.l	d3,a7
 
+		cmp.w	(6,a7),d0
+		beq	.versionok
+		pea	TDREASON_WRONGVER
+		jmp	(resload_Abort,a2)
+.versionok
 
+	;load exe
+		move.l	(12,a7),d1
+		jsr	(_LVOLoadSeg,a6)
+		move.l	d0,d7			;D7 = segment
+		beq	.program_err
 
-_patch_game
-  add.l d7,d7
-  add.l d7,d7
-   move.l d7,a1
-   add.l #4,a1
+	;patch
+		move.l	(16,a7),a0
+		move.l	d7,a1
+		jsr	(resload_PatchSeg,a2)
 
- move.l a1,a3
- add.l #$5e,a3
- cmp.l #$4cdf7fff,(a3)
- bne .pas
- pea modif(pc)
- move.w #$4ef9,(a3)+
- move.l (a7)+,(a3)
-.pas
-;.t
-; move.w #$f,$dff180
-; btst #$6,$bfe001
-; bne .t
- bsr patchAga
+	IFD DEBUG
+	;set debug
+		clr.l	-(a7)
+		move.l	d7,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		add.w	#12,a7
+	ENDC
 
- rts
-modif:
-    movem.l (a7)+,d0-d7/a0-a6
-    move.l (a7),a6
+	;call
+		move.l	d7,a1
+		add.l	a1,a1
+		add.l	a1,a1
+		move.l	(a7),d0
+		move.l	(8,a7),a0
+		jsr	(4,a1)
+		move.l	d0,a3
 
-    movem.l a1/a3,-(a7)
-    move.l a6,a1
-    bsr patchAga
-    movem.l (a7)+,a1/a3
-    move.l 4,a6
-    rts
+	;remove exe
+		move.l	d7,d1
+		move.l	(_dosbase,pc),a6
+		jsr	(_LVOUnLoadSeg,a6)
 
-patchAga
- ; manual protection aga
- move.l a1,a3
- add.l #$28ae-$68,a3
- cmp.l #$6d2e7239,(a3)
- bne .pas
- move.w #$4e71,(a3)
- move.w #$4e71,6(a3)
-.pas
+		move.l	a3,d0
+		rts
 
- move.l a1,a3
- add.l #$28ce-$68,a3
- cmp.l #$1410b082,(a3)
- bne .pas1
- move.l #$1f904814,(a3)+
- move.w #$6006,(a3)
-.pas1
+.program_err	jsr	(_LVOIoErr,a6)
+		move.l	(12,a7),-(a7)
+		pea	TDREASON_DOSREAD
+		jmp	(resload_Abort,a2)
 
- move.l a1,a3
- add.l #$28f4-$68,a3
- cmp.l #$670e7008,(a3)
- bne .pas2
- move.w #$4e71,(a3)
-.pas2
+_disk0		dc.b	"UFO CD³²",0
+_disk1		dc.b	"UFO disk 1",0
+_disk2		dc.b	"UFO disk 2",0
+_disk3		dc.b	"UFO disk 3",0
+_disk4		dc.b	"UFO disk 4",0
+_disk6		dc.b	"UFOTemp",0
+;_disk6b	dc.b	"RAM",0
+_program_intro	dc.b	"intro",0
+_args_intro	dc.b	10
+_args_end_intro	dc.b	0
+_program_geo	dc.b	"geo",0
+_program_tact	dc.b	"tactical",0
+_args_00	dc.b	'"0" "0"',10
+_args_end_00	dc.b	0
+_args_10	dc.b	'"1" "0"',10
+_args_end_10	dc.b	0
+	EVEN
 
- move.l a1,a3
- add.l #$28fc-$68,a3
- cmp.l #$66064279,(a3)
- bne .pas3
- move.w #$4e71,(a3)
-.pas3
+_pl_intro	PL_START
+		PL_END
 
- move.l a1,a3
- add.l #$290c-$68,a3
- cmp.w #$4a79,(a3)
- bne .pas4
- move.w #$4279,(a3)
-.pas4
+_pl_geo		PL_START
+		PL_P	$5e,.jmp	;Imploder
+		PL_END
+.jmp		lea	_pl_geo_x,a0
+_jmp		move.l	($3c,a7),d0
+		lsr.l	#2,d0
+		subq.l	#1,d0
+		move.l	d0,a1
+		move.l	d0,d2
+		move.l	_resload,a2
+		jsr	(resload_PatchSeg,a2)
+	;set debug
+	IFD DEBUG
+		clr.l	-(a7)
+		move.l	d2,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		add.w	#12,a7
+	ENDC
+		movem.l	(a7)+,d0-a6	;original
+		rts			;original
+_pl_geo_x	PL_START
+		PL_S	$2846,2		;protection
+		PL_S	$284c,2		;protection
+		PL_DATA	$2866,6		;protection
+			move.b	(a0),($14,sp,d4.l)
+			dw	$6006
+		PL_S	$288c,2		;protection
+		PL_S	$2894,2		;protection
+		PL_W	$28a4,$4279	;protection tst.w -> clr.w
+		PL_B	$28aa,$60	;protection
+	;	PL_B	$39a82,$60	;beq -> bra vbr
+	;	PL_PS	$39aaa,_intoff	;smc
+	;	PL_P	$39ac2,_flush	;smc
+	;	PL_P	$39c2e,_intack
+	;	PL_B	$3b75c+3,9	;aud.vol
+		PL_CB	$493aa+7	;DEUTSCHE
+		PL_END
 
- move.l a1,a3
- add.l #$2912-$68,a3
- cmp.l #$67147001,(a3)
- bne .pas5
- move.b #$60,(a3)
-.pas5
-; fin manual protection
+_pl_tact	PL_START
+	;	PL_B	$3e76e,$60	;beq -> bra vbr
+	;	PL_PS	$3e796,_intoff	;smc
+	;	PL_P	$3e7ae,_flush	;smc
+	;	PL_P	$3e91a,_intack
+	;	PL_B	$40448+3,9	;aud.vol
+		PL_END
 
- rts
+_intoff		move.w	#INTF_INTEN,$dff09a
+		tst.w	_custom+intreqr
+		addq.l	#2,(a7)
+		rts
 
+_flush		move.l	_resload,a0
+		jsr	(resload_FlushCache,a0)
+		move.w	#$c000,$dff09a
+		movem.l	(a7)+,d0-a6
+		rts
 
-; < a0: program name
-; < a1: arguments
-; < d0: argument string length
-; < a5: patch routine (0 if no patch routine)
-
-_load_exe:
-        movem.l d0-a6,-(a7)
-        move.l  d0,d2
-        move.l  a0,a3
-        move.l  a1,a4
-        move.l  a0,d1
-        jsr     (_LVOLoadSeg,a6)
-        move.l  d0,d7                   ;D7 = segment
-        beq     .end                    ;file not found
-
-        ;patch here
-        cmp.l   #0,A5
-        beq.b   .skip
-        movem.l d2/d7/a4,-(a7)
-        jsr     (a5)
-        movem.l (a7)+,d2/d7/a4
-.skip
-        ;call
-        move.l  d7,a1
-        add.l   a1,a1
-        add.l   a1,a1
-
-        move.l  a4,a0
-        move.l  ($44,a7),d0             ;stacksize
-        sub.l   #5*4,d0                 ;required for MANX stack check
-        movem.l d0/d7/a2/a6,-(a7)
-        move.l  d2,d0                   ; argument string length
-;-----
-        jsr     (4,a1)
-;-----
-        lea out_d0(pc),a2
-        move.l d0,(a2)
-        movem.l (a7)+,d1/d7/a2/a6
-
-
-
-        ;remove exe
-        move.l  d7,d1
-        jsr     (_LVOUnLoadSeg,a6)
-
-        movem.l (a7)+,d0-a6
-        rts
-                
-
-.end
-        move.l  a3,-(a7)
-        pea     205                     ; file not found
-        pea     TDREASON_DOSREAD
-        move.l  (_resload,pc),-(a7)
-        add.l   #resload_Abort,(a7)
-        rts
-out_d0
- dc.l 0
-
-_pl_program     PL_START
-                PL_END
-
- IFD _CD32
-_disk0          dc.b    "UFO CD³²",0
-_disk1          dc.b    "UFO disk 1",0
-_disk2          dc.b    "UFO disk 2",0
-_disk3          dc.b    "UFO disk 3",0
-_disk4          dc.b    "UFO disk 4",0
-_disk6          dc.b    "UFOTemp",0
-;_disk6b          dc.b   "RAM",0
-_disk6b          dc.b   "Temp",0
- ENDC
-              even
-_program0
-      dc.b    "intro",0
-_args0           dc.b  '',10
-_args_end0       dc.b    0
-_program1
-      dc.b    "geo",0
-_program2
-      dc.b    "tactical",0
-_args1           dc.b  '"0" "0"',10
-_args_end1       dc.b    0
-_args2           dc.b  '"1" "0"',10
-_args_end2       dc.b    0
-        EVEN
-
-_saveregs       ds.l    11
-_saverts        dc.l    0
+_intack		move.w	#$10,_custom+intreq
+		tst.w	_custom+intreqr
+		rte
 
         ENDC
-
-;============================================================================
-; callback/hook which gets executed after each successful call to dos.LoadSeg
-; can also be used instead of _bootdos, requires the presence of
-; "startup-sequence"
-
-; the following example uses a parameter table to patch different executables
-; after they get loaded
-
-        IFD CBDOSLOADSEG
-
-; D0 = BSTR name of the loaded program as BCPL string
-; D1 = BPTR segment list of the loaded program as BCPL pointer
-
-_cb_dosLoadSeg  lsl.l   #2,d0           ;-> APTR
-                move.l  d0,a0
-                moveq   #0,d0
-                move.b  (a0)+,d0        ;D0 = name length
-        ;remove leading path
-                move.l  a0,a1
-                move.l  d0,d2
-.2              move.b  (a1)+,d3
-                subq.l  #1,d2
-                cmp.b   #":",d3
-                beq     .1
-                cmp.b   #"/",d3
-                beq     .1
-                tst.l   d2
-                bne     .2
-                bra     .3
-.1              move.l  a1,a0           ;A0 = name
-                move.l  d2,d0           ;D0 = name length
-                bra     .2
-.3      ;get hunk length sum
-                move.l  d1,a1           ;D1 = segment
-                moveq   #0,d2
-.add            add.l   a1,a1
-                add.l   a1,a1
-                add.l   (-4,a1),d2      ;D2 = hunks length
-                subq.l  #8,d2           ;hunk header
-                move.l  (a1),a1
-                move.l  a1,d7
-                bne     .add
-        ;search patch
-                lea     (.patch,pc),a1
-.next           move.l  (a1)+,d3
-                movem.w (a1)+,d4-d5
-                beq     .end
-                cmp.l   d2,d3           ;length match?
-                bne     .next
-        ;compare name
-                lea     (.patch,pc,d4.w),a2
-                move.l  a0,a3
-                move.l  d0,d6
-.cmp            move.b  (a3)+,d7
-                cmp.b   #"a",d7
-                blo     .l
-                cmp.b   #"z",d7
-                bhi     .l
-                sub.b   #$20,d7
-.l              cmp.b   (a2)+,d7
-                bne     .next
-                subq.l  #1,d6
-                bne     .cmp
-                tst.b   (a2)
-                bne     .next
-        ;patch
-                lea     (.patch,pc,d5.w),a0
-                move.l  d1,a1
-                move.l  (_resload,pc),a2
-                jsr     (resload_PatchSeg,a2)
-        ;end
-.end
-        IFD DEBUG
-        ;set debug
-                clr.l   -(a7)
-                move.l  d1,-(a7)
-                pea     WHDLTAG_DBGSEG_SET
-                move.l  a7,a0
-                move.l  (_resload,pc),a2
-                jsr     (resload_Control,a2)
-                add.w   #12,a7
-        ENDC
-                rts
-
-PATCH   MACRO
-                dc.l    \1              ;cumulated size of hunks (not filesize!)
-                dc.w    \2-.patch       ;name
-                dc.w    \3-.patch       ;patch list
-        ENDM
-
-.patch          PATCH   2516,.n_run,_p_run2568
-                dc.l    0
-
-        ;all upper case!
-.n_run          dc.b    "RUN",0
-        EVEN
-
-_p_run2568      PL_START
-        ;       PL_P    0,.1
-                PL_END
-
-        ENDC
-
-;============================================================================
-; callback/hook which gets executed after each successful call to
-; dos.LoadRead
-
-; the following example uses a parameter table to patch different files
-; after they get loaded
-
-        IFD CBDOSREAD
-
-; D0 = ULONG bytes read
-; D1 = ULONG offset in file
-; A0 = CPTR name of file
-; A1 = APTR memory buffer
-
-_cb_dosRead
-                move.l  a0,a2
-.1              tst.b   (a2)+
-                bne     .1
-                lea     (.name,pc),a3
-                move.l  a3,a4
-.2              tst.b   (a4)+
-                bne     .2
-                sub.l   a4,a2
-                add.l   a3,a2           ;first char to check
-.4              move.b  (a2)+,d2
-                cmp.b   #"A",d2
-                blo     .3
-                cmp.b   #"Z",d2
-                bhi     .3
-                add.b   #$20,d2
-.3              cmp.b   (a3)+,d2
-                bne     .no
-                tst.b   d2
-                bne     .4
-
-        ;check position
-                move.l  d0,d2
-                add.l   d1,d2
-                lea     (.data,pc),a2
-                moveq   #0,d3
-.next           movem.w (a2)+,d3-d4
-                tst.w   d3
-                beq     .no
-                cmp.l   d1,d3
-                blo     .next
-                cmp.l   d2,d3
-                bhs     .next
-                sub.l   d1,d3
-                move.b  d4,(a1,d3.l)
-                bra     .next
-
-.no             rts
-
-.name           dc.b    "introduction",0    ;lower case!
-        EVEN
-        ;offset, new data
-.data           dc.w    $4278,$c        ;original = 0b
-                dc.w    $45b4,$c        ;original = 0b
-                dc.w    0
-
-        ENDC
-
 
 ;---------------------- patch language selection cd32
 
@@ -855,11 +557,13 @@ changebinNV2:
   rts
  ENDC
 
-_tag            dc.l    WHDLTAG_CUSTOM1_GET
-_custom1        dc.l    0
-                dc.l    WHDLTAG_CUSTOM2_GET
-_custom2        dc.l    0
-                dc.l    0
-                               
+;============================================================================
+
+_tags		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+		dc.l	WHDLTAG_CUSTOM2_GET
+_custom2	dc.l	0
+		dc.l	0
+_dosbase	dc.l	0
 
 ;============================================================================
