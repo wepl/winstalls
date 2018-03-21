@@ -2,7 +2,7 @@
 ;  :Modul.	ufo_aga.asm
 ;  :Contents.	UFO Enemy Unknown AGA/CD32
 ;  :Author.     Cfou!
-;  :Version.    $Id: UFO_All.asm 1.2 2018/03/19 17:22:09 wepl Exp wepl $
+;  :Version.    $Id: UFO_AGA.asm 1.3 2018/03/20 19:27:19 wepl Exp wepl $
 ;  :History.    04.03.03 started
 ;               22.06.03 rework for whdload v16
 ;		12.07.15 IOCACHE set
@@ -46,7 +46,7 @@ BOOTDOS				;enable _bootdos routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
-;CACHECHIP			;enable inst cache for chip/fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
@@ -130,23 +130,8 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		move.l	d0,a6			;A6 = dosbase
 
 	;assigns
-		lea     (_disk0,pc),a0
-		sub.l   a1,a1
-		bsr     _dos_assign
-		lea     (_disk1,pc),a0
-		sub.l   a1,a1
-		bsr     _dos_assign
-		lea     (_disk2,pc),a0
-		sub.l   a1,a1
-		bsr     _dos_assign
-		lea     (_disk3,pc),a0
-		sub.l   a1,a1
-		bsr     _dos_assign
-		lea     (_disk4,pc),a0
-		sub.l   a1,a1
-		bsr     _dos_assign
-		lea     (_disk6,pc),a0
-		move.l	a0,a1
+		lea     (_ufotemp,pc),a0
+		lea	_ram,a1
 		bsr     _dos_assign
 
 	;intro
@@ -159,7 +144,7 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 
 		lea	_args_intro,a0
 		moveq	#_args_end_intro-_args_intro,d0
-		move.w	#0,d1
+		move.w	#$750c,d1
 		lea	_program_intro,a1
 		lea	_pl_intro,a3
 		bsr	_exec
@@ -167,24 +152,28 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		lea	_args_00,a0
 		moveq	#_args_end_00-_args_00,d0
 		move.w	#$3625,d1
+		move.w	#$4938,d1
 		lea	_program_geo,a1		; "geo "0" "0""
 		lea	_pl_geo,a3
+		lea	_pl_geo_cd,a3
 		bsr	_exec
 		tst.l	d0
 		beq	.quit
 .loop
 		lea	_args_10,a0
 		moveq	#_args_end_10-_args_10,d0
-		move.w	#0,d1
+		move.w	#$6108,d1
 		lea	_program_tact,a1	; "tactical "1" "0""
 		lea	_pl_tact,a3
+		lea	_pl_tact_cd,a3
 		bsr	_exec
 
 		lea	_args_10,a0
 		moveq	#_args_end_10-_args_10,d0
-		move.w	#0,d1
+		move.w	#$3625,d1
 		lea	_program_geo,a1		; "geo "1" "0""
 		lea	_pl_geo,a3
+		lea	_pl_geo_cd,a3
 		bsr	_exec
 		tst.l	d0
 		bne	.loop
@@ -250,6 +239,7 @@ _exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 		jsr	(_LVOUnLoadSeg,a6)
 
 		move.l	a3,d0
+		add.w	#5*4,a7
 		rts
 
 .program_err	jsr	(_LVOIoErr,a6)
@@ -257,13 +247,8 @@ _exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 		pea	TDREASON_DOSREAD
 		jmp	(resload_Abort,a2)
 
-_disk0		dc.b	"UFO CD³²",0
-_disk1		dc.b	"UFO disk 1",0
-_disk2		dc.b	"UFO disk 2",0
-_disk3		dc.b	"UFO disk 3",0
-_disk4		dc.b	"UFO disk 4",0
-_disk6		dc.b	"UFOTemp",0
-;_disk6b	dc.b	"RAM",0
+_ufotemp	dc.b	"UFOTemp",0
+_ram		dc.b	"RAM:",0
 _program_intro	dc.b	"intro",0
 _args_intro	dc.b	10
 _args_end_intro	dc.b	0
@@ -310,36 +295,18 @@ _pl_geo_x	PL_START
 		PL_S	$2894,2		;protection
 		PL_W	$28a4,$4279	;protection tst.w -> clr.w
 		PL_B	$28aa,$60	;protection
-	;	PL_B	$39a82,$60	;beq -> bra vbr
-	;	PL_PS	$39aaa,_intoff	;smc
-	;	PL_P	$39ac2,_flush	;smc
-	;	PL_P	$39c2e,_intack
-	;	PL_B	$3b75c+3,9	;aud.vol
 		PL_CB	$493aa+7	;DEUTSCHE
 		PL_END
 
 _pl_tact	PL_START
-	;	PL_B	$3e76e,$60	;beq -> bra vbr
-	;	PL_PS	$3e796,_intoff	;smc
-	;	PL_P	$3e7ae,_flush	;smc
-	;	PL_P	$3e91a,_intack
-	;	PL_B	$40448+3,9	;aud.vol
 		PL_END
 
-_intoff		move.w	#INTF_INTEN,$dff09a
-		tst.w	_custom+intreqr
-		addq.l	#2,(a7)
-		rts
+_pl_geo_cd	PL_START
+		PL_CB	$4d650+7	;DEUTSCHE
+		PL_END
 
-_flush		move.l	_resload,a0
-		jsr	(resload_FlushCache,a0)
-		move.w	#$c000,$dff09a
-		movem.l	(a7)+,d0-a6
-		rts
-
-_intack		move.w	#$10,_custom+intreq
-		tst.w	_custom+intreqr
-		rte
+_pl_tact_cd	PL_START
+		PL_END
 
         ENDC
 
