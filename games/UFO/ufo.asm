@@ -2,8 +2,9 @@
 ;  :Modul.	ufo.asm
 ;  :Contents.	UFO Enemy Unknown
 ;  :Author.	Wepl
-;  :Version.	$Id: kick13.asm 1.17 2014/06/09 13:54:51 wepl Exp wepl $
+;  :Version.	$Id: ufo.asm 1.1 2015/07/19 22:43:38 wepl Exp wepl $
 ;  :History.	12.07.15 started
+;		19.03.18 updated to latest kickemu
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,33 +30,35 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $90000
-FASTMEMSIZE	= $100000
-NUMDRIVES	= 1
-WPDRIVES	= %0000
+CHIPMEMSIZE	= $90000	;size of chip memory
+FASTMEMSIZE	= $100000	;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-;CBDOSLOADSEG
-;CBDOSREAD
-;CBKEYBOARD
-CACHE
-;DEBUG
-;DISKSONBOOT
-DOSASSIGN
-;FONTHEIGHT	= 8
-HDINIT
-;HRTMON
-IOCACHE		= 45300
-;MEMFREE	= $200
-;NEEDFPU
-POINTERTICKS	= 1
-SETPATCH
-;SNOOPFS
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+IOCACHE		= 45300		;cache for the filesystem handler (per fh)
+;MEMFREE	= $100		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+POINTERTICKS	= 1		;set mouse speed
+SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
