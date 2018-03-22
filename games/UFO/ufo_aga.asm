@@ -2,12 +2,14 @@
 ;  :Modul.	ufo_aga.asm
 ;  :Contents.	UFO Enemy Unknown AGA/CD32
 ;  :Author.     Cfou!
-;  :Version.    $Id: UFO_AGA.asm 1.3 2018/03/20 19:27:19 wepl Exp wepl $
+;  :Version.    $Id: UFO_AGA.asm 1.4 2018/03/21 11:37:34 wepl Exp wepl $
 ;  :History.    04.03.03 started
 ;               22.06.03 rework for whdload v16
 ;		12.07.15 IOCACHE set
 ;		19.03.18 general cleanup and update!
 ;			 v17 button infos added
+;			 nonvolatile stuff replaced
+;			 chip memory requirements reduced
 ;  :Requires.   kick31.s
 ;  :Copyright.  Public Domain
 ;  :Language.   68000 Assembler
@@ -33,7 +35,7 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $1f0000	;size of chip memory
+CHIPMEMSIZE	= $180000	;size of chip memory
 FASTMEMSIZE	= $100000	;size of fast memory
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %0000		;write protection of floppy drives
@@ -53,7 +55,7 @@ DEBUG				;add more internal checks
 DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
-HRTMON				;add support for HrtMON
+;HRTMON				;add support for HrtMON
 INITAGA				;enable AGA features
 ;INIT_AUDIO			;enable audio.device
 ;INIT_GADTOOLS			;enable gadtools.library
@@ -61,7 +63,7 @@ INITAGA				;enable AGA features
 ;INIT_MATHFFP			;enable mathffp.library
 IOCACHE		= 17000		;cache for the filesystem handler (per fh)
 ;JOYPADEMU			;use keyboard for joypad buttons
-MEMFREE	= $200		;location to store free memory counter
+;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;NO68020				;remain 68000 compatible
 ;POINTERTICKS	= 1		;set mouse speed
@@ -79,6 +81,7 @@ slv_keyexit	= $59	;F10
 ;============================================================================
 
 	INCLUDE	Sources:whdload/kick31.s
+	INCLUDE	Sources:whdload/nonvolatile.s
 
 ;============================================================================
 
@@ -99,7 +102,7 @@ slv_info	dc.b	"adapted for WHDLoad by CFou!/Wepl",10
 	ENDC
 		dc.b	0
 	IFGE slv_Version-17
-slv_config	dc.b	"C1:B:Skip Intro",0
+slv_config	dc.b	"C1:B:Skip Intro (CD³²)",0
 	ENDC
 	EVEN
 
@@ -135,12 +138,14 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		bsr     _dos_assign
 
 	;intro
-		move.l	_custom1,d0
-		bne	.skipintro
-
 		lea	_program_intro,a0
 		jsr	(resload_GetFileSize,a2)
 		beq	.skipintro		;AGA version hasn't intro
+
+		bsr	_nonvolatile_init
+
+		move.l	_custom1,d0
+		bne	.skipintro
 
 		lea	_args_intro,a0
 		moveq	#_args_end_intro-_args_intro,d0
@@ -152,10 +157,10 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		lea	_args_00,a0
 		moveq	#_args_end_00-_args_00,d0
 		move.w	#$3625,d1
-		move.w	#$4938,d1
+		move.w	#$4938,d2
 		lea	_program_geo,a1		; "geo "0" "0""
 		lea	_pl_geo,a3
-		lea	_pl_geo_cd,a3
+		lea	_pl_geo_cd,a4
 		bsr	_exec
 		tst.l	d0
 		beq	.quit
@@ -163,17 +168,19 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		lea	_args_10,a0
 		moveq	#_args_end_10-_args_10,d0
 		move.w	#$6108,d1
+		move.w	#$f815,d2
 		lea	_program_tact,a1	; "tactical "1" "0""
 		lea	_pl_tact,a3
-		lea	_pl_tact_cd,a3
+		lea	_pl_tact_cd,a4
 		bsr	_exec
 
 		lea	_args_10,a0
 		moveq	#_args_end_10-_args_10,d0
 		move.w	#$3625,d1
+		move.w	#$4938,d2
 		lea	_program_geo,a1		; "geo "1" "0""
 		lea	_pl_geo,a3
-		lea	_pl_geo_cd,a3
+		lea	_pl_geo_cd,a4
 		bsr	_exec
 		tst.l	d0
 		bne	.loop
@@ -182,7 +189,7 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
 
-_exec		movem.l	d0-d1/a0-a1/a3,-(a7)
+_exec		movem.l	d0-d2/a0-a1/a3-a4,-(a7)
 
 	;check version
 		move.l	a1,a0			;name
@@ -197,20 +204,24 @@ _exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 
-		cmp.w	(6,a7),d0
+		move.l	(5*4,a7),d2		;a3
+		cmp.w	(6,a7),d0		;d1
+		beq	.versionok
+		move.l	(6*4,a7),d2		;a4
+		cmp.w	(10,a7),d0		;d2
 		beq	.versionok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
 .versionok
 
 	;load exe
-		move.l	(12,a7),d1
+		move.l	(16,a7),d1
 		jsr	(_LVOLoadSeg,a6)
 		move.l	d0,d7			;D7 = segment
 		beq	.program_err
 
 	;patch
-		move.l	(16,a7),a0
+		move.l	d2,a0
 		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
@@ -229,7 +240,7 @@ _exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 		add.l	a1,a1
 		add.l	a1,a1
 		move.l	(a7),d0
-		move.l	(8,a7),a0
+		move.l	(12,a7),a0
 		jsr	(4,a1)
 		move.l	d0,a3
 
@@ -239,7 +250,7 @@ _exec		movem.l	d0-d1/a0-a1/a3,-(a7)
 		jsr	(_LVOUnLoadSeg,a6)
 
 		move.l	a3,d0
-		add.w	#5*4,a7
+		add.w	#7*4,a7
 		rts
 
 .program_err	jsr	(_LVOIoErr,a6)
@@ -302,6 +313,7 @@ _pl_tact	PL_START
 		PL_END
 
 _pl_geo_cd	PL_START
+	;	PL_BKPT	$3e48e		;open nonvolatile
 		PL_CB	$4d650+7	;DEUTSCHE
 		PL_END
 
@@ -310,227 +322,12 @@ _pl_tact_cd	PL_START
 
         ENDC
 
-;---------------------- patch language selection cd32
-
- IFD _PATCH_LOWLEV_LANGUAGE
-
-_patch_lowlevel_lang
-        ;open sldeteclib
-                lea     (_lowlevelName,pc),a1
-                move.l  (4),a6
-                jsr     (_LVOOldOpenLibrary,a6)
-                lea     (_lowlevelBase,pc),a0
-                move.l  d0,(a0)
-                tst.l d0
-                beq .fin
-
-fct=_LVOGetLanguageSelection  ;(-30) language selection
-
-  ; patch open function dos.library
-     lea optLs(pc),a0
-     move.l (a0),d0
-     cmp.l #1,d0
-     beq .paslock
-     move.l #1,(a0)
-     lea optadr_old(pc),a0
-     move.l _lowlevelBase(pc),a6
-     move.l fct+2(a6),(a0)  ; old open file
-     lea changefile(pc),a0
-     move.l a0,fct+2(a6)    ; open file
-.paslock
-
-
-.fin
-              move.l _dosbase(pc),a6
-
-      rts
-
-
-_lowlevelName
-             dc.b 'lowlevel.library',0'
-   even
-_lowlevelBase
-             dc.l 0
-
-optLs:
-    dc.l 0 ; patch dos librarie open file -$1e(a6)
-
-optadr_old
-    dc.l 0
-
-changefile:
-    movem.l a2,-(a7)
-    lea changebin(pc),a2
-    jsr (a2)
-;    move.l optadr_old(pc),a2
-;    jsr (a2)
-    movem.l (a7)+,a2
-    rts
-
-
-_US=1
-_GB=2
-_GER=3
-_FR=4
-_POR=5
-_IT=6
-changebin:     
-;.t
-; move.w #$ff0,$dff180
-; btst #6,$bfe001
-; bne .t
-  move.l _custom2(pc),d0
-  cmp.l #_GER,d0
-  beq .fin        ; -allemand
-  cmp.l #_FR,d0
-  beq .fin        ; -FR
-  cmp.l #_US,d0
-  beq .fin        ; -US
-  cmp.l #_POR,d0
-  beq .fin        ; -Portug
-  cmp.l #_IT,d0
-  beq .fin        ; -Italien
-  move.l #_GB,d0  ; sinon anglais
-.fin
-  rts
-               
- ENDC
-
-
-
- IFD _PATCH_NV_GETLIST
-
-_patch_nv_getlist
-        ;open sldeteclib
-                lea     (_nvName,pc),a1
-                move.l  (4),a6
-                jsr     (_LVOOldOpenLibrary,a6)
-                lea     (_nvBase,pc),a0
-                move.l  d0,(a0)
-                tst.l d0
-                beq .fin
-
-fctNV=_LVOGetNVList  ;(-60) get list
-fctNV2=_LVOSetNVProtection  ;(-66) protection
-  ; patch open function dos.library
-     lea optNV(pc),a0
-     move.l (a0),d0
-     cmp.l #1,d0
-     beq .paslock
-     move.l #1,(a0)
-
-   lea optadr_oldNV(pc),a0
-     move.l _nvBase(pc),a6
-     move.w #$4ef9,fctNV+0(a6)  ; replace jsr by jmp
-     move.l fctNV+2(a6),(a0)  ; old open file
-     lea changefileNV(pc),a0
-     move.l a0,fctNV+2(a6)    ; open file
-
-    lea optadr_oldNV2(pc),a0
-     move.l _nvBase(pc),a6
-     move.l fctNV2+2(a6),(a0)  ; old open file
-     lea changefileNV2(pc),a0
-    move.l a0,fctNV2+2(a6)    ; open file
-.paslock
-
-
-.fin
-              move.l _dosbase(pc),a6
-
-      rts
-
-
-_nvName
-             dc.b 'nonvolatile.library',0
-   even
-_nvBase
-             dc.l 0
-
-optNV:
-    dc.l 0 ; patch dos librarie open file -$1e(a6)
-
-optadr_oldNV
-    dc.l 0
-
-optadr_oldNV2
-    dc.l 0
-
-changefileNV:
-    movem.l a2,-(a7)
-    lea changebinNV(pc),a2
-    jsr (a2)
-;    move.l optadr_oldNV(pc),a2
-;    jsr (a2)
-    movem.l (a7)+,a2
-    rts
-
-changefileNV2:
-    movem.l a2,-(a7)
-    lea changebinNV2(pc),a2
-    jsr (a2)
-;    move.l optadr_oldNV2(pc),a2
-;    jsr (a2)
-    movem.l (a7)+,a2
-    rts
-
-changebinNV:
-;.t
-; move.w #$ff0,$dff180
-; btst #6,$bfe001
-; bne .t
-;  clr.l d0
-
-    lea listfile(pc),a2
-    move.l a0,4(a2)
-    move.l a1,8(a2)
-;_GetNVInfo:
-;       moveq   #0,D0   ; not available
-
-        moveq.l #8*2+12*2,d0
-        moveq.l #0,d1
-        bsr.w   ForeignAllocMem
-        tst.l   d0
-        beq.s   .rts
-        move.l  d0,a0
-        clr.l   (a0)+           ;simple structure
-        move.l  d0,(A0)+        ;pointer
-        move.l d0,d1
-        move.l  #8+12,(A0)+     ;size to free
-        move.l  #999900,(A0)    ;total storage on nv-device
-        move.l  #989800,4(A0)   ;free storage on nv-device
-
-        move.l  a0,d0
-        lea listfile(pc),a2
-        move.l a2,(a0)+
-;        clr.l   (a0)+           ;simple structure
-        move.l  d0,(A0)+        ;pointer
-        move.l  #1,(A0)+     ;size to free
-        move.l  #999900,(A0)    ;total storage on nv-device
-        move.l  #989800,4(A0)   ;free storage on nv-device
-        move.l  d0,a0
-
-.rts    rts
-lgsave=840
-listfile:
- dc.l lgsave/10,0,0,lgsave/10,0
-
-
-changebinNV2:
-;.t
-; move.w #$f00,$dff180
-; btst #6,$bfe001
-; bne .t
-  clr.l d0
-  rts
- ENDC
-
 ;============================================================================
 
 _tags		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
-		dc.l	WHDLTAG_CUSTOM2_GET
-_custom2	dc.l	0
 		dc.l	0
 _dosbase	dc.l	0
 
 ;============================================================================
+
