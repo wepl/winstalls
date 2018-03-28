@@ -2,7 +2,7 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "CannonFodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfoddercd.asm 1.5 2013/11/20 00:52:34 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.1 2018/03/25 22:35:27 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -121,8 +121,18 @@ _plen1		PL_START
 		PL_W	$cc52,$1e		;htotal
 		PL_W	$cf96,$200		;bplcon0
 		PL_PS	$16d7c,_af1
+		PL_W	$1ccf2,$4200		;bplcon0
+		PL_W	$1cd92,$4200		;bplcon0
+		PL_W	$1cda6,$5200		;bplcon0
 		PL_R	$1d370			;skip disk2 check
+		PL_W	$1d3a2,$5200		;bplcon0
+		PL_W	$1d462,$4200		;bplcon0
 		PL_PS	$1eb36,_af1
+		PL_W	$276a8,$6600		;bplcon0
+		PL_W	$2785e,$4200		;bplcon0
+		PL_W	$28b52,$5200		;bplcon0
+		PL_W	$28df8,$4200		;bplcon0
+		PL_END
 
 		PL_P	$98e6,_SetupKeyboard
 		PL_PS	$9d02,_loader
@@ -130,25 +140,10 @@ _plen1		PL_START
 		PL_S	$a36c,2
 		PL_S	$a370,$10
 
-		PL_R	$26fcc			;loading screen
+		PL_R	$26fcc			;loading screen		29e56???
 		PL_R	$27018			;loading screen
 		PL_P	$27bfa,_sg
 		PL_P	$27c9a,_lg
-
-		PL_W	$1a6fe,$4200		;bplcon0
-		PL_W	$1a79e,$4200		;bplcon0
-		PL_W	$1a7b2,$5200		;bplcon0
-		PL_W	$1adec,$5200		;bplcon0
-		PL_W	$1aeac,$4200		;bplcon0
-		PL_W	$2473e,$6600		;bplcon0
-		PL_W	$24908,$4200		;bplcon0
-		PL_W	$25bfc,$5200		;bplcon0
-		PL_W	$25eae,$4200		;bplcon0
-		
-		PL_L	$27dab,"DISK"
-		PL_L	$27de1,"DISK"
-		PL_L	$27e17,"DISK"
-		PL_END
 
 _plen2		PL_START
 		PL_END
