@@ -2,7 +2,7 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "CannonFodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.2 2018/03/28 22:31:48 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.3 2018/03/29 01:03:32 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -63,7 +63,10 @@ _info		dc.b	"installed and fixed by Wepl",10
 		dc.b	0
 _data		dc.b	"data",0
 _game		dc.b	"fodderc",0
-_save		dc.b	"savegame",0
+_d1		dc.b	"DISK1",0
+_d2		dc.b	"disk2",0
+_d3		dc.b	"DISK3",0
+_savepath	dc.b	"save",0
 	EVEN
 
 ;============================================================================
@@ -113,7 +116,7 @@ _start	;	A0 = resident loader
 		lea	(_custom),a6
 		jmp	(a3)
 
-		move.l	(_expmem),$89cf2		;buffer for iff conversion
+		move.l	(_expmem),$89cf2	;buffer for iff conversion
 		
 _plen1		PL_START
 		PL_W	$2c64,$4200		;bplcon0
@@ -138,26 +141,16 @@ _plen1		PL_START
 		PL_W	$2785e,$4200		;bplcon0
 		PL_W	$28b52,$5200		;bplcon0
 		PL_W	$28df8,$4200		;bplcon0
-		PL_W	$29e7c,$2a4d4-$29e7c-2	;load/save game
+		PL_W	$29e7c,$2a4d4-$29e7c	;load/save game
+		PL_S	$29e8a,6		;skip check "CFSDISK"
 		PL_S	$29ea4,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$29fee,_loadgame
 		PL_S	$2a130,4		;load/save game
-		PL_W	$2a13c,$23a-$13c-2	;load/save game
+		PL_W	$2a13c,$23a-$13c	;load/save game
 		PL_S	$2a29e,10		;load/save game
+		PL_PS	$2a2c8,_savegame
 		PL_R	$2acfe			;"insert disk 3"
 		PL_END
-
-	ifeq 1
-		PL_P	$98e6,_SetupKeyboard
-		PL_PS	$9d02,_loader
-		PL_PS	$9fcc,_loader
-		PL_S	$a36c,2
-		PL_S	$a370,$10
-
-		PL_R	$26fcc			;loading screen		29e56???
-		PL_R	$27018			;loading screen
-		PL_P	$27bfa,_sg
-		PL_P	$27c9a,_lg
-	endc
 
 _plen2		PL_START
 		PL_END
@@ -171,23 +164,46 @@ _plfr		PL_START
 _loader		movem.l	d2-d6/a0-a3/a5-a6,-(a7)
 		pea	.ret
 		tst.w	d0
-		beq	_rts
+		beq	.rts
 		cmp.w	#8,d0
 		beq	_loadname
+		cmp.w	#$10,d0
+		beq	_listfiles
 		cmp.w	#$18,d0
 		beq	_loadscatter
 		cmp.w	#$20,d0
-		beq	_rts
+		beq	.rts
 		illegal
 .ret		movem.l	(a7)+,_MOVEMREGS
-		rts
+.rts		rts
 
 ; a0=name a1=dest
-_loadname	move.l	_resload,a2
+_loadname
+		lea	_d1,a2		;"DISK1"
+		bsr	.cmp
+		beq	.ok
+		lea	_d2,a2		;"DISK2"
+		bsr	.cmp
+		beq	.ok
+		lea	_d3,a2		;"DISK3"
+		bsr	.cmp
+		beq	.ok
+
+		move.l	_resload,a2
 		jsr	(resload_LoadFileDecrunch,a2)
-		move.l	d0,d1		;length
-		moveq	#0,d0
-_rts		rts
+		exg	d0,d1				;size/success=0
+		rts
+
+.ok		moveq	#0,d0
+		rts
+
+.cmp		move.l	a0,a3
+.lp		move.b	(a2)+,d0
+		beq	.cmpok
+		cmp.b	(a3)+,d0
+		beq	.lp
+		moveq	#-1,d0
+.cmpok		rts
 
 ; in:  a0=name
 ; out: Z=1=success d7=data-in-buffer a4=data
@@ -195,40 +211,64 @@ _loadscatter	move.l	(_expmem),a1
 		move.l	_resload,a2
 		jsr	(resload_LoadFileDecrunch,a2)
 		move.l	(_expmem),a4
-		move.l	d0,d7			;length
-		moveq	#0,d0			;success
+		move.l	d0,d7				;length
+		moveq	#0,d0				;success
 		rts
 
 _gettmp		move.l	(_expmem),a4
 		move.l	(a4)+,d7
-		cmp.w	d0,d0			;set Z flag
+		cmp.w	d0,d0				;set Z flag
 		rts
 
- ifeq 1
-_loader		move.l	(_resload),a2
-		jsr	(resload_LoadFileDecrunch,a2)
-		exg	d0,d1				;size/success=0
+_listfiles	lea	(_savepath),a0
+		move.l	(_expmem),a1
+		move.l	a1,a3				;A3 = buffer in
+		move.l	#$2000,d0			;buffer length
+		lea	(a3,d0.l),a4			;A4 = buffer out
+		move.l	(_resload),a2
+		jsr	(resload_ListFiles,a2)
+		move.l	d0,d7				;d7 = how many entries
+
+		move.l	a4,a0
+		bra	.next
+
+.loop		move.l	a0,a1
+.copy		move.b	(a3)+,(a1)+
+		bne	.copy
+		
+.next		add.w	#$20,a0
+		subq.l	#1,d7
+		bcc	.loop
+		clr.b	(a0)				;end of table
+
+		move.l	a4,a0
 		rts
 
-_sg		move.l	#$80d4e-$80626,d0
-		lea	_save,a0
-		lea	$80626,a1
+; a0=name a1=dest
+_loadgame	move.l	_expmem,a2
+		lea	_savepath,a3
+.copypath	move.b	(a3)+,(a2)+
+		bne	.copypath
+		move.b	#"/",(-1,a2)
+.copyname	move.b	(a0)+,(a2)+
+		bne	.copyname
+		move.l	_expmem,a0
+		bra	_loadname
+
+; a0=name a1=src d1=length
+_savegame	move.l	_expmem,a2
+		lea	_savepath,a3
+.copypath	move.b	(a3)+,(a2)+
+		bne	.copypath
+		move.b	#"/",(-1,a2)
+.copyname	move.b	(a0)+,(a2)+
+		bne	.copyname
+		move.l	_expmem,a0
+		move.l	d1,d0				;length
 		move.l	_resload,a2
-		jmp	(resload_SaveFile,a2)
-
-_lg		clr.l	$a7bf6				;no valid save
-		lea	_save,a0
-		move.l	_resload,a2
-		jsr	(resload_GetFileSize,a2)
-		tst.l	d0
-		bne	.load
-		jmp	$a7de6				;show text
-.load		lea	_save,a0
-		lea	$80626,a1
-		jsr	(resload_LoadFileDecrunch,a2)
-		move.l	#-1,$a7bf6
+		jsr	(resload_SaveFile,a2)
+		moveq	#0,d0
 		rts
- endc
 
 _af1		move.w	$81556,d0			;actual player/team (0-5)
 		bpl	.ok
@@ -237,8 +277,8 @@ _af1		move.w	$81556,d0			;actual player/team (0-5)
 
 _s1		cmp.l	#$100000,d0
 		bhs	.ret
-		move.l	d0,a1			;original
-		move.l	($20,a0),d0		;original
+		move.l	d0,a1				;original
+		move.l	($20,a0),d0			;original
 		rts
 .ret		addq.l	#4,a7
 		rts
