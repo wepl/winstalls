@@ -3,12 +3,13 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1
-;  :Version.	$Id: elvira.asm 1.7 2002/04/17 17:24:43 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.8 2002/05/09 13:42:21 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
 ;		19.02.02 final
 ;		17.04.02 POINTERTICKS added
+;		02.04.17 reassmebled because quitkey problem
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -22,7 +23,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:e/elvira de/Elvira.Slave"
+	OUTPUT	"wart:e/elvira/Elvira.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -33,43 +34,45 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $80000
-NUMDRIVES	= 1
-WPDRIVES	= %0000
+CHIPMEMSIZE	= $80000	;size of chip memory
+FASTMEMSIZE	= $80000	;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-;DEBUG
-;DISKSONBOOT
-HDINIT
-;HRTMON
-IOCACHE		= 22000
-;MEMFREE	= $200
-;NEEDFPU
-POINTERTICKS	= 1
-;SETPATCH
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+;CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+IOCACHE		= 22000		;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+POINTERTICKS	= 1		;set mouse speed
+;SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
 
 ;============================================================================
 
-KICKSIZE	= $40000			;34.005
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
+slv_Version	= 16
+slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	15			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulPriv|WHDLF_Examine	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_boot-_base		;ws_GameLoader
-		dc.w	_data-_base		;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
+	INCLUDE	Sources:whdload/kick13.s
 
 ;============================================================================
 
@@ -77,15 +80,15 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 	DOSCMD	"WDate  >T:date"
 	ENDC
 
-_name		dc.b	"Elvira - Mistress of the Dark",0
-_copy		dc.b	"1990 Accolade",0
-_info		dc.b	"adapted by Wepl",10
-		dc.b	"Version 1.0 "
+slv_name	dc.b	"Elvira - Mistress of the Dark",0
+slv_copy	dc.b	"1990 Accolade",0
+slv_info	dc.b	"adapted by Wepl",10
+		dc.b	"Version 1.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
 		dc.b	0
-_data		dc.b	"data",0
+slv_CurrentDir	dc.b	"data",0
 _runit		dc.b	"runit",0
 _args		dc.b	"gameamiga",10
 _args_end
@@ -299,10 +302,6 @@ _intro		lea	_custom,a5		;A5 = custom
 .lf		dc.b	10
 		dc.b	0
 	EVEN
-
-;============================================================================
-
-	INCLUDE	Sources:whdload/kick12.s
 
 ;============================================================================
 
