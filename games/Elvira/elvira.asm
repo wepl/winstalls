@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1
-;  :Version.	$Id: elvira.asm 1.8 2002/05/09 13:42:21 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.9 2018/04/10 00:23:29 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
@@ -83,7 +83,7 @@ slv_keyexit	= $59	;F10
 slv_name	dc.b	"Elvira - Mistress of the Dark",0
 slv_copy	dc.b	"1990 Accolade",0
 slv_info	dc.b	"adapted by Wepl",10
-		dc.b	"Version 1.1 "
+		dc.b	"Version 1.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
