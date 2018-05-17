@@ -2,8 +2,9 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "CannonFodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.3 2018/03/29 01:03:32 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.4 2018/04/04 01:25:09 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
+;		17.05.18 access fault fix improved
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -127,7 +128,7 @@ _plen1		PL_START
 		PL_P	$bd2e,_gettmp
 		PL_W	$cc52,$1e		;htotal
 		PL_W	$cf96,$200		;bplcon0
-		PL_PS	$16d7c,_af1
+		PL_PS	$16d7c,_af0
 		PL_W	$1ccf2,$4200		;bplcon0
 		PL_W	$1cd92,$4200		;bplcon0
 		PL_W	$1cda6,$5200		;bplcon0
@@ -144,7 +145,7 @@ _plen1		PL_START
 		PL_W	$29e7c,$2a4d4-$29e7c	;load/save game
 		PL_S	$29e8a,6		;skip check "CFSDISK"
 		PL_S	$29ea4,$e2-$a4		;skip file "CFSDISK"
-		PL_PS	$29fee,_loadgame
+		PL_PS	$29ffe,_loadgame
 		PL_S	$2a130,4		;load/save game
 		PL_W	$2a13c,$23a-$13c	;load/save game
 		PL_S	$2a29e,10		;load/save game
@@ -161,7 +162,7 @@ _plde		PL_START
 _plfr		PL_START
 		PL_END
 
-_loader		movem.l	d2-d6/a0-a3/a5-a6,-(a7)
+_loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
 		tst.w	d0
 		beq	.rts
@@ -240,6 +241,10 @@ _listfiles	lea	(_savepath),a0
 		subq.l	#1,d7
 		bcc	.loop
 		clr.b	(a0)				;end of table
+		clr.b	($20,a0)			;end of table
+		clr.b	($40,a0)			;end of table
+		clr.b	($60,a0)			;end of table
+		clr.b	($80,a0)			;end of table
 
 		move.l	a4,a0
 		rts
@@ -253,7 +258,8 @@ _loadgame	move.l	_expmem,a2
 .copyname	move.b	(a0)+,(a2)+
 		bne	.copyname
 		move.l	_expmem,a0
-		bra	_loadname
+		moveq	#8,d0
+		bra	_loader
 
 ; a0=name a1=src d1=length
 _savegame	move.l	_expmem,a2
@@ -270,9 +276,14 @@ _savegame	move.l	_expmem,a2
 		moveq	#0,d0
 		rts
 
+_af0		move.w	$81556,d0			;actual player/team (0-5)
+		bpl	.ok
+		add.l	#$16dde-$16d82,(a7)
+.ok		rts
+
 _af1		move.w	$81556,d0			;actual player/team (0-5)
 		bpl	.ok
-		clr.w	d0
+		add.l	#$1eb52-$1eb3c,(a7)
 .ok		rts
 
 _s1		cmp.l	#$100000,d0
