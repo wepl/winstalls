@@ -2,9 +2,10 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "CannonFodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.4 2018/04/04 01:25:09 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.5 2018/05/17 19:06:13 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;		17.05.18 access fault fix improved
+;			 support for en2/de added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -153,11 +154,92 @@ _plen1		PL_START
 		PL_R	$2acfe			;"insert disk 3"
 		PL_END
 
-_plen2		PL_START
+_plcommon	PL_START
+		PL_W	$2c68,$4200		;bplcon0
+		PL_S	$5d96,$5dc2-$5d92	;skip init stuff
+		PL_P	$a32a,_keyboard		;keyboard int umleiten
+		PL_R	$a6da			;copylock
+		PL_P	$b41a,_loader
+		PL_P	$bd62,_gettmp
+		PL_W	$cc86,$1e		;htotal
+		PL_W	$cfca,$200		;bplcon0
 		PL_END
 
+_plen2		PL_START
+		PL_PS	$16e52,_af0
+		PL_W	$1cdc8,$4200		;bplcon0
+		PL_W	$1ce68,$4200		;bplcon0
+		PL_W	$1ce7c,$5200		;bplcon0
+		PL_R	$1d44a			;skip disk2 check
+		PL_W	$1d47c,$5200		;bplcon0
+		PL_W	$1d53c,$4200		;bplcon0
+		PL_PS	$1ec10,_af1
+		PL_B	$243de,$6f		;beq -> ble
+		PL_PS	$244c8,_s1
+		PL_W	$277da,$6600		;bplcon0
+		PL_W	$27998,$4200		;bplcon0
+		PL_W	$28c8c,$5200		;bplcon0
+		PL_W	$28f32,$4200		;bplcon0
+		PL_W	$2a04e,$2a4d4-$29e7c	;load/save game
+		PL_S	$2a05c,6		;skip check "CFSDISK"
+		PL_S	$2a076,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a1d0,_loadgame
+		PL_S	$2a302,4		;load/save game
+		PL_W	$2a30e,$23a-$13c	;load/save game
+		PL_S	$2a470,10		;load/save game
+		PL_PS	$2a49a,_savegame
+		PL_R	$2aec0			;"insert disk 3"
+		PL_NEXT	_plcommon
+
 _plde		PL_START
-		PL_END
+		PL_PS	$16f30,_af0
+		PL_W	$1cea6,$4200		;bplcon0
+		PL_W	$1cf46,$4200		;bplcon0
+		PL_W	$1cf5a,$5200		;bplcon0
+		PL_R	$1d554			;skip disk2 check
+		PL_W	$1d586,$5200		;bplcon0
+		PL_W	$1d646,$4200		;bplcon0
+		PL_PS	$1ed1a,_af1
+		PL_B	$244e8,$6f		;beq -> ble
+		PL_PS	$245d2,_s1
+		PL_W	$27baa,$6600		;bplcon0
+		PL_W	$27d92,$4200		;bplcon0
+		PL_PA	$284ea,.mit
+		PL_PA	$28510,.soldaten
+		PL_PA	$2851e,.soldat
+		PL_PA	$28598,.rekrut
+		PL_STR	$28627,<EI>
+		PL_STR	$2863c,<EI>
+		PL_W	$290fa,$5200		;bplcon0
+		PL_W	$293a0,$4200		;bplcon0
+		PL_W	$2a5bc,$2ac4a-$2a5bc	;load/save game
+		PL_S	$2a5ca,6		;skip check "CFSDISK"
+		PL_S	$2a5e4,$e2-$a4		;skip file "CFSDISK"
+		PL_PA	$2a63c,.datei
+		PL_PS	$2a73e,_loadgame
+		PL_STR	$2a765,< SPIEL>
+		PL_S	$2a87c,4		;load/save game
+		PL_W	$2a888,$98a-$888	;load/save game
+		PL_S	$2a9ee,10		;load/save game
+		PL_PS	$2aa18,_savegame
+		PL_STR	$2aad0,<IB EINEN DATEI>
+		PL_R	$2b37a			;"insert disk 3"
+		PL_NEXT	_plcommon
+
+		PL_W	$29e7c,$2a4d4-$29e7c	;load/save game
+		PL_S	$29e8a,6		;skip check "CFSDISK"
+		PL_S	$29ea4,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$29ffe,_loadgame
+		PL_S	$2a130,4		;load/save game
+		PL_W	$2a13c,$23a-$13c	;load/save game
+		PL_S	$2a29e,10		;load/save game
+
+.mit		dc.b	"MIT ",-1
+.soldaten	dc.b	" SOLDATEN MUSST DU",-1
+.soldat		dc.b	" SOLDAT MUSST DU",-1
+.rekrut		dc.b	" REKRUT VERBLEIBT",-1
+.datei		dc.b	"W",$84,"HLE EINE DATEI",-1
+	EVEN
 
 _plfr		PL_START
 		PL_END
