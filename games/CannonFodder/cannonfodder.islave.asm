@@ -2,9 +2,10 @@
 ;  :Program.	cannonfodder.islave.asm
 ;  :Contents.	Imager for Cannonfodder
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.islave.asm 1.2 2018/03/25 20:08:26 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.islave.asm 1.3 2018/05/23 01:08:59 wepl Exp wepl $
 ;  :History.	19.06.2017 created
 ;		22.03.2018 updated to v5 RawDIC
+;		23.05.2018 finished
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -27,7 +28,7 @@
 ;
 ;---------------------------------------------------------------------------*
 
-DEBUG
+;DEBUG
 MAXFILE	= 196729
 
 ;============================================================================
@@ -77,8 +78,12 @@ _skipfiles	dc.b	"fload",0
 _dosname	dc.b	"dos.library",0
 _dbgtxt		dc.b	"%3ld %2ld %6ld %s",10,0
 _dbgexists	dc.b	"%s exists already",10,0
-_endtxt		dc.b	"highest track %ld",10,0
+_endtxt		dc.b	"used tracks ",0
+_ld1		dc.b	"%ld-",0
+_ld2		dc.b	"%ld,",0
+_lf		dc.b	10,0
 _dir		dc.b	"disk.x.dir",0
+_used		dsb	160
 	ENDC
 	EVEN
 
@@ -87,7 +92,7 @@ _dir		dc.b	"disk.x.dir",0
 _disk1v1de	dc.l	_disk2v1de	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	_tl1		; List of tracks which contain data
+		dc.l	.tl		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -103,15 +108,17 @@ _disk1v1de	dc.l	_disk2v1de	; Pointer to next disk structure
 		CRCENTRY 2,$28dd
 		CRCEND
 
-_tl1	;	TLENTRY	1,1,$1600,SYNC_STD,DMFM_STD
+.tl	;	TLENTRY	1,1,$1600,SYNC_STD,DMFM_STD
 		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,146,$1800,$4489,_decode
+		TLENTRY 82,82,$1800,$4489,_decode
+		TLENTRY 108,123,$1800,$4489,_decode
+		TLENTRY 141,146,$1800,$4489,_decode
 		TLEND
 
 _disk2v1de	dc.l	_disk3v1de	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl2		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -122,18 +129,18 @@ _disk2v1de	dc.l	_disk3v1de	; Pointer to next disk structure
 		dc.l	0		; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
-
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,152,$1800,$4489,_decode
-		TLEND
 
 .crc		CRCENTRY 2,$9e34
 		CRCEND
 
+_tl2		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,152,$1800,$4489,_decode
+		TLEND
+
 _disk3v1de	dc.l	0		; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl3		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -145,19 +152,19 @@ _disk3v1de	dc.l	0		; Pointer to next disk structure
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
 
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,151,$1800,$4489,_decode
-		TLEND
-
 .crc		CRCENTRY 2,$2368
 		CRCEND
+
+_tl3		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,151,$1800,$4489,_decode
+		TLEND
 
 ; english sps-860
 
 _disk1v1en	dc.l	_disk2v1en	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	_tl1		; List of tracks which contain data
+		dc.l	.tl		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -169,13 +176,19 @@ _disk1v1en	dc.l	_disk2v1en	; Pointer to next disk structure
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
 
+.tl		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,93,$1800,$4489,_decode
+		TLENTRY 108,109,$1800,$4489,_decode
+		TLENTRY 122,123,$1800,$4489,_decode
+		TLEND
+
 .crc		CRCENTRY 2,$6979
 		CRCEND
 
 _disk2v1en	dc.l	_disk3v1en	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl2		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -186,10 +199,6 @@ _disk2v1en	dc.l	_disk3v1en	; Pointer to next disk structure
 		dc.l	0		; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
-
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,152,$1800,$4489,_decode
-		TLEND
 
 .crc		CRCENTRY 2,$408d
 		CRCEND
@@ -197,7 +206,7 @@ _disk2v1en	dc.l	_disk3v1en	; Pointer to next disk structure
 _disk3v1en	dc.l	0		; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl3		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -208,10 +217,6 @@ _disk3v1en	dc.l	0		; Pointer to next disk structure
 		dc.l	0		; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
-
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,151,$1800,$4489,_decode
-		TLEND
 
 .crc		CRCENTRY 2,$7889
 		CRCEND
@@ -221,7 +226,7 @@ _disk3v1en	dc.l	0		; Pointer to next disk structure
 _disk1v2en	dc.l	_disk2v1en	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	_tl1		; List of tracks which contain data
+		dc.l	.tl		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -232,6 +237,12 @@ _disk1v2en	dc.l	_disk2v1en	; Pointer to next disk structure
 		dc.l	_disk1v1fr	; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
+
+.tl		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,107,$1800,$4489,_decode
+		TLENTRY 108,140,$1800,$4489,_decode
+		TLENTRY 141,146,$1800,$4489,_decode
+		TLEND
 
 .crc		CRCENTRY 2,$c6e2
 		CRCEND
@@ -254,7 +265,9 @@ _disk1v1fr	dc.l	_disk2v1fr	; Pointer to next disk structure
 		dc.l	_files		; Called after a disk has been read
 
 .tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,129,$1800,$4489,_decode
+		TLENTRY 82,93,$1800,$4489,_decode
+		TLENTRY 108,109,$1800,$4489,_decode
+		TLENTRY 122,129,$1800,$4489,_decode
 		TLEND
 
 .crc		CRCENTRY 2,$716b
@@ -263,7 +276,7 @@ _disk1v1fr	dc.l	_disk2v1fr	; Pointer to next disk structure
 _disk2v1fr	dc.l	_disk3v1fr	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl2		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -274,10 +287,6 @@ _disk2v1fr	dc.l	_disk3v1fr	; Pointer to next disk structure
 		dc.l	0		; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
-
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,152,$1800,$4489,_decode
-		TLEND
 
 .crc		CRCENTRY 2,$0145
 		CRCEND
@@ -285,7 +294,7 @@ _disk2v1fr	dc.l	_disk3v1fr	; Pointer to next disk structure
 _disk3v1fr	dc.l	0		; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
-		dc.l	.tl		; List of tracks which contain data
+		dc.l	_tl3		; List of tracks which contain data
 		dc.l	0		; UNUSED, ALWAYS SET TO 0!
 	IFND DEBUG
 		dc.l	FL_NULL		; List of files to be saved
@@ -296,10 +305,6 @@ _disk3v1fr	dc.l	0		; Pointer to next disk structure
 		dc.l	0		; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
-
-.tl		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,151,$1800,$4489,_decode
-		TLEND
 
 .crc		CRCENTRY 2,$6baa
 		CRCEND
@@ -349,6 +354,7 @@ _decode		move.l	d0,d6			;D6 = track number
 ; D0 = disk number
 ; A0 = pointer to disk structure
 ; A1 = pointer to disk image (requires RawDIC/ISlave v5)
+; A5 = RawDIC
 
 _files		move.l	($18,a1),d7		;D7 = amount entries
 		lea	(32,a1),a2		;A2 = directory
@@ -368,7 +374,12 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		move.b	d0,(5,a0)
 		move.l	#$1800,d0		;length
 		jsr	(rawdic_SaveFile,a5)
-		moveq	#0,d6			;max track
+	;remember used tracks
+		lea	_used,a4
+		move.l	a4,a0
+		moveq	#160/4-1,d0
+.clr		clr.l	(a0)+
+		dbf	d0,.clr
 	ENDC
 
 .nextfile	move.l	($1c,a2),d2		;D2 = length
@@ -436,10 +447,7 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		move.b	($1b,a2),d3		;D3 = block
 .nextblock
 	IFD DEBUG
-		cmp.b	d0,d6
-		bhi	.nothigher
-		move.b	d0,d6
-.nothigher
+		st	(a4,d0.w)
 	ENDC
 		jsr	(rawdic_ReadTrack,a5)
 
@@ -468,12 +476,42 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		bne	.nextfile
 		
 	IFD DEBUG
+		moveq	#0,d5			;used mode
+		moveq	#0,d6			;actual track
+		move	#160-1,d7		;loop counter
 		lea	_endtxt,a0
+		move.l	a0,d1
+		moveq	#0,d2
+		jsr	(_LVOVPrintf,a6)
+
+.loop		tst.b	(a4)+
+		beq	.no
+.yes		tst.b	d5
+		bne	.nxt
+		lea	_ld1,a0
 		move.l	a0,d1
 		move.l	d6,-(a7)
 		move.l	a7,d2
 		jsr	(_LVOVPrintf,a6)
 		add.w	#4,a7
+		st	d5
+		bra	.nxt
+.no		tst.b	d5
+		beq	.nxt
+		lea	_ld2,a0
+		move.l	a0,d1
+		move.l	d6,-(a7)
+		subq.l	#1,(a7)
+		move.l	a7,d2
+		jsr	(_LVOVPrintf,a6)
+		add.w	#4,a7
+		sf	d5
+.nxt		add.l	#1,d6
+		dbf	d7,.loop
+		lea	_lf,a0
+		move.l	a0,d1
+		moveq	#0,d2
+		jsr	(_LVOVPrintf,a6)
 	ENDC
 
 		moveq	#IERR_OK,d0
