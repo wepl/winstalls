@@ -2,7 +2,7 @@
 ;  :Program.	cannonfodder.islave.asm
 ;  :Contents.	Imager for Cannonfodder
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.islave.asm 1.1 2018/03/25 17:34:57 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.islave.asm 1.2 2018/03/25 20:08:26 wepl Exp wepl $
 ;  :History.	19.06.2017 created
 ;		22.03.2018 updated to v5 RawDIC
 ;  :Requires.	-
@@ -28,7 +28,6 @@
 ;---------------------------------------------------------------------------*
 
 DEBUG
-MAXDIR	= $1200
 MAXFILE	= 196729
 
 ;============================================================================
@@ -71,6 +70,7 @@ _skipfiles	dc.b	"fload",0
 		dc.b	"disk1",0
 		dc.b	"disk2",0
 		dc.b	"disk2.raw",0
+		dc.b	"DISK2.RAW",0
 		dc.b	"disk3",0
 		dc.b	0
 	IFD DEBUG
@@ -78,6 +78,7 @@ _dosname	dc.b	"dos.library",0
 _dbgtxt		dc.b	"%3ld %2ld %6ld %s",10,0
 _dbgexists	dc.b	"%s exists already",10,0
 _endtxt		dc.b	"highest track %ld",10,0
+_dir		dc.b	"disk.x.dir",0
 	ENDC
 	EVEN
 
@@ -102,6 +103,11 @@ _disk1v1de	dc.l	_disk2v1de	; Pointer to next disk structure
 		CRCENTRY 2,$28dd
 		CRCEND
 
+_tl1	;	TLENTRY	1,1,$1600,SYNC_STD,DMFM_STD
+		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,146,$1800,$4489,_decode
+		TLEND
+
 _disk2v1de	dc.l	_disk3v1de	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
@@ -124,11 +130,6 @@ _disk2v1de	dc.l	_disk3v1de	; Pointer to next disk structure
 .crc		CRCENTRY 2,$9e34
 		CRCEND
 
-_tl1	;	TLENTRY	1,1,$1600,SYNC_STD,DMFM_STD
-		TLENTRY 2,80,$1800,$4489,_decode
-		TLENTRY 82,146,$1800,$4489,_decode
-		TLEND
-
 _disk3v1de	dc.l	0		; Pointer to next disk structure
 		dc.w	1		; Disk structure version
 		dc.w	DFLG_SWAPSIDES	; Disk flags
@@ -144,8 +145,8 @@ _disk3v1de	dc.l	0		; Pointer to next disk structure
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
 
-.tl		TLENTRY 2,151,$1800,$4489,_decode
-	;	TLENTRY 82,159,$1800,$4489,_decode
+.tl		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,151,$1800,$4489,_decode
 		TLEND
 
 .crc		CRCENTRY 2,$2368
@@ -353,12 +354,21 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		lea	(32,a1),a2		;A2 = directory
 
 	IFD DEBUG
+		movem.l	d0/a1,-(a7)
+	;open dos
 		moveq	#36,d0
 		lea	_dosname,a1
 		move.l	4,a6
 		jsr	(_LVOOpenLibrary,a6)
 		move.l	d0,a6			;A6 = dosbase
-		moveq	#0,d6
+	;save disk directory
+		movem.l	(a7)+,d0/a1
+		lea	_dir,a0			;name
+		add.b	#"0",d0
+		move.b	d0,(5,a0)
+		move.l	#$1800,d0		;length
+		jsr	(rawdic_SaveFile,a5)
+		moveq	#0,d6			;max track
 	ENDC
 
 .nextfile	move.l	($1c,a2),d2		;D2 = length
@@ -408,9 +418,10 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 
 		lea	(_skipfiles),a0
 .next		move.l	a2,a1
-.chk		cmp.b	(a0)+,(a1)+
+.chk		move.b	(a1)+,d0
+		cmp.b	(a0),d0
 		bne	.nextchk
-		tst.b	(-1,a0)
+		tst.b	(a0)+
 		bne	.chk
 		beq	.skipfile
 .nextchk	tst.b	(a0)+
