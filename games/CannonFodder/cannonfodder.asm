@@ -2,15 +2,16 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "CannonFodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.5 2018/05/17 19:06:13 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.6 2018/05/18 01:08:06 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;		17.05.18 access fault fix improved
 ;			 support for en2/de added
+;		12.06.18 support for fr added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
-;  :To Do.
+;  :To Do.	made working with full caches (loading ice level)
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
@@ -79,6 +80,7 @@ _start	;	A0 = resident loader
 		move.l	a0,a2				;A2 = resload
 
 	;enable cache
+	;currently only exp/slave
 		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a2)
@@ -226,14 +228,6 @@ _plde		PL_START
 		PL_R	$2b37a			;"insert disk 3"
 		PL_NEXT	_plcommon
 
-		PL_W	$29e7c,$2a4d4-$29e7c	;load/save game
-		PL_S	$29e8a,6		;skip check "CFSDISK"
-		PL_S	$29ea4,$e2-$a4		;skip file "CFSDISK"
-		PL_PS	$29ffe,_loadgame
-		PL_S	$2a130,4		;load/save game
-		PL_W	$2a13c,$23a-$13c	;load/save game
-		PL_S	$2a29e,10		;load/save game
-
 .mit		dc.b	"MIT ",-1
 .soldaten	dc.b	" SOLDATEN MUSST DU",-1
 .soldat		dc.b	" SOLDAT MUSST DU",-1
@@ -242,7 +236,30 @@ _plde		PL_START
 	EVEN
 
 _plfr		PL_START
-		PL_END
+		PL_PS	$16f32,_af0
+		PL_W	$1cea8,$4200		;bplcon0
+		PL_W	$1cf48,$4200		;bplcon0
+		PL_W	$1cf5c,$5200		;bplcon0
+		PL_R	$1d59a			;skip disk2 check
+		PL_W	$1d5cc,$5200		;bplcon0
+		PL_W	$1d68c,$4200		;bplcon0
+		PL_PS	$1ed60,_af1
+		PL_B	$2452e,$6f		;beq -> ble
+		PL_PS	$24618,_s1
+		PL_W	$27bd0,$6600		;bplcon0
+		PL_W	$27db8,$4200		;bplcon0
+		PL_W	$290ca,$5200		;bplcon0
+		PL_W	$29370,$4200		;bplcon0
+		PL_W	$2a58c,$2ac0e-$2a58c	;load/save game
+		PL_S	$2a59a,6		;skip check "CFSDISK"
+		PL_S	$2a5b4,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a70e,_loadgame
+		PL_S	$2a84a,4		;load/save game
+		PL_W	$2a856,$960-$856	;load/save game
+		PL_S	$2a9c4,10		;load/save game
+		PL_PS	$2a9ee,_savegame
+		PL_R	$2b452			;"insert disk 3"
+		PL_NEXT	_plcommon
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
