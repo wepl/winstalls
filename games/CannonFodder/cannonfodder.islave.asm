@@ -1,11 +1,12 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	cannonfodder.islave.asm
-;  :Contents.	Imager for Cannonfodder
+;  :Contents.	Imager for Cannon Fodder
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.islave.asm 1.3 2018/05/23 01:08:59 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.islave.asm 1.4 2018/05/23 02:04:10 wepl Exp wepl $
 ;  :History.	19.06.2017 created
 ;		22.03.2018 updated to v5 RawDIC
 ;		23.05.2018 finished
+;		17.06 2018 italian version added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -42,7 +43,7 @@ MAXFILE	= 196729
 	ENDC
 
 	IFD BARFLY
-	OUTPUT	"Develop:Installs/Cannonfodder Install/Cannonfodder.ISlave"
+	OUTPUT	"Develop:Installs/CannonFodder Install/CannonFodder.ISlave"
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
 	BOPT	ODd-			;disable mul optimizing
@@ -60,7 +61,7 @@ MAXFILE	= 196729
 		dc.l	_text		; Pointer to the text displayed in the imager window
 
 		dc.b	"$VER: "
-_text		dc.b	"Cannonfodder Imager",10
+_text		dc.b	"Cannon Fodder Imager",10
 		dc.b	"Done by Wepl, Version 1.0 "
 	DOSCMD	"WDate >T:date"
 	INCBIN	"T:date"
@@ -260,7 +261,7 @@ _disk1v1fr	dc.l	_disk2v1fr	; Pointer to next disk structure
 		dc.l	FL_DISKIMAGE	; List of files to be saved
 	ENDC
 		dc.l	.crc		; Table of certain tracks with CRC values
-		dc.l	0		; Alternative disk structure, if CRC failed
+		dc.l	_disk1v1it	; Alternative disk structure, if CRC failed
 		dc.l	0		; Called before a disk is read
 		dc.l	_files		; Called after a disk has been read
 
@@ -307,6 +308,68 @@ _disk3v1fr	dc.l	0		; Pointer to next disk structure
 		dc.l	_files		; Called after a disk has been read
 
 .crc		CRCENTRY 2,$6baa
+		CRCEND
+
+; italian
+
+_disk1v1it	dc.l	_disk2v1it	; Pointer to next disk structure
+		dc.w	1		; Disk structure version
+		dc.w	DFLG_SWAPSIDES	; Disk flags
+		dc.l	.tl		; List of tracks which contain data
+		dc.l	0		; UNUSED, ALWAYS SET TO 0!
+	IFND DEBUG
+		dc.l	FL_NULL		; List of files to be saved
+	ELSE
+		dc.l	FL_DISKIMAGE	; List of files to be saved
+	ENDC
+		dc.l	.crc		; Table of certain tracks with CRC values
+		dc.l	0		; Alternative disk structure, if CRC failed
+		dc.l	0		; Called before a disk is read
+		dc.l	_files		; Called after a disk has been read
+
+.tl		TLENTRY 2,80,$1800,$4489,_decode
+		TLENTRY 82,93,$1800,$4489,_decode
+		TLENTRY 108,109,$1800,$4489,_decode
+		TLENTRY 122,129,$1800,$4489,_decode
+		TLEND
+
+.crc		CRCENTRY 2,$4f60
+		CRCEND
+
+_disk2v1it	dc.l	_disk3v1it	; Pointer to next disk structure
+		dc.w	1		; Disk structure version
+		dc.w	DFLG_SWAPSIDES	; Disk flags
+		dc.l	_tl2		; List of tracks which contain data
+		dc.l	0		; UNUSED, ALWAYS SET TO 0!
+	IFND DEBUG
+		dc.l	FL_NULL		; List of files to be saved
+	ELSE
+		dc.l	FL_DISKIMAGE	; List of files to be saved
+	ENDC
+		dc.l	.crc		; Table of certain tracks with CRC values
+		dc.l	0		; Alternative disk structure, if CRC failed
+		dc.l	0		; Called before a disk is read
+		dc.l	_files		; Called after a disk has been read
+
+.crc		CRCENTRY 2,$e429
+		CRCEND
+
+_disk3v1it	dc.l	0		; Pointer to next disk structure
+		dc.w	1		; Disk structure version
+		dc.w	DFLG_SWAPSIDES	; Disk flags
+		dc.l	_tl3		; List of tracks which contain data
+		dc.l	0		; UNUSED, ALWAYS SET TO 0!
+	IFND DEBUG
+		dc.l	FL_NULL		; List of files to be saved
+	ELSE
+		dc.l	FL_DISKIMAGE	; List of files to be saved
+	ENDC
+		dc.l	.crc		; Table of certain tracks with CRC values
+		dc.l	0		; Alternative disk structure, if CRC failed
+		dc.l	0		; Called before a disk is read
+		dc.l	_files		; Called after a disk has been read
+
+.crc		CRCENTRY 2,$acb5
 		CRCEND
 
 ;============================================================================

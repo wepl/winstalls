@@ -1,12 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	cannonfodder.asm
-;  :Contents.	Slave for "CannonFodder"
+;  :Contents.	Slave for "Cannon Fodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.6 2018/05/18 01:08:06 wepl Exp wepl $
+;  :Version.	$Id: cannonfodder.asm 1.7 2018/06/13 00:21:30 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;		17.05.18 access fault fix improved
 ;			 support for en2/de added
 ;		12.06.18 support for fr added
+;		17.06.18 support for it added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -44,7 +45,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	_data-_base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
+_keyexit	dc.b	$46			;ws_keyexit = Del
 _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
@@ -110,6 +111,9 @@ _start	;	A0 = resident loader
 		beq	.patch
 		lea	_plfr,a0
 		cmp.w	#$c3ce,d0
+		beq	.patch
+		lea	_plit,a0
+		cmp.w	#$5723,d0
 		beq	.patch
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
@@ -235,11 +239,14 @@ _plde		PL_START
 .datei		dc.b	"W",$84,"HLE EINE DATEI",-1
 	EVEN
 
-_plfr		PL_START
+_plfrit		PL_START
 		PL_PS	$16f32,_af0
 		PL_W	$1cea8,$4200		;bplcon0
 		PL_W	$1cf48,$4200		;bplcon0
 		PL_W	$1cf5c,$5200		;bplcon0
+		PL_NEXT	_plcommon
+
+_plfr		PL_START
 		PL_R	$1d59a			;skip disk2 check
 		PL_W	$1d5cc,$5200		;bplcon0
 		PL_W	$1d68c,$4200		;bplcon0
@@ -259,7 +266,29 @@ _plfr		PL_START
 		PL_S	$2a9c4,10		;load/save game
 		PL_PS	$2a9ee,_savegame
 		PL_R	$2b452			;"insert disk 3"
-		PL_NEXT	_plcommon
+		PL_NEXT	_plfrit
+
+_plit		PL_START
+		PL_R	$1d54c			;skip disk2 check
+		PL_W	$1d57e,$5200		;bplcon0
+		PL_W	$1d63e,$4200		;bplcon0
+		PL_PS	$1ed12,_af1
+		PL_B	$244e0,$6f		;beq -> ble
+		PL_PS	$245ca,_s1
+		PL_W	$27b88,$6600		;bplcon0
+		PL_W	$27d70,$4200		;bplcon0
+		PL_W	$290d8,$5200		;bplcon0
+		PL_W	$2937e,$4200		;bplcon0
+		PL_W	$2a59a,$2ac2a-$2a59a	;load/save game
+		PL_S	$2a5a8,6		;skip check "CFSDISK"
+		PL_S	$2a5c2,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a71c,_loadgame
+		PL_S	$2a854,4		;load/save game
+		PL_W	$2a860,$96a-$860	;load/save game
+		PL_S	$2a9ce,10		;load/save game
+		PL_PS	$2a9f8,_savegame
+		PL_R	$2b472			;"insert disk 3"
+		PL_NEXT	_plfrit
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
