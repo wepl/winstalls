@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.36 2017/10/03 17:21:12 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.37 2017/10/07 16:48:01 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -37,6 +37,7 @@
 ;			 without a CACHE* option caches are switched off now!
 ;			 new option CACHECHIP enables only IC and sets chip memory WT
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
+;		20.03.18 renamed _tags to _kick31_tags to avoid collisions
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -168,7 +169,7 @@ WCPU_VAL SET WCPU_VAL|WCPUF_FPU
 		move.l	a0,(a1)
 		
 	;get tags
-		lea	(_tags,pc),a0
+		lea	(_kick31_tags,pc),a0
 		jsr	(resload_Control,a5)
 	
 	IFND slv_Version
@@ -276,12 +277,12 @@ kick_patch600	PL_START
 	IFD CBDOSLOADSEG
 		PL_PS	$27b9c,dos_LoadSeg
 	ENDC
-		PL_CB	$35936				;dont init scsi.device
+		PL_CB	$35936				;don't init scsi.device
 		PL_PS	$4ed2,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$37c2,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
-		PL_CB	$3e332				;dont init battclock.ressource
+		PL_CB	$3e332				;don't init battclock.ressource
 		PL_S	$4013c,$4015e-$4013c		;skip disk unit detect
 		PL_P	$4028e,disk_getunitid
 		PL_P	$40296,disk_getunitid
@@ -383,12 +384,12 @@ kick_patch1200	PL_START
 	IFD CBDOSLOADSEG
 		PL_PS	$272b0,dos_LoadSeg
 	ENDC
-		PL_CB	$3504a				;dont init scsi.device
+		PL_CB	$3504a				;don't init scsi.device
 		PL_PS	$3a7ea,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
-		PL_CB	$3ddf2				;dont init battclock.ressource
+		PL_CB	$3ddf2				;don't init battclock.ressource
 		PL_S	$40414,$40436-$40414		;skip disk unit detect
 		PL_P	$40566,disk_getunitid
 		PL_P	$4056e,disk_getunitid
@@ -492,12 +493,12 @@ kick_patch4000	PL_START
 	IFD CBDOSLOADSEG
 		PL_PS	$1D6D8,dos_LoadSeg
 	ENDC
-		PL_CB	$7E3E				;dont init scsi.device
+		PL_CB	$7E3E				;don't init scsi.device
 		PL_PS	$d3ee,_keyboard
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$6D6C,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
-		PL_CB	$44FC6				;dont init battclock.ressource
+		PL_CB	$44FC6				;don't init battclock.ressource
 		PL_S	$41A10,$41A32-$41A10		;skip disk unit detect
 		PL_P	$41B62,disk_getunitid
 		PL_P	$41B6A,disk_getunitid
@@ -1386,7 +1387,7 @@ _mon_dblntsc	dc.b	"DblNTSC.monitor",0
 _gfxname	dc.b	"graphics.library",0
 	ENDC
 	EVEN
-_tags		dc.l	WHDLTAG_CBSWITCH_SET
+_kick31_tags	dc.l	WHDLTAG_CBSWITCH_SET
 _cbswitch_tag	dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
 _attnflags	dc.l	0
