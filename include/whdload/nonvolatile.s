@@ -1,11 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	nonvolatile.s
-;  :Contents.	reimplementation of lowlevel.library
+;  :Contents.	reimplementation of nonvolatile.library
 ;		will be constructed directly in memory
 ;		all data will be written to single file 'nvram'
 ;  :Author.	Wepl
-;  :Version.	$Id: kick31.s 1.37 2017/10/07 16:48:01 wepl Exp wepl $
+;  :Version.	$Id: nonvolatile.s 1.1 2018/03/22 12:40:55 wepl Exp wepl $
 ;  :History.	22.03.18 created for game UFO
+;		17.08.18 made compatible to vasm
+;		21.08.18 _GetNVInfo fixed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -40,24 +42,24 @@ _nonvolatile_init
 .struct_name	INITLONG LN_NAME,0
 		INITBYTE LIB_FLAGS,LIBF_CHANGED|LIBF_SUMUSED
 		INITWORD LIB_VERSION,40
-		dw	0
+		dc.w	0
 
-.vectors	dw	-1
-		dw	_nv_Open-.vectors
-		dw	_nv_Close-.vectors
-		dw	_nv_Expunge_ExtFunc-.vectors
-		dw	_nv_Expunge_ExtFunc-.vectors
-		dw	_GetCopyNV-.vectors
-		dw	_FreeNVData-.vectors
-		dw	_StoreNV-.vectors
-		dw	_DeleteNV-.vectors
-		dw	_GetNVInfo-.vectors
-		dw	_GetNVList-.vectors
-		dw	_SetNVProtection-.vectors
-		dw	-1
+.vectors	dc.w	-1
+		dc.w	_nv_Open-.vectors
+		dc.w	_nv_Close-.vectors
+		dc.w	_nv_Expunge_ExtFunc-.vectors
+		dc.w	_nv_Expunge_ExtFunc-.vectors
+		dc.w	_GetCopyNV-.vectors
+		dc.w	_FreeNVData-.vectors
+		dc.w	_StoreNV-.vectors
+		dc.w	_DeleteNV-.vectors
+		dc.w	_GetNVInfo-.vectors
+		dc.w	_GetNVList-.vectors
+		dc.w	_SetNVProtection-.vectors
+		dc.w	-1
 
-.name		db	"nonvolatile.library",0
-_nv_filename	db	"nvram",0
+.name		dc.b	"nonvolatile.library",0
+_nv_filename	dc.b	"nvram",0
 	EVEN
 
 _nv_Open	addq	#1,(LIB_OPENCNT,a6)
@@ -286,7 +288,7 @@ _DeleteNV	moveq	#0,d0			;not implemented, always fails
 ; OUT:	D0 = APTR struct NVInfo
 
 _GetNVInfo	move.l	a6,-(a7)
-		move.l	#16,d0
+		move.l	#8+NVINFO_SIZE,d0
 		move.l	#MEMF_ANY,d1
 		move.l	(4),a6
 		jsr	(_LVOAllocVec,a6)
@@ -296,6 +298,7 @@ _GetNVInfo	move.l	a6,-(a7)
 		move.l	a0,(a0)+		;for FreeNVData
 		moveq	#12,d1
 		move.l	d1,(a0)+		;data length
+		move.l	a0,d0
 		move.l	#100000,(a0)+		;nvi_MaxStorage
 		move.l	#100000,(a0)+		;nvi_FreeStorage
 .quit		move.l	(a7)+,a6
