@@ -6,7 +6,7 @@
 ;		v2 Carlo Pirri
 ;		v3 Wolfgang Unger PAL
 ;		v4 Wolfgang Unger NTSC
-;  :Version.	$Id: Millennium.asm 1.7 2005/03/08 09:33:42 wepl Exp wepl $
+;  :Version.	$Id: Millennium.asm 1.8 2005/03/10 10:12:58 wepl Exp wepl $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
 ;		13.03.01 extro works now
@@ -14,6 +14,7 @@
 ;		19.04.01 support for v2 added
 ;		26.04.01 support for v3 added
 ;		26.02.05 support for v4 added
+;		30.10.18 new random generator to avoid same asteroids sequence
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -101,7 +102,13 @@ _start	;	A0 = resident loader
 	;a1 = ioreq ($2c+a5)
 	;a4 = buffer (1024 bytes)
 	;a6 = execbase
-_bootblock
+_bootblock	
+
+	;add random to _rnd
+		lea	_vbisav,a0
+		move.l	($6c),(a0)
+		lea	_rndvbi,a0
+		move.l	a0,$6c
 
 	;check for savedisk
 		lea	(_savename,pc),a0
@@ -313,6 +320,7 @@ _main		move.l	(_expmem),d0		;kickstart
 _plm123		PL_START
 	;	move.w	#$7001,$68f68		;df1:
 	;	move.b	#0,$6e1fd
+		PL_P	$e78,_rnd
 		PL_S	$e6e4,$700-$6e4		;skip set stack
 		PL_PS	$1174,_change2
 		PL_W	$856e,3			;disable format savedisk
@@ -322,12 +330,41 @@ _plm123		PL_START
 
 		dc.l	$af2,$10c92		;random generator patches
 _plm4		PL_START
+		PL_P	$aee,_rnd
 		PL_S	$e384,$a0-$84		;skip set stack
 		PL_PS	$dea,_change2
 		PL_W	$820c,3			;disable format savedisk
 		PL_PS	$e02c,_loadgame
 		PL_PS	$e590,_change1
 		PL_END
+
+_rnd	movem.l	d1-d3/a0,-(a7)
+	lea	.RNDNUM(pc),a0
+	moveq	#8-1,d3
+	move.l	(a0),d0
+.rndloop
+	move.b	d0,d1
+	move.b	d0,d2
+	lsr.b	#3,d1
+	lsr.b	#1,d2
+	eor.b	d1,d2
+	lsr.b	#1,d2
+	roxr.l	#1,d0
+	move.l	d0,(a0)
+	dbf	d3,.rndloop
+	movem.l	(a7)+,d1-d3/a0
+	bclr	#0,d0
+	rts
+
+.RNDNUM	dc.l	20180921
+
+_rndvbi		move.l	d0,-(a7)
+		bsr	_rnd
+		move.l	(a7)+,d0
+		move.l	_vbisav,-(a7)
+		rts
+
+_vbisav		dl	0
 
 ;============================================================================
 
