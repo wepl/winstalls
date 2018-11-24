@@ -6,7 +6,7 @@
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.12 2009/05/19 23:01:20 wepl Exp wepl $
+;  :Version.	$Id: cf2.asm 1.13 2011/05/17 22:43:26 wepl Exp wepl $
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -28,6 +28,7 @@
 ;			 buffer in ExpMem, requires whdload v16.9 now
 ;		11.05.11 keyboard routine modified, issue #2422
 ;		15.05.11 access fault on loading savegame fixed, issue #2438
+;		24.11.18 support for italian version added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -39,6 +40,7 @@ crc_v1	= $e95e		;english cracked ?
 crc_v2	= $b9c6		;german
 crc_v3	= $389d		;english
 crc_v4	= $aa9f		;french
+crc_v5	= $aa9f		;italian
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -87,7 +89,7 @@ _expmem		dc.l	BUFLEN			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.12 "
+		dc.b	"Version 1.13 "
 		INCBIN	"T:date"
 		dc.b	0
 _dir		dc.b	"data",0
@@ -126,6 +128,9 @@ _start	;	A0 = resident loader
 		beq	.ok
 		lea	(_pl4),a0
 		cmp.w	#crc_v4,d0
+		beq	.ok
+		lea	(_pl5),a0
+		cmp.w	#crc_v5,d0
 		beq	.ok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
@@ -237,6 +242,23 @@ _s1		cmp.l	#$100000,d0
 ;======================================================================
 
 _pl4		PL_START
+		PL_W	$2640e,$6600
+		PL_W	$26626,$4200
+		PL_W	$2799a,$5200
+		PL_W	$27C26,$4200
+		PL_W	$28e2e,$35e+$324	;load/save game (bsr $294b0)
+		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
+		PL_S	$290f2,4		;load/save game
+		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
+		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_S	$29266,10		;load/save game
+		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_R	$29b94			;"insert disk 3"
+		PL_NEXT	_pl24
+
+;======================================================================
+
+_pl5		PL_START
 		PL_W	$2640e,$6600
 		PL_W	$26626,$4200
 		PL_W	$2799a,$5200
