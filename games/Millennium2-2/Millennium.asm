@@ -6,7 +6,7 @@
 ;		v2 Carlo Pirri
 ;		v3 Wolfgang Unger PAL
 ;		v4 Wolfgang Unger NTSC
-;  :Version.	$Id: Millennium.asm 1.8 2005/03/10 10:12:58 wepl Exp wepl $
+;  :Version.	$Id: Millennium.asm 1.9 2018/10/30 22:02:53 wepl Exp wepl $
 ;  :History.	22.02.01 ml adapted for kickemu
 ;		24.02.01 savegame support added, cleanup
 ;		13.03.01 extro works now
@@ -86,8 +86,8 @@ slv_keyexit	= $59	;F10
 slv_CurrentDir	dc.b	0
 slv_name	dc.b	"Millennium 2·2",0
 slv_copy	dc.b	"1989 Ian Bird / Electric Dreams",0
-slv_info	dc.b	"adapted by Mr.Larmer & Wepl",10
-		dc.b	"Version 1.3 "
+slv_info	dc.b	"adapted by Mr.Larmer & Wepl & Harry",10
+		dc.b	"Version 1.4 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
