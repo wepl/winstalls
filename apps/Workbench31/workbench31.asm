@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.7 2017/10/07 17:13:09 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.8 2017/10/08 00:46:47 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -11,7 +11,8 @@
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
-;  :Requires.	kick31.s
+;		28.12.18 SEGTRACKER added
+;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
@@ -94,6 +95,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 NO68020				;remain 68000 compatible
 ;POINTERTICKS	= 1		;set mouse speed
 ;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+SEGTRACKER			;add segment tracker
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
