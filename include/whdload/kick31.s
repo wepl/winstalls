@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.37 2017/10/07 16:48:01 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.38 2018/07/01 21:09:27 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -38,6 +38,7 @@
 ;			 new option CACHECHIP enables only IC and sets chip memory WT
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;		20.03.18 renamed _tags to _kick31_tags to avoid collisions
+;		28.12.18 segtracker added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -271,6 +272,9 @@ kick_patch600	PL_START
 	IFD STACKSIZE
 		PL_L	$2305c,STACKSIZE/4
 	ENDC
+	IFD SEGTRACKER
+		PL_PS	$230cc,segtracker_init
+	ENDC
 	IFD BOOTDOS
 		PL_PS	$23100,dos_bootdos
 	ENDC
@@ -377,6 +381,9 @@ kick_patch1200	PL_START
 		PL_PS	$14b4e,gfx_readvpos		;patched to set NTSC/PAL
 	IFD STACKSIZE
 		PL_L	$22772,STACKSIZE/4
+	ENDC
+	IFD SEGTRACKER
+		PL_PS	$227e0,segtracker_init
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$22814,dos_bootdos
@@ -486,6 +493,9 @@ kick_patch4000	PL_START
 		PL_PS	$340A6,gfx_readvpos		;patched to set NTSC/PAL
 	IFD STACKSIZE
 		PL_L	$18B9A,STACKSIZE/4
+	ENDC
+	IFD SEGTRACKER
+		PL_PS	$18c08,segtracker_init
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$18C3C,dos_bootdos
@@ -1343,6 +1353,14 @@ hd_init		move.l	(a7)+,d0
 		moveq	#0,d0			;original
 
 	INCLUDE	Sources:whdload/kickfs.s
+	ENDC
+
+;============================================================================
+
+	IFD SEGTRACKER
+segtracker_init	move.l	(8,a0),($a4,a1)		;original
+
+	INCLUDE Sources:whdload/segtracker.s
 	ENDC
 
 ;============================================================================
