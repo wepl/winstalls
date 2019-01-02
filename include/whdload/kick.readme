@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.23 2017/10/03 17:21:12 wepl Exp wepl $
+$Id: kick.readme 1.24 2017/10/07 16:59:25 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -221,6 +221,18 @@ Only available in kick31.s. Enables display promotion when WHDLoad options
 DblPAL or DblNTSC are used. The monitor driver (from "DEVS:Monitors/") must be
 present in the install directory. BOOTDOS must be used, otherwise the patch
 will not be activated.
+
+SEGTRACKER
+
+If that symbol is defined a segment tracker equal to the known utility
+SegTracker by Michael Sinz will be installed. The dos functions LoadSeg and
+UnLoadSeg will be patched and for each loaded executable the name and the 
+occupied memory will be tracked. This will consume some additional memory.
+WHDLoad will use this information on an error condtions to display which
+loaded executable has caused the fault and also shows at which offset in the
+executable it happened. The provided tool stinf can be used to display all
+tracked segments when run under WHDLoad. It works also on Kickstart 1.x
+contrary to the original SegTracker which requires Kickstart 2.x.
 
 SETPATCH
 
