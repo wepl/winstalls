@@ -2,9 +2,10 @@
 ;  :Modul.	segtracker.s
 ;  :Contents.	implementation of SegTracker with WHDLoad KickEmu
 ;  :Author.	Wepl
-;  :Version.	$Id: kickfs.s 1.23 2014/02/01 01:39:34 wepl Exp wepl $
+;  :Version.	$Id: segtracker.s 1.1 2018/12/29 00:19:16 wepl Exp wepl $
 ;  :History.	30.05.18 started
 ;		28.12.18 completed for 3.1 roms
+;		01.01.19 completed for 1.x roms
 ;  :Requires.	kick{12,13,31}.s (to be called from)
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -12,6 +13,7 @@
 ;  :To Do.	
 ;---------------------------------------------------------------------------*
 
+	INCLUDE	exec/resident.i
 	INCLUDE	exec/semaphores.i
 
 	STRUCTURE	SegTrackerSignalSemaphore,SS_SIZE
@@ -21,11 +23,15 @@
 
 	STRUCTURE	SegTrackerSegNode,MLN_SIZE
 		CPTR	stsn_name
-		ULONG	stsn_array			;NULL terminated array of segments ptr/size
+		ULONG	stsn_array			;NULL terminated array of segment ptr/size
 		LABEL	stsn_SIZEOF
 		
 ;---------------------------------------------------------------------------*
 ; init SegTracker
+;	init & add semaphore
+;	add rom residents to list
+;	patch dos functions on C dos.library versions
+;	on BCPL dos.library versions patches are done individual
 
 st_install	movem.l	d0-d1/a0-a6,-(a7)
 		move.l	(4),a6				;A6 = exec
@@ -84,8 +90,8 @@ st_install	movem.l	d0-d1/a0-a6,-(a7)
 		move.l	#MEMF_PUBLIC!MEMF_CLEAR,d1
 		jsr	(_LVOAllocMem,a6)
 		move.l	d0,a5				;A5 = segnode
-		subq.l	#4,a2				;made it compatible to segment lists
 		move.l	a2,(stsn_array,a5)		;seg start
+		subq.l	#4,(stsn_array,a5)		;made it compatible to segment lists
 		move.l	a2,d0
 		sub.l	d0,(stsn_array+4,a5)		;seg size prepared
 		lea	(stsn_SIZEOF+8,a5),a1
@@ -109,7 +115,7 @@ st_install	movem.l	d0-d1/a0-a6,-(a7)
 		add.l	d0,(stsn_array+4,a5)		;set size
 
 	IFGE KICKVERSION-36
-	;add patches on post BCPL dos.library releases
+	;add patches on dos.library
 		lea	(_dosname,pc),a1
 		jsr	(_LVOOldOpenLibrary,a6) 	
 		move.l	d0,a3				;A3 = dos
@@ -126,10 +132,12 @@ st_install	movem.l	d0-d1/a0-a6,-(a7)
 		lea	(st_dunloadseg,pc),a2
 		bsr	.patch
 	ENDC
+
 		movem.l	(a7)+,d0-d1/a0-a6
 		rts
 
 	IFGE KICKVERSION-36
+	;add patches on post BCPL dos.library releases
 .patch		move.l	a1,d0				;func entry
 		move.l	a3,a1				;library
 		jsr	(_LVOSetFunction,a6)
@@ -140,6 +148,7 @@ st_install	movem.l	d0-d1/a0-a6,-(a7)
 ;---------------------------------------------------------------------------*
 ; track given segment
 
+	IFGE KICKVERSION-36
 		;D1=name D2=tags
 st_NewLoadSeg	move.l	(st_dnewloadseg,pc),a0
 		bra	st_load
@@ -149,6 +158,7 @@ st_LoadSeg	move.l	(st_dloadseg,pc),a0
 st_load		move.l	d1,-(a7)			;name
 		jsr	(a0)
 		move.l	(a7)+,a0			;name
+	ENDC
 
 		;D0=segment A0=name
 st_track	movem.l	d0-d3/a2-a3/a6,-(a7)		;preserve return values from dos D0/D1
@@ -205,11 +215,13 @@ st_track	movem.l	d0-d3/a2-a3/a6,-(a7)		;preserve return values from dos D0/D1
 ;---------------------------------------------------------------------------*
 ; untrack given segment
 
+	IFGE KICKVERSION-36
 		;D1=segment
 st_UnLoadSeg	move.l	(st_dunloadseg,pc),-(a7)
+	ENDC
 
 		;D1=segment
-st_untrack	movem.l	d1/a2-a4/a6,-(a7)		;preserve calling args to dos
+st_untrack	movem.l	d0-d1/a0-a4/a6,-(a7)		;preserve calling args
 		tst.l	d1
 		beq	.quit
 		move.l	d1,a2				;A2 = segment list to be freed
@@ -248,7 +260,7 @@ st_untrack	movem.l	d1/a2-a4/a6,-(a7)		;preserve calling args to dos
 		move.l	a2,d0
 		bne	.loopseg
 		jsr	(_LVOPermit,a6)
-.quit		movem.l	(a7)+,d1/a2-a4/a6		;restore calling args to dos
+.quit		movem.l	(a7)+,d0-d1/a0-a4/a6		;restore calling args
 		rts
 
 ;---------------------------------------------------------------------------*
@@ -295,9 +307,11 @@ st_find		movem.l	d2-d3/a3-a4,-(a7)
 
 ;---------------------------------------------------------------------------*
 
+	IFGE KICKVERSION-36
 st_dloadseg	dc.l	0
 st_dnewloadseg	dc.l	0
 st_dunloadseg	dc.l	0
+	ENDC
 st_sem		ds.b	stss_SIZEOF
 st_semname	dc.b	"SegTracker",0
 	EVEN
