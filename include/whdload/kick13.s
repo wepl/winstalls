@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.71 2017/10/03 17:21:59 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.72 2017/10/07 16:48:01 wepl Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -74,6 +74,8 @@
 ;			 without a CACHE* option caches are switched off now!
 ;			 new option CACHECHIP enables only IC and sets chip memory WT
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
+;		01.01.19 calculation of exec.ChkSum corrected
+;			 support for SEGTRACKER added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -235,6 +237,7 @@ kick_patch	PL_START
 		PL_PS	$3d6,kick_setvecs
 		PL_S	$3ec,12				;avoid overwriting vector table
 		PL_PS	$422,exec_flush
+		PL_W	$446,$17			;correct calc of exec.ChkSum
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$50C,$514-$50C			;skip LED power on
 		PL_P	$546,kick_detectcpu
@@ -305,6 +308,10 @@ kick_patch	PL_START
 		PL_PS	$33ef0,dos_init
 		PL_PS	$3568c,dos_endcli
 		PL_PS	$36e4c,dos_LoadSeg
+	IFD SEGTRACKER
+		PL_PS	$377ca,dos_UnLoadSeg
+		PL_PS	$3873e,segtracker_init
+	ENDC
 	IFD BOOTDOS
 		PL_PS	$38748,dos_bootdos
 	ENDC
@@ -916,8 +923,28 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 		bsr	_cb_dosLoadSeg
 .failed		movem.l	(a7)+,d0-a6
 	ENDC
+	IFD SEGTRACKER
+		movem.l	d0-d1/a0-a1,-(a7)
+		move.l	(a1),a0			;a0 = BSTR FileName
+		add.l	a0,a0
+		add.l	a0,a0
+		moveq	#0,d0
+		move.b	(a0)+,d0		;length
+		clr.b	(a0,d0.w)		;terminate, hopefully doesn't overwrite anything
+		move.l	d1,d0			;d0 = BPTR SegList
+		beq	.failed2
+		bsr	st_track
+.failed2	movem.l	(a7)+,d0-d1/a0-a1
+	ENDC
 		bsr	_flushcache
 		jmp	(a6)
+
+	IFD SEGTRACKER
+dos_UnLoadSeg	bsr	st_untrack
+		addq.l	#2,(a7)
+		cmp.l	#$abcd,(8,a0,d2.l)	;original
+		rts
+	ENDC
 
 	IFD BOOTDOS
 dos_bootdos
@@ -1024,6 +1051,17 @@ hd_init		lea	-1,a2				;original A2 = -1
 
 	INCLUDE	Sources:whdload/kickfs.s
 	
+	ENDC
+
+;============================================================================
+
+	IFD SEGTRACKER
+
+segtracker_init	move.l	($18,a1),d2			;original
+		lsl.l	#2,d2				;original
+
+	INCLUDE Sources:whdload/segtracker.s
+
 	ENDC
 
 ;============================================================================

@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.38 2018/07/01 21:09:27 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.39 2018/12/29 00:16:42 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -1348,6 +1348,7 @@ _promotedisplay	movem.l	d0-a6,-(a7)
 ;============================================================================
 
 	IFD HDINIT
+
 hd_init		move.l	(a7)+,d0
 		movem.l	d0/d2/a2-a6,-(a7)	;original
 		moveq	#0,d0			;original
@@ -1358,6 +1359,7 @@ hd_init		move.l	(a7)+,d0
 ;============================================================================
 
 	IFD SEGTRACKER
+
 segtracker_init	move.l	(8,a0),($a4,a1)		;original
 
 	INCLUDE Sources:whdload/segtracker.s
