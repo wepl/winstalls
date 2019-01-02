@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.8 2017/10/08 00:46:47 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.9 2018/12/29 00:31:36 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -123,7 +123,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.4 "
+		dc.b	"Version 1.5 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
