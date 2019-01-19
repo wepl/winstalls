@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.39 2018/12/29 00:16:42 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.40 2019/01/02 21:58:24 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -39,6 +39,8 @@
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;		20.03.18 renamed _tags to _kick31_tags to avoid collisions
 ;		28.12.18 segtracker added
+;		11.01.19 key repeat after osswitch disabled in input.device
+;		13.01.19 _cb_keyboard added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -131,6 +133,11 @@ CBDOSREAD = 1
 	IFND CBDOSLOADSEG
 	IFD _cb_dosLoadSeg
 CBDOSLOADSEG = 1
+	ENDC
+	ENDC
+	IFND CBKEYBOARD
+	IFD _cb_keyboard
+CBKEYBOARD = 1
 	ENDC
 	ENDC
 
@@ -283,6 +290,7 @@ kick_patch600	PL_START
 	ENDC
 		PL_CB	$35936				;don't init scsi.device
 		PL_PS	$4ed2,_keyboard
+		PL_PS	$5a78,input_task
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$37c2,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -393,6 +401,7 @@ kick_patch1200	PL_START
 	ENDC
 		PL_CB	$3504a				;don't init scsi.device
 		PL_PS	$3a7ea,_keyboard
+		PL_PS	$3b390,input_task
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$3b7ae,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -505,6 +514,7 @@ kick_patch4000	PL_START
 	ENDC
 		PL_CB	$7E3E				;don't init scsi.device
 		PL_PS	$d3ee,_keyboard
+		PL_PS	$df94,input_task
 	IFD INIT_AUDIO					;audio.device
 		PL_B	$6D6C,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
@@ -678,25 +688,18 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 		rts
 
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
-	IFND NO68020
-		tst.b	(_cbflag_beamcon0,pc)
-		beq	.nobeamcon0
-		move.w	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
-.nobeamcon0	tst.b	(_cbflag_vbstrt,pc)
-		beq	.novbstrt
-		move.w	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
-.novbstrt
-	ELSE
-		move.l	d0,-(a7)
 		move.b	(_cbflag_beamcon0,pc),d0
 		beq	.nobeamcon0
 		move.w	(_cbswitch_beamcon0,pc),(_custom+beamcon0)
 .nobeamcon0	move.b	(_cbflag_vbstrt,pc),d0
 		beq	.novbstrt
 		move.w	(_cbswitch_vbstrt,pc),(_custom+vbstrt)
-.novbstrt	move.l	(a7)+,d0
-	ENDC
-		jmp	(a0)
+.novbstrt	move.l	(input_norepeat,pc),d0
+		beq	.norepeat
+		exg	d0,a0
+		st	(a0)				;set repeat key invalid
+		move.l	d0,a0
+.norepeat	jmp	(a0)
 
 gfx_readvpos	move	(_custom+vposr),d0
 		move.l	(_monitor,pc),d1
@@ -730,6 +733,12 @@ _keyboard	moveq	#0,d4				;original
 		beq	.exit
 		cmp.b	(_keydebug,pc),d2
 		beq	.debug
+	IFD CBKEYBOARD
+		movem.l	d0-a6,-(a7)
+		move.l	d2,d0
+		bsr	_cb_keyboard
+		movem.l	(a7)+,d0-a6
+	ENDC
 		rts
 
 .exit		pea	TDREASON_OK
@@ -755,6 +764,18 @@ _keyboard	moveq	#0,d4				;original
 		clr.w	(4,a7)
 		pea	TDREASON_DEBUG
 		bra	.quit
+
+;============================================================================
+
+input_task	moveq	#0,d7				;original
+		bset	d0,d7				;original
+		move.l	d7,d6				;original
+		pea	($1212,a5)			;last rawkey for repeat
+		lea	(input_norepeat,pc),a0
+		move.l	(a7)+,(a0)
+		rts
+
+input_norepeat	dc.l	0
 
 ;============================================================================
 

@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.72 2017/10/07 16:48:01 wepl Exp $
+;  :Version.	$Id: kick13.s 0.73 2019/01/02 21:58:24 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -76,6 +76,7 @@
 ;			 new option CACHECHIPDATA enables IC/DC and sets chip memory WT
 ;		01.01.19 calculation of exec.ChkSum corrected
 ;			 support for SEGTRACKER added
+;		15.01.19 key repeat after osswitch disabled in input.device
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -282,6 +283,7 @@ kick_patch	PL_START
 	ENDC
 		PL_PS	$25290,keyboard_start
 		PL_PS	$253a2,keyboard_end
+		PL_PS	$25e42,input_task
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
 	ENDC
@@ -548,7 +550,12 @@ gfx_vbserver	lea	(_cbswitch_cop2lc,pc),a6
 		rts
 
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
-		jmp	(a0)
+		move.l	(input_norepeat,pc),d0
+		beq	.norepeat
+		exg	d0,a0
+		st	(a0)				;set repeat key invalid
+		move.l	d0,a0
+.norepeat	jmp	(a0)
 
 	;move (custom),(cia) does not work with Snoop/S on 68060
 gfx_snoop1	move.b	(vhposr,a0),d0
@@ -743,6 +750,18 @@ keyboard_end	move.b	(_keyboarddelay,pc),d1
 		addq.l	#2,(a7)
 		and.b	#~(CIACRAF_SPMODE),(_ciaa+ciacra)
 		rts
+
+;============================================================================
+
+input_task	moveq	#0,d7				;original
+		bset	d0,d7				;original
+		move.l	d7,d6				;original
+		pea	($1212,a5)			;last rawkey for repeat
+		lea	(input_norepeat,pc),a0
+		move.l	(a7)+,(a0)
+		rts
+
+input_norepeat	dc.l	0
 
 ;============================================================================
 
