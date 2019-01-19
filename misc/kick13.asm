@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.21 2017/10/08 00:46:59 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.22 2019/01/19 14:28:32 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -241,7 +241,9 @@ _bootdos	lea	(_saveregs,pc),a0
 		lea	(_args,pc),a0
 		bsr	.call
 
-	;	bsr	_checkrepeat		;test code keyrepeat after osswitch
+	IFD KEYREPEAT
+		bsr	_checkrepeat		;test code keyrepeat after osswitch
+	ENDC
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
@@ -521,6 +523,8 @@ _cb_keyboard
 ;============================================================================
 ; test code for key repeat of input.device after osswitch
 
+	IFD KEYREPEAT
+
 _checkrepeat	bsr	_GetKey
 		cmp.b	#'\',d0
 		bne	.quit
@@ -606,6 +610,8 @@ _SetMode	movem.l	a2-a3/a6,-(a7)
 		add.l	#sp_SIZEOF,a7
 		movem.l	(a7)+,a2-a3/a6
 		rts
+
+	ENDC
 
 ;============================================================================
 

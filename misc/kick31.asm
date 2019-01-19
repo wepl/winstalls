@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.14 2017/10/07 17:11:15 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.15 2017/10/08 00:46:59 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -17,6 +17,8 @@
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		30.01.14 version check optimized
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
+;		28.12.18 segtracker added
+;		16.01.19 test code for keyrepeat on osswitch added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -75,6 +77,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 NO68020				;remain 68000 compatible
 POINTERTICKS	= 1		;set mouse speed
 ;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+SEGTRACKER			;add segment tracker
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
@@ -212,6 +215,10 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		lea	(_args,pc),a0
 		jsr	(4,a1)
 
+	IFD KEYREPEAT
+		bsr	_checkrepeat		;test code keyrepeat after osswitch
+	ENDC
+
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
 		move.l	(_resload,pc),a2
@@ -236,7 +243,7 @@ _pl_program	PL_START
 		PL_END
 
 _disk1		dc.b	"mydisk1",0
-_program	dc.b	"C:List",0
+_program	dc.b	"C/List",0
 _args		dc.b	"DEVS:#?.device",10
 _args_end
 	EVEN
@@ -408,6 +415,85 @@ _cb_dosRead
 .data		dc.w	$4278,$c	;original = 0b
 		dc.w	$45b4,$c	;original = 0b
 		dc.w	0
+
+	ENDC
+
+;============================================================================
+; this routine will be called on each key press, it is executed
+; before the keyboard has been acknowledged, therefore no time
+; intense tasks should be executed here
+
+	IFD CBKEYBOARD
+
+; D0 = UBYTE rawkey code of the actual pressed key
+; the routine may destroy all registers
+
+_cb_keyboard	cmp.b	#$45,d0			;Esc
+		bne	.quit
+		...
+.quit		rts
+
+	ENDC
+
+;============================================================================
+; test code for key repeat of input.device after osswitch
+
+	IFD KEYREPEAT
+
+_checkrepeat	bsr	_GetKey
+		cmp.b	#'\',d0
+		bne	.quit
+		moveq	#1,d0			;size
+		lea	(.name,pc),a0		;filename
+		sub.l	a1,a1			;address
+		move.l	(_resload,pc),a2
+		jsr	(resload_SaveFile,a2)
+		lea	(.name,pc),a0		;filename
+	 	jsr	(resload_DeleteFile,a2)
+.quit		rts
+
+.name		dc.b	"keytest",0
+
+_GetKey		movem.l	d2-d5/a6,-(a7)
+
+		move.l	(_dosbase),a6
+		jsr	(_LVOInput,a6)
+		move.l	d0,d5				;d5 = stdin
+
+		move.l	d5,d1
+		moveq	#-1,d2				;mode = raw
+		jsr	(_LVOSetMode,a6)
+
+		move.l	d5,d1
+		clr.l	-(a7)
+		move.l	a7,d2
+		moveq	#1,d3
+		jsr	(_LVORead,a6)
+		move.l	(a7)+,d4
+		rol.l	#8,d4
+		
+		bra	.check
+
+.flush		move.l	d5,d1
+		subq.l	#4,a7
+		move.l	a7,d2
+		moveq	#1,d3
+		jsr	(_LVORead,a6)
+		addq.l	#4,a7
+
+.check		move.l	d5,d1
+		move.l	#0,d2				;0 seconds
+		jsr	(_LVOWaitForChar,a6)
+		tst.l	d0
+		bne	.flush
+		
+		move.l	d5,d1
+		moveq	#0,d2				;mode = con
+		jsr	(_LVOSetMode,a6)
+		
+		move.l	d4,d0
+		movem.l	(a7)+,_MOVEMREGS
+		rts
 
 	ENDC
 
