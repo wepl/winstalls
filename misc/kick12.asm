@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.11 2017/10/07 17:11:15 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.12 2017/10/08 00:46:59 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
@@ -11,6 +11,7 @@
 ;		08.01.12 v17 config stuff added
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
+;		02.01.19 segtracker added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -58,6 +59,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $100		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;POINTERTICKS	= 1		;set mouse speed
+SEGTRACKER			;add segment tracker
 SETPATCH			;enable patches from SetPatch 1.38
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
