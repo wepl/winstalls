@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.20 2017/10/07 17:11:15 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.21 2017/10/08 00:46:59 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -20,6 +20,8 @@
 ;		30.01.14 version check optimized
 ;		01.07.14 fix for Assign command via _cb_dosLoadSeg added
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
+;		28.12.18 segtracker added
+;		19.01.19 test code for keyrepeat on osswitch added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -52,7 +54,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 
 ;BLACKSCREEN			;set all initial colors to black
 ;BOOTBLOCK			;enable _bootblock routine
-BOOTDOS				;enable _bootdos routine
+BOOTDOS			;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
 ;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
@@ -70,6 +72,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 POINTERTICKS	= 1		;set mouse speed
+SEGTRACKER			;add segment tracker
 SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
@@ -237,6 +240,8 @@ _bootdos	lea	(_saveregs,pc),a0
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
 		bsr	.call
+
+	;	bsr	_checkrepeat		;test code keyrepeat after osswitch
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
 		pea	TDREASON_OK
@@ -512,6 +517,95 @@ _cb_keyboard
 		rts
 
 	ENDC
+
+;============================================================================
+; test code for key repeat of input.device after osswitch
+
+_checkrepeat	bsr	_GetKey
+		cmp.b	#'\',d0
+		bne	.quit
+		moveq	#1,d0			;size
+		lea	(.name,pc),a0		;filename
+		sub.l	a1,a1			;address
+		move.l	(_resload,pc),a2
+		jsr	(resload_SaveFile,a2)
+		lea	(.name,pc),a0		;filename
+	 	jsr	(resload_DeleteFile,a2)
+.quit		rts
+
+.name		dc.b	"keytest",0
+
+_GetKey		movem.l	d2-d5/a6,-(a7)
+
+		move.l	(_dosbase),a6
+		jsr	(_LVOInput,a6)
+		move.l	d0,d5				;d5 = stdin
+
+		move.l	d5,d1
+		moveq	#-1,d2				;mode = raw
+		bsr	_SetMode
+
+		move.l	d5,d1
+		clr.l	-(a7)
+		move.l	a7,d2
+		moveq	#1,d3
+		jsr	(_LVORead,a6)
+		move.l	(a7)+,d4
+		rol.l	#8,d4
+		
+		bra	.check
+
+.flush		move.l	d5,d1
+		subq.l	#4,a7
+		move.l	a7,d2
+		moveq	#1,d3
+		jsr	(_LVORead,a6)
+		addq.l	#4,a7
+
+.check		move.l	d5,d1
+		move.l	#1,d2				;1 seconds
+		jsr	(_LVOWaitForChar,a6)
+		tst.l	d0
+		bne	.flush
+		
+		move.l	d5,d1
+		moveq	#0,d2				;mode = con
+		bsr	_SetMode
+		
+		move.l	d4,d0
+		movem.l	(a7)+,_MOVEMREGS
+		rts
+
+; dos function SetMode not present in kickstart 1.3
+; d1 = fh, d2 = mode
+
+_SetMode	movem.l	a2-a3/a6,-(a7)
+		lsl.l	#2,d1				;fh
+		move.l	d1,a0
+		move.l	(fh_Type,a0),a3			;A3 = dest port
+		sub.l	#sp_SIZEOF,a7			;StandardPacket, must be long aligned!
+		move.l	(4),a6
+		sub.l	a1,a1
+		jsr	(_LVOFindTask,a6)
+		move.l	d0,a0
+		lea	(pr_MsgPort,a0),a2		;A2 = own port
+		lea	(sp_Pkt,a7),a0
+		move.l	a0,(sp_Msg+LN_NAME,a7)
+		lea	(sp_Msg,a7),a0
+		move.l	a0,(sp_Pkt+dp_Link,a7)
+		move.l	a2,(sp_Pkt+dp_Port,a7)
+		move.l	#ACTION_SCREEN_MODE,(sp_Pkt+dp_Type,a7)
+		move.l	d2,(sp_Pkt+dp_Arg1,a7)
+		move.l	a3,a0				;port
+		move.l	a7,a1				;message
+		jsr	(_LVOPutMsg,a6)
+		move.l	a2,a0				;port
+		jsr	(_LVOWaitPort,a6)
+		move.l	a2,a0				;port
+		jsr	(_LVOGetMsg,a6)
+		add.l	#sp_SIZEOF,a7
+		movem.l	(a7)+,a2-a3/a6
+		rts
 
 ;============================================================================
 
