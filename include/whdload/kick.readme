@@ -1,13 +1,12 @@
 
-$Id: kick.readme 1.24 2017/10/07 16:59:25 wepl Exp wepl $
+$Id: kick.readme 1.25 2019/01/02 22:34:37 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
 
-There are two classes of Symbols to define in the Slave-Source. The first
-class must be specified to setup essential informations for the system. The
-second class contains optional Symbols changing some behaviors of the
-emulation.
+There are two kinds of Symbols to define in the Slave-Source. The first one
+must be specified to setup essential informations for the system. The second
+contains optional Symbols changing some behaviors of the emulation.
 
 Additional there are required flags in the ws_Flags field of the WHDLoadSlave
 structure. The flag WHDLF_EmulPriv must be always set because the exec
@@ -22,7 +21,7 @@ Required Symbols
 CHIPMEMSIZE = $80000
 
 That specfies the amount of Chip-Memory for the system. Allowed values are
-between $1000 and $200000. It is recommended to start with a full value like
+between $2000 and $200000. It is recommended to start with a full value like
 $80000 or $100000, and later to adjust that value to the minimum required
 using the MEMFREE feature (see below).
 
@@ -37,15 +36,15 @@ NUMDRIVES = 1
 That sets the number of drives which will get detected by the emulated system.
 The amount has nothing to do with the amount of physically available drives!
 Allowed values are -1 ... 4. The value -1 has special meaning that Custom1/N
-is used to set drive count. If Custom1/N is not specified (its zero) than one
+is used to set drive count. If Custom1/N is not specified (zero) than one
 drive will be used. Setting the drivecount to 0 works only with Kickstart 3.1,
 the older Kickstarts 1.2 and 1.3 will crash if there is no floppy drive.
 
 WPDRIVES = %0000
 
 That sets the protections state for the emulated floppy drives. Bit #0 means
-drive DF0: and the bitvalue 0 means 'write protected' and 1 means
-'read/write'. E.g. %1111 means all drives 'read/write'.
+drive DF0:. The bitvalue 0 means 'write protected' and 1 means 'read/write'.
+E.g. %1111 means all drives 'read/write'.
 
 
 Optional Symbols
@@ -111,7 +110,7 @@ chars per line on a standard screen.
 HDINIT
 
 If that symbol is defined a dos filesystem handler will be installed which
-mounts the actual directory as a drive called DH0: (volume has name
+mounts the actual directory as a drive called DH0: (the volume has the name
 'WHDLoad'). If there is no bootable disk inserted (check DISKSONBOOT) the
 dos.library will try to boot from that device. HDINIT requires that the flag
 WHDLF_Examine is set (if you use the new style Slave examples where kicknn.s
@@ -184,7 +183,7 @@ MEMFREE = $100
 If this symbol is defined the function exec.AllocMem will be patched. At each
 call to this function the size of the largest free memory chunk will be
 calculated and saved at the specified address if lower than the previous one.
-Using this feature it is absolutely simple to optimize the memory requirements
+This feature simplyfies the process to optimize the memory requirements
 and avoid memory wasting. Test a game trough all paths with that symbol
 defined. Then make a dump and checkout the memory dump file. At address
 (MEMFREE) you will find the lowest free chip memory during the games lifetime.
@@ -195,7 +194,7 @@ will traverse all free memory. This may be useful for debugging.
 
 NEEDFPU
 
-If that symbol is defined the system will get informed if an FPU is preset
+If that symbol is defined the system will get informed if an FPU is present
 (execbase.AttnFlags). If the symbol is not defined the system will think there
 is no FPU regardless if there is one really. The system will use a different
 task switching routine which will save also the FPU registers if a FPU is
@@ -204,7 +203,7 @@ present.
 NO68020
 
 Only available in kick31.s. Makes all patches done compatible to the 68000
-processor, so that resulting slave do not require a 68020. It should be noted
+processor, so that resulting Slave does not require a 68020. It should be noted
 here that the kickstart images for A1200 and A4000 contain code for the 68020
 in the utility.library. Therefore the install is still not 68000 compatible if
 these kickstart images are used and the installed program uses these functions

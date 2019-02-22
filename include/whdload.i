@@ -2,7 +2,7 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 17.3 2014/02/01 02:01:26 wepl Exp wepl $
+;  :Version.	$Id: whdload.i 18.0 2014/12/04 23:46:31 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -34,6 +34,7 @@
 ;		24.03.13 PL_IF,ELSE,ENDIF added
 ;		19.01.14 resload_VSNPrintF and resload_Log added
 ;		11.03.14 WHDLTAG_CUST_#? added
+;		09.11.17 PL_STR0 macro added
 ;  :Copyright.	© 1996-2014 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
@@ -846,9 +847,11 @@ PL_AL		MACRO			;add long
 	dc.l	\2			;data to add
 		ENDM
 
-; there are two macros provided for the DATA command, if you want change a 
+; there are three macros provided for the DATA command, if you want change a 
 ; string PL_STR can be used:
 ;	PL_STR	$340,<NewString!>
+; if the string should be 0-terminated at the destination PL_STR0 can be used:
+;	PL_STR0	$340,<New C-String>
 ; for binary data you must use PL_DATA according the following example:
 ;	PL_DATA	$350,.stop-.strt
 ; .strt	dc.b	2,3,$ff,'a',0
@@ -869,7 +872,17 @@ PL_STR		MACRO
 	ENDC
 	PL_CMDADR PLCMD_DATA,\1
 	dc.w	.dat2\@-.dat1\@
-.dat1\@	dc.b	'\2'
+.dat1\@	dc.b	"\2"
+.dat2\@	EVEN
+		ENDM	
+
+PL_STR0		MACRO
+	IFNE	NARG-2
+	FAIL	PL_STR0 wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_DATA,\1
+	dc.w	.dat2\@-.dat1\@
+.dat1\@	dc.b	"\2",0
 .dat2\@	EVEN
 		ENDM	
 
