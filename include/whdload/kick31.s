@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.40 2019/01/02 21:58:24 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.41 2019/01/19 14:45:01 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -41,6 +41,7 @@
 ;		28.12.18 segtracker added
 ;		11.01.19 key repeat after osswitch disabled in input.device
 ;		13.01.19 _cb_keyboard added
+;		17.08.19 INIT_NONVOLATILE added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1006,6 +1007,9 @@ dos_startup
 	IFD INIT_LOWLEVEL
 		bsr	_lowlevel
 	ENDC
+	IFD INIT_NONVOLATILE
+		bsr	_nonvolatile_init
+	ENDC
 	IFD PROMOTE_DISPLAY
 		bsr	_promotedisplay
 	ENDC
@@ -1391,6 +1395,12 @@ segtracker_init	move.l	(8,a0),($a4,a1)		;original
 _flushcache	move.l	(_resload,pc),-(a7)
 		add.l	#resload_FlushCache,(a7)
 		rts
+
+;============================================================================
+
+	IFD INIT_NONVOLATILE
+	INCLUDE Sources:whdload/nonvolatile.s
+	ENDC
 
 ;============================================================================
 

@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.25 2019/01/02 22:34:37 wepl Exp wepl $
+$Id: kick.readme 1.26 2019/02/22 00:33:36 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -162,6 +162,12 @@ INIT_MATHFFP
 
 Only available in kick31.s. Forces the kickstart to initialize the
 mathffp.library.
+
+INIT_NONVOLATILE
+
+Only available in kick31.s. Includes the source file nonvolatile.s and calls
+their initialization routine. This builds a custom nonvolatile.library in 
+memory. The library saves all data to the single file 'nvram'.
 
 JOYPADEMU
 
