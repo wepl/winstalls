@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.15 2017/10/08 00:46:59 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.16 2019/01/19 18:53:35 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -59,7 +59,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 ;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-DEBUG				;add more internal checks
+DEBUG				;enable additional internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 DOSASSIGN			;enable _dos_assign routine
 FONTHEIGHT	= 8		;enable 80 chars per line
@@ -70,6 +70,7 @@ HRTMON				;add support for HrtMON
 ;INIT_GADTOOLS			;enable gadtools.library
 ;INIT_LOWLEVEL			;load lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library
+;INIT_NONVOLATILE		;init nonvolatile.library
 IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;JOYPADEMU			;use keyboard for joypad buttons
 ;MEMFREE	= $200		;location to store free memory counter
