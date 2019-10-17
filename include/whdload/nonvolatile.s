@@ -4,10 +4,11 @@
 ;		will be constructed directly in memory
 ;		all data will be written to single file 'nvram'
 ;  :Author.	Wepl
-;  :Version.	$Id: nonvolatile.s 1.1 2018/03/22 12:40:55 wepl Exp wepl $
+;  :Version.	$Id: nonvolatile.s 1.2 2018/08/21 01:23:59 wepl Exp wepl $
 ;  :History.	22.03.18 created for game UFO
 ;		17.08.18 made compatible to vasm
 ;		21.08.18 _GetNVInfo fixed
+;		15.08.19 _nonvolatile_init now saves all regs
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -22,7 +23,7 @@
 ; this creates the library, must be called once at startup
 
 _nonvolatile_init
-		movem.l	a2/a6,-(a7)
+		movem.l	d0-d1/a0-a2/a6,-(a7)
 		lea	(.name,pc),a0
 		lea	(.struct_name+2,pc),a1
 		move.l	a0,(a1)
@@ -35,7 +36,7 @@ _nonvolatile_init
 		jsr	(_LVOMakeLibrary,a6)
 		move.l	d0,a1
 		jsr	(_LVOAddLibrary,a6)
-		movem.l	(a7)+,a2/a6
+		movem.l	(a7)+,d0-d1/a0-a2/a6
 		rts
 
 .structure	INITBYTE LN_TYPE,NT_LIBRARY
