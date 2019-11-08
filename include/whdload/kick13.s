@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.73 2019/01/02 21:58:24 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.74 2019/01/19 14:45:01 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -77,6 +77,7 @@
 ;		01.01.19 calculation of exec.ChkSum corrected
 ;			 support for SEGTRACKER added
 ;		15.01.19 key repeat after osswitch disabled in input.device
+;		08.11.19 waitblit added to gfx_text patch (Psygore)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -567,8 +568,10 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 	;existing bitmap data, this fails with data cache in chip memory
 	;-> gfx.BltClear replaced with cpu routine
 gfx_text	move.w	(-2,a6),d0
+		addq.w	#3,d0
 		lsr.w	#2,d0
 		subq.w	#1,d0
+		bsr	gfx_waitblit		;required for "Batte Chess 2" on UAE
 .clr		clr.l	(a1)+
 		dbf	d0,.clr
 		addq.l	#$80de-$80d0-6,(a7)
