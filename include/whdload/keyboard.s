@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	keyboard.s
 ;  :Contents.	routine to setup an keyboard handler
-;  :Version.	$Id: keyboard.s 1.15 2015/03/29 02:23:23 wepl Exp wepl $
+;  :Version.	$Id: keyboard.s 1.16 2016/02/14 16:43:11 wepl Exp wepl $
 ;  :History.	30.08.97 extracted from some slave sources
 ;		17.11.97 _keyexit2 added
 ;		23.12.98 _key_help added
@@ -16,6 +16,8 @@
 ;			 to be able to call it from an existing PORTS
 ;			 interrupt handler (PygmyProjects_Extension)
 ;		21.03.12 pc-relative for _resload access removed, because W.O.C. uses absolut
+;		26.09.19 using cia-timer-a for acknowledge delay
+;		08.11.19 resload_Abort args for debug key fixed for 68000
 ;  :Requires.	_keydebug	byte variable containing rawkey code
 ;		_keyexit	byte variable containing rawkey code
 ;  :Optional.	_keyexit2	byte variable containing rawkey code
@@ -59,52 +61,81 @@
 ; IN:	-
 ; OUT:	-
 
-_SetupKeyboard
+_SetupKeyboard	move.l	a0,-(a7)
 	;set the interrupt vector
-		pea	(.int,pc)
-		move.l	(a7)+,($68)
-	;allow interrupts from the keyboard
-		move.b	#CIAICRF_SETCLR|CIAICRF_SP,(ciaicr+_ciaa)
-	;clear all ciaa-interrupts
-		tst.b	(ciaicr+_ciaa)
+		lea	(.int,pc),a0
+		move.l	a0,($68)
+	;init timer-a (~200 탎)
+		lea	(_ciaa),a0
+		move.b	#142,(ciatalo,a0)
+		sf	(ciatahi,a0)
+	;allow interrupts from the keyboard & timer-a
+		move.b	#$7f,(ciaicr,a0)
+		move.b	#CIAICRF_SETCLR|CIAICRF_SP|CIAICRF_TA,(ciaicr,a0)
+	;clear all ciaa-interrupt requests
+		tst.b	(ciaicr,a0)
 	;set input mode
-		and.b	#~(CIACRAF_SPMODE),(ciacra+_ciaa)
+		and.b	#~(CIACRAF_SPMODE),(ciacra,a0)
 	;clear ports interrupt
-		move.w	#INTF_PORTS,(intreq+_custom)
+		move	#INTF_PORTS,(_custom+intreq)
 	;allow ports interrupt
-		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena+_custom)
+		move	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(_custom+intena)
+		move.l	(a7)+,a0
 		rts
 
-	;check if keyboard has caused interrupt
-.int		btst	#INTB_PORTS,(intreqr+1+_custom)
-		beq	.end
-		btst	#CIAICRB_SP,(ciaicr+_ciaa)
-		beq	.end
-
-		bsr	_KeyboardHandle
-
-.end		move.w	#INTF_PORTS,(intreq+_custom)
-	;to avoid timing problems on very fast machines we do another
-	;custom access
-		tst.w	(intreqr+_custom)
-		rte
-
-_KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
+.int		movem.l	d0/a0-a1,-(a7)
 		lea	(_custom),a0
 		lea	(_ciaa),a1
+
+	;check if keyboard has caused interrupt
+		btst	#INTB_PORTS,(intreqr+1,a0)
+		beq	.end
+	;timer-a
+		move.b	(ciaicr,a1),d0
+		btst	#CIAICRB_TA,d0
+		beq	.sp
+	;set input mode (handshake end)
+		sf	(ciacra,a1)
+		bra	.end
+	;sp	
+.sp		btst	#CIAICRB_SP,d0
+		beq	.end
 	;read keycode
 		move.b	(ciasdr,a1),d0
-	;set output mode (handshake)
-		or.b	#CIACRAF_SPMODE,(ciacra,a1)
+	;set output mode (handshake start)
+		move.b	#CIACRAF_SPMODE|CIACRAF_LOAD|CIACRAF_RUNMODE|CIACRAF_START,(ciacra,a1)
 	;calculate rawkeycode
 		not.b	d0
 		ror.b	#1,d0
-
+	;check for debug key
 		cmp.b	(_keydebug,pc),d0
-		bne	.1
-		movem.l	(a7)+,d0-d1/a0-a1		;restore
+		bne	.nodebug
+		movem.l	(a7)+,d0/a0-a1			;restore
 	;transform stackframe to resload_Abort arguments
-		move.w	(a7),(6,a7)			;sr
+		movem.l	d0-d1/a0-a1,-(a7)
+		clr.l	-(a7)
+		clr.l	-(a7)
+		pea	WHDLTAG_ATTNFLAGS_GET
+		move.l	a7,a0
+		move.l	(_resload),a1			;no ',pc' because used absolut sometimes
+		jsr	(resload_Control,a1)
+		btst	#AFB_68010,(7,a7)
+		lea	(12,a7),a7
+		movem.l	(a7)+,d0-d1/a0-a1
+		bne	.68010
+	;68000 6-byte stackframe
+		move.l	(4,a7),-(a7)			;pc
+		move.w	(4,a7),(8,a7)			;sr
+		clr.w	(6,a7)				;ext.l sr
+		move.l	(a7),(4,a7)			;pc
+		addq.l	#2,a7
+	IFD _debug
+		bra	_debug
+	ELSE
+		bra	.debug
+	ENDC
+	;68010+ 8-byte stackframe
+.68010		move.w	(a7),(6,a7)			;sr
 		move.l	(2,a7),(a7)			;pc
 		clr.w	(4,a7)				;ext.l sr
 	IFD _debug
@@ -112,14 +143,13 @@ _KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 	ELSE
 		bra	.debug
 	ENDC
-
-.1		cmp.b	(_keyexit,pc),d0
+	;check for quit key
+.nodebug	cmp.b	(_keyexit,pc),d0
 	IFD _exit
 		beq	_exit
 	ELSE
 		beq	.exit
 	ENDC
-
 	IFD _keyexit2
 		cmp.b	(_keyexit2,pc),d0
 	IFD _exit
@@ -128,39 +158,29 @@ _KeyboardHandle	movem.l	d0-d1/a0-a1,-(a7)
 		beq	.exit
 	ENDC
 	ENDC
-
+	;check for help key
 	IFD _key_help
 		cmp.b	#$5f,d0
-		bne	.2
+		bne	.nohelp
 		bsr	_key_help
-.2
+.nohelp
 	ENDC
-
+	;call custom routine
 	IFD _key_check
 		bsr	_key_check
 	ENDC
-
+	;save keycode
 	IFD _keycode
-		move.l	a0,-(a7)
-		lea	(_keycode),a0			;no ',pc' because used absolut sometimes
-		move.b	d0,(a0)
-		move.l	(a7)+,a0
+		lea	(_keycode),a1			;no ',pc' because used absolut sometimes
+		move.b	d0,(a1)
 	ENDC
 
-	;better would be to use the cia-timer to wait, but we aren't know if
-	;they are otherwise used, so using the rasterbeam
-	;required minimum waiting is 85 탎, one rasterline is 63.5 탎
-	;a loop of 3 results in min=127탎 max=190.5탎
-		moveq	#3-1,d1
-.wait1		move.b	(vhposr,a0),d0
-.wait2		cmp.b	(vhposr,a0),d0
-		beq	.wait2
-		dbf	d1,.wait1
-
-	;set input mode
-		and.b	#~(CIACRAF_SPMODE),(ciacra,a1)
-		movem.l	(a7)+,d0-d1/a0-a1
-		rts
+.end		move	#INTF_PORTS,(intreq,a0)
+	;to avoid timing problems on very fast machines we do another
+	;custom register access
+		tst	(intreqr,a0)
+		movem.l	(a7)+,d0/a0-a1
+		rte
 
 	IFND _exit
 .debug		pea	TDREASON_DEBUG.w
