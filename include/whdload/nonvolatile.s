@@ -4,11 +4,13 @@
 ;		will be constructed directly in memory
 ;		all data will be written to single file 'nvram'
 ;  :Author.	Wepl
-;  :Version.	$Id: nonvolatile.s 1.2 2018/08/21 01:23:59 wepl Exp wepl $
+;  :Version.	$Id: nonvolatile.s 1.3 2019/10/17 23:09:51 wepl Exp wepl $
 ;  :History.	22.03.18 created for game UFO
 ;		17.08.18 made compatible to vasm
 ;		21.08.18 _GetNVInfo fixed
 ;		15.08.19 _nonvolatile_init now saves all regs
+;		09.02.20 using correct length returned from nv_load in _GetCopyNV
+;			 added missing execbase init in _GetCopyNV
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -88,7 +90,7 @@ _GetCopyNV	movem.l	d6-d7/a0-a3/a6,-(a7)
 		bsr	_nv_load
 		move.l	d0,d6			;D6 = memory
 		beq	.quit
-		move.l	d0,d7			;D7 = length
+		move.l	d1,d7			;D7 = length
 	;search
 		move.l	d7,d0
 		move.l	(8,a7),a0
@@ -99,6 +101,7 @@ _GetCopyNV	movem.l	d6-d7/a0-a3/a6,-(a7)
 		bne	.found
 	;free memory
 		move.l	d6,a1
+		move.l	(4),a6
 		jsr	(_LVOFreeVec,a6)
 		moveq	#0,d0
 		bra	.quit
