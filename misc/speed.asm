@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.10 2020/03/21 00:51:09 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.11 2020/03/21 01:04:50 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -12,6 +12,7 @@
 ;		13.04.11 made 68000 compatible
 ;		14.03.20 using VSNPrintF, requires WHDLoad v18
 ;			 options added to control repeat etc.
+;		21.03.20 interruptible after each test, several optimizations
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -75,8 +76,6 @@ _start	;	A0 = resident loader
 		lea	(_custom),a6		;A6 = custom
 		move.l	(_expmem),a7
 		add.l	#EXPMEMLEN-$200,a7	;because hrtmon
-		lea	(_ssp),a0
-		move.l	a7,(a0)
 
 SCREENWIDTH	= 320
 SCREENHEIGHT	= 279
@@ -290,10 +289,8 @@ CALC_S	MACRO
 		lea	\2,a0			;test address
 		pea	\1			;stop address
 		move.l	(a7)+,$68
-		move	sr,d5			;D5 = saved SR
-		move.l	a7,d6			;D6 = saved SP
-	CNOP 0,2
-		bset	#CIACRAB_START,(ciacra,a4)
+	CNOP 2,4
+		bset	#CIACRAB_START,(ciacra,a4)	;6 bytes
 	ENDM
 
 CALC_E	MACRO
@@ -302,17 +299,14 @@ CALC_E	MACRO
 		subq.w	#1,d4
 		bmi	.quit\@
 		move.w	#INTF_PORTS,(intreq,a6)
-		tst.w	(dmaconr,a6)		;delay for intack
 		bset	#CIACRAB_START,(ciacra,a4)
 		rte
 .quit\@		move.w	#INTF_PORTS,(intreq,a6)
 		tst.w	(dmaconr,a6)		;delay for intack
-		btst	#13,d5			;supervisor
-		bne	.s\@
-		move.l	(_ssp),a7
-.s\@		move	d5,sr
-		move.l	d6,a7
-		bsr	_pi
+		lea	.back\@,a1
+		move.l	a1,(2,a7)
+		rte
+.back\@		bsr	_pi
 		addq	#2,d0
 	ENDM
 
@@ -478,7 +472,6 @@ _badint		move.w	#INTF_PORTS,(intreq,a6)
 		rte
 
 	CNOP 0,4
-_ssp		dc.l	0
 _loops		dc.l	0
 _tags		dc.l	WHDLTAG_ECLOCKFREQ_GET
 _freq		dc.l	0
