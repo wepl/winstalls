@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.8 2020/03/21 00:11:32 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.9 2020/03/21 00:16:53 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -123,6 +123,21 @@ sb=cb|WCPUF_SB|WCPUF_NWA
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena,a6)
 		tst.b	(ciaicr,a4)
 		move.w	#INTF_PORTS,(intreq,a6)
+	;set extra loops
+		move.l	_custom2,d0
+		beq	.nc2
+		moveq	#11-1,d1
+		subq.l	#1,d0
+		beq	.sc2
+		moveq	#22-1,d1
+		subq.l	#1,d0
+		beq	.sc2
+		moveq	#110-1,d1
+		subq.l	#1,d0
+		bne	.nc2
+.sc2		lea	_loops,a0
+		move.l	d1,(a0)
+.nc2
 	;copy code to chip
 		lea	_rchip,a0
 		lea	_stuffend,a1
@@ -142,21 +157,6 @@ sb=cb|WCPUF_SB|WCPUF_NWA
 		lea	(_var),a2			;A2 = slave
 		move.l	(_expmem),a3			;A3 = expmem
 
-	;set extra loops
-		move.l	_custom2,d0
-		beq	.nc2
-		moveq	#11-1,d1
-		subq.l	#1,d0
-		beq	.sc2
-		moveq	#22-1,d1
-		subq.l	#1,d0
-		beq	.sc2
-		moveq	#110-1,d1
-		subq.l	#1,d0
-		bne	.nc2
-.sc2		lea	_loops,a0
-		move.l	d1,(a0)
-.nc2
 	;print screen text
 		moveq	#0,d0
 		move.l	#SCREENHEIGHT-CHARHEIGHT,d1
@@ -292,8 +292,8 @@ CALC_S	MACRO
 		move.l	(a7)+,$68
 		move	sr,d5			;D5 = saved SR
 		move.l	a7,d6			;D6 = saved SP
+	CNOP 0,2
 		bset	#CIACRAB_START,(ciacra,a4)
-	QUAD
 	ENDM
 
 CALC_E	MACRO
@@ -396,6 +396,9 @@ CALCW	MACRO
 .q\@
 	ENDM
 
+;************** following code is copied to chip/fast
+
+	CNOP 0,4
 _rchip		move.l	_custom3,d3
 		bne	.nocia
 		CALCR	_cia,$bfe001,_byte,b
@@ -619,6 +622,8 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 _font		INCBIN	sources:pics/pic_font_5x6_br.bin
 _font_
 _stuffend
+
+;************** end of copied code
 
 _copper		dc.w	diwstrt,$1a81
 		dc.w	diwstop,$1ac1+((SCREENHEIGHT-256)*$100)
