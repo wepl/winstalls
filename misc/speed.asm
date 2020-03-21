@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.11 2020/03/21 01:04:50 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.12 2020/03/21 01:50:55 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -13,6 +13,7 @@
 ;		14.03.20 using VSNPrintF, requires WHDLoad v18
 ;			 options added to control repeat etc.
 ;		21.03.20 interruptible after each test, several optimizations
+;			 create files with timestamp
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -235,6 +236,29 @@ catcpu	MACRO
 		btst	#6,$bfe001
 		bne	.again
 
+	;build save filename
+		move.l	_time,a1
+		add.w	#whdlt_sec,a1
+		moveq	#0,d0
+		move.b	(a1),d0		;sec
+		move	d0,-(a7)
+		move.b	-(a1),d0	;min
+		move	d0,-(a7)
+		move.b	-(a1),d0	;hour
+		move	d0,-(a7)
+		move.b	-(a1),d0	;day
+		move	d0,-(a7)
+		move.b	-(a1),d0	;month
+		move	d0,-(a7)
+		move.b	-(a1),d0	;year
+		add	#2000,d0
+		move	d0,-(a7)
+		move.l	a7,a2
+		moveq	#100,d0		;buflen
+		sub.l	d0,a7
+		move.l	a7,a0		;buffer
+		lea	(_pic),a1	;format
+		jsr	(resload_VSNPrintF,a5)
 	;save picture
 		lea	(MEMSCREEN),a0
 		lea	(_iff),a1
@@ -243,7 +267,7 @@ catcpu	MACRO
 		cmp.l	a1,a2
 		bne	.cpy
 		move.l	a0,a1
-		lea	(_pic),a0
+		move.l	a7,a0		;name
 		move.l	#(_iff_-_iff)+SCREENWIDTH*SCREENHEIGHT/8,d0
 		jsr	(resload_SaveFile,a5)
 	;end
@@ -491,6 +515,8 @@ _custom2	dc.l	0
 _custom3	dc.l	0
 		dc.l	WHDLTAG_Private5	;allows free modifications using SetCPU
 		dc.l	-1
+		dc.l	WHDLTAG_TIME_GET
+_time		dc.l	0
 		dc.l	TAG_DONE
 _read		dc.b	"read",0
 _writ		dc.b	"writ",0
@@ -641,7 +667,7 @@ _iff		dc.l	"FORM",4+8+$14+8+6+8+SCREENWIDTH*SCREENHEIGHT/8,"ILBM"
 		dc.b	0,0,0,255,255,255
 		dc.l	"BODY",SCREENWIDTH*SCREENHEIGHT/8
 _iff_
-_pic		dc.b	"benchmark.ilbm",0
+_pic		dc.b	"speed-%d%02d%02d-%02d%02d%02d.ilbm",0
 _nc		dc.b	"      nc",0
 _ic		dc.b	"      ic",0
 _bc		dc.b	"   ss+bc",0
