@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.7 2011/05/01 23:09:03 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.8 2020/03/21 00:11:32 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -94,42 +94,6 @@ bc=ic|WCPUF_BC|WCPUF_SS
 wt=bc|WCPUF_DC
 cb=WCPUF_Slave_CB|WCPUF_Base_CB|WCPUF_Exp_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS
 sb=cb|WCPUF_SB|WCPUF_NWA
-
-catcpu	MACRO
-		addq	#2,d0
-		lea	\2,a0
-		bsr	_ps
-		sub.w	#CHARWIDTH*8,d0
-		addq.w	#CHARHEIGHT+1,d1
-		move.l	#\1,d3
-		bsr	_setcpu
-		movem.l	d0-d1/a0-a1,-(a7)
-		moveq	#0,d0
-		moveq	#0,d1
-		jsr	(resload_SetCPU,a5)
-		move.l	d0,d2
-		movem.l	(a7)+,d0-d1/a0-a1
-		bsr	_pi
-		move.w	_attn+2,d7
-		btst	#AFB_68020,d7
-		beq	.q\@
-	MC68020
-		movec	cacr,d2
-		sub.w	#CHARWIDTH*8,d0
-		addq.w	#CHARHEIGHT+1,d1
-		bsr	_pi
-		sub.w	#CHARHEIGHT+1,d1
-		btst	#AFB_68060,d7
-		beq	.q\@
-	MC68060
-		movec	pcr,d2
-		sub.w	#CHARWIDTH*8,d0
-		add.w	#(CHARHEIGHT+1)*2,d1
-		bsr	_pi
-		sub.w	#(CHARHEIGHT+1)*2,d1
-.q\@		sub.w	#CHARHEIGHT+1,d1
-	MC68000
-	ENDM
 
 	;clear screen
 		lea	(MEMSCREEN),a0
@@ -245,6 +209,11 @@ catcpu	MACRO
 
 		moveq	#13*CHARWIDTH,d0
 		sub.l	#3*(CHARHEIGHT+1),d1
+catcpu	MACRO
+		move.l	#\1,d3
+		lea	\2,a0
+		bsr	_catcpu
+	ENDM
 		catcpu	nc,_nc
 		catcpu	ic,_ic
 		catcpu	bc,_bc
@@ -281,6 +250,39 @@ catcpu	MACRO
 	;end
 		pea	TDREASON_OK
 		jmp	(resload_Abort,a5)
+
+_catcpu		addq	#2,d0
+		bsr	_ps
+		sub.w	#CHARWIDTH*8,d0
+		addq.w	#CHARHEIGHT+1,d1
+		bsr	_setcpu
+		movem.l	d0-d1/a0-a1,-(a7)
+		moveq	#0,d0
+		moveq	#0,d1
+		jsr	(resload_SetCPU,a5)
+		move.l	d0,d2
+		movem.l	(a7)+,d0-d1/a0-a1
+		bsr	_pi
+		move.w	_attn+2,d7
+		btst	#AFB_68020,d7
+		beq	.q
+	MC68020
+		movec	cacr,d2
+		sub.w	#CHARWIDTH*8,d0
+		addq.w	#CHARHEIGHT+1,d1
+		bsr	_pi
+		sub.w	#CHARHEIGHT+1,d1
+		btst	#AFB_68060,d7
+		beq	.q
+	MC68060
+		movec	pcr,d2
+		sub.w	#CHARWIDTH*8,d0
+		add.w	#(CHARHEIGHT+1)*2,d1
+		bsr	_pi
+		sub.w	#(CHARHEIGHT+1)*2,d1
+.q		sub.w	#CHARHEIGHT+1,d1
+		rts
+	MC68000
 
 CALC_S	MACRO
 		move.l	_loops,d4
