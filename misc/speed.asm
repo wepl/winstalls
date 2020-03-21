@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.9 2020/03/21 00:16:53 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.10 2020/03/21 00:51:09 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -317,6 +317,8 @@ CALC_E	MACRO
 	ENDM
 
 CALCRR	MACRO
+		btst	#6,$bfe001
+		beq	.q\@
 		move.l	#\3,d3
 		bsr	_setcpu
 		CALC_S	.go\@,\1
@@ -331,11 +333,10 @@ CALCRR	MACRO
 		addq.l	#8,d2
 		bra	.loop\@
 .go\@		CALC_E
+.q\@
 	ENDM
 
 CALCR	MACRO
-		btst	#6,$bfe001
-		beq	.q\@
 		moveq	#0,d0
 		addq.w	#6,d1
 		lea	\1,a0
@@ -353,10 +354,11 @@ CALCR	MACRO
 		CALCRR	\2,\4,wt
 		CALCRR	\2,\4,cb
 		CALCRR	\2,\4,sb
-.q\@
 	ENDM
 
 CALCWW	MACRO
+		btst	#6,$bfe001
+		beq	.q\@
 		move.l	#\3,d3
 		bsr	_setcpu
 		CALC_S	.go\@,\1
@@ -371,11 +373,10 @@ CALCWW	MACRO
 		addq.l	#8,d2
 		bra	.loop\@
 .go\@		CALC_E
+.q\@
 	ENDM
 
 CALCW	MACRO
-		btst	#6,$bfe001
-		beq	.q\@
 		moveq	#0,d0
 		addq.w	#6,d1
 		lea	\1,a0
@@ -393,7 +394,6 @@ CALCW	MACRO
 		CALCWW	\2,\4,wt
 		CALCWW	\2,\4,cb
 		CALCWW	\2,\4,sb
-.q\@
 	ENDM
 
 ;************** following code is copied to chip/fast
