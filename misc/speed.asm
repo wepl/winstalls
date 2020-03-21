@@ -4,12 +4,14 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.6 2003/06/16 06:47:08 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.7 2011/05/01 23:09:03 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
 ;		17.02.03 WHDLTAG_Private5 added
 ;		13.04.11 made 68000 compatible
+;		14.03.20 using VSNPrintF, requires WHDLoad v18
+;			 options added to control repeat etc.
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -23,7 +25,7 @@
 
  BITDEF AF,68060,7
 
-	OUTPUT	"wart:.debug/speed.slave"
+	OUTPUT	"ram:speed.slave"
 
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
@@ -34,27 +36,34 @@
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10
+		dc.w	18
 		dc.w	WHDLF_NoError		;ws_flags
 		dc.l	$40000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
 		dc.w	0			;ws_CurrentDir
 		dc.w	0			;ws_DontCache
-		dc.b	0			;ws_keydebug = F9
+		dc.b	0			;ws_keydebug
 		dc.b	$59			;ws_keyexit = F10
 EXPMEMLEN = $3000
 _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0			;ws_kickname
+		dc.l	0			;ws_kicksize
+		dc.w	0			;ws_kickcrc
+		dc.w	_config-_base		;ws_config
 
 _name		dc.b	"Memory Speed Benchmark Slave",0
-_copy		dc.b	"2000-2003,2011 Wepl",0
+_copy		dc.b	"2000-2003,2011,2020 Wepl",0
 _info		dc.b	"done by Wepl "
 	DOSCMD	"WDate  >T:date"
 	INCBIN	"T:date"
 		dc.b	0
+_config		dc.b	"C1:B:Run in Usermode;"
+		dc.b	"C2:L:Test period:1/11s,1s,2s,10s;"
+		dc.b	"C3:B:Only Custom Registers",0
 	EVEN
 
 ;======================================================================
@@ -86,20 +95,14 @@ wt=bc|WCPUF_DC
 cb=WCPUF_Slave_CB|WCPUF_Base_CB|WCPUF_Exp_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS
 sb=cb|WCPUF_SB|WCPUF_NWA
 
-setcpu	MACRO
-		movem.l	d0-d1/a0-a1,-(a7)
-		move.l	#\1,d0
-		move.l	#WCPUF_All,d1
-		jsr	(resload_SetCPU,a5)
-		movem.l	(a7)+,d0-d1/a0-a1
-	ENDM
 catcpu	MACRO
 		addq	#2,d0
 		lea	\2,a0
 		bsr	_ps
 		sub.w	#CHARWIDTH*8,d0
 		addq.w	#CHARHEIGHT+1,d1
-		setcpu	\1
+		move.l	#\1,d3
+		bsr	_setcpu
 		movem.l	d0-d1/a0-a1,-(a7)
 		moveq	#0,d0
 		moveq	#0,d1
@@ -175,6 +178,21 @@ catcpu	MACRO
 		lea	(_var),a2			;A2 = slave
 		move.l	(_expmem),a3			;A3 = expmem
 
+	;set extra loops
+		move.l	_custom2,d0
+		beq	.nc2
+		moveq	#11-1,d1
+		subq.l	#1,d0
+		beq	.sc2
+		moveq	#22-1,d1
+		subq.l	#1,d0
+		beq	.sc2
+		moveq	#110-1,d1
+		subq.l	#1,d0
+		bne	.nc2
+.sc2		lea	_loops,a0
+		move.l	d1,(a0)
+.nc2
 	;print screen text
 		moveq	#0,d0
 		move.l	#SCREENHEIGHT-CHARHEIGHT,d1
@@ -183,55 +201,34 @@ catcpu	MACRO
 
 		moveq	#0,d0
 		moveq	#1,d1
-		lea	_top,a0
+		move.l	_loops,-(a7)
+		addq.l	#1,(a7)
+		move.l	a7,a1
+		lea	_top1,a0
 		bsr	_ps
-
-		moveq	#0,d0
-		addq.l	#6,d1
-		lea	_top2,a0
-		bsr	_ps
-		move.l	_attn,d2
-		bsr	_pi1
-		lea	_top3,a0
-		bsr	_ps
-		move.l	_freq,d2
-		bsr	_pi1
-		lea	_top5,a0
-		bsr	_ps
-		move.l	_ver,d2
-		bsr	_pi1
-		lea	_dot,a0
-		bsr	_ps
-		move.l	_rev,d2
-		bsr	_pi1
-		lea	_dot,a0
-		bsr	_ps
-		move.l	_build,d2
-		bsr	_pi1
+		addq.l	#4,a7
 
 		moveq	#0,d0
 		add.l	#CHARHEIGHT+1,d1
-		lea	_chip,a0
+		lea	_top2,a0
+		move.l	_build,-(a7)
+		move.l	_rev,-(a7)
+		move.l	_ver,-(a7)
+		move.l	_freq,-(a7)
+		move.l	_attn,-(a7)
+		move.l	a7,a1
 		bsr	_ps
-		lea	_equ,a0
+		add.w	#5*4,a7
+
+		moveq	#0,d0
+		add.l	#CHARHEIGHT+1,d1
+		lea	_top3,a0
+		move.l	a2,-(a7)
+		move.l	a3,-(a7)
+		pea	MEMCHIP
+		move.l	a7,a1
 		bsr	_ps
-		move.l	#MEMCHIP,d2
-		bsr	_pi1
-		add.l	#2*CHARWIDTH,d0
-		lea	_exp,a0
-		bsr	_ps
-		lea	_equ,a0
-		bsr	_ps
-		move.l	a3,d2
-		bsr	_pi1
-		add.l	#2*CHARWIDTH,d0
-		lea	_slv,a0
-		bsr	_ps
-		lea	_equ,a0
-		bsr	_ps
-		move.l	a2,a0
-		move.l	a0,d2
-		bsr	_pi1
+		add.w	#3*4,a7
 
 		move.l	#7*CHARWIDTH,d0
 		add.w	#7+CHARHEIGHT+1,d1
@@ -286,9 +283,10 @@ catcpu	MACRO
 		jmp	(resload_Abort,a5)
 
 CALC_S	MACRO
-		moveq	#0,d2
+		move.l	_loops,d4
+		moveq	#0,d2			;counter
 		lea	\2,a0			;test address
-		pea	\1
+		pea	\1			;stop address
 		move.l	(a7)+,$68
 		move	sr,d5			;D5 = saved SR
 		move.l	a7,d6			;D6 = saved SP
@@ -297,11 +295,16 @@ CALC_S	MACRO
 	ENDM
 
 CALC_E	MACRO
-.quit0\@	btst	#CIAICRB_TA,(ciaicr,a4)
-		bne	(.quit\@)
+		btst	#CIAICRB_TA,(ciaicr,a4)
+		beq	_badint
+		subq.w	#1,d4
+		bmi	.quit\@
 		move.w	#INTF_PORTS,(intreq,a6)
+		tst.w	(dmaconr,a6)		;delay for intack
+		bset	#CIACRAB_START,(ciacra,a4)
 		rte
 .quit\@		move.w	#INTF_PORTS,(intreq,a6)
+		tst.w	(dmaconr,a6)		;delay for intack
 		btst	#13,d5			;supervisor
 		bne	.s\@
 		move.l	(_ssp),a7
@@ -312,7 +315,8 @@ CALC_E	MACRO
 	ENDM
 
 CALCRR	MACRO
-		setcpu	\3
+		move.l	#\3,d3
+		bsr	_setcpu
 		CALC_S	.go\@,\1
 .loop\@		move.\2	(a0),d7
 		move.\2	(a0),d7
@@ -351,7 +355,8 @@ CALCR	MACRO
 	ENDM
 
 CALCWW	MACRO
-		setcpu	\3
+		move.l	#\3,d3
+		bsr	_setcpu
 		CALC_S	.go\@,\1
 .loop\@		move.\2	d7,(a0)
 		move.\2	d7,(a0)
@@ -389,15 +394,20 @@ CALCW	MACRO
 .q\@
 	ENDM
 
-_rchip		CALCR	_cia,$bfe001,_byte,b
+_rchip		move.l	_custom3,d3
+		bne	.nocia
+		CALCR	_cia,$bfe001,_byte,b
 		CALCW	_cia,$bfec01,_byte,b
 
 		addq	#2,d1
+.nocia
 		CALCR	_cust,vposr(a6),_byte,b
 		CALCR	_cust,vposr(a6),_word,w
 		CALCR	_cust,vposr(a6),_long,l
 		CALCW	_cust,$184(a6),_word,w
 		CALCW	_cust,$184(a6),_long,l
+		move.l	_custom3,d3
+		bne	.rts
 
 		addq	#2,d1
 		CALCR	_chip,MEMCHIP,_byte,b
@@ -423,15 +433,19 @@ _rchip		CALCR	_cia,$bfe001,_byte,b
 		CALCW	_slv,(a2),_word,w
 		CALCW	_slv,(a2),_long,l
 
-		rts
+.rts		rts
 
-_rfast		addq	#2,d1
+_rfast		move.l	_custom3,d3
+		bne	.nocia
+		addq	#2,d1
 		CALCR	_cia,$bfe001,_byte,b
 		CALCW	_cia,$bfec01,_byte,b
-
+.nocia
 		addq	#2,d1
 		CALCR	_cust,vposr(a6),_word,w
 		CALCW	_cust,$184(a6),_word,w
+		move.l	_custom3,d3
+		bne	.rts
 
 		addq	#2,d1
 		CALCR	_chip,MEMCHIP,_word,w
@@ -445,10 +459,22 @@ _rfast		addq	#2,d1
 		CALCR	_slv,(a2),_word,w
 		CALCW	_slv,(a2),_word,w
 
+.rts		rts
+
+_setcpu		movem.l	d0-d1/a0-a1,-(a7)
+		move.l	d3,d0
+		move.l	#WCPUF_All,d1
+		jsr	(resload_SetCPU,a5)
+		movem.l	(a7)+,d0-d1/a0-a1
 		rts
+
+_badint		move.w	#INTF_PORTS,(intreq,a6)
+		move.w	#$f00,(color,a6)	;signal unexpected interrupt & delay for intack
+		rte
 
 	CNOP 0,4
 _ssp		dc.l	0
+_loops		dc.l	0
 _tags		dc.l	WHDLTAG_ECLOCKFREQ_GET
 _freq		dc.l	0
 		dc.l	WHDLTAG_ATTNFLAGS_GET
@@ -461,7 +487,11 @@ _rev		dc.l	0
 _build		dc.l	0
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
-		dc.l	WHDLTAG_Private5	;allowing free modifications using SetCPU
+		dc.l	WHDLTAG_CUSTOM2_GET
+_custom2	dc.l	0
+		dc.l	WHDLTAG_CUSTOM3_GET
+_custom3	dc.l	0
+		dc.l	WHDLTAG_Private5	;allows free modifications using SetCPU
 		dc.l	-1
 		dc.l	TAG_DONE
 _read		dc.b	"read",0
@@ -480,37 +510,34 @@ _chip		dc.b	"chip",0
 ; IN:	d0 = word x
 ;	d1 = word y
 ;	a0 = cptr string
+;	a1 = aptr args
 ; OUT:	d0 = word new x
 
-_ps		movem.l	d2,-(a7)
+_ps		movem.l	d0-d2/a2,-(a7)
+		moveq	#100,d0		;buflen
+		sub.l	d0,a7
+		move.l	a1,a2		;args
+		move.l	a0,a1		;fmt
+		move.l	a7,a0		;buffer
+		jsr	(resload_VSNPrintF,a5)
+		movem.l	(100,a7),d0-d1
+		move.l	a7,a0
 		moveq	#0,d2
 		bra	.in
 .next		bsr	_pc
 		add.w	#CHARWIDTH,d0
 .in		move.b	(a0)+,d2
 		bne	.next
-		movem.l	(a7)+,d2
+		add.w	#104,a7
+		movem.l	(a7)+,d1-d2/a2
 		rts
 
 ; IN:	d0 = word x
 ;	d1 = word y
 ;	d2 = long value
-;	d6 = leading spaces?
 ; OUT:	d0 = word new x
 
-_pi		move.l	d6,-(a7)
-		st	d6
-		bsr	_pi2
-		move.l	(a7)+,d6
-		rts
-
-_pi1		move.l	d6,-(a7)
-		sf	d6
-		bsr	_pi2
-		move.l	(a7)+,d6
-		rts
-
-_pi2		movem.l	d2-d5,-(a7)
+_pi		movem.l	d2-d5,-(a7)
 		moveq	#7,d4
 		sf	d5
 		move.l	d2,d3
@@ -529,8 +556,6 @@ _pi2		movem.l	d2-d5,-(a7)
 		bne	.g
 		tst.b	d4		;last?
 		beq	.g
-		tst.b	d6
-		beq	.l
 		moveq	#" ",d2
 		bra	.g
 
@@ -538,7 +563,7 @@ _pi2		movem.l	d2-d5,-(a7)
 
 .g		bsr	_pc
 		add.w	#CHARWIDTH,d0
-.l		dbf	d4,.n
+		dbf	d4,.n
 		movem.l	(a7)+,d2-d5
 		rts
 
@@ -626,13 +651,10 @@ _sb		dc.b	"  sb/nwa",0
 _leg2		dc.b	"setcpu",0
 _leg3		dc.b	"cacr",0
 _leg4		dc.b	"pcr",0
-_top		dc.b	">>speed<< - amount of memory accesses per 1/11 second",0
-_top2		dc.b	"AttnFlags=",0
-_top3		dc.b	"  Eclock=",0
-_top5		dc.b	"  whdload"
-_equ		dc.b	"=",0
-_dot		dc.b	".",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.10 wepl "
+_top1		dc.b	">>speed<< - amount of memory accesses per %ld/11 second",0
+_top2		dc.b	"AttnFlags=$%lx  Eclock=%ld  whdload=%ld.%ld.%ld",0
+_top3		dc.b	"chip(code top)=$%lx  exp(code bottom)=$%lx  slv=$%lx",0
+_quit		dc.b	"hold lmb to quit and save pic  v1.11 wepl "
 	INCBIN	t:date
 		dc.b	0
 	EVEN
