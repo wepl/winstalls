@@ -4,13 +4,15 @@
 ;		will be constructed directly in memory
 ;		all data will be written to single file 'nvram'
 ;  :Author.	Wepl
-;  :Version.	$Id: nonvolatile.s 1.3 2019/10/17 23:09:51 wepl Exp wepl $
+;  :Version.	$Id: nonvolatile.s 1.4 2020/02/09 22:42:38 wepl Exp wepl $
 ;  :History.	22.03.18 created for game UFO
 ;		17.08.18 made compatible to vasm
 ;		21.08.18 _GetNVInfo fixed
 ;		15.08.19 _nonvolatile_init now saves all regs
 ;		09.02.20 using correct length returned from nv_load in _GetCopyNV
 ;			 added missing execbase init in _GetCopyNV
+;		31.03.20 added an workaround for games not correctly traversing
+;			 the MinList returned by _GetNVList (Syndicate)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -310,6 +312,11 @@ _GetNVInfo	move.l	a6,-(a7)
 
 ;-----------------------
 ; return a list of the items stored in nonvolatile storage
+; some programs do not correctly traverse the returned list
+; (e.g. Syndicate), they are using LN_SUCC until it is NULL,
+; so reading the non existent last node, to avoid access faults
+; an empty long is added after struct MinList so that using
+; nve_Name on this node is NULL to avoid an access fault
 ; IN:	A0 = CPTR appName
 ;	D1 = BOOL killRequesters
 ; OUT:	D0 = APTR struct MinList
@@ -319,7 +326,7 @@ _GetNVList	movem.l	d4-d7/a0/a2-a4/a6,-(a7)
 		bsr	_nv_load
 		move.l	d0,d6			;D6 = memory
 		beq	.quit
-		move.l	d0,d7			;D7 = length
+		move.l	d1,d7			;D7 = length
 	;count entries
 		moveq	#0,d5			;D5 = count
 		move.l	d6,a2
@@ -339,7 +346,7 @@ _GetNVList	movem.l	d4-d7/a0/a2-a4/a6,-(a7)
 	;alloc
 		moveq	#NVENTRY_SIZE+32,d0	;entry + item name
 		mulu	d5,d0
-		add.l	#8+MLH_SIZE,d0		;header + min list header
+		add.l	#8+MLH_SIZE+4,d0	;header + min list header + dummy
 		move.l	#MEMF_CLEAR,d1
 		move.l	(4),a6
 		jsr	(_LVOAllocVec,a6)
@@ -351,7 +358,7 @@ _GetNVList	movem.l	d4-d7/a0/a2-a4/a6,-(a7)
 		clr.l	(a4)+
 		move.l	a4,d4			;D4 = list, rc
 		NEWLIST	a4
-		add	#MLH_SIZE,a4
+		add	#MLH_SIZE+4,a4
 	;loop
 		move.l	d6,a2
 		lea	(a2,d7.l),a3		;A3 = end of nvram
