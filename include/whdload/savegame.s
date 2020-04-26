@@ -12,7 +12,7 @@
 ;		it prior including this source with a label _font and define
 ;		a variable EXTSGFONT=1
 ;  :Author.	Wepl
-;  :Version.	$Id: savegame.s 1.4 2000/08/07 21:07:03 jah Exp $
+;  :Version.	$Id: savegame.s 1.5 2007/07/29 15:56:17 wepl Exp wepl $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed
@@ -20,6 +20,7 @@
 ;		23.07.00 adapted for whdload v12 and WHDLTAG_KEYTRANS_GET
 ;		29.07.07 name of the savegame file must be overgiven now
 ;			 other font file can specified
+;		09.03.20 made pc-relative (JOTD)
 ;  :Requires.	_keyexit	byte variable containing rawkey code
 ;		_exit		function to quit
 ;  :Copyright.	Public Domain
@@ -571,7 +572,7 @@ _sg_int68	movem.l	d0-d1/a0,-(a7)
 	;set raw
 		move.b	d0,(sg_rawkey,a5)
 	;qualifiers
-		lea	(.keys),a0
+		lea	(.keys,pc),a0
 .l		cmp.b	(a0)+,d0
 		bne	.n
 		move.b	(a0),d1
@@ -778,7 +779,7 @@ _ps		movem.l	d2,-(a7)
 
 _pc		movem.l	d0-d7/a0-a2,-(a7)
 
-		lea	_font,a0
+		lea	(_font,pc),a0
 		cmp.l	#$3f3,(a0)
 		bne	.relok
 		sub.l	a1,a1
