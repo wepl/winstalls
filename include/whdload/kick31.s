@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.41 2019/01/19 14:45:01 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.42 2019/10/17 23:29:12 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -42,6 +42,8 @@
 ;		11.01.19 key repeat after osswitch disabled in input.device
 ;		13.01.19 _cb_keyboard added
 ;		17.08.19 INIT_NONVOLATILE added
+;		26.04.20 prefer A600 kickstart if NO68020 is defined
+;			 fail if A1200/4000 kickstart is present and cpu<68020 (JOTD/Wepl)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -209,6 +211,18 @@ kick_reboot
 	IFND NO68020
 		jmp	([_expmem,pc],2.w)		;original entry
 	ELSE
+	IFD slv_Version
+		move.w	(_kickcrc,pc),d0
+		cmp.w	#KICKCRC600,d0
+		beq	.kickok
+		moveq	#AFF_68020,d0
+		and.l	(_attnflags,pc),d0
+		bne	.kickok
+		pea	(_badkickstart,pc)
+		pea	TDREASON_FAILMSG
+		jmp	(resload_Abort,a5)
+.kickok
+	ENDC
 		move.l	(_expmem,pc),-(a7)
 		addq.l	#2,(a7)
 		rts
@@ -1418,13 +1432,22 @@ _debug5		tst	-5	;unable to alloc mem for iocache
 	IFND slv_Version
 slv_kickname	dc.b	"40068.a1200",0
 	ELSE
-slv_kickname	dc.w	KICKCRC1200,.a1200-slv_base
-		dc.w	KICKCRC4000,.a4000-slv_base
+slv_kickname
+	IFD NO68020
 		dc.w	KICKCRC600,.a600-slv_base
+	ENDC
+		dc.w	KICKCRC1200,.a1200-slv_base
+		dc.w	KICKCRC4000,.a4000-slv_base
+	IFND NO68020
+		dc.w	KICKCRC600,.a600-slv_base
+	ENDC
 		dc.w	0
 .a600		dc.b	"40063.a600",0
 .a1200		dc.b	"40068.a1200",0
 .a4000		dc.b	"40068.a4000",0
+	IFD NO68020
+_badkickstart	dc.b	"Your Kickstart image isn't 68000/010 compatible",0
+	ENDC
 	ENDC
 	IFD INIT_LOWLEVEL
 _lowlevelname	dc.b	"lowlevel.library",0
