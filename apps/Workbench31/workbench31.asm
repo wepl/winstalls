@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.9 2018/12/29 00:31:36 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.10 2019/01/02 21:50:00 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -12,6 +12,7 @@
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		28.12.18 SEGTRACKER added
+;		15.08.19 INIT_NONVOLATILE added
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -88,6 +89,7 @@ HRTMON				;add support for HrtMON
 ;INIT_GADTOOLS			;enable gadtools.library
 ;INIT_LOWLEVEL			;load lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library
+;INIT_NONVOLATILE		;init nonvolatile.library
 IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;JOYPADEMU			;use keyboard for joypad buttons
 ;MEMFREE	= $200		;location to store free memory counter
