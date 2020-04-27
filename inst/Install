@@ -1,4 +1,4 @@
-; $Id: Install 1.25 2014/04/09 01:46:36 wepl Exp wepl $
+; $Id: Install 1.26 2014/04/09 01:53:32 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -268,7 +268,31 @@
     )
 
     (				;----- 4 = CD (Files) -----
+
+      ;single CD name
       (message ("\nInsert your %s CD in any drive." @app-name))
+
+      ;multiple CD names, won't give message if already inserted
+      (set #AD_filereq "reshootr.bin")
+      (set #AD_diskname1 "RESHOOTR")
+      (set #AD_diskname2 "reshootr_v1.2")
+      (until
+	#AD_disk
+	(if
+	  (exists ("%s:%s" #AD_diskname1 #AD_filereq) (noreq))
+	  (set #AD_disk #AD_diskname1)
+	)
+	(if
+	  (exists ("%s:%s" #AD_diskname2 #AD_filereq) (noreq))
+	  (set #AD_disk #AD_diskname2)
+	)
+	(if
+	  #AD_disk
+	  ("")
+	  (message ("\nInsert your %s CD in any drive." @app-name))
+	)
+      )
+
       (copyfiles
         (help @copyfiles-help)
         (source "HolidayMakerCDTV:")
