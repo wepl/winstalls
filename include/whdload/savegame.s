@@ -11,7 +11,7 @@
 ;		font with a char size of width=6, height=8 by doing INCBIN of
 ;		it prior including this source with a label _font and define
 ;		a variable EXTSGFONT=1
-;  :Author.	Wepl
+;  :Author.	Wepl, JOTD, ross
 ;  :Version.	$Id: savegame.s 1.5 2007/07/29 15:56:17 wepl Exp wepl $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
@@ -20,7 +20,9 @@
 ;		23.07.00 adapted for whdload v12 and WHDLTAG_KEYTRANS_GET
 ;		29.07.07 name of the savegame file must be overgiven now
 ;			 other font file can specified
+;		13.11.19 fix for FantasticDizzyAGA (ross)
 ;		09.03.20 made pc-relative (JOTD)
+;		26.04.20 reworked fixes from 13.11.19
 ;  :Requires.	_keyexit	byte variable containing rawkey code
 ;		_exit		function to quit
 ;  :Copyright.	Public Domain
@@ -43,6 +45,7 @@
 	;	move.w	#$4100,(_custom+bplcon0)
 	;	move.w	#320/8*3,(_custom+bpl1mod)
 	;	move.l	#$00000eee,(_custom+color)
+	;	move.w	#$x,(_custom+fmode)
 
 	ENDC
 
@@ -488,7 +491,7 @@ _sg_get_key	moveq	#0,d0
 
 ;--------------------------------
 
-_sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
+_sg_degrade	movem.l	d2-d7/a2-a3/a6,-(a7)
 		link	a5,#sg_SIZEOF			;A5 = data
 		move.l	d0,(sg_size,a5)
 		move.l	d1,d7				;d7 = return
@@ -497,9 +500,9 @@ _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		move.l	a2,(sg_name,a5)
 		sf	(sg_c_on,a5)
 		sf	(sg_success,a5)
-		bsr	_sg_waitvb
 		move.w	(_custom+intenar),(sg_oldintena,a5)
 		move.w	#$7fff,(_custom+intena)
+		bsr	_sg_waitvb
 		lea	(_custom),a6			;A6 = _custom
 		move.w	(dmaconr,a6),(sg_olddmacon,a5)
 		move.w	#$7fff,(dmacon,a6)
@@ -510,13 +513,12 @@ _sg_degrade	movem.l	d2-d7/a2-a6,-(a7)
 		lea	(_sg_int6c,pc),a0
 		move.l	$6c,(sg_old6c,a5)
 		move.l	a0,$6c
-		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB|INTF_PORTS,(intena,a6)
-		tst.b	(ciaicr+_ciaa)			;clear all intreq
-		move.w	#INTF_VERTB|INTF_PORTS,(intreq,a6)
 		bsr	_sg_waitvb
+		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB|INTF_PORTS,(intena,a6)
 		move.w	#$1200,(bplcon0,a6)
 		clr.w	(bpl1mod,a6)
 		move.l	#$00000eee,(color,a6)
+		clr.w	(fmode,a6)
 		move.w	#DMAF_SETCLR|DMAF_MASTER|DMAF_RASTER,(dmacon,a6)
 	;get keymap
 		clr.l	-(a7)
@@ -539,18 +541,17 @@ _sg_restore	bsr	_sg_clrscr
 		move.b	(sg_success,a5),d0
 		ext.w	d0
 		move.w	d0,a0				;a0 = success
-		bsr	_sg_waitvb
 		move.w	#$7fff,(intena,a6)
+		bsr	_sg_waitvb
 		move.w	#$7fff,(dmacon,a6)
 		move.l	(sg_old68,a5),$68
 		move.l	(sg_old6c,a5),$6c
-		move.w	#$7fff,(intreq,a6)
 		move.w	(sg_oldintena,a5),d0
-		bset	#15,d0				;d0 = intena
+		bset	#INTB_SETCLR,d0			;d0 = intena
 		move.w	(sg_olddmacon,a5),d1
-		bset	#15,d1				;d1 = dmacon
+		bset	#INTB_SETCLR,d1			;d1 = dmacon
 		unlk	a5
-		movem.l	(a7)+,d2-d7/a2-a6
+		movem.l	(a7)+,d2-d7/a2-a3/a6
 		move.w	d0,(_custom+intena)
 		bsr	_sg_waitvb
 		move.w	d1,(_custom+dmacon)
@@ -599,6 +600,7 @@ _sg_int68	movem.l	d0-d1/a0,-(a7)
 		dbf	d1,.int2_w1			;(min=127µs max=190.5µs)
 		and.b	#~(CIACRAF_SPMODE),(ciacra+_ciaa)	;to input
 .int2_exit	move.w	#INTF_PORTS,(intreq,a6)
+		tst.w	(intreqr,a6)
 		movem.l	(a7)+,d0-d1/a0
 		rte
 
@@ -636,6 +638,7 @@ _sg_int6c	move.l	(sg_screen,a5),(bplpt,a6)
 .2		bsr	_pc
 		movem.l	(a7)+,d0-d2
 .1		move.w	#INTF_VERTB,(intreq,a6)
+		tst.w	(intreqr,a6)
 		rte
 
 ;--------------------------------
@@ -853,7 +856,7 @@ _font		INCBIN	Fonts:xen/8
 ;--------------------------------
 
 _info1		dc.b	"Special multiple savegame support",0
-_info2		dc.b	"v1.5 by Wepl 1998-2007",0
+_info2		dc.b	"v1.7 by Wepl 1998-2020, ross 2019",0
 _esc		dc.b	"press Esc to cancel",0
 _save		dc.b	"»»» Save a Game «««",0
 _saveselect	dc.b	"Select a save position using keyboard '1' - '9'",0
