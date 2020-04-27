@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.42 2019/10/17 23:29:12 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.43 2020/04/27 01:14:37 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -1446,7 +1446,7 @@ slv_kickname
 .a1200		dc.b	"40068.a1200",0
 .a4000		dc.b	"40068.a4000",0
 	IFD NO68020
-_badkickstart	dc.b	"Your Kickstart image isn't 68000/010 compatible",0
+_badkickstart	dc.b	"Your Kickstart 3.1 image isn't 68000/010 compatible",0
 	ENDC
 	ENDC
 	IFD INIT_LOWLEVEL
