@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.23 2014/02/01 01:39:34 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.24 2018/03/17 16:57:32 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -40,6 +40,10 @@
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;  :To Do.	more dos packets (maybe)
+;  :Notes.	it should be remembered that MODE_READWRITE on dos.Open works
+;		different in 1.3 (opens only existing files) and 2.0 (creates
+;		files not existing), this makes no diff for kickfs, code is in
+;		dos.library
 ;---------------------------------------------------------------------------*
 
 	INCLUDE	lvo/expansion.i
