@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.24 2018/03/17 16:57:32 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.25 2020/05/10 14:31:14 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -35,6 +35,8 @@
 ;			 sequence and avoids possible WHDLoad switches because
 ;			 performing a resload_SaveFileOffset on not yet existing
 ;			 file offset
+;		10.05.20 if Kickstart v37 is present ACTION_FIND_UPDATE now
+;			 creates a nonexistent file
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -947,11 +949,29 @@ KFSDPKT	MACRO
 		bra	.reply1
 	ENDC
 
-;---------------
+;---------------		lock	delete	create
+; MODE_READWRITE - UPDATE 1.3	WRITE	no	no
+; MODE_READWRITE - UPDATE 2.0	READ	no	yes
+; MODE_OLDFILE - INPUT		READ	no	no
+; MODE_NEWFILE - OUTPUT		WRITE	yes	yes
+
+	IFLT KICKVERSION-36
+.a_findupdate	moveq	#ACCESS_WRITE,d2	;mode
+		bra	.a_findall
+	ELSE
+.a_findupdate	moveq	#ACCESS_READ,d2		;mode
+	;check exist and lock it
+		bsr	.getarg2
+		move.l	d7,d0			;APTR lock
+		bsr	.getarg3
+		move.l	d7,d1			;BSTR name
+		bsr	.lock
+		tst.l	d0			;APTR lock
+		bne	.a_find_locked
+		bra	.a_findoutput
+	ENDC
 
 .a_findinput	moveq	#ACCESS_READ,d2		;mode
-		bra	.a_findall
-.a_findupdate	moveq	#ACCESS_WRITE,d2	;mode
 .a_findall
 	;check exist and lock it
 		bsr	.getarg2
@@ -962,7 +982,7 @@ KFSDPKT	MACRO
 		tst.l	d0			;APTR lock
 		beq	.reply2
 	;init fh
-		bsr	.getarg1
+.a_find_locked	bsr	.getarg1
 		move.l	d7,a0			;fh
 		move.l	d0,(fh_Arg1,a0)		;using the lock we refer the filename later
 	;log the lock to allow check for Open/Close pair
@@ -995,7 +1015,11 @@ KFSDPKT	MACRO
 		move.l	d2,a1
 		move.l	-(a1),d0
 		jsr	(_LVOFreeMem,a6)
+	IFLT KICKVERSION-36
 		bra	.a_findupdate
+	ELSE
+		bra	.a_findinput
+	ENDC
 
 ;---------------
 
