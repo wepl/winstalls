@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.74 2019/01/19 14:45:01 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.75 2019/11/08 19:06:24 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -78,6 +78,7 @@
 ;			 support for SEGTRACKER added
 ;		15.01.19 key repeat after osswitch disabled in input.device
 ;		08.11.19 waitblit added to gfx_text patch (Psygore)
+;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -109,13 +110,18 @@ KICKCRC		= $f9e3				;34.005
 	FAIL	slv_Version must be 16 or higher
 	ENDC
 
+slv_FlagsAdd SET WHDLF_EmulPriv
+	IFD HDINIT
+slv_FlagsAdd SET slv_FlagsAdd|WHDLF_Examine
+	ENDC
+
 KICKSIZE	= $40000			;34.005
 BASEMEM		= CHIPMEMSIZE
 EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
-		dc.w	WHDLF_EmulPriv|slv_Flags;ws_flags
+		dc.w	slv_Flags|slv_FlagsAdd	;ws_flags
 _basemem	dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_boot-slv_base		;ws_GameLoader

@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.36 2019/01/02 21:58:24 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.37 2019/01/19 14:45:01 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -36,6 +36,7 @@
 ;		02.01.19 calculation of exec.ChkSum corrected
 ;			 support for SEGTRACKER added
 ;		19.01.19 key repeat after osswitch disabled in input.device
+;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -59,13 +60,18 @@ KICKCRC		= $e9c6				;33.180
 	FAIL	slv_Version must be 16 or higher
 	ENDC
 
+slv_FlagsAdd SET WHDLF_EmulPriv
+	IFD HDINIT
+slv_FlagsAdd SET slv_FlagsAdd|WHDLF_Examine
+	ENDC
+
 KICKSIZE	= $40000			;33.180
 BASEMEM		= CHIPMEMSIZE
 EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
-		dc.w	WHDLF_EmulPriv|slv_Flags;ws_flags
+		dc.w	slv_Flags|slv_FlagsAdd	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_boot-slv_base		;ws_GameLoader
