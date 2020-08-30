@@ -2,7 +2,7 @@
 ;  :Program.	xenon2.islave.asm
 ;  :Contents.	Imager for Xenon 2
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.islave.asm 1.2 2004/08/13 13:25:53 wepl Exp wepl $
+;  :Version.	$Id: xenon2.islave.asm 1.3 2005/05/11 17:52:46 wepl Exp wepl $
 ;  :History.	10.08.04 created
 ;		11.02.05 v6 added
 ;  :Requires.	-

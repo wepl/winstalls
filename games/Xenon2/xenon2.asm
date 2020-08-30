@@ -2,9 +2,9 @@
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.8 2004/08/13 13:25:27 wepl Exp wepl $
+;  :Version.	$Id: xenon2.asm 1.9 2005/05/11 17:47:20 wepl Exp wepl $
 ;  :History.	31.03.97 initial
-;		12.04.97 adaption from J.F.Fabre's Installer
+;		12.04.97 adaptation from J.F.Fabre's (JOTD) Installer
 ;		20.12.98 work on CDTV version started
 ;		24.12.98 work on disk version started
 ;		25.12.98 disk version finished
@@ -19,19 +19,23 @@
 ;		11.03.05 support for v6 added
 ;		04.05.05 support for v6 continuing
 ;		11.05.05 autofire fix added
+;       24.12.17 (JOTD) adapted to WHDLoad v17
+;       25.02.18 (JOTD) added intro skip in floppy version,
+;                added cache flushes, 68000 quitkey
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	Barfly V2.9, Vasm
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-CDTV		;if defined Slave for CDTV version will be created
+;CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
+	IFD	BARFLY
 	IFD CDTV
 	OUTPUT	"wart:x-y/xenon2/Xenon2CDTV.Slave"
 	ELSE
@@ -43,7 +47,8 @@ CDTV		;if defined Slave for CDTV version will be created
 	BOPT	ODe-			;disable mul optimizing
 	BOPT	w4-			;disable 64k warnings
 	SUPER
-
+	ENDC
+	
 	STRUCTURE	globals,$100
 		LONG	RESLOAD
 
@@ -51,12 +56,12 @@ CDTV		;if defined Slave for CDTV version will be created
 
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10			;ws_Version
+		dc.w	17			;ws_Version
 		dc.w	WHDLF_NoError		;ws_flags
 	IFD CDTV
 		dc.l	$c6000			;ws_BaseMemSize
 	ELSE
-		dc.l	$81000			;ws_BaseMemSize
+		dc.l	$80000			;ws_BaseMemSize (was $81000 but why??)
 	ENDC
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -72,28 +77,52 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0                       ;ws_kickname
+		dc.l	0                       ;ws_kicksize
+		dc.w	0                       ;ws_kickcrc
+		dc.w	_config-_base		;ws_config
 
+_config
+        dc.b    "C1:X:Trainer 9 lives/continues 100000 cash:0;"
+	IFD CDTV
+        dc.b    "C2:X:left mouse button emulates B CDTV button:0;"
+	ELSE
+        dc.b    "C2:X:Skip introduction:0;"	
+	ENDC
+		dc.b	0
 ;============================================================================
 
+
+	IFD BARFLY
 	IFND	.passchk
 	DOSCMD	"WDate  >T:date"
 .passchk
 	ENDC
-
+	ENDC
+		
+DECL_DATE:MACRO
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
+	IFD	DATETIME
+		incbin	datetime
+	ENDC
+	ENDM
+		
 	IFND CDTV
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
-_info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.9 Floppy "
-		INCBIN	"T:date"
+_info		dc.b	"installed & fixed by Wepl & JOTD",10
+		dc.b	"Version 1.12 Floppy "
+		DECL_DATE
 		dc.b	0
 	ELSE
 _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
-_info		dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.6 CDTV "
-		INCBIN	"T:date"
+_info		dc.b	"installed & fixed by Wepl & JOTD",10
+		dc.b	"Version 1.7 CDTV "
+		DECL_DATE
 		dc.b	0
 	ENDC
 	EVEN
@@ -107,7 +136,7 @@ _start	;	A0 = resident loader
 		lea	(_custom),a6		;A6 = _custom
 
 	;get tags
-		lea	(_control),a0
+		lea	(_control,pc),a0
 		jsr	(resload_Control,a5)
 
 	IFD CDTV
@@ -128,31 +157,31 @@ _start	;	A0 = resident loader
 		jsr	(resload_Patch,a5)
 
 		move.l	#NTSC_MONITOR_ID,d0
-		cmp.l	(_monitor),d0
+		cmp.l	(_monitor,pc),d0
 		bne	.1
 		move.w	#4,($12,a4)		;3=pal 4=ntsc
 .1
 		lea	(_gametrainer),a0
-		move.l	(_custom1),d0
+		move.l	(_custom1,pc),d0
 		bne	.trained
-		lea	(_notrainer),a0
+		lea	(_notrainer,pc),a0
 		patch	$3c54a,_savehighs
 .trained	lea	$3a296,a1
 		move.l	#$4e714eb9,(a1)+
 		move.l	a0,(a1)
 
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		lea	$3c366-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
 		move.l	(a7)+,a0
 		bsr	_crypt
 .nohighs
-		move.l	(_custom2),d0
+		move.l	(_custom2,pc),d0
 		beq	.nolmb
 		move.l	#$bfe001,$35092+4	;second fire button -> LMB
 .nolmb
@@ -161,10 +190,12 @@ _start	;	A0 = resident loader
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,(intena,a6)
 		move.w	#INTF_VERTB,(intreq,a6)
 
+		
 		jmp	(a4)
 
 _vbi		move.w	#INTF_VERTB,(_custom+intreq)
 		rte
+
 
 _px2	PL_START
 	PL_P	$33930,_load_level
@@ -246,6 +277,7 @@ _crypt		movem.l	d0/a0,-(a7)
 		movem.l	(a7)+,d0/a0
 		rts
 
+		; CDTV parameters
 _notrainer	move.w	#3,($cd0)		;ships
 		move.l	#0,($ca0)		;cash
 		rts
@@ -257,8 +289,14 @@ _gametrainer	move.w	#9,($cd0)		;ships
 _x2		dc.b	"x2",0
 	EVEN
 
-	INCLUDE	Sources:whdload/keyboard.s
+_resload = RESLOAD
 
+	IFD	BARFLY
+	INCLUDE	Sources:whdload/keyboard.s
+	ELSE
+	INCLUDE	keyboard.s
+	ENDC
+	
 ;======================================================================
 
 	ELSE
@@ -274,62 +312,75 @@ _x2		dc.b	"x2",0
 		jsr	(resload_DiskLoad,a5)
 		movem.l	(a7)+,d0/a0
 		jsr	(resload_CRC16,a5)
+
+		;sub.l	a3,a3
+
 		cmp.w	#$7f8f,d0
-		beq	_v1
+		beq	_v1			; intro, Imageworks slow zoom
 		cmp.w	#$7ea7,d0
-		beq	_v3
+		beq	_v3			; intro, Imageworks slow zoom
 		cmp.w	#$7e53,d0
-		beq	_v4
+		beq	_v4			; no intro
 		cmp.w	#$bdce,d0
 	;	cmp.w	#$e08d,d0		;without first std track in image
-		beq	_v5
+		beq	_v5			; intro, Bitmap Brothers slow zoom
 		cmp.w	#$6827,d0
-		beq	_v6
-		cmp.w	#$c0fb,d0
+		beq	_v6			; intro, Imageworks slow zoom
+		cmp.w	#$c0fb,d0	; version 2
 		bne	_wrongver
 
-;============== version 2
+;============== version 2: 			; intro, Imageworks fast zoom
 
 _v2		move.b	#-1,$1055		;snoop ciab.prb
 		patch	$10ac,_v2_1
+		bsr	_flushcache
 		jmp	($1018)
 
 _v2_1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400,a0			;address
+		lea	$400.W,a0			;address
 		jsr	(resload_DiskLoad,a5)
-		patch	$63f62,_v2_2
-		move.b	#-1,$44f		;snoop ciab.prb
-		move.w	#$4200,$45e		;snoop custom.bplcon0
-		patchs	$5f4,_keyboard
-		move.l	#$636,_custom+cop1lc	;snoop copper dma before list
-		jmp	$400
+		lea	_pl_intro_v2(pc),a0
+		sub.l	a1,a1
+		jsr	(resload_Patch,a5)
+		move.l	#$636,_custom+cop1lc	;snoop copper dma before list		
+		jmp	$400.W
 
+_pl_intro_v2
+	PL_START
+	PL_P	$63f62,_v2_2
+	PL_B	$44f,$FF		;snoop ciab.prb
+	PL_W	$45e,$4200,		;snoop custom.bplcon0
+	PL_PS	$5f4,_keyboard
+	PL_IFC2
+	PL_S	$548,$FCA-$548	; skip intro
+	PL_ENDIF
+	PL_END
 _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	#$40000,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400,a0			;address
+		lea	$400.W,a0			;address
 		move.l  (RESLOAD),a5
 		jsr	(resload_DiskLoad,a5)
 
 		patchs	$fd4,_keyboard
-		skip	$7058-$7046,$7046	;vector init
+		skip	($7058-$7046),$7046	;vector init
 		move.b	#-1,$70ab		;snoop ciab.prb
 		patch	$47d8,_32bit
 		patch	$9012,_load
 		skip	8,$6f86			;cash clear before each level
 		patchs	$847a,_waitautofire
 
-		lea	(_gametrainer),a0
-		move.l	(_custom1),d0
+		lea	(_gametrainer,pc),a0
+		move.l	(_custom1,pc),d0
 		bne	.trained
-		lea	(_notrainer),a0
+		lea	(_notrainer,pc),a0
 		patch	$853a,_v2_savehighs
 .trained	move.w	#$4eb9,$6bae
 		move.l	a0,$6bae+2
 
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
@@ -347,6 +398,7 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	d0,$2f8e		;access fault (lsr->asr,mulu->muls)
 		move.l	d0,$34d6		;access fault (lsr->asr,mulu->muls)
 
+		bsr	_flushcache
 		jmp	$400
 
 _v2_savehighs	addq.l	#2,a7			;original
@@ -359,7 +411,8 @@ _v2_savehighs	addq.l	#2,a7			;original
 
 _v3		move.b	#-1,$1051		;snoop ciab.prb
 		patch	$10a8,.1
-		jmp	($1016)
+		bsr	_flushcache
+		jmp	$1016.W
 
 .1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
@@ -374,6 +427,7 @@ _v3		move.b	#-1,$1051		;snoop ciab.prb
 		ror.l	#8,d0			;$a22
 		skip	4,$64bc8		;prefetching problem on UAE
 		patch	$64bf2,.2
+		bsr	_flushcache
 		jmp	$64bb6			;$a24
 
 .2		move.b	#-1,$467		;snoop ciab.prb
@@ -381,12 +435,26 @@ _v3		move.b	#-1,$1051		;snoop ciab.prb
 		patchs	$bc2,_keyboard
 		move.l	#$c02,_custom+cop1lc	;snoop copper dma before list
 		patch	$63e,.3			;second copylock
+		bsr	_flushcache
 		jmp	$400
 
-.3		move.l	#$7670CF6B,d0		;CopyLock
-		patch	$641d4,.4
-		jmp	$b82
+.3
+		movem.l	d1/A0-A2,-(A7)
+		move.l	RESLOAD,A2
+		sub.l	a1,a1
+		lea	.pl_intro(pc),a0
+		jsr	(resload_Patch,a2)
+		movem.l	(a7)+,d1/A0-A2
+		
+		bra	_common_game_v1_v3
 
+.pl_intro:
+	PL_START
+	PL_P	$641D4,.4
+	PL_IFC2
+	PL_S	$125E,$1492-$125E
+	PL_ENDIF
+	PL_END
 	;after intro
 .4		move.l	#$70c00,d0		;offset
 		move.l	#$3fc00,d1		;size
@@ -395,18 +463,21 @@ _v3		move.b	#-1,$1051		;snoop ciab.prb
 		move.l	(RESLOAD),a2
 		jsr	(resload_DiskLoad,a2)
 		patch	$64276,_v13_5
+		bsr	_flushcache
 		jmp	$64252
 
 ;============== version 1
 
-_v1		move.b	#-1,$104d		;snoop ciab.prb
+_v1:
+		move.b	#-1,$104d		;snoop ciab.prb
 		patch	$10b0,.1
-		jmp	($1016)
+		bsr	_flushcache
+		jmp	$1016.W
 
 .1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400,a0			;address
+		lea	$400.W,a0			;address
 		jsr	(resload_DiskLoad,a5)
 
 		lea	$64de4,a7		;$410
@@ -414,8 +485,15 @@ _v1		move.b	#-1,$104d		;snoop ciab.prb
 		rol.l	#8,d0			;$a1a
 		eor.l	#$400,d0		;$a20
 		ror.l	#8,d0			;$a22
-		skip	4,$64b5a		;prefetching problem on UAE
+		;prefetching problem on UAE/non 68000?
+		;skips some code that writes ILLEGAL in $64B5E
+		;which is the instruction just after the current instruction
+		;intended to destroy the code after it's executed??
+		skip	4,$64b5a		
 		patch	$64b84,.2
+		
+		
+		bsr	_flushcache
 		jmp	$64b48			;$a24
 
 .2		move.b	#-1,$467		;snoop ciab.prb
@@ -423,12 +501,28 @@ _v1		move.b	#-1,$104d		;snoop ciab.prb
 		patchs	$bc2,_keyboard
 		move.l	#$c02,_custom+cop1lc	;snoop copper dma before list
 		patch	$63e,.3			;second copylock
-		jmp	$400
+		bsr	_flushcache
+		jmp	$400.W
 
-.3		move.l	#$7670CF6B,d0		;CopyLock
-		patch	$641d2,.4
-		jmp	$b82
+.3
+		movem.l	d1/A0-A2,-(A7)
+		move.l	RESLOAD,A2
+		sub.l	a1,a1
+		lea	.pl_intro(pc),a0
+		jsr	(resload_Patch,a2)
+		movem.l	(a7)+,d1/A0-A2
+	
+	bra	_common_game_v1_v3
+	
+.pl_intro:
+	PL_START
+	PL_P	$641D2,.4
 
+	PL_IFC2
+	PL_S	$125E,$1492-$125E
+	PL_ENDIF
+	PL_END
+	
 	;after intro
 .4		move.l	#$70c00,d0		;offset
 		move.l	#$3fc00,d1		;size
@@ -439,31 +533,43 @@ _v1		move.b	#-1,$104d		;snoop ciab.prb
 		patch	$64260,_v13_5
 		jmp	$6423c
 
+_common_game_v1_v3
+	; but there's another strange thing that happens on WinUAE without "more compatible"
+	; let's fix it (copylock key overwrites some code)
+	move.l	#$7670CF6B,d0		;CopyLock
+	MOVE.L #$7670cb6b,D1		; 00000B82 223c 7670 cb6b (not exactly same value)
+	MOVE.L D1,(A0)				; 00000B88 2081   this overwrites the next instruction
+    MOVE.L (A0),$0024 ;  00000B8A 21d0 0024  possible that this code is required for protection
+	jmp	$b8e.W		; instead of jumping to $B82, no prefetch issue, and protection code is executed
+
 	;main loaded and decrypted
-_v13_5		patchs	$fd4,_keyboard
+_v13_5		
+		patchs	$fd4,_keyboard
 		move.l	#$4ef8763a,$70f6	;third copylock
-		skip	$7654-$7642,$7642	;vector init
+		skip	($7654-$7642),$7642		;vector init
 		move.b	#-1,$76d1		;snoop ciab.prb
 		move.w	#$4200,$76e0		;snoop custom.bplcon0
 		patch	$47ce,_32bit
 		patch	$921a,_load
 		skip	8,$6f7c			;cash clear before each level
 		patchs	$8a58,_waitautofire
-
-		lea	(_gametrainer),a0
-		move.l	(_custom1),d0
+		
+		lea	(_gametrainer,pc),a0
+		move.l	(_custom1,pc),d0
 		bne	.trained
-		lea	(_notrainer),a0
+		lea	(_notrainer,pc),a0
+;;		skip	6,$7AF0	; no autofire reset when losing a life, seems not sufficent. Damn game code!
 		patch	$8b18,_v13_savehighs
-.trained	move.w	#$4eb9,$6ba4
+.trained	
+		move.w	#$4eb9,$6ba4
 		move.l	a0,$6ba4+2
-
-		lea	(_highs),a0
+.skipsh
+		lea	(_highs,pc),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		lea	$8946-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
@@ -483,7 +589,7 @@ _v13_savehighs	addq.l	#2,a7			;original
 _savehighs	movem.l	d0/a0,-(a7)
 		bsr	_crypt
 		move.l	a0,a1
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		move.l	(RESLOAD),a2
 		jsr	(resload_SaveFile,a2)
 		movem.l	(a7)+,d0/a0
@@ -520,7 +626,7 @@ _v5		moveq	#12,d1			;offset
 		tst.l	d0
 		beq	_wrongver
 		
-		lea	.pl1,a0
+		lea	.pl1(pc),a0
 		lea	$400,a1
 		jsr	(resload_Patch,a5)
 		
@@ -530,7 +636,6 @@ _v5		moveq	#12,d1			;offset
 .clr		clr.l	(a0)+
 		dbf	d0,.clr
 		waitvb
-
 		jmp	$400
 
 .pl1		PL_START
@@ -539,8 +644,14 @@ _v5		moveq	#12,d1			;offset
 		PL_W	$b6,$4200		;snoop custom.bplcon0
 		PL_PS	$410,_keyboard
 		PL_P	$63a3e,_v5_2
+		PL_IFC2
+		;PL_S	$16E,$10F2-$56E
+		PL_PS	$154,_shutdma_setsr
+		PL_S	$15A,$10F2-$55A
+		PL_ENDIF
 		PL_END
 
+	
 _v5_2		bsr	_v5_load1
 
 	;load filetable
@@ -568,20 +679,20 @@ _v45_2		lea	$14006,a0
 		move.w	#$4ef9,(a0)+
 		move.l	(a7)+,(a0)+
 		
-		lea	(_gametrainer),a0
-		move.l	(_custom1),d0
+		lea	(_gametrainer,pc),a0
+		move.l	(_custom1,pc),d0
 		bne	.trained
-		lea	(_notrainer),a0
+		lea	(_notrainer,pc),a0
 		patch	$400+$85f2,_v45_savehighs
 .trained	move.l	#$4e714eb9,$400+$6a34
 		move.l	a0,$400+$6a34+4
 
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		lea	$400+$840e-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
@@ -613,11 +724,11 @@ _v45_savehighs	addq.l	#2,a7			;original
 		bra	_savehighs
 
 _decrunch	movem.l	d0-d1/a0-a2,-(a7)
-		move.l	RESLOAD,a2
+		move.l	(RESLOAD),a2
 		jsr	(resload_Decrunch,a2)
 		tst.l	d0
 		beq	_wrongver
-		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(a7)+,d0-d1/a0-a2
 		rts
 
 ;============== version 6
@@ -650,6 +761,9 @@ _v6	;	bra	_v6main
 		PL_S	$578,$125c-$578		;skip protection
 		PL_PS	$bc2,_keyboard
 		PL_P	$1498,_v6main
+		PL_IFC2
+		PL_S	$125E,$1492-$125E
+		PL_ENDIF
 		PL_END
 
 _v6main		lea	_custom,a6
@@ -661,7 +775,7 @@ _v6main		lea	_custom,a6
 		move.l	#$2b120-$e0c,d1		;length
 		moveq	#1,d2			;disk
 		lea	$e0c,a0			;address
-		move.l	RESLOAD,a5
+		move.l	(RESLOAD),a5
 		jsr	(resload_DiskLoad,a5)
 
 		move.l	#$3f1f4,d1
@@ -673,20 +787,20 @@ _v6main		lea	_custom,a6
 		sub.l	a1,a1
 		jsr	(resload_Patch,a5)
 
-		lea	(_gametrainer),a0
-		move.l	(_custom1),d0
+		lea	(_gametrainer,pc),a0
+		move.l	(_custom1,pc),d0
 		bne	.trained
-		lea	(_notrainer),a0
+		lea	(_notrainer,pc),a0
 		patch	$8b18,.savehighs
 .trained	move.w	#$4eb9,$6ba4
 		move.l	a0,$6ba4+2
 
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		move.l	(RESLOAD),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
-		lea	(_highs),a0
+		lea	(_highs,pc),a0
 		lea	$8946-$28,a1
 		pea	(a1)
 		jsr	(resload_LoadFileDecrunch,a5)
@@ -736,7 +850,7 @@ _v6main		lea	_custom,a6
 		mulu	#$1b00,d1		;length
 		moveq	#1,d2			;disk
 		lea	$54e00,a0
-		move.l	RESLOAD,a5
+		move.l	(RESLOAD),a5
 		jsr	(resload_DiskLoad,a5)
 		
 		lsl.w	#4,d7
@@ -946,15 +1060,37 @@ _v6decrunch
 	blt.w	.248
 	rts
 
-;============== all versions
+;============== all floppy versions (not CDTV)
+; $C92/$C96 (long): target score/score
+; $C9F: speed
+; $CF0.W: nb continues: doesn't work
+; $C61/$C65: repeat freq/autofire level start 8/1 => 6/3 with 2 autofire
+; $CC6 ($C67): health: max $27
+; $CA3: nashwan timer: $AA
+; V3: 7AF0 (3 NOP): resets autofire, 7B00 (2 NOP): sub life
 
 _notrainer	move.w	#3,($cca)		;ships
 		move.l	#0,($c9a)		;cash
 		rts
 
-_gametrainer	move.w	#9,($cca)		;ships
-		move.l	#100000,($c9a)		;cash
+_gametrainer	move.w	#9,$cca.w		;ships
+		move.l	#100000,$c9a.w		;cash
 		rts
+		
+		; this part isn't working properly, too hard to debug this bloody game, and its 7 versions
+		IFEQ	1
+_powerup:
+		move.l	d0,-(a7)
+		move.l	_custom3(pc),d0
+		beq.b	.noenhance
+		move.w	#3,$c9e.w		; speed = 3
+		move.w	#6,$c60.w		; fire freq = 6 (faster, normal is 8)
+		move.w	#3,$c64.w       ; number of autofire items taken: 3 (max)
+		;;move.b	#$44,$C85	; if set, picking rear shot doesn't do anything
+.noenhance
+		move.l	(a7)+,d0
+		rts
+		ENDC
 
 _v5_load1	move.l	d1,d0
 		move.l	d2,d1
@@ -998,7 +1134,28 @@ _waitautofire	move.b	#$3a,(12,a1)		;original
 		movem.l	(a7)+,d0-d2
 		rts
 
+_flushcache:
+	move.l	a2,-(a7)
+	move.l	RESLOAD,a2
+	jsr	resload_FlushCache(a2)
+	move.l	(a7)+,a2
+	rts
+
+; useful to shut DMA and set SR when skipping intro
+_shutdma_setsr:
+	move.w	#$2000,SR
+	move.w	#$4000,$DFF096
+	rts
+	
 _keyboard	move.l	d1,-(a7)
+		cmp.b	_keyexit(pc),d0
+		bne.b	.noquit
+		; JOTD added quitkey for 68000 (floppy version)		
+		pea	TDREASON_OK
+		move.l	RESLOAD,-(a7)
+		addq.l	#resload_Abort,(a7)
+		rts
+.noquit
 		moveq	#3-1,d1
 .wait1		move.b	(_custom+vhposr),d0
 .wait2		cmp.b	(_custom+vhposr),d0
@@ -1032,6 +1189,8 @@ _monitor	dc.l	0
 _custom1	dc.l	0
 		dc.l	WHDLTAG_CUSTOM2_GET
 _custom2	dc.l	0
+		dc.l	WHDLTAG_CUSTOM3_GET
+_custom3	dc.l	0
 		dc.l	TAG_DONE
 _highs		dc.b	"highs",0
 
