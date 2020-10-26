@@ -4,7 +4,7 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.12 2020/03/21 01:50:55 wepl Exp wepl $
+;  :Version.	$Id: speed.asm 1.13 2020/03/21 02:17:07 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -251,7 +251,6 @@ catcpu	MACRO
 		move.b	-(a1),d0	;month
 		move	d0,-(a7)
 		move.b	-(a1),d0	;year
-		add	#2000,d0
 		move	d0,-(a7)
 		move.l	a7,a2
 		moveq	#100,d0		;buflen
@@ -667,7 +666,7 @@ _iff		dc.l	"FORM",4+8+$14+8+6+8+SCREENWIDTH*SCREENHEIGHT/8,"ILBM"
 		dc.b	0,0,0,255,255,255
 		dc.l	"BODY",SCREENWIDTH*SCREENHEIGHT/8
 _iff_
-_pic		dc.b	"speed-%d%02d%02d-%02d%02d%02d.ilbm",0
+_pic		dc.b	"speed-%02d%02d%02d-%02d%02d%02d.ilbm",0
 _nc		dc.b	"      nc",0
 _ic		dc.b	"      ic",0
 _bc		dc.b	"   ss+bc",0
