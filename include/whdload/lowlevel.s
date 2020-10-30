@@ -3,8 +3,8 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl
-;  :Version.	$Id: nonvolatile.s 1.5 2020/03/31 08:55:39 wepl Exp wepl $
-;  :History.	2020-10-29 initial from resourced
+;  :Version.	$Id: lowlevel.s 1.1 2020/10/30 15:06:58 wepl Exp wepl $
+;  :History.	2020-10-29 initial
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -15,6 +15,7 @@
 	INCLUDE	exec/initializers.i
 	INCLUDE	libraries/lowlevel.i
 	INCLUDE	lvo/cia.i
+	INCLUDE	lvo/input.i
 	INCLUDE	lvo/intuition.i
 	INCLUDE	lvo/lowlevel.i
 	INCLUDE	lvo/potgo.i
@@ -271,7 +272,7 @@ _lowlevel_rtinit
 
 	IFD JOYPADEMU
 
-_joypademu	movem.l	d0/d2-d3/d6/a2,-(a7)
+_joypademu	movem.l	d0/d2-d3/d6/a2/a6,-(a7)
 		move.l	d0,d6			;D6 = lowlevelbase
 
 	;check for user defined keys
@@ -339,7 +340,7 @@ JPARGBUFLEN = 100
 		add.w	#12,a7
 .noforce
 		add.l	#RDA_SIZEOF+(7*4)+JPARGBUFLEN,a7
-		movem.l	(a7)+,d0/d2-d3/d6/a2
+		movem.l	(a7)+,d0/d2-d3/d6/a2/a6
 		rts
 
 .badcustom	move.l	#ERROR_NO_FREE_STORE,d0
@@ -461,7 +462,7 @@ lbC0004FC	addq.b	#1,($23,a5)
 	bne.b	lbC000512
 lbC000502	movea.l	($3C,a5),a1
 	move.b	($22,a5),d0
-	jsr	(-$12C,a6)
+	jsr	(_LVOSetTaskPri,a6)
 	move.b	d0,($22,a5)
 lbC000512	rts
 
@@ -491,7 +492,7 @@ KillReq	addq.b	#1,($24,a6)
 lbC000558	move.l	d1,-(sp)
 	move.w	($26,a5),d0
 	bge.w	lbC000568
-	jsr	(lbC00061E).l
+	bsr	lbC00061E
 lbC000568	move.l	(sp)+,d1
 	moveq	#-1,d0
 	cmp.l	#2,d1
@@ -581,8 +582,7 @@ lbC00068A	movea.l	(14,sp),a0
 	move.b	#2,(14,a0)
 	move.w	d0,($26,a5)
 	lea	($1B4,a5),a0
-	jsr	(_LVOReleaseSemaphore,a6)
-	rts
+	jmp	(_LVOReleaseSemaphore,a6)
 
 cddevice.MSG	db	'cd.device',0
 
@@ -660,19 +660,19 @@ _sc_AddCreateKeys	move.l	#$80C00004,d0
 	mulu.w	#$40,d1
 	lea	($60,a5,d1.l),a4
 	lea	(14,a4),a0
-	jsr	(-$234,a6)
+	jsr	(_LVOObtainSemaphore,a6)
 	addq.b	#1,(12,a4)
 	bne.b	lbC0007AC
 	bsr.w	lbC001902
 	move.l	d0,(8,a4)
 	bne.b	lbC0007AC
 	lea	(14,a4),a0
-	jsr	(-$23A,a6)
+	jsr	(_LVOReleaseSemaphore,a6)
 	move.l	#$80C00004,d0
 	bra.b	lbC0007E4
 
 lbC0007AC	lea	(14,a4),a0
-	jsr	(-$23A,a6)
+	jsr	(_LVOReleaseSemaphore,a6)
 	bra.w	_sc_loop
 
 _sc_RemCreateKeys	move.l	#$80C00005,d0
@@ -691,11 +691,11 @@ lbC0007E4	movea.l	(4,sp),a1
 	bsr.b	lbC000806
 	bra.w	lbC0006DE
 
-lbC0007EE	jsr	(-$84,a6)
+lbC0007EE	jsr	(_LVOForbid,a6)
 	tst.l	($3C,a5)
 	bne.b	lbC0007FC
 	move.l	d7,($3C,a5)
-lbC0007FC	jsr	(-$8A,a6)
+lbC0007FC	jsr	(_LVOPermit,a6)
 	cmp.l	($3C,a5),d7
 	rts
 
@@ -704,7 +704,7 @@ lbC000806	movem.l	d0/d7,-(sp)
 	move.l	a1,-(sp)
 lbC00080E	movea.l	($38,a5),a6
 	lea	(sp),a0
-	jsr	(-$30,a6)
+	jsr	(_LVONextTagItem,a6)
 	movea.l	($34,a5),a6
 	movea.l	d0,a0
 	move.l	(a0)+,d0
@@ -775,10 +775,10 @@ lbC0008BC	tst.w	d1
 AddTimerInt	movem.l	a0/a1/a4-a6,-(sp)
 	movea.l	a6,a5
 	movea.l	($34,a6),a6
-	jsr	(-$84,a6)
+	jsr	(_LVOForbid,a6)
 	tst.l	($F2,a5)
 	beq.b	lbC0008E4
-	jsr	(-$8A,a6)
+	jsr	(_LVOPermit,a6)
 	movem.l	(sp)+,a0/a1/a4-a6
 	moveq	#0,d0
 	rts
@@ -790,14 +790,14 @@ lbC0008E4	movem.l	(sp)+,a0/a1
 	clr.b	(9,a4)
 	move.b	#2,(8,a4)
 	move.l	(10,a5),(10,a4)
-	jsr	(-$8A,a6)
-	jsr	(-$78,a6)
+	jsr	(_LVOPermit,a6)
+	jsr	(_LVODisable,a6)
 	lea	(ciaaresource.MSG,pc),a1
-	jsr	(lbC000A3C).l
+	bsr	lbC000A3C
 	bpl.b	lbC000934
 	movea.l	($34,a5),a6
 	lea	(ciabresource.MSG,pc),a1
-	jsr	(lbC000A3C).l
+	bsr	lbC000A3C
 	bpl.b	lbC000934
 	moveq	#0,d0
 	move.l	d0,($12,a4)
@@ -819,10 +819,10 @@ lbC000950	moveq	#15,d1
 	movea.l	#$BFD000,a1
 lbC000960	and.b	d0,(a1,d1.w)
 	swap	d0
-	jsr	(-$18,a6)
+	jsr	(_LVOSetICR,a6)
 	movea.l	($34,a5),a6
 	move.l	a4,d0
-lbC000970	jsr	(-$7E,a6)
+lbC000970	jsr	(_LVOEnable,a6)
 	movem.l	(sp)+,a4-a6
 	rts
 
@@ -892,18 +892,18 @@ RemTimerInt	move.l	a6,-(sp)
 lbC000A36	movem.l	(sp)+,a1/a6
 	rts
 
-lbC000A3C	jsr	(-$1F2,a6)
+lbC000A3C	jsr	(_LVOOpenResource,a6)
 	movea.l	d0,a6
 	movea.l	a4,a1
 	move.w	#0,d0
 	move.w	d0,-(sp)
-	jsr	(-6,a6)
+	jsr	(_LVOAddICRVector,a6)
 	tst.l	d0
 	beq.b	lbC000A66
 	movea.l	a4,a1
 	move.w	#1,d0
 	move.w	d0,(sp)
-	jsr	(-6,a6)
+	jsr	(_LVOAddICRVector,a6)
 	tst.l	d0
 	beq.b	lbC000A66
 	move.w	#$FFFF,(sp)
@@ -914,7 +914,7 @@ ElapsedTime	movem.l	d2/d3/a6,-(sp)
 	move.l	(4,a0),-(sp)
 	move.l	(a0),-(sp)
 	movea.l	($40,a6),a6
-	jsr	(-$3C,a6)
+	jsr	(_LVOReadEClock,a6)
 	movem.l	(a0)+,d1/d2
 	sub.l	(4,sp),d2
 	move.l	(sp)+,d3
@@ -941,8 +941,8 @@ lbC000AAA	moveq	#-1,d0
 	movem.l	d2/d3/a6,-(sp)
 	move.l	(4,a0),-(sp)
 	move.l	(a0),-(sp)
-	movea.l	($40,a6),a6
-	jsr	(-$3C,a6)
+	movea.l	($40,a6),a6	;timer
+	jsr	(_LVOReadEClock,a6)
 	movem.l	(a0)+,d1/d2
 	sub.l	(4,sp),d2
 	move.l	(sp)+,d3
@@ -977,7 +977,7 @@ lbC000B1C	tst.w	d1
 	subq.b	#1,($25,a5)
 	bpl.w	lbC000BEE
 	suba.l	a1,a1
-	jsr	(-$126,a6)
+	jsr	(_LVOFindTask,a6)
 	movea.l	($54,a5),a0
 	move.l	d0,($10,a0)
 	move.b	#4,(15,a0)
@@ -987,23 +987,23 @@ lbC000B1C	tst.w	d1
 	move.l	($44,a5),($14,sp)
 	move.w	#5,($1C,sp)
 	movea.l	sp,a1
-	jsr	(-$1C8,a6)
+	jsr	(_LVODoIO,a6)
 	lea	(gameportdevic.MSG,pc),a0
 	movea.l	sp,a1
 	moveq	#0,d0
 	move.l	d0,d1
-	jsr	(-$1BC,a6)
+	jsr	(_LVOOpenDevice,a6)
 	bne.b	lbC000B7E
 	move.w	#5,($1C,sp)
 	movea.l	sp,a1
-	jsr	(-$1C8,a6)
+	jsr	(_LVODoIO,a6)
 	movea.l	sp,a1
-	jsr	(-$1C2,a6)
+	jsr	(_LVOCloseDevice,a6)
 lbC000B7E	lea	(inputdevice.MSG,pc),a0
 	movea.l	sp,a1
 	moveq	#0,d0
 	move.l	d0,d1
-	jsr	(-$1BC,a6)
+	jsr	(_LVOOpenDevice,a6)
 	bne.b	lbC000BE0
 	move.w	#1,($1C,sp)
 	bra.b	lbC000BD4
@@ -1011,7 +1011,7 @@ lbC000B7E	lea	(inputdevice.MSG,pc),a0
 lbC000B96	addq.b	#1,($25,a5)
 	bne.b	lbC000BEE
 	suba.l	a1,a1
-	jsr	(-$126,a6)
+	jsr	(_LVOFindTask,a6)
 	movea.l	($54,a5),a0
 	move.l	d0,($10,a0)
 	move.b	#4,(15,a0)
@@ -1022,13 +1022,13 @@ lbC000B96	addq.b	#1,($25,a5)
 	movea.l	sp,a1
 	moveq	#0,d0
 	move.l	d0,d1
-	jsr	(-$1BC,a6)
+	jsr	(_LVOOpenDevice,a6)
 	bne.b	lbC000BE0
 	move.w	#6,($1C,sp)
 lbC000BD4	movea.l	sp,a1
-	jsr	(-$1C8,a6)
+	jsr	(_LVODoIO,a6)
 	movea.l	sp,a1
-	jsr	(-$1C2,a6)
+	jsr	(_LVOCloseDevice,a6)
 lbC000BE0	movea.l	(14,sp),a0
 	lea	($30,sp),sp
 	move.b	#2,(14,a0)
@@ -1150,7 +1150,7 @@ lbC000CD2	bset	#1,($6D,a5)
 	move.w	(joy1dat,a3),d7
 	move.w	#7,d4
 	move.w	#$2000,d5
-lbC000CEE	movea.l	($58,a5),a6
+lbC000CEE	movea.l	($58,a5),a6	;potgo
 	bclr	#3,(13,a2)
 	beq.b	lbC000D34
 	bsr.w	joydir_d7_d0
@@ -1167,10 +1167,10 @@ lbC000D0E	move.l	d7,(a2)
 	lsl.w	#2,d1
 	or.w	d1,d0
 	move.w	d0,d3
-	jsr	(-6,a6)
+	jsr	(_LVOAllocPotBits,a6)
 	cmp.w	d3,d0
 	beq.b	lbC000D34
-	jsr	(-12,a6)
+	jsr	(_LVOFreePotBits,a6)
 	bset	#3,(13,a2)
 	bra.w	lbC000E14
 
@@ -1185,7 +1185,7 @@ lbC000D3C	bset	#2,(13,a2)
 	or.w	d5,d1
 	move.l	d1,-(sp)
 	move.w	d5,d0
-	jsr	(-$12,a6)
+	jsr	(_LVOWritePotgo,a6)
 	movea.l	#$DFF016,a0
 	move.w	d5,d1
 	lsl.w	#1,d1
@@ -1213,7 +1213,7 @@ lbC000D78	tst.b	(a4)
 lbC000D8E	dbra	d0,lbC000D72
 	move.l	(sp)+,d1
 	move.w	d1,d0
-	jsr	(-$12,a6)
+	jsr	(_LVOWritePotgo,a6)
 	bclr	d4,(ciaddra,a4)
 	bclr	#2,(13,a2)
 	and.w	#$1FF,d3
@@ -1230,7 +1230,7 @@ lbC000DB4	btst	#4,(13,a2)
 	lsl.w	#2,d1
 	or.w	d1,d0
 	move.w	d0,d1
-	jsr	(-$12,a6)
+	jsr	(_LVOWritePotgo,a6)
 	move.b	(ciapra,a4),d1
 	btst	d4,d1
 	bne.b	lbC000DDA
@@ -1278,7 +1278,7 @@ lbC000E3C	move.w	#$1000,d0
 	lsl.w	#2,d1
 	or.w	d5,d1
 	moveq	#0,d0
-	jsr	(-$12,a6)
+	jsr	(_LVOWritePotgo,a6)
 	move.w	(sp)+,d0
 	move.w	d0,(a2)
 	bra.w	lbC000D3C
@@ -1371,21 +1371,21 @@ SetJoyPortAttrsA	movem.l	d0/d2/a2/a3,-(sp)
 	btst	#0,(13,a2)
 	bne.b	lbC000F82
 	movea.l	($34,a5),a6
-	movea.l	($90,a6),a0
+	movea.l	(IVVERTB,a6),a0
 	lea	(gameportdevic.MSG,pc),a1
-	jsr	(-$84,a6)
-	jsr	(-$114,a6)
+	jsr	(_LVOForbid,a6)
+	jsr	(_LVOFindName,a6)
 	beq.b	lbC000F7E
 	bset	#0,(13,a2)
 	bclr	#3,(13,a2)
 	move.l	d0,($4C,a5)
 	movea.l	d0,a1
 	moveq	#5,d0
-	jsr	(-$AE,a6)
+	jsr	(_LVORemIntServer,a6)
 	moveq	#5,d0
 	lea	($108,a5),a1
-	jsr	(-$A8,a6)
-lbC000F7E	jsr	(-$8A,a6)
+	jsr	(_LVOAddIntServer,a6)
+lbC000F7E	jsr	(_LVOPermit,a6)
 lbC000F82	movem.l	(sp)+,d0/a1/a5/a6
 	cmp.l	#3,d0
 	bls.b	lbC000F94
@@ -1402,7 +1402,7 @@ lbC000FA6	movea.l	sp,a2
 	move.l	a6,-(sp)
 	movea.l	($38,a6),a6
 	movea.l	a2,a0
-	jsr	(-$30,a6)
+	jsr	(_LVONextTagItem,a6)
 	movea.l	(sp)+,a6
 	tst.l	d0
 	beq.w	lbC00102E
@@ -1441,9 +1441,9 @@ lbC00100C	cmp.l	#1,d0
 	move.w	#$F000,d0
 lbC00101A	move.l	a6,-(sp)
 	movea.l	($58,a6),a6
-	jsr	(-12,a6)
+	jsr	(_LVOFreePotBits,a6)
 	movea.l	(sp)+,a6
-lbC001026	jsr	(-$8A,a6)
+lbC001026	jsr	(_LVOPermit,a6)
 lbC00102A	bra.w	lbC000FA6
 
 lbC00102E	tst.b	d2
@@ -1496,8 +1496,8 @@ port_mouse_1	movem.l	d2/d4/a3-a6,-(sp)
 	move.w	#$F000,d1
 	move.w	d1,d0
 	movea.l	($58,a6),a6
-	jsr	(-$12,a6)
-	movea.l	#$DFF000,a3
+	jsr	(_LVOWritePotgo,a6)
+	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#7,d4
 	moveq	#0,d2
@@ -1505,7 +1505,7 @@ port_mouse_1	movem.l	d2/d4/a3-a6,-(sp)
 	btst	d4,d1
 	bne.b	lbC0010C6
 	or.l	#$400000,d2
-lbC0010C6	move.w	($16,a3),d1
+lbC0010C6	move.w	(potinp,a3),d1
 	btst	#12,d1
 	bne.b	lbC0010D6
 	or.l	#$20000,d2
@@ -1513,7 +1513,7 @@ lbC0010D6	btst	#14,d1
 	bne.b	lbC0010E2
 	or.l	#$800000,d2
 lbC0010E2	move.l	#$20000000,d0	;type mouse
-	move.w	(12,a3),d0
+	move.w	(joy1dat,a3),d0
 	or.l	d2,d0
 	bclr	#1,($6D,a5)
 	movem.l	(sp)+,d2/d4/a3-a6
@@ -1530,8 +1530,8 @@ port_mouse_0	movem.l	d2/d4/a3-a6,-(sp)
 	move.w	#$F00,d1
 	move.w	#$F00,d0
 	movea.l	($58,a6),a6
-	jsr	(-$12,a6)
-	movea.l	#$DFF000,a3
+	jsr	(_LVOWritePotgo,a6)
+	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#6,d4
 	moveq	#0,d2
@@ -1539,7 +1539,7 @@ port_mouse_0	movem.l	d2/d4/a3-a6,-(sp)
 	btst	d4,d1
 	bne.b	lbC00113E
 	or.l	#$400000,d2
-lbC00113E	move.w	($16,a3),d1
+lbC00113E	move.w	(potinp,a3),d1
 	btst	#8,d1
 	bne.b	lbC00114E
 	or.l	#$20000,d2
@@ -1547,7 +1547,7 @@ lbC00114E	btst	#10,d1
 	bne.b	lbC00115A
 	or.l	#$800000,d2
 lbC00115A	move.l	#$20000000,d0	;type mouse
-	move.w	(10,a3),d0
+	move.w	(joy0dat,a3),d0
 	or.l	d2,d0
 	bclr	#1,($6D,a5)
 	movem.l	(sp)+,d2/d4/a3-a6
@@ -1564,8 +1564,8 @@ port_joystck_0	movem.l	d2/d4/a3-a6,-(sp)
 	move.w	#$F00,d1
 	move.w	#$F00,d0
 	movea.l	($58,a6),a6
-	jsr	(-$12,a6)
-	movea.l	#$DFF000,a3
+	jsr	(_LVOWritePotgo,a6)
+	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#6,d4
 	moveq	#0,d2
@@ -1573,14 +1573,14 @@ port_joystck_0	movem.l	d2/d4/a3-a6,-(sp)
 	btst	d4,d1
 	bne.b	lbC0011B6
 	or.l	#$400000,d2
-lbC0011B6	move.w	($16,a3),d1
+lbC0011B6	move.w	(potinp,a3),d1
 	btst	#8,d1
 	bne.b	lbC0011C6
 	or.l	#$20000,d2
 lbC0011C6	btst	#10,d1
 	bne.b	lbC0011D2
 	or.l	#$800000,d2
-lbC0011D2	move.w	(10,a3),d1
+lbC0011D2	move.w	(joy0dat,a3),d1
 	move.w	d1,d0
 	lsr.w	#1,d0
 	eor.w	d0,d1
@@ -1609,8 +1609,8 @@ port_joystck_1	movem.l	d2/d4/a3-a6,-(sp)
 	move.w	#$F000,d1
 	move.w	#$F000,d0
 	movea.l	($58,a6),a6
-	jsr	(-$12,a6)
-	movea.l	#$DFF000,a3
+	jsr	(_LVOWritePotgo,a6)
+	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#7,d4
 	moveq	#0,d2
@@ -1618,14 +1618,14 @@ port_joystck_1	movem.l	d2/d4/a3-a6,-(sp)
 	btst	d4,d1
 	bne.b	lbC001248
 	or.l	#$400000,d2
-lbC001248	move.w	($16,a3),d1
+lbC001248	move.w	(potinp,a3),d1
 	btst	#12,d1
 	bne.b	lbC001258
 	or.l	#$20000,d2
 lbC001258	btst	#14,d1
 	bne.b	lbC001264
 	or.l	#$800000,d2
-lbC001264	move.w	(12,a3),d1
+lbC001264	move.w	(joy1dat,a3),d1
 	move.w	d1,d0
 	lsr.w	#1,d0
 	eor.w	d0,d1
@@ -1649,7 +1649,7 @@ lbC001294	moveq	#0,d0
 port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($60,a6),a2
 	bset	#1,(13,a2)
-	bne.w	lbC00134C
+	bne.w	.quit
 	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#CIAB_GAMEPORT0,d4
@@ -1688,7 +1688,7 @@ port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
 	bclr	#2,(13,a2)
 	lsl.w	#1,d3
 	swap	d3
-	move.w	(10,a3),d1
+	move.w	(joy0dat,a3),d1
 	move.w	d1,d0
 	lsr.w	#1,d0
 	eor.w	d0,d1
@@ -1702,13 +1702,13 @@ port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
 	or.l	d3,d0
 	or.l	#$10000000,d0
 	bclr	#1,(13,a2)
-lbC00134C	movem.l	(sp)+,d2-d4/a2-a4/a6
+.quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
 
 port_gamectlr_1	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($A0,a6),a2
 	bset	#1,(-$33,a2)
-	bne.w	lbC001402
+	bne.w	.quit
 	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#CIAB_GAMEPORT1,d4
@@ -1723,12 +1723,12 @@ port_gamectlr_1	movem.l	d2-d4/a2-a4/a6,-(sp)
 	move.w	#$4000,d1
 	moveq	#0,d3
 	moveq	#6,d0
-	bra.b	lbC0013A6
+	bra.b	.in
 
-lbC0013A0	tst.b	(a4)
+.loop	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
-lbC0013A6	tst.b	(a4)
+.in	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1737,9 +1737,9 @@ lbC0013A6	tst.b	(a4)
 	bset	d4,(a4)
 	bclr	d4,(a4)
 	and.w	d1,d2
-	bne.b	lbC0013BC
+	bne.b	.skip
 	bset	d0,d3
-lbC0013BC	dbra	d0,lbC0013A0
+.skip	dbra	d0,.loop
 	move.w	#$3000,d0
 	move.w	d0,d1
 	jsr	(_LVOWritePotgo,a6)
@@ -1747,7 +1747,7 @@ lbC0013BC	dbra	d0,lbC0013A0
 	bclr	#2,(-$33,a2)
 	lsl.w	#1,d3
 	swap	d3
-	move.w	(12,a3),d1
+	move.w	(joy1dat,a3),d1
 	move.w	d1,d0
 	lsr.w	#1,d0
 	eor.w	d0,d1
@@ -1761,49 +1761,49 @@ lbC0013BC	dbra	d0,lbC0013A0
 	or.l	d3,d0
 	or.l	#$10000000,d0
 	bclr	#1,(-$33,a2)
-lbC001402	movem.l	(sp)+,d2-d4/a2-a4/a6
+.quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
 
 port_gamectlr_2	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($134,a6),a2
 	bset	#1,(-$C7,a2)
-	bne.w	lbC0014B8
-	movea.l	#$DFF000,a3
-	movea.l	#$BFE001,a4
+	bne.w	.quit
+	movea.l	#_custom,a3
+	movea.l	#_ciaa,a4
 	move.w	#CIAB_GAMEPORT0,d4
 	bset	#2,(-$C7,a2)
-	bset	d4,($200,a4)
-	bclr	d4,(a4)
+	bset	d4,(ciaddra,a4)
+	bclr	d4,(ciapra,a4)
 	movea.l	($58,a6),a6
 	move.w	#$200,d0
 	move.w	#$300,d1
-	jsr	(-$12,a6)
-	movea.l	#$DFF016,a0
+	jsr	(_LVOWritePotgo,a6)
+	movea.l	#_custom+potinp,a0
 	move.w	#$400,d1
 	moveq	#0,d3
 	moveq	#$11,d0
-	bra.b	lbC00145C
+	bra.b	.in
 
-lbC001456	tst.b	(a4)
+.loop	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
-lbC00145C	tst.b	(a4)
+.in	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	move.w	(a0),d2
-	bset	d4,(a4)
-	bclr	d4,(a4)
+	bset	d4,(ciapra,a4)
+	bclr	d4,(ciapra,a4)
 	and.w	d1,d2
-	bne.b	lbC001472
+	bne.b	.skip
 	bset	d0,d3
-lbC001472	dbra	d0,lbC001456
+.skip	dbra	d0,.loop
 	move.w	(joy0dat,a3),d2
 	move.w	#$300,d0
 	move.w	d0,d1
-	jsr	(-$12,a6)
-	bclr	d4,($200,a4)
+	jsr	(_LVOWritePotgo,a6)
+	bclr	d4,(ciaddra,a4)
 	bclr	#2,(-$C7,a2)
 	lsl.w	#1,d3
 	swap	d3
@@ -1820,13 +1820,13 @@ lbC001472	dbra	d0,lbC001456
 	or.l	d3,d0
 	or.l	#$10000000,d0
 	bclr	#1,(-$C7,a2)
-lbC0014B8	movem.l	(sp)+,d2-d4/a2-a4/a6
+.quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
 
 port_gamectlr_3	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($174,a6),a2
 	bset	#1,(-$107,a2)	;already running?
-	bne.w	lbC00156E
+	bne.w	.quit
 	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	move.w	#CIAB_GAMEPORT1,d4
@@ -1841,12 +1841,12 @@ port_gamectlr_3	movem.l	d2-d4/a2-a4/a6,-(sp)
 	move.w	#$4000,d1
 	moveq	#0,d3
 	moveq	#$11,d0
-	bra.b	lbC001512
+	bra.b	.in
 
-lbC00150C	tst.b	(a4)
+.loop	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
-lbC001512	tst.b	(a4)
+.in	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1855,9 +1855,9 @@ lbC001512	tst.b	(a4)
 	bset	d4,(ciapra,a4)
 	bclr	d4,(ciapra,a4)
 	and.w	d1,d2
-	bne.b	lbC001528
+	bne.b	.skip
 	bset	d0,d3
-lbC001528	dbra	d0,lbC00150C
+.skip	dbra	d0,.loop
 	move.w	(joy0dat,a3),d2
 	move.w	#$3000,d0	;data
 	move.w	d0,d1	;mask
@@ -1879,7 +1879,7 @@ lbC001528	dbra	d0,lbC00150C
 	or.l	d3,d0
 	or.l	#$10000000,d0	;type gamectlr
 	bclr	#1,(-$107,a2)
-lbC00156E	movem.l	(sp)+,d2-d4/a2-a4/a6
+.quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
 
 QueryKeys	movem.l	d2/a2/a5/a6,-(sp)
@@ -1888,7 +1888,7 @@ QueryKeys	movem.l	d2/a2/a5/a6,-(sp)
 	movea.l	a0,a2
 	movea.l	($34,a6),a6
 	suba.l	a1,a1
-	jsr	(-$126,a6)
+	jsr	(_LVOFindTask,a6)
 	movea.l	($54,a5),a0
 	move.l	d0,($10,a0)
 	move.b	#4,(15,a0)
@@ -1901,7 +1901,7 @@ QueryKeys	movem.l	d2/a2/a5/a6,-(sp)
 	lea	($30,sp),a0
 	move.l	a0,($28,a1)
 	move.l	#$10,($24,a1)
-	jsr	(-$1C8,a6)
+	jsr	(_LVODoIO,a6)
 	tst.b	d0
 	bne.b	lbC0015F8
 lbC0015DA	move.w	(a2)+,d1
@@ -1927,7 +1927,7 @@ AddKBInt	movem.l	a0/a1/a5/a6,-(sp)
 	movea.l	($34,a5),a6
 	moveq	#$16,d0
 	move.l	#$10001,d1
-	jsr	(-$C6,a6)
+	jsr	(_LVOAllocMem,a6)
 	tst.l	d0
 	beq.b	lbC001674
 	movea.l	d0,a1
@@ -1936,7 +1936,7 @@ AddKBInt	movem.l	a0/a1/a5/a6,-(sp)
 	move.l	(sp)+,(14,a1)
 	move.l	(10,a5),(10,a1)
 	lea	($FC,a5),a0
-	jsr	(-$84,a6)
+	jsr	(_LVOForbid,a6)
 	cmpa.l	(8,a0),a0
 	bne.w	lbC001666
 	move.l	(a0),d0
@@ -1944,14 +1944,14 @@ AddKBInt	movem.l	a0/a1/a5/a6,-(sp)
 	movem.l	d0/a0,(a1)
 	movea.l	d0,a0
 	move.l	a1,(4,a0)
-	jsr	(-$8A,a6)
+	jsr	(_LVOPermit,a6)
 	move.l	a1,d0
 	movem.l	(sp)+,a5/a6
 	rts
 
-lbC001666	jsr	(-$8A,a6)
+lbC001666	jsr	(_LVOPermit,a6)
 	moveq	#$16,d0
-	jsr	(-$D2,a6)
+	jsr	(_LVOFreeMem,a6)
 	moveq	#0,d0
 	subq.l	#8,sp
 lbC001674	movem.l	(sp)+,a0/a1/a5/a6
@@ -1962,15 +1962,15 @@ RemKBInt	cmpa.l	#0,a0
 	move.l	a6,-(sp)
 	movea.l	($34,a6),a6
 	move.l	a1,-(sp)
-	jsr	(-$84,a6)
+	jsr	(_LVOForbid,a6)
 	movea.l	(a1)+,a0
 	movea.l	(a1),a1
 	move.l	a0,(a1)
 	move.l	a1,(4,a0)
-	jsr	(-$8A,a6)
+	jsr	(_LVOPermit,a6)
 	movea.l	(sp)+,a1
 	moveq	#$16,d0
-	jsr	(-$D2,a6)
+	jsr	(_LVOFreeMem,a6)
 	movea.l	(sp)+,a6
 lbC0016A6	rts
 
@@ -2033,29 +2033,29 @@ AddVBlankInt	movem.l	a0/a1/a5/a6,-(sp)
 	movea.l	($34,a5),a6
 	moveq	#$16,d0
 	move.l	#$10001,d1
-	jsr	(-$C6,a6)
+	jsr	(_LVOAllocMem,a6)
 	tst.l	d0
 	beq.b	lbC0017A0
-	jsr	(-$84,a6)
+	jsr	(_LVOForbid,a6)
 	tst.l	($50,a5)
 	bne.b	lbC00178E
 	move.l	d0,($50,a5)
-	jsr	(-$8A,a6)
+	jsr	(_LVOPermit,a6)
 	movea.l	d0,a1
 	move.b	#2,(8,a1)
 	move.l	(sp)+,($12,a1)
 	move.l	(sp)+,(14,a1)
 	move.l	(10,a5),(10,a1)
 	moveq	#5,d0
-	jsr	(-$A8,a6)
+	jsr	(_LVOAddIntServer,a6)
 	move.l	($50,a5),d0
 	movem.l	(sp)+,a5/a6
 	rts
 
-lbC00178E	jsr	(-$8A,a6)
+lbC00178E	jsr	(_LVOPermit,a6)
 	movea.l	#$16,a1
 	exg	d0,a1
-	jsr	(-$D2,a6)
+	jsr	(_LVOFreeMem,a6)
 	moveq	#0,d0
 lbC0017A0	movem.l	(sp)+,a0/a1/a5/a6
 	rts
@@ -2067,10 +2067,10 @@ RemVBLankInt	movem.l	a5/a6,-(sp)
 	beq.b	lbC0017CC
 	clr.l	($50,a5)
 	moveq	#5,d0
-	jsr	(-$AE,a6)
+	jsr	(_LVORemIntServer,a6)
 	movea.l	(sp)+,a1
 	moveq	#$16,d0
-	jsr	(-$D2,a6)
+	jsr	(_LVOFreeMem,a6)
 	movem.l	(sp)+,a5/a6
 	rts
 
@@ -2109,7 +2109,7 @@ lbC001830	move.l	($2E,a5),d6
 	move.l	d7,($2E,a5)
 	move.l	d6,d2
 	eor.l	d7,d2
-	lea	(lbL001A68,pc),a2
+	lea	(lbB001A68,pc),a2
 	bsr.b	lbC001868
 	move.l	d7,d0
 	and.l	#$F0000000,d0
@@ -2117,7 +2117,7 @@ lbC001830	move.l	($2E,a5),d6
 	beq.b	lbC001860
 	cmp.l	#$20000000,d0
 	beq.b	lbC001860
-	lea	(yz.MSG,pc),a2
+	lea	(lbB001A77,pc),a2
 	bsr.b	lbC001868
 lbC001860	movem.l	(sp)+,d2/d6/d7/a2
 lbC001864	moveq	#0,d0
@@ -2143,11 +2143,11 @@ lbC001882	move.l	($1E,a5),d0
 lbC00188E	movem.l	d2/d3,-(sp)
 	move.l	d0,d2
 	movea.l	($6C,a5),a6
-	jsr	(-$2A,a6)
+	jsr	(_LVOPeekQualifier,a6)
 	move.l	d0,d3
 	movea.l	($16,a5),a6
 	lea	($36,a5),a0
-	jsr	(-$174,a6)
+	jsr	(_LVOGetMsg,a6)
 	tst.l	d0
 	beq.b	lbC0018FC
 	movea.l	d0,a1
@@ -2166,7 +2166,7 @@ lbC0018DA	clr.l	(a0)+
 	move.w	d2,(a0)+
 	move.w	d3,(a0)+
 	clr.l	(a0)+
-	jsr	(-$1CE,a6)
+	jsr	(_LVOSendIO,a6)
 	bclr	#7,d2
 	beq.b	lbC0018F8
 	sub.l	($32,a5),d2
@@ -2178,23 +2178,25 @@ lbC0018FC	movem.l	(sp)+,d2/d3
 lbC001902	movem.l	d2/a2-a4,-(sp)
 	move.l	d0,d2
 	move.l	#$4B8,d0
-	move.l	#$10001,d1
-	jsr	(-$2AC,a6)
+	move.l	#(MEMF_PUBLIC|MEMF_CLEAR),d1
+	jsr	(_LVOAllocVec,a6)
 	movea.l	d0,a4
 	tst.l	d0
 	beq.w	lbC001A10
 	move.l	d2,d0
 	exg	a5,a6
-	jsr	(-$1E,a6)
+	jsr	(-$1E,a6)	;ReadJoyPort
 	exg	a6,a5
 	and.l	#$F0000000,d0
 	beq.w	lbC001A10
 	move.l	a6,($16,a4)
 	move.l	a5,($1A,a4)
 	move.l	d2,($1E,a4)
-	move.l	#InputMapper.MSG,(10,a4)
+	lea	(InputMapper.MSG,pc),a0
+	move.l	a0,(10,a4)
 	move.l	a4,(14,a4)
-	move.l	#lbC0017D4,($12,a4)
+	lea	(lbC0017D4,pc),a0
+	move.l	a0,($12,a4)
 	move.b	#2,($44,a4)
 	lea	($4A,a4),a0
 	move.l	a0,(8,a0)
@@ -2205,11 +2207,11 @@ lbC001902	movem.l	d2/a2-a4,-(sp)
 	moveq	#0,d0
 	lea	($58,a4),a1
 	moveq	#0,d1
-	jsr	(-$1BC,a6)
+	jsr	(_LVOOpenDevice,a6)
 	tst.l	d0
 	beq.b	lbC001988
 	movea.l	a4,a1
-	jsr	(-$2B2,a6)
+	jsr	(_LVOFreeVec,a6)
 	moveq	#0,d0
 	bra.w	lbC001A10
 
@@ -2246,13 +2248,13 @@ lbC0019EA	move.b	(a1)+,(a0)+
 	dbra	d1,lbC0019EA
 lbC0019F0	move.l	a3,($28,a2)
 	movea.l	a2,a1
-	jsr	(-$17A,a6)
+	jsr	(_LVOReplyMsg,a6)
 	lea	($30,a2),a2
 	lea	($16,a3),a3
 	dbra	d2,lbC0019E2
 	movea.l	a4,a1
 	moveq	#5,d0
-	jsr	(-$A8,a6)
+	jsr	(_LVOAddIntServer,a6)
 	move.l	a4,d0
 lbC001A10	movem.l	(sp)+,d2/a2-a4
 	rts
@@ -2264,35 +2266,47 @@ lbC001A16	movem.l	d2/a5/a6,-(sp)
 	movea.l	($16,a5),a6
 	movea.l	a5,a1
 	moveq	#5,d0
-	jsr	(-$AE,a6)
-	move.l	($114,a6),($46,a5)
+	jsr	(_LVORemIntServer,a6)
+	move.l	(ThisTask,a6),($46,a5)
 	move.b	#4,($45,a5)
 	move.b	#0,($44,a5)
 	moveq	#15,d2
 lbC001A40	lea	($36,a5),a0
-	jsr	(-$180,a6)
+	jsr	(_LVOWaitPort,a6)
 	lea	($36,a5),a0
-	jsr	(-$174,a6)
+	jsr	(_LVOGetMsg,a6)
 	dbra	d2,lbC001A40
 	lea	($58,a5),a1
-	jsr	(-$1C2,a6)
+	jsr	(_LVOCloseDevice,a6)
 	movea.l	a5,a1
-	jsr	(-$2B2,a6)
+	jsr	(_LVOFreeVec,a6)
 lbC001A62	movem.l	(sp)+,d2/a5/a6
 	rts
 
-lbL001A68	dl	$17721678
-	dl	$15771476
-	dl	$13751274
-	dw	$1173
+lbB001A68	db	$17
+	db	$72
+	db	$16
+	db	$78
+	db	$15
+	db	$77
+	db	$14
+	db	$76
+	db	$13
+	db	$75
+	db	$12
+	db	$74
+	db	$11
+	db	$73
 	db	$FF
-yz.MSG	db	3
-	db	'y'
+lbB001A77	db	3
+	db	$79
 	db	2
-	db	'z'
+	db	$7A
 	db	1
-	db	'|',0
-	db	'{ÿ'
+	db	$7C
+	db	0
+	db	$7B
+	db	$FF
 
 ;============================================================================
 
