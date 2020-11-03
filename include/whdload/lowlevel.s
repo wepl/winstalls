@@ -3,8 +3,9 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl
-;  :Version.	$Id: lowlevel.s 1.4 2020/11/03 22:28:20 wepl Exp wepl $
+;  :Version.	$Id: lowlevel.s 1.5 2020/11/03 23:10:16 wepl Exp wepl $
 ;  :History.	2020-10-29 initial, based on resourced original
+;		2020-11-03 moved .in jump one inst before in joypad read
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1158,8 +1159,8 @@ _D3C	bset	#2,(13,a2)
 
 .D72	tst.b	(a4)
 	tst.b	(a4)
-	tst.b	(a4)
 .D78	tst.b	(a4)
+	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1628,8 +1629,8 @@ port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
 
 .loop	tst.b	(a4)
 	tst.b	(a4)
-	tst.b	(a4)
 .in	tst.b	(a4)
+	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1687,8 +1688,8 @@ port_gamectlr_1	movem.l	d2-d4/a2-a4/a6,-(sp)
 
 .loop	tst.b	(a4)
 	tst.b	(a4)
-	tst.b	(a4)
 .in	tst.b	(a4)
+	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1746,8 +1747,8 @@ port_gamectlr_2	movem.l	d2-d4/a2-a4/a6,-(sp)
 
 .loop	tst.b	(a4)
 	tst.b	(a4)
-	tst.b	(a4)
 .in	tst.b	(a4)
+	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
@@ -1805,8 +1806,8 @@ port_gamectlr_3	movem.l	d2-d4/a2-a4/a6,-(sp)
 
 .loop	tst.b	(a4)
 	tst.b	(a4)
-	tst.b	(a4)
 .in	tst.b	(a4)
+	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
 	tst.b	(a4)
