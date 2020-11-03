@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.44 2020/04/27 12:11:50 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.45 2020/05/12 23:47:29 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -45,6 +45,8 @@
 ;		26.04.20 prefer A600 kickstart if NO68020 is defined
 ;			 fail if A1200/4000 kickstart is present and cpu<68020 (JOTD/Wepl)
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
+;		29.10.20 INIT_LOWLEVEL/JOYPADEMU changed for constructed lowlevel.s
+;		03.11.20 tagged library/device defines added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -55,13 +57,24 @@
 	INCLUDE	lvo/dos.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
-	INCLUDE	lvo/lowlevel.i
 	INCLUDE	devices/trackdisk.i
-	INCLUDE	dos/rdargs.i
 	INCLUDE	exec/memory.i
 	INCLUDE	exec/resident.i
 	INCLUDE	graphics/gfxbase.i
-	INCLUDE	libraries/lowlevel.i
+
+_LVOTaggedOpenLibrary = -810
+OLTAG_GRAPHICS	=	1
+OLTAG_LAYERS	=	2
+OLTAG_INTUITION	=	3
+OLTAG_DOS	=	4
+OLTAG_ICON	=	5
+OLTAG_EXPANSION	=	6
+OLTAG_UTILITY	=	7
+OLTAG_KEYMAP	=	8
+OLTAG_GADTOOLS	=	9
+OLTAG_WORKBENCH	=	10
+ODTAG_TIMER	=	0
+ODTAG_INPUT	=	1
 
 KICKVERSION	= 40
 KICKCRC600	= $970c				;40.063 A600
@@ -1024,7 +1037,7 @@ dos_bootdos
 
 dos_startup
 	IFD INIT_LOWLEVEL
-		bsr	_lowlevel
+		bsr	_lowlevel_init
 	ENDC
 	IFD INIT_NONVOLATILE
 		bsr	_nonvolatile_init
@@ -1071,255 +1084,6 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 		
 		movem.l	(a7)+,d2/a3-a6
 		rts
-	ENDC
-
-;============================================================================
-
-	IFD INIT_LOWLEVEL
-	IFND BOOTDOS
-	FAIL	INIT_LOWLEVEL requires BOOTDOS
-	ENDC
-_lowlevel	movem.l	d0-d3/d6/a0-a2/a5-a6,-(a7)
-		move.l	(_resload,pc),a5
-	;open lowlevel.library
-		moveq	#40,d0
-		lea	(_lowlevelname,pc),a1
-		move.l	(4),a6
-		jsr	(_LVOOpenLibrary,a6)
-		move.l	d0,d6			;D6 = lowlevel base
-		bne	.lowlevelok
-		pea	(_lowlevelname,pc)
-		pea	ERROR_OBJECT_NOT_FOUND
-		pea	TDREASON_DOSREAD
-		jmp	(resload_Abort,a5)
-	;patch functions
-.lowlevelok	lea	.getlanguage,a0
-		move.l	a0,d0
-		move.w	#_LVOGetLanguageSelection,a0
-		move.l	d6,a1
-		jsr	(_LVOSetFunction,a6)
-	IFD JOYPADEMU
-		lea	(.readjoyport,pc),a0
-		move.l	a0,d0
-		move.w	#_LVOReadJoyPort,a0
-		move.l	d6,a1
-		jsr	(_LVOSetFunction,a6)
-		lea	(.rjp_save,pc),a0
-		move.l	d0,(a0)
-	;do initial joyport read to init internal structures
-	;	move.l	d6,a6
-	;	moveq	#1,d0			;port 1
-	;	jsr	(_LVOReadJoyPort,a6)
-	;check for user defined keys
-JPARGBUFLEN = 100
-		sub.l	#JPARGBUFLEN,a7
-		moveq	#(RDA_SIZEOF+(7*4))/4-1,d0
-.clr		clr.l	-(a7)
-		dbf	d0,.clr
-		move.l	#JPARGBUFLEN,d0		;buffer length
-		moveq	#0,d1			;reserved
-		lea	(RDA_SIZEOF+(7*4),a7),a0
-		move.l	a0,(RDA_Source+CS_Buffer,a7)
-		jsr	(resload_GetCustom,a5)
-		tst.l	d0
-		beq	.badcustom
-		lea	(_dosname,pc),a1
-		jsr	(_LVOOldOpenLibrary,a6)
-		move.l	d0,a6
-		lea	(.rjp_template,pc),a0
-		move.l	a0,d1			;template
-		lea	(RDA_SIZEOF,a7),a0
-		move.l	a0,d2			;array
-		move.l	a7,d3			;rdargs
-		move.l	(RDA_Source+CS_Buffer,a7),a0
-		moveq	#0,d0
-.cnt		addq.l	#1,d0
-		tst.b	(a0)+
-		bne	.cnt
-		move.b	#10,-(a0)
-		move.l	d0,(RDA_Source+CS_Length,a7)
-		move.l	#RDAF_NOPROMPT,(RDA_Flags,a7)
-		jsr	(_LVOReadArgs,a6)
-		tst.l	d0
-		beq	.badargs
-		lea	(RDA_SIZEOF,a7),a2
-		lea	(.rjp_keys,pc),a1
-		moveq	#6-1,d3
-.loop		move.l	(a2)+,d0
-		beq	.skip
-		move.l	d0,a0
-		bsr	_atoi
-		tst.b	(a0)
-		bne	.badnum
-		cmp.w	#$70,d0
-		bhs	.badnum
-		move.w	d0,(a1)
-.skip		addq.l	#4,a1
-		dbf	d3,.loop
-		move.l	a7,d1
-		jsr	(_LVOFreeArgs,a6)
-	;force lowlevel.library to joystick mode for port0/1
-		tst.l	(a2)
-		beq	.noforce
-		move.l	d6,a6
-		clr.l	-(a7)
-		pea     SJA_TYPE_JOYSTK
-		pea	SJA_Type
-		moveq	#0,d0			;port 0
-		move.l	a7,a1
-		jsr	(_LVOSetJoyPortAttrsA,a6)
-		moveq	#1,d0			;port 1
-		move.l	a7,a1
-		jsr	(_LVOSetJoyPortAttrsA,a6)
-		add.w	#12,a7
-.noforce
-		add.l	#RDA_SIZEOF+(7*4)+JPARGBUFLEN,a7
-	ENDC
-	;call slave
-		movem.l	(a7)+,d0-d3/d6/a0-a2/a5-a6
-		rts
-
-.getlanguage	move.l	(_language,pc),d0
-		rts
-
-
-	IFD JOYPADEMU
-	IFD NO68020
-	FAIL JOYPADEMU not yet 68000 compatible
-	ENDC
-.badcustom	move.l	#ERROR_NO_FREE_STORE,d0
-		bra	.bad
-
-.badargs	jsr	(_LVOIoErr,a6)
-		bra	.bad
-
-.badnum		move.l	#ERROR_BAD_NUMBER,d0
-.bad		pea	(.rjp_template,pc)
-		move.l	d0,-(a7)
-		pea	TDREASON_DOSREAD
-		jmp	(resload_Abort,a5)
-
-
-.readjoyport	moveq	#1,d1			;only port 1
-		cmp.l	d0,d1
-		bne	.rjp1
-		pea	.rjp2
-.rjp1		jmp	([.rjp_save,pc])
-.rjp2		move.l	d0,d1
-		clr.b	d1
-		rol.l	#4,d1
-		cmp.b	#JP_TYPE_JOYSTK>>28,d1
-		beq	.rjp_ok
-		cmp.b	#JP_TYPE_GAMECTLR>>28,d1
-		bne	.rjp_end
-.rjp_ok		move.l	d0,-(a7)
-		moveq	#6,d1			;amount of keys in array
-		lea	(.rjp_keys,pc),a0
-		jsr	(_LVOQueryKeys,a6)
-		move.l	(a7)+,d0
-		and.l	#~(JP_TYPE_MASK),d0
-		or.l	#JP_TYPE_GAMECTLR,d0
-		tst.w	(.rjp_keys+2,pc)
-		beq	.rjp_f2
-		bset	#JPB_BUTTON_BLUE,d0
-.rjp_f2		tst.w	(.rjp_keys+6,pc)
-		beq	.rjp_f3
-		bset	#JPB_BUTTON_GREEN,d0
-.rjp_f3		tst.w	(.rjp_keys+10,pc)
-		beq	.rjp_f4
-		bset	#JPB_BUTTON_YELLOW,d0
-.rjp_f4		tst.w	(.rjp_keys+14,pc)
-		beq	.rjp_f5
-		bset	#JPB_BUTTON_PLAY,d0
-.rjp_f5		tst.w	(.rjp_keys+18,pc)
-		beq	.rjp_f6
-		bset	#JPB_BUTTON_REVERSE,d0
-.rjp_f6		tst.w	(.rjp_keys+22,pc)
-		beq	.rjp_end
-		bset	#JPB_BUTTON_FORWARD,d0
-.rjp_end	rts
-
-.rjp_save	dc.l	0
-.rjp_keys	dc.w	$50,0			;F1 Blue - Stop
-		dc.w	$51,0			;F2 Green - Shuffle
-		dc.w	$52,0			;F3 Yellow - Repeat
-		dc.w	$53,0			;F4 Grey - Play/Pause
-		dc.w	$54,0			;F5 Left Ear - Reverse
-		dc.w	$55,0			;F6 Right Ear - Forward
-
-.rjp_template	dc.b	"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K,Force/S",0
-
-;----------------------------------------
-; ASCII to Integer
-; asciiint ::= [+|-] { {<digit>} | ${<hexdigit>} }¹
-; hexdigit ::= {012456789abcdefABCDEF}¹
-; digit    ::= {0123456789}¹
-; IN:	A0 = CPTR ascii | NIL
-; OUT:	D0 = LONG integer (on error=0)
-;	A0 = CPTR first char after translated ASCII
-
-_atoi		movem.l	d6-d7,-(a7)
-		moveq	#0,d0		;default
-		move.l	a0,d1		;a0 = NIL ?
-		beq	.eend
-		moveq	#0,d1
-		move.b	(a0)+,d1
-		cmp.b	#"-",d1
-		seq	d7		;D7 = negative
-		beq	.1p
-		cmp.b	#"+",d1
-		bne	.base
-.1p		move.b	(a0)+,d1
-.base		cmp.b	#"$",d1
-		beq	.hexs
-
-.dec		cmp.b	#"0",d1
-		blo	.end
-		cmp.b	#"9",d1
-		bhi	.end
-		sub.b	#"0",d1
-		move.l	d0,d6		;D0 * 10
-		lsl.l	#3,d0		;
-		add.l	d6,d0		;
-		add.l	d6,d0		;
-		add.l	d1,d0
-		move.b	(a0)+,d1
-		bra	.dec
-
-.hexs		move.b	(a0)+,d1
-.hex		cmp.b	#"0",d1
-		blo	.hexl
-		cmp.b	#"9",d1
-		bhi	.hexl
-		sub.b	#"0",d1
-		bra	.hexgo
-.hexl		cmp.b	#"a",d1
-		blo	.hexh
-		cmp.b	#"f",d1
-		bhi	.hexh
-		sub.b	#"a"-10,d1
-		bra	.hexgo
-.hexh		cmp.b	#"A",d1
-		blo	.end
-		cmp.b	#"F",d1
-		bhi	.end
-		sub.b	#"A"-10,d1
-.hexgo		lsl.l	#4,d0		;D0 * 16
-		add.l	d1,d0
-		move.b	(a0)+,d1
-		bra	.hex
-
-.end		subq.l	#1,a0
-		tst.b	d7
-		beq	.eend
-		neg.l	d0
-.eend		movem.l	(a7)+,d6-d7
-		rts
-	ENDC
-	ELSE
-	IFD JOYPADEMU
-	FAIL	JOYPADEMU requires INIT_LOWLEVEL
-	ENDC
 	ENDC
 
 ;============================================================================
@@ -1417,7 +1181,21 @@ _flushcache	move.l	(_resload,pc),-(a7)
 
 ;============================================================================
 
+	IFD INIT_LOWLEVEL
+	IFND BOOTDOS
+	FAIL	INIT_LOWLEVEL requires BOOTDOS
+	ENDC
+	INCLUDE Sources:whdload/lowlevel.s
+	ELSE
+	IFD JOYPADEMU
+	FAIL	JOYPADEMU requires INIT_LOWLEVEL
+	ENDC
+	ENDC
+
 	IFD INIT_NONVOLATILE
+	IFND BOOTDOS
+	FAIL	INIT_NONVOLATILE requires BOOTDOS
+	ENDC
 	INCLUDE Sources:whdload/nonvolatile.s
 	ENDC
 
@@ -1453,9 +1231,6 @@ slv_kickname
 	IFD NO68020
 _badkickstart	dc.b	"Your Kickstart 3.1 image isn't 68000/010 compatible",0
 	ENDC
-	ENDC
-	IFD INIT_LOWLEVEL
-_lowlevelname	dc.b	"lowlevel.library",0
 	ENDC
 	IFD PROMOTE_DISPLAY
 _load_dblpal	dc.b	"DblPAL",0

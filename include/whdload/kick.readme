@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.26 2019/02/22 00:33:36 wepl Exp wepl $
+$Id: kick.readme 1.27 2019/10/17 23:29:12 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -174,15 +174,14 @@ JOYPADEMU
 Only available in kick31.s. Requires that INIT_LOWLEVEL and BOOTDOS are also
 set. It patches ReadJoyPort to emulate the joypad buttons of the controller
 in port 1 via keyboard. A connected joypad remains fully working. If a
-joystick is connected it queries the keyboard for the addtional keys and
-returns a joypad response to the calling application. The keys for the
-emulation can be user defined via the Custom/K option/tooltype. It uses
-dos.ReadArgs to parse the specified string with the template
-"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K". The default keys for
-the buttons are F1..F6 in order.
-When trying this feature make sure the game does not force the game controller
-to a joypad using SetJoyPortAttrsA! If it has been forced lowlowel will
-always return a joypad and the emulation will not work.
+joystick or joypad is connected/detected/forced it queries the keyboard for the
+addtional keys and always returns a joypad response to the calling application.
+The keys for the emulation can be user defined via the Custom/K WHDLoad option/
+tooltype. It uses dos.ReadArgs to parse the specified string with the template
+"Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K,Force/S". The default keys
+for the buttons are F1..F6 in order.
+The option Force disables the auto sensing of the lowlevel.library and forces
+port #1 to a joystick which than get transformed to a joypad by the JOYPADEMU.
 
 MEMFREE = $100
 
