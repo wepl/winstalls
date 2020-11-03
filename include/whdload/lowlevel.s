@@ -3,7 +3,7 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl
-;  :Version.	$Id: lowlevel.s 1.2 2020/10/30 17:37:56 wepl Exp wepl $
+;  :Version.	$Id: lowlevel.s 1.3 2020/10/30 18:00:55 wepl Exp wepl $
 ;  :History.	2020-10-29 initial
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -12,6 +12,7 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
+	INCLUDE	dos/rdargs.i
 	INCLUDE	exec/initializers.i
 	INCLUDE	libraries/lowlevel.i
 	INCLUDE	lvo/cia.i
@@ -1048,7 +1049,7 @@ ReadJoyPort
 
 	IFD JOYPADEMU
 
-.readjoyport	cmp	#1,d1			;only port 1
+		cmp	#1,d0			;only port 1
 		bne	.rjp_original
 		bsr	.rjp_original
 
@@ -1065,7 +1066,7 @@ ReadJoyPort
 		jsr	(_LVOQueryKeys,a6)
 		move.l	(a7)+,d0
 		and.l	#~(JP_TYPE_MASK),d0
-		or.l	#JP_TYPE_GAMECTLR,d0
+		or.l	#JP_TYPE_GAMECTLR,d0	;force type to gamectrl
 		tst.w	(_rjp_keys+2,pc)
 		beq	.rjp_f2
 		bset	#JPB_BUTTON_BLUE,d0
