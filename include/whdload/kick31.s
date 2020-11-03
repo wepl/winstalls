@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.45 2020/05/12 23:47:29 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.46 2020/11/03 23:31:07 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -1060,9 +1060,9 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 		move.l	a1,a4			;A4 = directory
 
 	;open doslib
-		lea	(_dosname,pc),a1
+		moveq	#OLTAG_DOS,d0
 		move.l	(4),a6
-		jsr	(_LVOOldOpenLibrary,a6)
+		jsr	(_LVOTaggedOpenLibrary,a6)
 		move.l	d0,a6
 
 	;lock directory
@@ -1104,9 +1104,9 @@ _promotedisplay	movem.l	d0-a6,-(a7)
 		cmp.l	#DBLNTSC_MONITOR_ID,d0
 		bne	.end
 	;enable AGA chipset
-.promote	lea	(_gfxname,pc),a1
+.promote	moveq	#OLTAG_GRAPHICS,d0
 		move.l	(4),a6
-		jsr	(_LVOOldOpenLibrary,a6)
+		jsr	(_LVOTaggedOpenLibrary,a6)
 		move.l	d0,a5				;A5 = gfxbase
 		move.l	d0,a6
 		move.l	#SETCHIPREV_BEST,d0
@@ -1119,8 +1119,8 @@ _promotedisplay	movem.l	d0-a6,-(a7)
 		move.l	(pr_WindowPtr,a2),d6		;D6 = window
 		moveq	#-1,d0
 		move.l	d0,(pr_WindowPtr,a2)		;avoid 'Insert Volume' requester
-		lea	(_dosname,pc),a1
-		jsr	(_LVOOldOpenLibrary,a6)
+		moveq	#OLTAG_DOS,d0
+		jsr	(_LVOTaggedOpenLibrary,a6)
 		move.l	d0,a6
 		move.l	a4,d1				;command
 		moveq	#0,d2				;taglist
@@ -1238,7 +1238,6 @@ _load_dblntsc	dc.b	"DblNTSC",0
 _err_load_mon	dc.b	"Couldn't load monitor!",0
 _mon_dblpal	dc.b	"DblPAL.monitor",0
 _mon_dblntsc	dc.b	"DblNTSC.monitor",0
-_gfxname	dc.b	"graphics.library",0
 	ENDC
 	EVEN
 _kick31_tags	dc.l	WHDLTAG_CBSWITCH_SET
