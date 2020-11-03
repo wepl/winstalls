@@ -3,8 +3,8 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl
-;  :Version.	$Id: lowlevel.s 1.3 2020/10/30 18:00:55 wepl Exp wepl $
-;  :History.	2020-10-29 initial
+;  :Version.	$Id: lowlevel.s 1.4 2020/11/03 22:28:20 wepl Exp wepl $
+;  :History.	2020-10-29 initial, based on resourced original
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -26,8 +26,7 @@
 ;============================================================================
 ; this creates the library, must be called once at startup
 
-_lowlevel_init
-		movem.l	d0-d1/a0-a2/a6,-(a7)
+_lowlevel_init	movem.l	d0-d1/a0-a2/a6,-(a7)
 		lea	(.name,pc),a0
 		lea	(.struct_name+2,pc),a1
 		move.l	a0,(a1)
@@ -79,16 +78,12 @@ _lowlevel_init
 		dc.w	-1
 
 .name		dc.b	"lowlevel.library",0
-utilitylibrar.MSG	db	'utility.library',0
-nonvolatileli.MSG	db	'nonvolatile.library',0
-intuitionlibr.MSG	db	'intuition.library',0
-graphicslibra.MSG	db	'graphics.library',0
-timerdevice.MSG		db	'timer.device',0
 keyboarddevic.MSG	db	'keyboard.device',0
 potgoresource.MSG	db	'potgo.resource',0
 gameportdevic.MSG	db	'gameport.device',0
-inputdevice.MSG		db	'input.device',0
 InputMapper.MSG		db	'Input Mapper',0
+ciaaresource.MSG	db	'ciaa.resource',0
+ciabresource.MSG	db	'ciab.resource',0
 	EVEN
 
 _ll_Open	addq	#1,(LIB_OPENCNT,a6)
@@ -106,18 +101,12 @@ _ll_Expunge_ExtFunc
 _lowlevel_rtinit
 	movem.l	d7/a5/a6,-(sp)
 	movea.l	d0,a5
-	move.l	a6,($34,a5)	;34 execbase
-	move.l	a0,($30,a5)	;seglist
+	move.l	a6,($34,a5)		;34 execbase
 	lea	(potgoresource.MSG,pc),a1
 	jsr	(_LVOOpenResource,a6)
-	move.l	d0,($58,a5)	;58 poto ressource
+	move.l	d0,($58,a5)		;58 potgo ressource
 	move.b	#8,($6D,a5)
 	move.b	#8,($AD,a5)
-	moveq	#0,d0
-	move.l	d0,($9C,a5)
-	move.l	d0,($DC,a5)
-	move.l	d0,($170,a5)
-	move.l	d0,($1B0,a5)
 	lea	($6E,a5),a0
 	jsr	(_LVOInitSemaphore,a6)
 	lea	($AE,a5),a0
@@ -171,17 +160,15 @@ _lowlevel_rtinit
 	bne.b	.copy
 	movea.l	(sp)+,a1
 	jsr	(_LVOAddPort,a6)
-	lea	(intuitionlibr.MSG,pc),a1
-	moveq	#37,d0
-	jsr	(_LVOOpenLibrary,a6)
+	moveq	#OLTAG_INTUITION,d0
+	jsr	(_LVOTaggedOpenLibrary,a6)
 	tst.l	d0
 	beq.w	.nov37
 	movea.l	($54,a5),a1
 	lea	($30,a1),a0
 	move.l	a0,($26,a1)
 	move.l	#$2F3AFFFA,($2A,a1)	;move.l (*-4),-(a7)
-	move.w	#$7000,($2E,a1)	;moveq #0,d0
-	move.w	#$4E75,($30,a1)	;rts
+	move.l	#$70004e75,($2E,a1)	;moveq #0,d0 ;rts
 	lea	($2A,a1),a1
 	movea.l	#_LVOEasyRequestArgs,a0
 	exg	d0,a1
@@ -193,33 +180,18 @@ _lowlevel_rtinit
 	move.l	d0,($22,a1)
 	move.l	d0,($26,a1)
 	jsr	(_LVOCacheClearU,a6)
-.portok	lea	(utilitylibrar.MSG,pc),a1
-	jsr	(_LVOOldOpenLibrary,a6)
-	move.l	d0,($38,a5)	;38 utilbase
+.portok	moveq	#OLTAG_UTILITY,d0
+	jsr	(_LVOTaggedOpenLibrary,a6)
+	move.l	d0,($38,a5)		;38 utilbase
 	beq.w	.nov37
-	lea	(graphicslibra.MSG,pc),a1
-	moveq	#40,d0
-	jsr	(_LVOOpenLibrary,a6)
-	tst.l	d0
-	bne.b	.gfx40
-	lea	($1E2,a5),a1
-	move.b	#2,(8,a1)
-	move.l	(10,a5),(10,a1)
-	lea	(_ll_inc_a1,pc),a0
-	move.l	a0,($12,a1)
-	lea	($1F8,a5),a0
-	move.l	a0,(14,a1)
-	moveq	#5,d0
-	jsr	(_LVOAddIntServer,a6)
-	lea	($1F8,a5),a1
-	bra.b	.1
-
-.gfx40	movea.l	d0,a0
+	moveq	#OLTAG_GRAPHICS,d0
+	jsr	(_LVOTaggedOpenLibrary,a6)
+	movea.l	d0,a0
 	lea	($1F4,a0),a1
-.1	move.l	a1,($5C,a5)
+	move.l	a1,($5C,a5)
 	move.w	#$FFFF,($26,a5)
 	lea	(-$28,sp),sp
-	lea	(timerdevice.MSG,pc),a0
+	lea	ODTAG_TIMER,a0
 	movea.l	sp,a1
 	moveq	#0,d0
 	moveq	#0,d1
@@ -254,20 +226,13 @@ _lowlevel_rtinit
 	jsr	(_LVOAddICRVector,a6)
 	move.l	a5,d0
 	lea	($28,sp),sp
-	bra.b	.end
-
-.nokeyboard	move.l	($40,a5),($14,sp)
-	movea.l	sp,a1
-	jsr	(_LVOCloseDevice,a6)
-.notimer	lea	($28,sp),sp
-	movea.l	($38,a5),a1
-	jsr	(_LVOCloseLibrary,a6)
-.nov37	moveq	#0,d0
-
-		illegal			; stop on failure
-
-.end	movem.l	(sp)+,d7/a5/a6
+	movem.l	(sp)+,d7/a5/a6
 	rts
+
+.nokeyboard
+.notimer
+.nov37
+	illegal			; stop on failure
 
 ;============================================================================
 
@@ -290,8 +255,8 @@ JPARGBUFLEN = 100
 		jsr	(resload_GetCustom,a1)
 		tst.l	d0
 		beq	.badcustom
-		lea	(_dosname,pc),a1
-		jsr	(_LVOOldOpenLibrary,a6)
+		moveq	#OLTAG_DOS,d0
+		jsr	(_LVOTaggedOpenLibrary,a6)
 		move.l	d0,a6
 		lea	(.rjp_template,pc),a0
 		move.l	a0,d1			;template
@@ -434,10 +399,11 @@ _atoi		movem.l	d6-d7,-(a7)
 	ENDC
 
 ;-----------------------
-; not implemented functions
+; writes language selection to nvram
+; IN:	D0 = ULONG language
+; OUT:	-
 
 SetLanguageSelection
-
 		illegal
 
 ;-----------------------
@@ -448,10 +414,6 @@ SetLanguageSelection
 GetLanguageSelection
 		move.l	(_language,pc),d0
 		rts
-
-_ll_inc_a1	addq.l	#1,(a1)
-	moveq	#0,d0
-	rts
 
 _4F0	tst.w	d1
 	bne.b	.4FC
@@ -970,9 +932,6 @@ ElapsedTime	movem.l	d2/d3/a6,-(sp)
 	movem.l	(sp)+,d2/d3/a6
 	rts
 
-ciaaresource.MSG	db	'ciaa.resource',0
-ciabresource.MSG	db	'ciab.resource',0
-
 _B1C	tst.w	d1
 	bne.b	.B96
 	subq.b	#1,($25,a5)
@@ -1000,7 +959,7 @@ _B1C	tst.w	d1
 	jsr	(_LVODoIO,a6)
 	movea.l	sp,a1
 	jsr	(_LVOCloseDevice,a6)
-.B7E	lea	(inputdevice.MSG,pc),a0
+.B7E	lea	ODTAG_INPUT,a0
 	movea.l	sp,a1
 	moveq	#0,d0
 	move.l	d0,d1
@@ -1019,7 +978,7 @@ _B1C	tst.w	d1
 	move.b	#0,(14,a0)
 	lea	(-$30,sp),sp
 	move.l	a0,(14,sp)
-	lea	(inputdevice.MSG,pc),a0
+	lea	ODTAG_INPUT,a0
 	movea.l	sp,a1
 	moveq	#0,d0
 	move.l	d0,d1
@@ -2204,7 +2163,7 @@ _1902	movem.l	d2/a2-a4,-(sp)
 	addq.l	#4,a0
 	clr.l	(a0)
 	move.l	a0,-(a0)
-	lea	(inputdevice.MSG,pc),a0
+	lea	ODTAG_INPUT,a0
 	moveq	#0,d0
 	lea	($58,a4),a1
 	moveq	#0,d1
