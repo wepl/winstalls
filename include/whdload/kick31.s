@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.46 2020/11/03 23:31:07 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.47 2020/11/03 23:38:08 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -47,6 +47,7 @@
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;		29.10.20 INIT_LOWLEVEL/JOYPADEMU changed for constructed lowlevel.s
 ;		03.11.20 tagged library/device defines added
+;		20.12.20 fixed key repeat in input.device (wrong variable offset)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -720,6 +721,7 @@ gfx_snoop1	move.b	(vhposr,a0),d0
 		move.b	d0,(ciatodlow,a6)
 		rts
 
+	;cbswitch: may change registers d0/d1
 _cbswitch	move.l	(_cbswitch_cop2lc,pc),(_custom+cop2lc)
 		move.b	(_cbflag_beamcon0,pc),d0
 		beq	.nobeamcon0
@@ -803,7 +805,7 @@ _keyboard	moveq	#0,d4				;original
 input_task	moveq	#0,d7				;original
 		bset	d0,d7				;original
 		move.l	d7,d6				;original
-		pea	($1212,a5)			;last rawkey for repeat
+		pea	($b2,a5)			;last rawkey for repeat
 		lea	(input_norepeat,pc),a0
 		move.l	(a7)+,(a0)
 		rts
