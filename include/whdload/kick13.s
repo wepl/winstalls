@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.75 2019/11/08 19:06:24 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.76 2020/05/12 23:47:29 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -79,6 +79,7 @@
 ;		15.01.19 key repeat after osswitch disabled in input.device
 ;		08.11.19 waitblit added to gfx_text patch (Psygore)
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
+;		22.12.20 added keymap loading
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -89,6 +90,7 @@
 	INCLUDE	lvo/dos.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
+	INCLUDE	devices/keymap.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	graphics/gfxbase.i
@@ -291,6 +293,9 @@ kick_patch	PL_START
 		PL_PS	$25290,keyboard_start
 		PL_PS	$253a2,keyboard_end
 		PL_PS	$25e42,input_task
+	IFD SETKEYBOARD
+		PL_P	$27f76,keymap_addmap
+	ENDC
 	IFD HDINIT
 		PL_PS	$28452,hd_init			;enter while starting strap
 	ENDC
@@ -759,6 +764,34 @@ keyboard_end	move.b	(_keyboarddelay,pc),d1
 		addq.l	#2,(a7)
 		and.b	#~(CIACRAF_SPMODE),(_ciaa+ciacra)
 		rts
+
+	IFD SETKEYBOARD
+keymap_addmap	movem.l	d2/a3,-(a7)
+		lea	(.keymap,pc),a0
+		move.l	(_resload,pc),a3
+		jsr	(resload_GetFileSize,a3)
+		tst.l	d0
+		beq	.nokeymap
+		moveq	#MEMF_ANY,d1
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,d2
+		beq	.nokeymap
+		lea	(.keymap,pc),a0
+		move.l	d2,a1
+		jsr	(resload_LoadFile,a3)
+		move.l	d2,a0
+		sub.l	a1,a1				;tags
+		jsr	(resload_Relocate,a3)
+		lea	(kr_List,a2),a0			;list
+		move.l	d2,a1				;node to add
+		jsr	(_LVOAddHead,a6)
+.nokeymap	movem.l	(a7)+,d2/a3
+		move.l	(a7)+,a2			;original
+		rts					;original
+
+.keymap		dc.b	"WHDLoad.keymap",0
+	EVEN
+	ENDC
 
 ;============================================================================
 

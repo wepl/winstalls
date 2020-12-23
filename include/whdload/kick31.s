@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.47 2020/11/03 23:38:08 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.48 2020/12/20 23:25:31 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -48,6 +48,7 @@
 ;		29.10.20 INIT_LOWLEVEL/JOYPADEMU changed for constructed lowlevel.s
 ;		03.11.20 tagged library/device defines added
 ;		20.12.20 fixed key repeat in input.device (wrong variable offset)
+;		21.12.20 added keymap loading
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -58,6 +59,7 @@
 	INCLUDE	lvo/dos.i
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
+	INCLUDE	devices/keymap.i
 	INCLUDE	devices/trackdisk.i
 	INCLUDE	exec/memory.i
 	INCLUDE	exec/resident.i
@@ -337,6 +339,9 @@ kick_patch600	PL_START
 	ENDC
 		PL_P	$3c246,timer_init
 	;	PL_NOP	$3b880,2			;skip rom menu
+	IFD SETKEYBOARD
+		PL_P	$40f04,keymap_addmap
+	ENDC
 		PL_P	$446aa,trd_task
 		PL_P	$44ea8,trd_format
 		PL_P	$452ec,trd_motor
@@ -447,6 +452,9 @@ kick_patch1200	PL_START
 		PL_B	$40632,RTF_COLDSTART|RTF_AUTOINIT
 	ENDC
 		PL_P	$40D3A,timer_init
+	IFD SETKEYBOARD
+		PL_P	$42878,keymap_addmap
+	ENDC
 	;	PL_NOP	$44294,2			;skip rom menu
 		PL_P	$44A5A,trd_task
 		PL_P	$45258,trd_format
@@ -567,6 +575,9 @@ kick_patch4000	PL_START
 		PL_P	$4C780,trd_readwrite
 		PL_PS	$4CB4E,trd_protstatus
 		PL_PS	$4D024,trd_init
+	IFD SETKEYBOARD
+		PL_P	$4d604,keymap_addmap
+	ENDC
 	IFD FONTHEIGHT
 		PL_B	$6799C,FONTHEIGHT
 	ENDC
@@ -799,6 +810,36 @@ _keyboard	moveq	#0,d4				;original
 		clr.w	(4,a7)
 		pea	TDREASON_DEBUG
 		bra	.quit
+
+	IFD SETKEYBOARD
+keymap_addmap	movem.l	d2/a2,-(a7)
+		lea	(.keymap,pc),a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_GetFileSize,a2)
+		tst.l	d0
+		beq	.nokeymap
+		moveq	#MEMF_ANY,d1
+		jsr	(_LVOAllocMem,a6)
+		move.l	d0,d2
+		beq	.nokeymap
+		lea	(.keymap,pc),a0
+		move.l	d2,a1
+		jsr	(resload_LoadFile,a2)
+		move.l	d2,a0
+		sub.l	a1,a1				;tags
+		jsr	(resload_Relocate,a2)
+		lea	($26+kr_List,a5),a0		;list
+		move.l	d2,a1				;node to add
+		lea	(kn_KeyMap,a1),a2
+		move.l	a2,($22,a5)			;set default KeyMap
+		jsr	(_LVOAddHead,a6)
+.nokeymap	move.l	a5,d0				;original
+		movem.l	(a7)+,d2/a2/a5			;original
+		rts					;original
+
+.keymap		dc.b	"WHDLoad.keymap",0
+	EVEN
+	ENDC
 
 ;============================================================================
 
