@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.22 2019/01/19 14:28:32 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.23 2019/01/19 18:53:35 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -22,6 +22,7 @@
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		28.12.18 segtracker added
 ;		19.01.19 test code for keyrepeat on osswitch added
+;		22.12.20 SETKEYBOARD added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -73,6 +74,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;NEEDFPU			;set requirement for a fpu
 POINTERTICKS	= 1		;set mouse speed
 SEGTRACKER			;add segment tracker
+SETKEYBOARD			;activate host keymap
 SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
@@ -101,7 +103,7 @@ slv_CurrentDir	dc.b	"wb13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.10 "
+		dc.b	"Version 0.11 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
