@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.27 2019/10/17 23:29:12 wepl Exp wepl $
+$Id: kick.readme 1.28 2020/11/03 23:31:14 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -152,11 +152,10 @@ gadtools.library.
 
 INIT_LOWLEVEL
 
-Only available in kick31.s. Loads the lowlevel.library from disk into memory
-and patches the function GetLanguageSelection to reflect the setting of the
-host operating system. Requires that the disk version of the lowlevel.library
-is present on the games data directory. BOOTDOS must be used, otherwise the
-patch will not be activated.
+Only available in kick31.s. Initializes the lowlevel.library. The function
+GetLanguageSelection will reflect the setting of the host operating system. 
+The symbol JOYPADEMU can be used to activate a joypad emulation via the
+keyboard.
 
 INIT_MATHFFP
 
@@ -237,6 +236,13 @@ loaded executable has caused the fault and also shows at which offset in the
 executable it happened. The provided tool stinf can be used to display all
 tracked segments when run under WHDLoad. It works also on Kickstart 1.x
 contrary to the original SegTracker which requires Kickstart 2.x.
+
+SETKEYBOARD
+
+If that symbol is defined the virtual file WHDLoad.keymap is tried to load. If
+it succeeds this file is added to the keymap.resource and set as default keymap.
+This makes the keymap of the host system available and obsoletes any SetMap or
+SetKeyboard commands.
 
 SETPATCH
 
