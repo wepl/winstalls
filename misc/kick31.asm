@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.16 2019/01/19 18:53:35 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.17 2019/10/17 23:33:13 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -19,6 +19,7 @@
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		28.12.18 segtracker added
 ;		16.01.19 test code for keyrepeat on osswitch added
+;		22.12.20 SETKEYBOARD added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -79,6 +80,7 @@ NO68020				;remain 68000 compatible
 POINTERTICKS	= 1		;set mouse speed
 ;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
 SEGTRACKER			;add segment tracker
+SETKEYBOARD			;activate host keymap
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
@@ -106,7 +108,7 @@ slv_CurrentDir	dc.b	"wb31",0
 slv_name	dc.b	"Kickstarter for 40.068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.6 "
+		dc.b	"Version 0.7 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -155,9 +157,9 @@ _bootblock	blitz
 _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
-		lea	(_dosname,pc),a1
+		moveq	#OLTAG_DOS,d0
 		move.l	(4),a6
-		jsr	(_LVOOldOpenLibrary,a6)
+		jsr	(_LVOTaggedOpenLibrary,a6)
 		lea	(_dosbase,pc),a0
 		move.l	d0,(a0)
 		move.l	d0,a6			;A6 = dosbase
@@ -440,6 +442,9 @@ _cb_keyboard	cmp.b	#$45,d0			;Esc
 ; test code for key repeat of input.device after osswitch
 
 	IFD KEYREPEAT
+	IFND BOOTDOS
+	FAIL KEYREPEAT requires BOOTDOS
+	ENDC
 
 _checkrepeat	bsr	_GetKey
 		cmp.b	#'\',d0
