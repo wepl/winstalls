@@ -2,10 +2,11 @@
 ;  :Modul.	segtracker.s
 ;  :Contents.	implementation of SegTracker with WHDLoad KickEmu
 ;  :Author.	Wepl
-;  :Version.	$Id: segtracker.s 1.1 2018/12/29 00:19:16 wepl Exp wepl $
+;  :Version.	$Id: segtracker.s 1.2 2019/01/02 22:04:33 wepl Exp wepl $
 ;  :History.	30.05.18 started
 ;		28.12.18 completed for 3.1 roms
 ;		01.01.19 completed for 1.x roms
+;		01.01.21 fixed broken loop termination check in st_untrack
 ;  :Requires.	kick{12,13,31}.s (to be called from)
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -58,7 +59,6 @@ st_install	movem.l	d0-d1/a0-a6,-(a7)
 		jsr	(_LVOEnqueue,a6)
 		jsr	(_LVOPermit,a6)
 	ENDC
-
 	;add rom modules
 		move.l	(_expmem,pc),a3			;A3 = search start
 		move.l	a3,a4
@@ -254,7 +254,7 @@ st_untrack	movem.l	d0-d1/a0-a4/a6,-(a7)		;preserve calling args
 		jsr	(_LVOFreeMem,a6)
 	;next stored segment list
 .nextstseg	move.l	a4,a3
-		move.l	a4,d0
+		tst.l	(MLN_SUCC,a3)
 		bne	.loopstseg
 .nextseg	move.l	(a2),a2
 		move.l	a2,d0
