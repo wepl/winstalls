@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.48 2020/12/20 23:25:31 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.49 2020/12/23 01:01:53 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -49,6 +49,8 @@
 ;		03.11.20 tagged library/device defines added
 ;		20.12.20 fixed key repeat in input.device (wrong variable offset)
 ;		21.12.20 added keymap loading
+;		30.12.20 use MEMF_REVERSE for keymap loading
+;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -818,7 +820,7 @@ keymap_addmap	movem.l	d2/a2,-(a7)
 		jsr	(resload_GetFileSize,a2)
 		tst.l	d0
 		beq	.nokeymap
-		moveq	#MEMF_ANY,d1
+		move.l	#MEMF_REVERSE,d1		;reduce variations due user settings
 		jsr	(_LVOAllocMem,a6)
 		move.l	d0,d2
 		beq	.nokeymap
@@ -1204,7 +1206,7 @@ hd_init		move.l	(a7)+,d0
 		movem.l	d0/d2/a2-a6,-(a7)	;original
 		moveq	#0,d0			;original
 
-	INCLUDE	Sources:whdload/kickfs.s
+	INCLUDE	whdload/kickfs.s
 	ENDC
 
 ;============================================================================
@@ -1213,7 +1215,7 @@ hd_init		move.l	(a7)+,d0
 
 segtracker_init	move.l	(8,a0),($a4,a1)		;original
 
-	INCLUDE Sources:whdload/segtracker.s
+	INCLUDE whdload/segtracker.s
 	ENDC
 
 ;============================================================================
@@ -1228,7 +1230,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 	IFND BOOTDOS
 	FAIL	INIT_LOWLEVEL requires BOOTDOS
 	ENDC
-	INCLUDE Sources:whdload/lowlevel.s
+	INCLUDE whdload/lowlevel.s
 	ELSE
 	IFD JOYPADEMU
 	FAIL	JOYPADEMU requires INIT_LOWLEVEL
@@ -1239,7 +1241,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 	IFND BOOTDOS
 	FAIL	INIT_NONVOLATILE requires BOOTDOS
 	ENDC
-	INCLUDE Sources:whdload/nonvolatile.s
+	INCLUDE whdload/nonvolatile.s
 	ENDC
 
 ;============================================================================

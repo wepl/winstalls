@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.37 2019/01/19 14:45:01 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.38 2020/05/12 23:47:29 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -37,6 +37,7 @@
 ;			 support for SEGTRACKER added
 ;		19.01.19 key repeat after osswitch disabled in input.device
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
+;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -994,7 +995,7 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 
 hd_init		sub.l	#$7e,a5				;original
 
-	INCLUDE	Sources:whdload/kickfs.s
+	INCLUDE	whdload/kickfs.s
 	
 	ENDC
 
@@ -1005,7 +1006,7 @@ hd_init		sub.l	#$7e,a5				;original
 segtracker_init	move.l	($18,a1),d2			;original
 		lsl.l	#2,d2				;original
 
-	INCLUDE Sources:whdload/segtracker.s
+	INCLUDE whdload/segtracker.s
 
 	ENDC
 
