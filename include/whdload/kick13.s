@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.76 2020/05/12 23:47:29 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.77 2020/12/23 01:01:53 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -80,6 +80,9 @@
 ;		08.11.19 waitblit added to gfx_text patch (Psygore)
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;		22.12.20 added keymap loading
+;		01.01.21 SEGTRACKER init performed earlier to avoid that UnLoadSeg gets
+;			 called before (JOTD)
+;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -324,7 +327,6 @@ kick_patch	PL_START
 		PL_PS	$36e4c,dos_LoadSeg
 	IFD SEGTRACKER
 		PL_PS	$377ca,dos_UnLoadSeg
-		PL_PS	$3873e,segtracker_init
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$38748,dos_bootdos
@@ -951,6 +953,9 @@ _trd_changedisk	movem.l	a6,-(a7)
 ;============================================================================
 
 dos_init	move.l	#$10001,d1
+	IFD SEGTRACKER
+		bsr	st_install
+	ENDC
 		bra	_flushcache
 
 dos_endcli	tst.l	D2			;is -1 with EndCLI
@@ -1110,19 +1115,13 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 
 hd_init		lea	-1,a2				;original A2 = -1
 
-	INCLUDE	Sources:whdload/kickfs.s
-	
+	INCLUDE	whdload/kickfs.s
 	ENDC
 
 ;============================================================================
 
 	IFD SEGTRACKER
-
-segtracker_init	move.l	($18,a1),d2			;original
-		lsl.l	#2,d2				;original
-
-	INCLUDE Sources:whdload/segtracker.s
-
+	INCLUDE whdload/segtracker.s
 	ENDC
 
 ;============================================================================
