@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.23 2019/01/19 18:53:35 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.24 2020/12/23 01:58:18 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -99,7 +99,7 @@ slv_keyexit	= $59	;F10
 	ENDC
 	ENDC
 
-slv_CurrentDir	dc.b	"wb13",0
+slv_CurrentDir	dc.b	"kick13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
