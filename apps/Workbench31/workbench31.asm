@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.10 2019/01/02 21:50:00 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.11 2020/04/27 01:13:32 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -13,6 +13,7 @@
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		28.12.18 SEGTRACKER added
 ;		15.08.19 INIT_NONVOLATILE added
+;		03.01.21 SETKEYBOARD added
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -98,6 +99,7 @@ NO68020				;remain 68000 compatible
 ;POINTERTICKS	= 1		;set mouse speed
 ;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
 SEGTRACKER			;add segment tracker
+SETKEYBOARD			;activate host keymap
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
@@ -110,7 +112,8 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick31.s
+	INCDIR	Sources:
+	INCLUDE	whdload/kick31.s
 
 ;============================================================================
 
@@ -125,7 +128,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.5 "
+		dc.b	"Version 1.6 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
