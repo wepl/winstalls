@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.8 2019/01/02 21:49:40 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.9 2021/01/03 16:09:29 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -10,6 +10,7 @@
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		02.01.19 segtracker added
 ;		03.01.21 SETKEYBOARD added
+;			 another fix for Shell-Seg added, avoid af from alias command
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -44,7 +45,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 ;BOOTBLOCK			;enable _bootblock routine
 ;BOOTDOS			;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
-;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
@@ -389,7 +390,7 @@ LSPATCH	MACRO
 	ENDM
 
 _cbls_patch	LSPATCH	2516,.n_run,_p_run2568
-		LSPATCH	7080,.n_shellseg,_p_shellseg7080
+		LSPATCH	7080,.n_shellseg,_p_shellseg7116
 		LSPATCH	2956,.n_assign,_p_assign3008
 		dc.l	0
 
@@ -405,8 +406,9 @@ _p_assign3008	PL_START
 		PL_END
 _p_run2568	PL_START
 		PL_END
-_p_shellseg7080	PL_START
+_p_shellseg7116	PL_START
 		PL_AW	$1990,$1a4c-$19ae	;dereferences NULL (maybe dirlock because actual directory is broken)
+		PL_S	$1ab8,2			;leave APTR instead BPTR, alias command
 		PL_END
 
 	ENDC
