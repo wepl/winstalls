@@ -2,10 +2,11 @@
 ;  :Modul.	lowlevel.s
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
-;  :Author.	Wepl
-;  :Version.	$Id: lowlevel.s 1.5 2020/11/03 23:10:16 wepl Exp wepl $
+;  :Author.	Wepl, JOTD
+;  :Version.	$Id: lowlevel.s 1.6 2020/11/03 23:18:41 wepl Exp wepl $
 ;  :History.	2020-10-29 initial, based on resourced original
 ;		2020-11-03 moved .in jump one inst before in joypad read
+;		2021-01-31 changed db to dc.b for better assembler comptibility
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -79,12 +80,12 @@ _lowlevel_init	movem.l	d0-d1/a0-a2/a6,-(a7)
 		dc.w	-1
 
 .name		dc.b	"lowlevel.library",0
-keyboarddevic.MSG	db	'keyboard.device',0
-potgoresource.MSG	db	'potgo.resource',0
-gameportdevic.MSG	db	'gameport.device',0
-InputMapper.MSG		db	'Input Mapper',0
-ciaaresource.MSG	db	'ciaa.resource',0
-ciabresource.MSG	db	'ciab.resource',0
+keyboarddevic.MSG	dc.b	'keyboard.device',0
+potgoresource.MSG	dc.b	'potgo.resource',0
+gameportdevic.MSG	dc.b	'gameport.device',0
+InputMapper.MSG		dc.b	'Input Mapper',0
+ciaaresource.MSG	dc.b	'ciaa.resource',0
+ciabresource.MSG	dc.b	'ciab.resource',0
 	EVEN
 
 _ll_Open	addq	#1,(LIB_OPENCNT,a6)
@@ -548,7 +549,7 @@ _558	move.l	d1,-(sp)
 	lea	($1B4,a5),a0
 	jmp	(_LVOReleaseSemaphore,a6)
 
-cddevice.MSG	db	'cd.device',0
+cddevice.MSG	dc.b	'cd.device',0
 
 SystemControlA	movem.l	d7/a4-a6,-(sp)
 	movea.l	a6,a5
@@ -587,12 +588,12 @@ _sc_call	movea.l	d0,a0
 	move.w	(.jmp,pc,d0.w),d0
 	jmp	(.jmp,pc,d0.w)
 
-.jmp	dw	_sc_TakeOverSys-.jmp
-	dw	_sc_KillReq-.jmp
-	dw	_sc_CDReboot-.jmp
-	dw	_sc_StopInput-.jmp
-	dw	_sc_AddCreateKeys-.jmp
-	dw	_sc_RemCreateKeys-.jmp
+.jmp	dc.w	_sc_TakeOverSys-.jmp
+	dc.w	_sc_KillReq-.jmp
+	dc.w	_sc_CDReboot-.jmp
+	dc.w	_sc_StopInput-.jmp
+	dc.w	_sc_AddCreateKeys-.jmp
+	dc.w	_sc_RemCreateKeys-.jmp
 
 _sc_TakeOverSys	move.l	#$80C00000,d0
 	bsr.w	_7EE
@@ -687,12 +688,12 @@ _80E	movea.l	($38,a5),a6
 	move.w	(.846,pc,d0.w),d0
 	jmp	(.846,pc,d0.w)
 
-.846	dw	.852-.846
-	dw	.85A-.846
-	dw	.866-.846
-	dw	.878-.846
-	dw	.89E-.846
-	dw	.880-.846
+.846	dc.w	.852-.846
+	dc.w	.85A-.846
+	dc.w	.866-.846
+	dc.w	.878-.846
+	dc.w	.89E-.846
+	dc.w	.880-.846
 
 .852	bsr.b	.8BC
 	bsr.w	_4F0
@@ -995,10 +996,10 @@ _B1C	tst.w	d1
 	move.b	#2,(14,a0)
 .BEE	rts
 
-libportnumoffset	dw	$60
-	dw	$A0
-	dw	$134
-	dw	$174
+libportnumoffset	dc.w	$60
+	dc.w	$A0
+	dc.w	$134
+	dc.w	$174
 
 ;-----------------------
 ; return the state of the selected joy/mouse port
@@ -1221,9 +1222,9 @@ RJP_error	move.l	d6,d0
 	movem.l	(sp)+,d2-d7/a2-a6
 _E20	rts
 
-_E22	dw	_E28-_E22
-	dw	_E72-_E22
-	dw	_ECA-_E22
+_E22	dc.w	_E28-_E22
+	dc.w	_E72-_E22
+	dc.w	_ECA-_E22
 
 _E28	cmp.w	(2,a2),d7
 	bne.w	_EC6
@@ -1430,22 +1431,22 @@ SetJoyPortAttrsA	movem.l	d0/d2/a2/a3,-(sp)
 .1062	movem.l	(sp)+,d0/d2/a2/a3
 	rts
 
-port_type_list	dw	port_unknown-port_type_list
-	dw	port_gamectlr_0-port_type_list
-	dw	port_mouse_0-port_type_list
-	dw	port_joystck_0-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_gamectlr_1-port_type_list
-	dw	port_mouse_1-port_type_list
-	dw	port_joystck_1-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_gamectlr_2-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_gamectlr_3-port_type_list
-	dw	port_unknown-port_type_list
-	dw	port_unknown-port_type_list
+port_type_list	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_0-port_type_list
+	dc.w	port_mouse_0-port_type_list
+	dc.w	port_joystck_0-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_1-port_type_list
+	dc.w	port_mouse_1-port_type_list
+	dc.w	port_joystck_1-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_2-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_3-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
 
 port_unknown	moveq	#0,d0
 	rts
@@ -2244,30 +2245,30 @@ _1A16	movem.l	d2/a5/a6,-(sp)
 .1A62	movem.l	(sp)+,d2/a5/a6
 	rts
 
-_1A68	db	$17
-	db	$72
-	db	$16
-	db	$78
-	db	$15
-	db	$77
-	db	$14
-	db	$76
-	db	$13
-	db	$75
-	db	$12
-	db	$74
-	db	$11
-	db	$73
-	db	$FF
-_1A77	db	3
-	db	$79
-	db	2
-	db	$7A
-	db	1
-	db	$7C
-	db	0
-	db	$7B
-	db	$FF
+_1A68	dc.b	$17
+	dc.b	$72
+	dc.b	$16
+	dc.b	$78
+	dc.b	$15
+	dc.b	$77
+	dc.b	$14
+	dc.b	$76
+	dc.b	$13
+	dc.b	$75
+	dc.b	$12
+	dc.b	$74
+	dc.b	$11
+	dc.b	$73
+	dc.b	$FF
+_1A77	dc.b	3
+	dc.b	$79
+	dc.b	2
+	dc.b	$7A
+	dc.b	1
+	dc.b	$7C
+	dc.b	0
+	dc.b	$7B
+	dc.b	$FF
 
 ;============================================================================
 
