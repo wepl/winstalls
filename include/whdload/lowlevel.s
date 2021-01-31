@@ -3,10 +3,11 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: lowlevel.s 1.6 2020/11/03 23:18:41 wepl Exp wepl $
+;  :Version.	$Id: lowlevel.s 1.7 2021/01/31 16:12:56 wepl Exp wepl $
 ;  :History.	2020-10-29 initial, based on resourced original
 ;		2020-11-03 moved .in jump one inst before in joypad read
 ;		2021-01-31 changed db to dc.b for better assembler comptibility
+;			   switched for ElapsedTime to 68000 compatible code
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -875,10 +876,15 @@ _A3C	jsr	(_LVOOpenResource,a6)
 .A66	move.w	(sp)+,d0
 	rts
 
-ElapsedTime	movem.l	d2/d3/a6,-(sp)
+ElapsedTime
+
+	IFEQ 1
+
+	;this is the 68020+ routine, 68060 requires emulation of divu.l
+	movem.l	d2/d3/a6,-(sp)
 	move.l	(4,a0),-(sp)
 	move.l	(a0),-(sp)
-	movea.l	($40,a6),a6
+	movea.l	($40,a6),a6	;timer
 	jsr	(_LVOReadEClock,a6)
 	movem.l	(a0)+,d1/d2
 	sub.l	(4,sp),d2
@@ -903,6 +909,9 @@ ElapsedTime	movem.l	d2/d3/a6,-(sp)
 .AAA	moveq	#-1,d0
 	bra.b	.AA4
 
+	ENDC
+
+	;this is the 68000 routine, maybe has less precision?
 	movem.l	d2/d3/a6,-(sp)
 	move.l	(4,a0),-(sp)
 	move.l	(a0),-(sp)
@@ -931,8 +940,11 @@ ElapsedTime	movem.l	d2/d3/a6,-(sp)
 	divu.w	d0,d1
 	move.w	d1,d2
 	move.l	d2,d0
-	movem.l	(sp)+,d2/d3/a6
+.AA4	movem.l	(sp)+,d2/d3/a6
 	rts
+
+.AAA	moveq	#-1,d0
+	bra.b	.AA4
 
 _B1C	tst.w	d1
 	bne.b	.B96
