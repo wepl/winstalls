@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.38 2020/05/12 23:47:29 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.39 2021/01/02 01:36:30 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -38,6 +38,7 @@
 ;		19.01.19 key repeat after osswitch disabled in input.device
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
+;		26.07.21 BOOTCOOL and EXTROMSIZE added (Arcadia)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -68,7 +69,10 @@ slv_FlagsAdd SET slv_FlagsAdd|WHDLF_Examine
 
 KICKSIZE	= $40000			;33.180
 BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
+	IFND EXTROMSIZE
+EXTROMSIZE	= 0
+	ENDC
+EXPMEM		= KICKSIZE+FASTMEMSIZE+EXTROMSIZE
 
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
@@ -109,6 +113,11 @@ BOOTDOS = 1
 	IFND BOOTEARLY
 	IFD _bootearly
 BOOTEARLY = 1
+	ENDC
+	ENDC
+	IFND BOOTCOOL
+	IFD _bootcool
+BOOTCOOL = 1
 	ENDC
 	ENDC
 	IFND CBDOSLOADSEG
@@ -194,6 +203,9 @@ kick_patch	PL_START
 		PL_W	$446,$17			;correct calc of exec.ChkSum
 		PL_L	$4f4,-1				;disable search for residents at $f00000
 		PL_S	$50C,$514-$50C			;skip LED power on
+	IFD BOOTCOOL
+		PL_PS	$518,_bootcool
+	ENDC
 		PL_P	$546,kick_detectcpu
 		PL_P	$592,kick_detectchip
 		PL_P	$5f0,kick_reboot		;reboot (reset)
