@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.39 2021/01/02 01:36:30 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.40 2021/08/03 00:22:42 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -39,6 +39,7 @@
 ;		12.05.20 set WHDLF_Examine if HDINIT is set
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;		26.07.21 BOOTCOOL and EXTROMSIZE added (Arcadia)
+;		02.08.21 patch for gfx_WaitBlit added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -231,6 +232,7 @@ kick_patch	PL_START
 		PL_S	$af16,$36-$16			;skip color stuff & strange gb_LOFlist set
 		PL_P	$afe4,gfx_detectgenlock
 		PL_P	$b058,gfx_detectdisplay
+		PL_PA	$b13a,gfx_WaitBlit
 		PL_PS	$d5cc,gfx_fix1			;gfx_LoadView
 	IFD FONTHEIGHT
 		PL_B	$1bc70,FONTHEIGHT
@@ -533,6 +535,18 @@ gfx_setcoplc	moveq	#-2,d0
 		move.l	d0,(a3)+
 		clr.w	(color+2,a4)
 		add.l	#$adb6-$ad9e-6,(a7)
+		rts
+
+gfx_WaitBlit	tst.b	(_custom+dmaconr)
+		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
+		beq.b	.1
+.2		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
+		bne.b	.2
+.1		tst.b	(_custom+dmaconr)
 		rts
 
 	;somewhere there will used a empty view, too stupid

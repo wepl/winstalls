@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.77 2020/12/23 01:01:53 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.78 2021/01/02 01:22:21 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -83,6 +83,7 @@
 ;		01.01.21 SEGTRACKER init performed earlier to avoid that UnLoadSeg gets
 ;			 called before (JOTD)
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
+;		02.08.21 patch for gfx_WaitBlit added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -281,6 +282,7 @@ kick_patch	PL_START
 		PL_S	$aecc,$e4-$cc			;skip color stuff & strange gb_LOFlist set
 		PL_P	$af96,gfx_detectgenlock
 		PL_P	$b00c,gfx_detectdisplay
+		PL_PA	$b0ee,gfx_WaitBlit
 		PL_PS	$d5be,gfx_fix1			;gfx_LoadView
 		PL_S	$d5e2,6				;fix that LoadView(0) will set an corrupt clist to gb_LOFlist
 	IFD FONTHEIGHT
@@ -612,6 +614,18 @@ gfx_setcoplc	moveq	#-2,d0
 		move.l	d0,(a3)+
 		clr.w	(color+2,a4)
 		add.l	#$ad72-$ad5e-6,(a7)
+		rts
+
+gfx_WaitBlit	tst.b	(_custom+dmaconr)
+		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
+		beq.b	.1
+.2		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		tst.b	(_ciaa)		;this avoids blitter slow down
+		btst	#DMAB_BLTDONE-8,(_custom+dmaconr)
+		bne.b	.2
+.1		tst.b	(_custom+dmaconr)
 		rts
 
 	;somewhere there will used a empty view, too stupid
