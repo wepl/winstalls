@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.24 2020/12/23 01:58:18 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.25 2021/01/02 00:16:13 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -57,7 +57,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 ;BOOTBLOCK			;enable _bootblock routine
 BOOTDOS			;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
-;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
@@ -88,7 +88,8 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick13.s
+	INCDIR	Sources:
+	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
