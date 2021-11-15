@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.49 2020/12/23 01:01:53 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.50 2021/01/02 01:36:52 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -51,6 +51,8 @@
 ;		21.12.20 added keymap loading
 ;		30.12.20 use MEMF_REVERSE for keymap loading
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
+;		13.11.21 INIT_RESOURCE added
+;		14.11.21 WHDCTRL added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -433,6 +435,9 @@ kick_patch1200	PL_START
 	ENDC
 	IFD SEGTRACKER
 		PL_PS	$227e0,segtracker_init
+	ENDC
+	IFD WHDCTRL
+		PL_PS	$2280c,dos_whdctrl
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$22814,dos_bootdos
@@ -897,7 +902,12 @@ timer_init	move.l	(_time,pc),a0
 		add.l	d1,d0
 		move.l	d0,($40,a2)
 		movem.l	(a7)+,d2/a2-a3		;original
+
+	IFD INIT_RESOURCE
+		bra	_resource_init
+	ELSE
 		rts
+	ENDC
 
 ;============================================================================
 ;  $60.1 0-disk in drive 1-no disk
@@ -1067,6 +1077,57 @@ dos_LoadSeg	move.l	d0,d1		;original
 		lea	(12,a7),a7	;original
 		tst.l	d0
 		jmp	(a0)
+	ENDC
+
+	IFD WHDCTRL
+dos_whdctrl	movem.l	d2-d3,-(a7)
+		moveq	#OLTAG_DOS,d0
+		move.l	(4),a6
+		jsr	(_LVOTaggedOpenLibrary,a6)
+		move.l	d0,a6
+		lea	(.name,pc),a0
+		move.l	a0,d1		;name
+		lea	(.seglist,pc),a0
+		move.l	a0,d2
+		lsr.l	#2,d2		;seglist
+		moveq	#-2,d3		;type/usecount, CMD_INTERNAL
+		jsr	(_LVOAddSegment,a6)
+		movem.l	(a7)+,d2-d3
+		moveq	#0,d0		;continue with startup-sequence, see patch
+		rts
+
+.name		dc.b	"WHDCtrl",0
+.template	dc.b	"Quit/S",0
+	CNOP 0,4
+.seglist	dc.l	0		;next segment
+		moveq	#OLTAG_DOS,d0
+		move.l	(4),a6
+		jsr	(_LVOTaggedOpenLibrary,a6)
+		move.l	d0,a6
+		lea	(.template,pc),a0
+		move.l	a0,d1
+		clr.l	-(a7)
+		move.l	a7,d2		;array
+		moveq	#0,d3		;rdargs
+		jsr	(_LVOReadArgs,a6)
+		move.l	(a7)+,d1
+		move.l	d0,d7
+		beq	.fail
+		tst.l	d1
+		beq	.free
+		move.l	(_resload,pc),a0
+		pea	TDREASON_OK
+		jmp	(resload_Abort,a0)
+.free		move.l	d7,d1
+		jsr	(_LVOFreeArgs,a6)
+.end		moveq	#0,d0
+		rts
+.fail		jsr	(_LVOIoErr,a6)
+		move.l	d0,d1		;code
+		moveq	#0,d2		;header
+		jsr	(_LVOPrintFault,a6)
+		moveq	#20,d0
+		rts
 	ENDC
 
 	IFD BOOTDOS
@@ -1242,6 +1303,10 @@ _flushcache	move.l	(_resload,pc),-(a7)
 	FAIL	INIT_NONVOLATILE requires BOOTDOS
 	ENDC
 	INCLUDE whdload/nonvolatile.s
+	ENDC
+
+	IFD INIT_RESOURCE
+	INCLUDE whdload/resource.s
 	ENDC
 
 ;============================================================================
