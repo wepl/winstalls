@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.11 2020/04/27 01:13:32 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.12 2021/01/03 16:09:37 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -14,6 +14,8 @@
 ;		28.12.18 SEGTRACKER added
 ;		15.08.19 INIT_NONVOLATILE added
 ;		03.01.21 SETKEYBOARD added
+;		13.11.21 INIT_RESOURCE added
+;		15.11.21 WHDCTRL added
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -88,9 +90,10 @@ HRTMON				;add support for HrtMON
 ;INITAGA			;enable AGA features
 ;INIT_AUDIO			;enable audio.device
 ;INIT_GADTOOLS			;enable gadtools.library
-;INIT_LOWLEVEL			;load lowlevel.library
+;INIT_LOWLEVEL			;init lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library
 ;INIT_NONVOLATILE		;init nonvolatile.library
+;INIT_RESOURCE			;init whdload.resource
 IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;JOYPADEMU			;use keyboard for joypad buttons
 ;MEMFREE	= $200		;location to store free memory counter
@@ -103,6 +106,7 @@ SETKEYBOARD			;activate host keymap
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
