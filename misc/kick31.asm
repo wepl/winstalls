@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.17 2019/10/17 23:33:13 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.18 2020/12/23 01:58:00 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -20,6 +20,8 @@
 ;		28.12.18 segtracker added
 ;		16.01.19 test code for keyrepeat on osswitch added
 ;		22.12.20 SETKEYBOARD added
+;		13.11.21 INIT_RESOURCE added
+;		14.11.21 WHDCTRL added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -72,6 +74,7 @@ HRTMON				;add support for HrtMON
 ;INIT_LOWLEVEL			;load lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library
 ;INIT_NONVOLATILE		;init nonvolatile.library
+;INIT_RESOURCE			;init whdload.resource
 IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;JOYPADEMU			;use keyboard for joypad buttons
 ;MEMFREE	= $200		;location to store free memory counter
@@ -84,6 +87,7 @@ SETKEYBOARD			;activate host keymap
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -93,7 +97,8 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick31.s
+	INCDIR	Sources:
+	INCLUDE	whdload/kick31.s
 
 ;============================================================================
 
