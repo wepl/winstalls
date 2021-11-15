@@ -1,5 +1,5 @@
 
-$Id: kick.readme 1.28 2020/11/03 23:31:14 wepl Exp wepl $
+$Id: kick.readme 1.29 2020/12/23 01:27:07 wepl Exp wepl $
 
 Symbols in the Slave-Source
 ***************************
@@ -270,6 +270,13 @@ TRDCHANGEDISK
 
 If that symbol is defined the subroutine _trd_changedisk will be included and
 can be used (see below).
+
+WHDCTRL
+
+If that symbol is defined an internal resident command called WHDCtrl is added
+to the dos residents list. This command currently supports the option Quit
+which will cause WHDLoad to immediate quit. It maybe useful in scripts to quit
+after an operation has been finished.
 
 
 Labels in the Slave-Source
