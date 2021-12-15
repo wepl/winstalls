@@ -1,4 +1,4 @@
-; $Id: Install 1.27 2020/04/27 23:12:29 wepl Exp wepl $
+; $Id: Install 1.26 2014/04/09 01:53:32 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -504,10 +504,12 @@
   (if (getenv "WHDLImage")
     (set #DI_image (getenv "WHDLImage"))
   )
+  (if (< @installer-version (+ (* 47 65536) 10))
+    (set #installer_warn "\nBeware the Installer has problems with long file names!")
+  )
   (set #DI_image
     (askfile
-      (prompt "Please select disk image which is the disk named \"" #DI_diskname "\".\n"
-		"Beware the Installer has problems with long file names!")
+      (prompt "Please select disk image which is the disk named \"" #DI_diskname "\"." #installer_warn)
       (default #DI_image)
       (help @askfile-help)
     )
@@ -1164,13 +1166,13 @@
         "Some features of this installation won't be available, "
         "such as icon show and drawer opening. "
         "You have version " (/ @installer-version 65536) "."
-        (BITAND @installer-version 65535) ", recommended is version 44.10. "
-        "The 'installer' 44.10 comes with OS 3.5 but is also contained in the NDK 3.9. "
-        "You may also use InstallerNG by Jens Tröger."
+        (BITAND @installer-version 65535) ", recommended is version 47.19. "
+        "The 'installer' 47.19 comes with OS 3.2. "
+        "Also supported is the 'installer' 44.10 which comes with OS 3.5 and is also contained in the NDK 3.9. "
         "\n\n"
         "The installers can be obtained from the net:\n"
-	"http://www.haage-partner.de/download/AmigaOS/NDK3.9.lha\n"
-        "aminet:util/sys/InstallerNG.lha"
+	"http://ftp.hyperion-entertainment.com/\n"
+	"http://www.haage-partner.de/download/AmigaOS/NDK3.9.lha"
       )
     )
     (set #newstuff 0)
