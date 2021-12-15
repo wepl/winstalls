@@ -1,4 +1,4 @@
-; $Id: Install 1.26 2014/04/09 01:53:32 wepl Exp wepl $
+; $Id: Install 1.27 2020/04/27 23:12:29 wepl Exp wepl $
 
 (set #multiple-versions "")		;set to <> "" if there are multiple versions
 (set #version 3)			;set if no multiple versions 0=RawDIC 1=Patcher 2=DIC 3=Files 4=CD 5=SingleFile 6=Arcadia
@@ -459,7 +459,7 @@
 
 ;----------------------------
 ; functions to handle disk image files
-; ask the name of the image file
+; ask the mode of operation and type of images
 ; IN:  -
 ; OUT: -
 
