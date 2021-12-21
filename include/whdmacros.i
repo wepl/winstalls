@@ -3,7 +3,6 @@
 ;  :Contens.	useful macros for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
 ;  :EMail.	wepl@whdload.de
-;  :Version.	$Id: whdmacros.i 16.8 2007/07/26 18:54:21 wepl Exp wepl $
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
@@ -12,7 +11,9 @@
 ;		27.02.07 waitvbs added
 ;		03.09.07 BLITWAIT macro improved
 ;		06.09.07 adapted to work with Devpac 3.18
-;  :Copyright.	© 1996-2007 Bert Jahn, All Rights Reserved
+;		26.12.20 macro 'blitz' no longer uses movem to avoid breaking
+;			 _MOVEMREGS/_MOVEMBYTES 
+;  :Copyright.	© 1996-2007,2020 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
@@ -299,14 +300,13 @@ waitbuttonup	MACRO
 ****************************************************************
 ***** flash the screen and wait for LMB
 blitz		MACRO
-		movem.l	d0/a0,-(a7)
-		lea	(_custom),a0
-	;	move	#DMAF_SETCLR!DMAF_RASTER,(dmacon,a0)
+		move.l	d0,-(a7)
+	;	move	#DMAF_SETCLR!DMAF_RASTER,(_custom+dmacon)
 .lpbl\@
 	IFNE NARG&1
-		move	#$4200,(bplcon0,a0)
+		move	#$4200,(_custom+bplcon0)
 	ENDC
-		move.w	d0,(color,a0)
+		move.w	d0,(_custom+color)
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		bne	.lpbl\@
@@ -314,18 +314,18 @@ blitz		MACRO
 		bsr	.waitvb\@			;entprellen
 .lp2bl\@
 	IFNE NARG&1
-		move	#$4200,(bplcon0,a0)
+		move	#$4200,(_custom+bplcon0)
 	ENDC
-		move.w	d0,(color,a0)
+		move.w	d0,(_custom+color)
 		subq.w	#1,d0
 		btst	#6,$bfe001
 		beq	.lp2bl\@
 		bsr	.waitvb\@			;entprellen
 		bsr	.waitvb\@			;entprellen
-		clr.w	(color,a0)
-		movem.l	(a7)+,d0/a0
+		clr.w	(_custom+color)
+		move.l	(a7)+,d0
 		bra	.end\@
-.waitvb\@	waitvb	a0
+.waitvb\@	waitvb
 		rts
 .end\@
 		ENDM

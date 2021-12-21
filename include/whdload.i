@@ -2,7 +2,6 @@
 ;  :Module.	whdload.i
 ;  :Contens.	include file for WHDLoad and Slaves
 ;  :Author.	Bert Jahn
-;  :Version.	$Id: whdload.i 18.0 2014/12/04 23:46:31 wepl Exp wepl $
 ;  :History.	11.04.99 marcos moved to separate include file
 ;		08.05.99 resload_Patch added
 ;		09.03.00 new stuff for whdload v11
@@ -35,7 +34,10 @@
 ;		19.01.14 resload_VSNPrintF and resload_Log added
 ;		11.03.14 WHDLTAG_CUST_#? added
 ;		09.11.17 PL_STR0 macro added
-;  :Copyright.	© 1996-2014 Bert Jahn, All Rights Reserved
+;		17.01.21 WHDLTAG_Private7 added
+;			 replaced IFMI with IFLT to improve compatibility
+;		20.02.21 avoid multiple errors after failed NARG checks
+;  :Copyright.	© 1996-2021 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18
 ;---------------------------------------------------------------------------*
@@ -165,6 +167,8 @@ TDREASON_FAILMSG	= 43	;fail with a slave defined message text
  EITEM	WHDLTAG_CUST_WRITE	;marks a custom register writable for Snoop
  EITEM	WHDLTAG_CUST_STROBE	;marks a custom register read/writable for Snoop
  EITEM	WHDLTAG_Private6
+; version 18.7
+ EITEM	WHDLTAG_Private7
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
@@ -637,215 +641,238 @@ resload_CheckFileExist = resload_GetFileSize
 ;=============================================================================
 ; macros to build patchlist
 
-PLIFCNTCHK	MACRO
+PLIFCNTCHK MACRO
 	IFNE PLIFCNT
-	FAIL	\1 pairs of IF* and ENDIF do not match
+		FAIL	\1 pairs of IF* and ENDIF do not match
 	ENDC
 	ENDM
-PLIFCNTINC	MACRO
+
+PLIFCNTINC MACRO
 PLIFCNT SET PLIFCNT+1
 	ENDM
 
-PL_START	MACRO			;start of patchlist
+PL_START MACRO				;start of patchlist
 PLIFCNT SET 0				;counts if nesting
 .patchlist
-		ENDM
+	ENDM
 
-PL_END		MACRO			;end of patchlist
+PL_END	MACRO				;end of patchlist
 	PLIFCNTCHK PL_END
 	dc.w	PLCMD_END
-		ENDM
+	ENDM
 
-PL_CMDADR	MACRO			;set cmd and address
-	IFMI \2
+PL_CMDADR MACRO				;set cmd and address
+	IFLT \2
 	FAIL	PL_CMDADR patch address cannot be negative
 	ENDC
 	IFLT $ffff-\2
-	dc.w	\1
-	dc.l	\2
+		dc.w	\1
+		dc.l	\2
 	ELSE
-	dc.w	PLCMDF_WORDADR+\1
-	dc.w	\2
+		dc.w	PLCMDF_WORDADR+\1
+		dc.w	\2
 	ENDC
 	ENDM
 
-PL_R		MACRO			;set "rts"
+PL_R	MACRO				;set "rts"
 	IFNE	NARG-1
 	FAIL	PL_R wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_R,\1
 	ENDC
-	PL_CMDADR PLCMD_R,\1
-		ENDM
+	ENDM
 
-PL_PS		MACRO			;set "jsr"
+PL_PS	MACRO				;set "jsr"
 	IFNE	NARG-2
 	FAIL	PL_PS wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_PS,\1
+		dc.w	\2-.patchlist	;destination (inside slave!)
 	ENDC
-	PL_CMDADR PLCMD_PS,\1
-	dc.w	\2-.patchlist		;destination (inside slave!)
-		ENDM
+	ENDM
 
-PL_P		MACRO			;set "jmp"
+PL_P	MACRO				;set "jmp"
 	IFNE	NARG-2
 	FAIL	PL_P wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_P,\1
+		dc.w	\2-.patchlist	;destination (inside slave!)
 	ENDC
-	PL_CMDADR PLCMD_P,\1
-	dc.w	\2-.patchlist		;destination (inside slave!)
-		ENDM
+	ENDM
 
-PL_S		MACRO			;skip bytes, set "bra"
+PL_S	MACRO				;skip bytes, set "bra"
 	IFNE	NARG-2
 	FAIL	PL_S wrong number of arguments
+	ELSE
+		IFLT $8000-(\2)
+		FAIL PL_S positive distance \2 too large, max is $8000
+		ENDC
+		IFGT -$7ffe-(\2)
+		FAIL PL_S negative distance \2 too large, max is -$7ffe
+		ENDC
+		PL_CMDADR PLCMD_S,\1
+		dc.w	\2-2		;distance
 	ENDC
-	IFLT $8000-(\2)
-	FAIL PL_S positive distance \2 too large, max is $8000
-	ENDC
-	IFGT -$7ffe-(\2)
-	FAIL PL_S negative distance \2 too large, max is -$7ffe
-	ENDC
-	PL_CMDADR PLCMD_S,\1
-	dc.w	\2-2			;distance
-		ENDM
+	ENDM
 
-PL_I		MACRO			;set "illegal"
+PL_I	MACRO				;set "illegal"
 	IFNE	NARG-1
 	FAIL	PL_I wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_I,\1
 	ENDC
-	PL_CMDADR PLCMD_I,\1
-		ENDM
+	ENDM
 
-PL_B		MACRO			;write byte
+PL_B	MACRO				;write byte
 	IFNE	NARG-2
 	FAIL	PL_B wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_B,\1
+		dc.w	\2		;data to write
 	ENDC
-	PL_CMDADR PLCMD_B,\1
-	dc.w	\2			;data to write
-		ENDM
+	ENDM
 
-PL_W		MACRO			;write word
+PL_W	MACRO				;write word
 	IFNE	NARG-2
 	FAIL	PL_W wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_W,\1
+		dc.w	\2		;data to write
 	ENDC
-	PL_CMDADR PLCMD_W,\1
-	dc.w	\2			;data to write
-		ENDM
+	ENDM
 
-PL_L		MACRO			;write long
+PL_L	MACRO				;write long
 	IFNE	NARG-2
 	FAIL	PL_L wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_L,\1
+		dc.l	\2		;data to write
 	ENDC
-	PL_CMDADR PLCMD_L,\1
-	dc.l	\2			;data to write
-		ENDM
+	ENDM
 
 ; version 11
 
-PL_A		MACRO			;write address (base+arg)
+PL_A	MACRO				;write address (base+arg)
 	IFNE	NARG-2
 	FAIL	PL_A wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_A,\1
+		dc.l	\2		;data to write
 	ENDC
-	PL_CMDADR PLCMD_A,\1
-	dc.l	\2			;data to write
-		ENDM
+	ENDM
 
 ; version 14
 
-PL_PA		MACRO			;write address
+PL_PA	MACRO				;write address
 	IFNE	NARG-2
 	FAIL	PL_PA wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_PA,\1
+		dc.w	\2-.patchlist	;destination (inside slave!)
 	ENDC
-	PL_CMDADR PLCMD_PA,\1
-	dc.w	\2-.patchlist		;destination (inside slave!)
-		ENDM
+	ENDM
 
-PL_NOP		MACRO			;fill area with NOPs
+PL_NOP	MACRO				;fill area with NOPs
 	IFNE	NARG-2
 	FAIL	PL_NOP wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_NOP,\1
+		dc.w	\2		;distance given in bytes
 	ENDC
-	PL_CMDADR PLCMD_NOP,\1
-	dc.w	\2			;distance given in bytes
-		ENDM
-PL_NOPS		MACRO			;fill area with NOPs
+	ENDM
+
+PL_NOPS	MACRO				;fill area with NOPs
 	IFNE	NARG-2
 	FAIL	PL_NOPS wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_NOP,\1
+		dc.w	2*\2		;distance given in NOP count
 	ENDC
-	PL_CMDADR PLCMD_NOP,\1
-	dc.w	2*\2			;distance given in NOP count
-		ENDM
+	ENDM
 
 ; version 15
 
-PL_C		MACRO			;clear area
+PL_C	MACRO				;clear area
 	IFNE	NARG-2
 	FAIL	PL_C wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_C,\1
+		dc.w	\2		;length
 	ENDC
-	PL_CMDADR PLCMD_C,\1
-	dc.w	\2			;length
-		ENDM
+	ENDM
 
-PL_CB		MACRO			;clear one byte
+PL_CB	MACRO				;clear one byte
 	IFNE	NARG-1
 	FAIL	PL_CB wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_CB,\1
 	ENDC
-	PL_CMDADR PLCMD_CB,\1
-		ENDM
+	ENDM
 
-PL_CW		MACRO			;clear one word
+PL_CW	MACRO				;clear one word
 	IFNE	NARG-1
 	FAIL	PL_CW wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_CW,\1
 	ENDC
-	PL_CMDADR PLCMD_CW,\1
-		ENDM
+	ENDM
 
-PL_CL		MACRO			;clear one long
+PL_CL	MACRO				;clear one long
 	IFNE	NARG-1
 	FAIL	PL_CL wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_CL,\1
 	ENDC
-	PL_CMDADR PLCMD_CL,\1
-		ENDM
+	ENDM
 
 ; version 16
 
-PL_PSS		MACRO			;set JSR, NOP..
+PL_PSS	MACRO				;set JSR, NOP..
 	IFNE	NARG-3
 	FAIL	PL_PSS wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_PSS,\1
+		dc.w	\2-.patchlist	;destination (inside slave!)
+		dc.w	\3		;byte count of NOPs to append
 	ENDC
-	PL_CMDADR PLCMD_PSS,\1
-	dc.w	\2-.patchlist		;destination (inside slave!)
-	dc.w	\3			;byte count of NOPs to append
-		ENDM
+	ENDM
 
-PL_NEXT		MACRO			;continue with another patch list
+PL_NEXT	MACRO				;continue with another patch list
 	IFNE	NARG-1
 	FAIL	PL_NEXT wrong number of arguments
+	ELSE
+		PLIFCNTCHK PL_NEXT
+		PL_CMDADR PLCMD_NEXT,0
+		dc.w	\1-.patchlist	;destination (inside slave!)
 	ENDC
-	PLIFCNTCHK PL_NEXT
-	PL_CMDADR PLCMD_NEXT,0
-	dc.w	\1-.patchlist		;destination (inside slave!)
-		ENDM
+	ENDM
 
-PL_AB		MACRO			;add byte
+PL_AB	MACRO				;add byte
 	IFNE	NARG-2
 	FAIL	PL_AB wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_AB,\1
+		dc.w	\2		;data to add
 	ENDC
-	PL_CMDADR PLCMD_AB,\1
-	dc.w	\2			;data to add
-		ENDM
+	ENDM
 
-PL_AW		MACRO			;add word
+PL_AW	MACRO				;add word
 	IFNE	NARG-2
 	FAIL	PL_AW wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_AW,\1
+		dc.w	\2		;data to add
 	ENDC
-	PL_CMDADR PLCMD_AW,\1
-	dc.w	\2			;data to add
-		ENDM
+	ENDM
 
-PL_AL		MACRO			;add long
+PL_AL	MACRO				;add long
 	IFNE	NARG-2
 	FAIL	PL_AL wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_AL,\1
+		dc.l	\2		;data to add
 	ENDC
-	PL_CMDADR PLCMD_AL,\1
-	dc.l	\2			;data to add
-		ENDM
+	ENDM
 
 ; there are three macros provided for the DATA command, if you want change a 
 ; string PL_STR can be used:
@@ -858,69 +885,76 @@ PL_AL		MACRO			;add long
 ;	move.w	#$600,d0
 ; .stop	EVEN
 
-PL_DATA		MACRO			;write n bytes to specified address
+PL_DATA	MACRO				;write n bytes to specified address
 	IFNE	NARG-2
 	FAIL	PL_DATA wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_DATA,\1
+		dc.w	\2		;count of bytes to write
 	ENDC
-	PL_CMDADR PLCMD_DATA,\1
-	dc.w	\2			;count of bytes to write
-		ENDM
+	ENDM
 
-PL_STR		MACRO
+PL_STR	MACRO
 	IFNE	NARG-2
 	FAIL	PL_STR wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_DATA,\1
+		dc.w	.dat2\@-.dat1\@
+.dat1\@		dc.b	"\2"
+.dat2\@		EVEN
 	ENDC
-	PL_CMDADR PLCMD_DATA,\1
-	dc.w	.dat2\@-.dat1\@
-.dat1\@	dc.b	"\2"
-.dat2\@	EVEN
-		ENDM	
+	ENDM	
 
-PL_STR0		MACRO
+PL_STR0	MACRO
 	IFNE	NARG-2
 	FAIL	PL_STR0 wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_DATA,\1
+		dc.w	.dat2\@-.dat1\@
+.dat1\@		dc.b	"\2",0
+.dat2\@		EVEN
 	ENDC
-	PL_CMDADR PLCMD_DATA,\1
-	dc.w	.dat2\@-.dat1\@
-.dat1\@	dc.b	"\2",0
-.dat2\@	EVEN
-		ENDM	
+	ENDM	
 
 ; version 16.5
 
-PL_ORB		MACRO			;or byte
+PL_ORB	MACRO				;or byte
 	IFNE	NARG-2
 	FAIL	PL_ORB wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_ORB,\1
+		dc.w	\2		;data to or
 	ENDC
-	PL_CMDADR PLCMD_ORB,\1
-	dc.w	\2			;data to or
-		ENDM
+	ENDM
 
-PL_ORW		MACRO			;or word
+PL_ORW	MACRO				;or word
 	IFNE	NARG-2
 	FAIL	PL_ORW wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_ORW,\1
+		dc.w	\2		;data to or
 	ENDC
-	PL_CMDADR PLCMD_ORW,\1
-	dc.w	\2			;data to or
-		ENDM
+	ENDM
 
-PL_ORL		MACRO			;or long
+PL_ORL	MACRO				;or long
 	IFNE	NARG-2
 	FAIL	PL_ORL wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_ORL,\1
+		dc.l	\2		;data to or
 	ENDC
-	PL_CMDADR PLCMD_ORL,\1
-	dc.l	\2			;data to or
-		ENDM
+	ENDM
 
 ; version 16.6
 
-PL_GA		MACRO			;get address
+PL_GA	MACRO				;get address
 	IFNE	NARG-2
 	FAIL	PL_GA wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_GA,\1
+		dc.w	\2-.patchlist	;destination (inside slave!)
 	ENDC
-	PL_CMDADR PLCMD_GA,\1
-	dc.w	\2-.patchlist		;destination (inside slave!)
-		ENDM
+	ENDM
 
 ; version 16.9
 
@@ -931,120 +965,138 @@ PL_GA		MACRO			;get address
 ; if there is no freezer nothing will be done, the VBR should be moved by
 ; WHDLoad to allow catching the illegal instruction exception
 
-PL_BKPT		MACRO
+PL_BKPT	MACRO
 	IFNE	NARG-1
 	FAIL	PL_BKPT wrong number of arguments
+	ELSE
+		PL_CMDADR PLCMD_BKPT,\1
 	ENDC
-	PL_CMDADR PLCMD_BKPT,\1
-		ENDM
+	ENDM
 
 ; PL_BELL shows a visual bell:
 ; similar to PL_BKPT, instead of entering a freezer a color cycle will be
 ; shown for the given time or lmb pressed, time is given in 1/10s
 
-PL_BELL		MACRO
+PL_BELL	MACRO
 	IFNE	NARG-2
 	FAIL	PL_BELL wrong number of arguments (adr,time)
+	ELSE
+		PL_CMDADR PLCMD_BELL,\1
+		dc.w	\2		;time to wait
 	ENDC
-	PL_CMDADR PLCMD_BELL,\1
-	dc.w	\2			;time to wait
-		ENDM
+	ENDM
 
 ; version 17.2
 
-PL_IFBW		MACRO
+PL_IFBW	MACRO
 	IFNE	NARG
 	FAIL	PL_IFBW no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFBW
-		ENDM
-PL_IFC1		MACRO
+	ENDM
+
+PL_IFC1	MACRO
 	IFNE	NARG
 	FAIL	PL_IFC1 no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFC1
-		ENDM
-PL_IFC2		MACRO
+	ENDM
+
+PL_IFC2	MACRO
 	IFNE	NARG
 	FAIL	PL_IFC2 no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFC2
-		ENDM
-PL_IFC3		MACRO
+	ENDM
+
+PL_IFC3	MACRO
 	IFNE	NARG
 	FAIL	PL_IFC3 no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFC3
-		ENDM
-PL_IFC4		MACRO
+	ENDM
+
+PL_IFC4	MACRO
 	IFNE	NARG
 	FAIL	PL_IFC4 no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFC4
-		ENDM
-PL_IFC5		MACRO
+	ENDM
+
+PL_IFC5	MACRO
 	IFNE	NARG
 	FAIL	PL_IFC5 no arguments allowed
 	ENDC
 	PLIFCNTINC
 	dc.w	PLCMDF_CTRL+PLCMD_IFC5
-		ENDM
-PL_IFC1X	MACRO
+	ENDM
+
+PL_IFC1X MACRO
 	IFNE	NARG-1
 	FAIL	PL_IFC1X wrong number of arguments
-	ENDC
-	IFGT	\1-31
-	FAIL	PL_IFC1X bit number must be 0..31
+	ELSE
+		IFGT	\1-31
+		FAIL	PL_IFC1X bit number must be 0..31
+		ENDC
+		dc.w	PLCMDF_CTRL+PLCMD_IFC1X,\1
 	ENDC
 	PLIFCNTINC
-	dc.w	PLCMDF_CTRL+PLCMD_IFC1X,\1
-		ENDM
-PL_IFC2X	MACRO
+	ENDM
+
+PL_IFC2X MACRO
 	IFNE	NARG-1
 	FAIL	PL_IFC2X wrong number of arguments
-	ENDC
-	IFGT	\1-31
-	FAIL	PL_IFC2X bit number must be 0..31
+	ELSE
+		IFGT	\1-31
+		FAIL	PL_IFC2X bit number must be 0..31
+		ENDC
+		dc.w	PLCMDF_CTRL+PLCMD_IFC2X,\1
 	ENDC
 	PLIFCNTINC
-	dc.w	PLCMDF_CTRL+PLCMD_IFC2X,\1
-		ENDM
-PL_IFC3X	MACRO
+	ENDM
+
+PL_IFC3X MACRO
 	IFNE	NARG-1
 	FAIL	PL_IFC3X wrong number of arguments
-	ENDC
-	IFGT	\1-31
-	FAIL	PL_IFC3X bit number must be 0..31
+	ELSE
+		IFGT	\1-31
+		FAIL	PL_IFC3X bit number must be 0..31
+		ENDC
+		dc.w	PLCMDF_CTRL+PLCMD_IFC3X,\1
 	ENDC
 	PLIFCNTINC
-	dc.w	PLCMDF_CTRL+PLCMD_IFC3X,\1
-		ENDM
-PL_IFC4X	MACRO
+	ENDM
+
+PL_IFC4X MACRO
 	IFNE	NARG-1
 	FAIL	PL_IFC4X wrong number of arguments
-	ENDC
-	IFGT	\1-31
-	FAIL	PL_IFC4X bit number must be 0..31
+	ELSE
+		IFGT	\1-31
+		FAIL	PL_IFC4X bit number must be 0..31
+		ENDC
+		dc.w	PLCMDF_CTRL+PLCMD_IFC4X,\1
 	ENDC
 	PLIFCNTINC
-	dc.w	PLCMDF_CTRL+PLCMD_IFC4X,\1
-		ENDM
-PL_IFC5X	MACRO
+	ENDM
+
+PL_IFC5X MACRO
 	IFNE	NARG-1
 	FAIL	PL_IFC5X wrong number of arguments
-	ENDC
-	IFGT	\1-31
-	FAIL	PL_IFC5X bit number must be 0..31
+	ELSE
+		IFGT	\1-31
+		FAIL	PL_IFC5X bit number must be 0..31
+		ENDC
+		dc.w	PLCMDF_CTRL+PLCMD_IFC5X,\1
 	ENDC
 	PLIFCNTINC
-	dc.w	PLCMDF_CTRL+PLCMD_IFC5X,\1
-		ENDM
-PL_ELSE		MACRO
+	ENDM
+
+PL_ELSE	MACRO
 	IFNE	NARG
 	FAIL	PL_ELSE no arguments allowed
 	ENDC
@@ -1052,8 +1104,9 @@ PL_ELSE		MACRO
 	FAIL	PL_ELSE there must be an PL_IF* before
 	ENDC
 	dc.w	PLCMDF_CTRL+PLCMD_ELSE
-		ENDM
-PL_ENDIF	MACRO
+	ENDM
+
+PL_ENDIF MACRO
 	IFNE	NARG
 	FAIL	PL_ENDIF no arguments allowed
 	ENDC
@@ -1062,7 +1115,7 @@ PL_ENDIF	MACRO
 	ENDC
 PLIFCNT SET PLIFCNT-1
 	dc.w	PLCMDF_CTRL+PLCMD_ENDIF
-		ENDM
+	ENDM
 
 ;=============================================================================
 
