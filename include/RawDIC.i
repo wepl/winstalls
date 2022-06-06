@@ -129,7 +129,13 @@
 		; A0.l = CPTR format string
 		; A1.l = APTR arg array
 
-	ULONG	rawdic_Reserved_2
+	ULONG	rawdic_SetSync
+		; sets a new wordsync value for the actual tracklist (v5.0)
+		; all registers are preserved
+		; requires that slave version >= 5
+
+		; D0.w = WORD sync
+
 	ULONG	rawdic_Reserved_3
 	ULONG	rawdic_Reserved_4
 		; DO NOT USE!
@@ -173,10 +179,11 @@ IERR_TRCK_UNS	equ	-33	; wwarp track header version unsupported
 IERR_TRCK_TYPE	equ	-34	; wwarp track type unsupported
 IERR_TRCK_FLAG	equ	-35	; wwarp track flags unsupported
 IERR_TWLIB	equ	-36	; trackwarp library not found or wrong version
+IERR_SLAVEVERSION equ	-36	; rawdic function called requires a higher slave version
 
  STRUCTURE	SlaveStructure,0
 
-	UBYTE	slv_Version	; slave version
+	UBYTE	slv_Version	; slave version, starting v5 this must be <= rawdic version
 	UBYTE	slv_Flags	; slave flags
 	APTR	slv_FirstDisk	; pointer to the first disk structure
 	APTR	slv_Text	; pointer to the text displayed in the imager window
