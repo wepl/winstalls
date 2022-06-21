@@ -2,16 +2,18 @@
 ;  :Modul.	kick11.s
 ;  :Contents.	interface code and patches for kickstart 1.1 (Amiga 1000 PAL)
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.41 2021/08/04 21:21:47 wepl Exp wepl $
+;  :Version.	$Id: kick11.s 1.41 2021/08/04 21:21:47 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick12.s from JOTD
 ;
 ;		02.08.21 patch for gfx_WaitBlit added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
+;  :Translator.	vasm, Barfly 2.9, Asm-Pro 1.16, PhxAss 4.38
 ;  :To Do.
 ;---------------------------------------------------------------------------*
+
+; TODO: do not set $8->$64 except for $20
 
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/graphics.i
@@ -20,7 +22,7 @@
 	INCLUDE	graphics/gfxbase.i
 
 KICKVERSION	= 31
-KICKCRC		= $6490				;31.340
+KICKCRC		= $6490				;31.034
 
 ;============================================================================
 
@@ -156,7 +158,7 @@ kick_reboot	move.l	(_expmem,pc),a0
 		jmp	(2,a0)				;original entry
 
 kick_patch	PL_START
-		PL_S	$ce,$fe-$d2
+		PL_S	$ce,$fe-$ce
 		PL_L	$106,$02390002			;skip LED power off (and.b #~CIAF_LED,$bfe001)
 		PL_CW	$132				;color00 $444 -> $000
 		PL_S	$136,$148-$136			;avoid overwriting vector table
@@ -221,7 +223,7 @@ kick_patch	PL_START
 	ELSE
 	ENDC
 	IFD BOOTBLOCK
-		PL_PS	$241c6,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
+		PL_PS	$41c6,kick_bootblock		;a1=ioreq a4=buffer a6=execbase
 	ENDC
 		PL_P	$2a09c,timer_init
 		PL_P	$2a75c,trd_task
@@ -454,6 +456,7 @@ kick_bootearly	movem.l	d0-a6,-(a7)
 
 	IFD BOOTBLOCK
 kick_bootblock	movem.l	d2-d7/a2-a6,-(a7)
+		move.l	a3,a4	; kick 1.1 base address is a3, slaves expect a4
 		bsr	_bootblock
 		movem.l	(a7)+,d2-d7/a2-a6
 		tst.l	d0			;original
@@ -1028,7 +1031,7 @@ _debug4		tst	-4	;invalid lock specified
 
 ;============================================================================
 
-slv_kickname	dc.b	"31340.a1000",0
+slv_kickname	dc.b	"31034.a1000",0
 _keyboarddelay	dc.b	0
 	EVEN
 _tags		dc.l	WHDLTAG_CBSWITCH_SET
