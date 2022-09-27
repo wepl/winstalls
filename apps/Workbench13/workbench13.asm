@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.9 2021/01/03 16:09:29 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.10 2021/01/03 16:44:47 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -11,6 +11,7 @@
 ;		02.01.19 segtracker added
 ;		03.01.21 SETKEYBOARD added
 ;			 another fix for Shell-Seg added, avoid af from alias command
+;		18.02.22 NOFAST added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -24,7 +25,11 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
+	IFD NOFAST
+	OUTPUT	"awart:workbench13/Workbench13NF.Slave"
+	ELSE
 	OUTPUT	"awart:workbench13/Workbench13.Slave"
+	ENDC
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -37,7 +42,11 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $ff000	;size of chip memory
+	IFD NOFAST
+FASTMEMSIZE	= 0		;size of fast memory
+	ELSE
 FASTMEMSIZE	= $100000	;size of fast memory
+	ENDC
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %0000		;write protection of floppy drives
 
@@ -89,10 +98,14 @@ slv_keyexit	= $59	;F10
 	ENDC
 
 slv_CurrentDir	dc.b	"data",0
+	IFD NOFAST
+slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005 NoFastMem",0
+	ELSE
 slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005",0
+	ENDC
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.5 "
+		dc.b	"Version 1.6 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
