@@ -3,7 +3,7 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.13 2021/11/15 20:45:47 wepl Exp wepl $
+;  :Version.	$Id: workbench31.asm 1.14 2021/11/15 20:56:37 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -16,6 +16,7 @@
 ;		03.01.21 SETKEYBOARD added
 ;		13.11.21 INIT_RESOURCE added
 ;		15.11.21 WHDCTRL added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -132,7 +133,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.7 "
+		dc.b	"Version 1.8 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -290,6 +291,7 @@ _dosbase	dc.l	0
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length
