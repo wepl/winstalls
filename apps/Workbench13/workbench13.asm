@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.10 2021/01/03 16:44:47 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.11 2022/09/27 23:45:15 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -12,6 +12,7 @@
 ;		03.01.21 SETKEYBOARD added
 ;			 another fix for Shell-Seg added, avoid af from alias command
 ;		18.02.22 NOFAST added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -320,7 +321,7 @@ _callargs	ds.b	208
 ; if you use diskimages that is the way to patch the executables
 
 ; the following example uses a parameter table to patch different executables
-; after they get loaded
+; after they got loaded
 
 	IFD CBDOSLOADSEG
 
@@ -328,6 +329,7 @@ _callargs	ds.b	208
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length
