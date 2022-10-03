@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.25 2020/05/10 14:31:14 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.26 2020/05/11 00:43:34 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -37,6 +37,7 @@
 ;			 file offset
 ;		10.05.20 if Kickstart v37 is present ACTION_FIND_UPDATE now
 ;			 creates a nonexistent file
+;		02.10.22 flush cache on write if cache is completely filled
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -918,7 +919,8 @@ KFSDPKT	MACRO
 .write_memok	move.l	d0,a1
 	;determine bytes to copy
 		move.l	d4,d0				;IOCACHE
-		sub.l	(mfl_clen,a0),d0
+		sub.l	(mfl_clen,a0),d0		;free bytes in cache
+		beq	.write_flush			;flush if cache was full
 		cmp.l	d6,d0				;len
 		blo	.write_fill_len
 		move.l	d6,d0
