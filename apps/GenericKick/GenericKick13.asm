@@ -3,13 +3,14 @@
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
 ;  :Original	v1 
-;  :Version.	$Id: GenericKick13HD.asm 1.3 2016/04/24 23:18:33 wepl Exp wepl $
+;  :Version.	$Id: GenericKick13HD.asm 1.4 2021/11/15 21:51:45 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta      
 ;		01.11.07 reworked for v16+ (Wepl)
 ;		24.04.16 version bump
 ;		15.11.21 updated for new kickemu, _cb_dosLoadSeg added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -91,7 +92,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 34.005",0
 slv_copy	dc.b	"19xx Any Company",0
 slv_info	dc.b	"by JOTD, Wepl",10
-		dc.b	"Version 1.3 "
+		dc.b	"Version 1.4 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -113,6 +114,7 @@ slv_info	dc.b	"by JOTD, Wepl",10
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length

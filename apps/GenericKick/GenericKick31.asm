@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
 ;  :Original	v1 
-;  :Version.	$Id: GenericKick31HD.asm 1.3 2016/04/24 23:18:33 wepl Exp wepl $
+;  :Version.	$Id: GenericKick31HD.asm 1.4 2021/11/15 21:51:50 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta
@@ -101,7 +101,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 40.068",0
 slv_copy	dc.b	"19xx Any Company",0
 slv_info	dc.b	"by JOTD, Wepl",10
-		dc.b	"Version 1.3 "
+		dc.b	"Version 1.4 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
