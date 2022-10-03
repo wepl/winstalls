@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.18 2020/12/23 01:58:00 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.19 2021/11/15 20:44:15 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -22,6 +22,7 @@
 ;		22.12.20 SETKEYBOARD added
 ;		13.11.21 INIT_RESOURCE added
 ;		14.11.21 WHDCTRL added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -113,7 +114,7 @@ slv_CurrentDir	dc.b	"wb31",0
 slv_name	dc.b	"Kickstarter for 40.068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.7 "
+		dc.b	"Version 0.8 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -275,6 +276,7 @@ _dosbase	dc.l	0
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length

@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.25 2021/01/02 00:16:13 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.26 2021/11/01 23:03:02 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -23,6 +23,7 @@
 ;		28.12.18 segtracker added
 ;		19.01.19 test code for keyrepeat on osswitch added
 ;		22.12.20 SETKEYBOARD added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -104,7 +105,7 @@ slv_CurrentDir	dc.b	"kick13",0
 slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.11 "
+		dc.b	"Version 0.12 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -346,6 +347,7 @@ _callargs	ds.b	208
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length

@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.12 2017/10/08 00:46:59 wepl Exp wepl $
+;  :Version.	$Id: kick12.asm 1.13 2019/01/19 14:51:42 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
@@ -12,6 +12,7 @@
 ;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
 ;		03.10.17 new options CACHECHIP/CACHECHIPDATA
 ;		02.01.19 segtracker added
+;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -72,7 +73,8 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick12.s
+	INCDIR	Sources:
+	INCLUDE	whdload/kick12.s
 
 ;============================================================================
 
@@ -87,7 +89,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Kickstarter for 33.180",0
 slv_copy	dc.b	"1986 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 0.5 "
+		dc.b	"Version 0.6 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -136,6 +138,7 @@ _bootblock	blitz
 ; D1 = BPTR segment list of the loaded program as BCPL pointer
 
 _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
 		move.l	d0,a0
 		moveq	#0,d0
 		move.b	(a0)+,d0	;D0 = name length
