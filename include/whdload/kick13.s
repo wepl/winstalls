@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.78 2021/01/02 01:22:21 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.79 2021/08/04 21:21:47 wepl Exp $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -84,6 +84,7 @@
 ;			 called before (JOTD)
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;		02.08.21 patch for gfx_WaitBlit added
+;		05.02.23 WHDCTRL added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -329,6 +330,9 @@ kick_patch	PL_START
 		PL_PS	$36e4c,dos_LoadSeg
 	IFD SEGTRACKER
 		PL_PS	$377ca,dos_UnLoadSeg
+	ENDC
+	IFD WHDCTRL
+		PL_PS	$38736,dos_whdctrl
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$38748,dos_bootdos
@@ -1023,6 +1027,74 @@ dos_LoadSeg	clr.l	(12,a1)			;original
 dos_UnLoadSeg	bsr	st_untrack
 		addq.l	#2,(a7)
 		cmp.l	#$abcd,(8,a0,d2.l)	;original
+		rts
+	ENDC
+
+	IFD WHDCTRL
+	;add WHDCtrl to the list of resident commands
+dos_whdctrl	move.l	(39*4,a2),a4		;G_ROOTSTRUCT
+		moveq	#$3c,d0			;used BCPL stack
+		jsr	(a5)
+		lsl.l	#2,d1
+		move.l	d1,a4			;A4 = RootNode
+
+		lea	(.segment,pc),a3
+		pea	(.seglist,pc)
+		move.l	(a7)+,d1
+		lsr.l	#2,d1
+		move.l	d1,(seg_Seg,a3)
+
+		move.l	(rn_Info,a4),a4
+		add.l	a4,a4
+		add.l	a4,a4			;A4 = DosInfo
+		move.l	(di_NetHand,a4),(seg_Next,a3)
+		move.l	a3,d1
+		lsr.l	#2,d1
+		move.l	d1,(di_NetHand,a4)
+
+		moveq	#$3c,d0			;original
+		move.l	($104,a2),a4		;original
+		rts
+
+	CNOP 0,4
+.segment	dc.l	0			;seg_Next
+		dc.l	2			;seg_UC = 1 to forbid unload
+		dc.l	0			;seg_Seg
+		dc.b	7,"WHDCtrl"		;seg_Name
+	CNOP 0,4
+.template	dc.b	6,"Quit/S"
+	CNOP 0,4
+.badargs	dc.b	9,"Bad args",10
+	CNOP 0,4
+.seglist	dc.l	0			;next segment
+		sub.l	a0,a0			;BCPL standard value
+WHDCTRLBUFLEN = 3				;buffer for G_RDARGS in LONGs
+		sub	#WHDCTRLBUFLEN*4,a7
+		lea	(.template,pc),a3
+		move.l	a3,d1
+		lsr.l	#2,d1			;D1 = template
+		move.l	a7,d2
+		lsr.l	#2,d2			;D2 = arg array + buffer
+		moveq	#WHDCTRLBUFLEN-1,d3	;D3 = size of arg array + buffer (LONGs)
+		move.l	(78*4,a2),a4		;G_RDARGS
+		moveq	#12,d0			;used BCPL stack (a1)
+		jsr	(a5)			;call BCPL
+		tst.l	d1			;result from G_RDARGS
+		beq	.fail
+		tst.l	(a7)			;Quit?
+		beq	.end
+		move.l	(_resload,pc),a0
+		pea	TDREASON_OK
+		jmp	(resload_Abort,a0)
+	;G_RDARGS has failed
+.fail		lea	(.badargs,pc),a3
+		move.l	a3,d1
+		lsr.l	#2,d1
+		move.l	(73*4,a2),a4		;G_WRITES
+		moveq	#12,d0			;used BCPL stack (a1)
+		jsr	(a5)			;call BCPL
+		moveq	#10,d0			;RETURN_ERROR
+.end		add	#WHDCTRLBUFLEN*4,a7
 		rts
 	ENDC
 
