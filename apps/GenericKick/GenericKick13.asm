@@ -3,7 +3,7 @@
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
 ;  :Original	v1 
-;  :Version.	$Id: GenericKick13HD.asm 1.4 2021/11/15 21:51:45 wepl Exp wepl $
+;  :Version.	$Id: GenericKick13HD.asm 1.5 2022/10/03 14:35:35 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta      
@@ -11,6 +11,7 @@
 ;		24.04.16 version bump
 ;		15.11.21 updated for new kickemu, _cb_dosLoadSeg added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
+;		19.02.23 WHDCTRL added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -67,6 +68,7 @@ SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -92,7 +94,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 34.005",0
 slv_copy	dc.b	"19xx Any Company",0
 slv_info	dc.b	"by JOTD, Wepl",10
-		dc.b	"Version 1.4 "
+		dc.b	"Version 1.5 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
