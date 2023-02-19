@@ -2,7 +2,7 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.11 2022/09/27 23:45:15 wepl Exp wepl $
+;  :Version.	$Id: workbench13.asm 1.12 2022/09/28 00:16:07 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -13,6 +13,7 @@
 ;			 another fix for Shell-Seg added, avoid af from alias command
 ;		18.02.22 NOFAST added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
+;		06.02.23 WHDCTRL added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -77,6 +78,7 @@ SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -155,11 +157,11 @@ _bootblock	blitz
 ; D2 = ULONG stack size
 ; D4 = D0
 ; A0 = CPTR  argument line
-; A1 = APTR  BCPL stack, low end
-; A2 = APTR  BCPL
+; A1 = APTR  BCPL stack, low end = tc_SPLower
+; A2 = APTR  BCPL global vector
 ; A4 = APTR  return address, frame (A7+4)
-; A5 = BPTR  BCPL
-; A6 = BPTR  BCPL
+; A5 = BPTR  BCPL service in
+; A6 = BPTR  BCPL service out
 ; (SP)       return address
 ; (4,SP)     stack size
 ; (8,SP)     previous stack frame -> +4 = A1,A2,A5,A6
