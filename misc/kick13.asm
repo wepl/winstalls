@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.26 2021/11/01 23:03:02 wepl Exp wepl $
+;  :Version.	$Id: kick13.asm 1.27 2022/10/03 14:27:54 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -24,6 +24,7 @@
 ;		19.01.19 test code for keyrepeat on osswitch added
 ;		22.12.20 SETKEYBOARD added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
+;		05.02.23 WHDCTRL added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -56,7 +57,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 
 ;BLACKSCREEN			;set all initial colors to black
 ;BOOTBLOCK			;enable _bootblock routine
-BOOTDOS			;enable _bootdos routine
+;BOOTDOS			;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
 CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
@@ -80,6 +81,7 @@ SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -154,11 +156,11 @@ _bootblock	blitz
 ; D2 = ULONG stack size
 ; D4 = D0
 ; A0 = CPTR  argument line
-; A1 = APTR  BCPL stack, low end
-; A2 = APTR  BCPL
+; A1 = APTR  BCPL stack, low end = tc_SPLower
+; A2 = APTR  BCPL global vector
 ; A4 = APTR  return address, frame (A7+4)
-; A5 = BPTR  BCPL
-; A6 = BPTR  BCPL
+; A5 = BPTR  BCPL service in
+; A6 = BPTR  BCPL service out
 ; (SP)       return address
 ; (4,SP)     stack size
 ; (8,SP)     previous stack frame -> +4 = A1,A2,A5,A6
