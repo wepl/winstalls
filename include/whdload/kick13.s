@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.80 2023/02/06 12:30:45 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.81 2023/02/19 01:27:37 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -85,6 +85,7 @@
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;		02.08.21 patch for gfx_WaitBlit added
 ;		05.02.23 WHDCTRL added
+;		19.02.23 CLI/Resident patch for WHDCtrl added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -333,6 +334,8 @@ kick_patch	PL_START
 	ENDC
 	IFD WHDCTRL
 		PL_PS	$38736,dos_whdctrl
+		PL_PS	$39232,dos_residentload
+		PL_PS	$394dc,dos_residentunload
 	ENDC
 	IFD BOOTDOS
 		PL_PS	$38748,dos_bootdos
@@ -1094,6 +1097,53 @@ WHDCTRLBUFLEN = 3				;buffer for G_RDARGS in LONGs
 		jsr	(a5)			;call BCPL
 		moveq	#10,d0			;RETURN_ERROR
 .end		add	#WHDCTRLBUFLEN*4,a7
+		rts
+
+	; enable using resident instead loadseg
+dos_residentload
+		move.l	#$1c4,d0		;used stack
+		movea.l	($9C,a2),a4		;G_ROOTSTRUCT
+		jsr	(a5)
+		lsl.l	#2,d1
+		move.l	(rn_Info,a0,d1.l),d2
+		lsl.l	#2,d2
+		move.l	(di_NetHand,a0,d2.l),($1c4-12,a1)	;BPTR to first seg
+		beq	.notfound
+.search		moveq	#3,d1			;seg_Name is + 3 LONGs
+		add.l	($1c4-12,a1),d1
+		move.l	d1,d2			;adr name from seg
+		move.l	($48,a1),d1		;48 = buffer cmdname
+		move.l	#$1c4+4,d0		;used stack
+		movea.l	($134,a2),a4		;G_COMPSTRING
+		jsr	(a5)
+		tst.l	d1
+		beq	.found
+		move.l	($1c4-12,a1),d1
+		lsl.l	#2,d1
+		move.l	(a0,d1.l),($1c4-12,a1)	;seg_Next
+		bne.b	.search
+.notfound	sf	($4c+99,a1)		;last byte of cmdname buffer
+		moveq	#0,d1			;original
+		move.l	#$1c4,d0		;original
+		rts
+
+.found		move.l	($1c4-12,a1),d1
+		lsl.l	#2,d1
+		tst.l	(seg_UC,a0,d1.l)
+		ble.w	.notfound		;SYSTEM
+		move.l	(seg_Seg,a0,d1.l),($1a8,a1)	;1a8 = segment
+		st	($4c+99,a1)		;last byte of cmdname buffer
+		add.l	#$39368-$39232-6,(a7)
+		rts
+
+	; disable unloading segment which is resident
+dos_residentunload
+		tst.b	($4c+99,a1)		;last byte of cmdname buffer
+		bne	.resident
+		move.l	#$1c4,d0		;original
+		rts
+
+.resident	addq.l	#$394e8-$394dc-6,(a7)
 		rts
 	ENDC
 
