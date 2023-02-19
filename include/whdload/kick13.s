@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.79 2021/08/04 21:21:47 wepl Exp $
+;  :Version.	$Id: kick13.s 0.80 2023/02/06 12:30:45 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -1035,8 +1035,10 @@ dos_UnLoadSeg	bsr	st_untrack
 dos_whdctrl	move.l	(39*4,a2),a4		;G_ROOTSTRUCT
 		moveq	#$3c,d0			;used BCPL stack
 		jsr	(a5)
-		lsl.l	#2,d1
-		move.l	d1,a4			;A4 = RootNode
+		lsl.l	#2,d1			;RootNode
+		move.l	(rn_Info,a0,d1.l),a4
+		add.l	a4,a4
+		add.l	a4,a4			;A4 = DosInfo
 
 		lea	(.segment,pc),a3
 		pea	(.seglist,pc)
@@ -1044,9 +1046,6 @@ dos_whdctrl	move.l	(39*4,a2),a4		;G_ROOTSTRUCT
 		lsr.l	#2,d1
 		move.l	d1,(seg_Seg,a3)
 
-		move.l	(rn_Info,a4),a4
-		add.l	a4,a4
-		add.l	a4,a4			;A4 = DosInfo
 		move.l	(di_NetHand,a4),(seg_Next,a3)
 		move.l	a3,d1
 		lsr.l	#2,d1
