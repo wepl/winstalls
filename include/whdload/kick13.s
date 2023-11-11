@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.81 2023/02/19 01:27:37 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.82 2023/02/19 02:38:10 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -102,6 +102,7 @@
 	INCLUDE	graphics/gfxbase.i
 	INCLUDE	hardware/cia.i
 	INCLUDE	hardware/custom.i
+	INCLUDE	hardware/dmabits.i
 
 	IFND	_custom
 _custom		= $dff000
