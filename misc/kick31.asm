@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.19 2021/11/15 20:44:15 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.20 2022/10/03 14:28:04 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -35,8 +35,8 @@
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
 
-	IFD BARFLY
 	OUTPUT	"awart:workbench31/Kick31.Slave"
+	IFD BARFLY
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -92,7 +92,7 @@ WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
-slv_Version	= 16
+slv_Version	= 18
 slv_Flags	= WHDLF_NoError|WHDLF_Examine
 slv_keyexit	= $59	;F10
 
