@@ -2,7 +2,7 @@
 ;  :Program.	readjoyport.asm
 ;  :Contents.	Slave to check resload_ReadJoyPort
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.14 2020/10/26 00:11:23 wepl Exp wepl $
+;  :Version.	$Id: readjoyport.asm 1.1 2024/05/19 02:35:04 wepl Exp wepl $
 ;  :History.	2024-05-18 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -88,6 +88,11 @@ MEMSCREEN	= $10000
 	;get whdload
 		lea	(_tags),a0
 		jsr	(resload_Control,a5)
+	;init timers
+		lea	(_ciab),a4		;A4 = ciab
+		move.b	#-1,(ciatalo,a4)
+		move.b	#-1,(ciatahi,a4)
+		move.b	#CIACRAF_START,(ciacra,a4)
 
 	;print screen text
 		moveq	#0,d0
@@ -141,15 +146,33 @@ MEMSCREEN	= $10000
 		lea	_leg7,a0
 		bsr	_ps
 
+	;first calls
+		waitvb	a6
+		bsr	_check
+		bsr	_check
+		add	#CHARHEIGHT,d1
+
 	;main loop
-.again		waitvb	a6
+.again
+		waitvb	a6
+		bsr	_check
+		bsr	_check
+		sub.l	#8*(CHARHEIGHT+1),d1
+		bra	.again
+
+	;end
+		pea	TDREASON_OK
+		jmp	(resload_Abort,a5)
+
+_check		lea	_call,a0
+		addq.l	#1,(a0)
 		moveq	#0,d7			;port
 
 		move.l	d1,d2
 		lea	_nodetect,a0
 		move.b	_keycode,d0
 		cmp.b	#$22,d0
-		seq	d6			;detect = active
+		seq	d6			;D6 = detect = active
 		bne	.nodetectps
 		lea	_detect,a0
 .nodetectps	moveq	#CHARWIDTH*25,d0
@@ -162,7 +185,15 @@ MEMSCREEN	= $10000
 		tst.b	d6
 		beq	.nodetect
 		bset	#RJPB_DETECT,d0
-.nodetect	jsr	(resload_ReadJoyPort,a5)
+.nodetect
+		bset	#CIACRAB_LOAD,(ciacra,a4)
+		bsr	_getta
+		jsr	(resload_ReadJoyPort,a5)
+		move.l	d5,d1
+		bsr	_getta
+		sub.l	d5,d1
+		move.l	_call,-(a7)
+		move.l	d1,-(a7)
 
 		moveq	#0,d1
 
@@ -235,19 +266,13 @@ MEMSCREEN	= $10000
 		lea	_data,a0
 		move.l	a7,a1
 		bsr	_ps
-		add	#4+4+12*2,a7
+		add	#4+4+12*2+4+4,a7
 
 		addq.l	#1,d7
-		cmp	#5,d7
+		cmp	#4,d7
 		bne	.loop
 
-		sub.l	#5*(CHARHEIGHT+1),d1
-
-		bra	.again
-
-	;end
-		pea	TDREASON_OK
-		jmp	(resload_Abort,a5)
+		rts
 
 	CNOP 0,4
 _tags		dc.l	WHDLTAG_ECLOCKFREQ_GET
@@ -262,6 +287,31 @@ _rev		dc.l	0
 _build		dc.l	0
 		dc.l	TAG_DONE
 	EVEN
+
+;--------------------------------
+; get timer a counter
+
+_getta		move	d0,-(a7)
+		moveq	#0,d5
+.again		move.b	(ciatahi,a4),d0
+		move.b	(ciatalo,a4),d5
+		cmp.b	(ciatahi,a4),d0
+		bne	.again
+		lsl	#8,d5
+		move.b	d0,d5
+		move	(a7)+,d0
+		rts
+
+;--------------------------------
+; get event counter ciab
+
+_getec		moveq	#0,d5
+		move.b	_ciab+ciatodhi,d5
+		lsl.w	#8,d5
+		move.b	_ciab+ciatodmid,d5
+		lsl.l	#8,d5
+		move.b	_ciab+ciatodlow,d5
+		rts
 
 ;--------------------------------
 ; print formatted string (printf)
@@ -407,8 +457,8 @@ _leg3		dc.b	"                           forward",0
 _leg4		dc.b	"                         green/shuffle",0
 _leg5		dc.b	"                       yellow/repeat   right",0
 _leg6		dc.b	"                     red/lmb/fb    down",0
-_leg7		dc.b	"port   result type blue/rmb/fb2  up  left",0
-_data		dc.b	"%4ld %08lx %4d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d",0
+_leg7		dc.b	"port   result type blue/rmb/fb2  up  left eticks  call",0
+_data		dc.b	"%4ld %08lx %4d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%8ld%6ld",0
 _detect		db	"detect",0
 _nodetect	db	"      ",0
 _bottom		db	"hold D for detection",0
@@ -419,6 +469,7 @@ _bottom		db	"hold D for detection",0
 _keycode	dx.b	1	;rawkey code
 	CNOP 0,4
 _resload	dx.l	1	;address of resident loader
+_call		dx.l	1	;call counter
 
 ;============================================================================
 
