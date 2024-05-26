@@ -2,7 +2,7 @@
 ;  :Program.	readjoyport.asm
 ;  :Contents.	Slave to check resload_ReadJoyPort
 ;  :Author.	Wepl
-;  :Version.	$Id: readjoyport.asm 1.1 2024/05/19 02:35:04 wepl Exp wepl $
+;  :Version.	$Id: readjoyport.asm 1.2 2024/05/23 01:11:39 wepl Exp wepl $
 ;  :History.	2024-05-18 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -88,6 +88,12 @@ MEMSCREEN	= $10000
 	;get whdload
 		lea	(_tags),a0
 		jsr	(resload_Control,a5)
+	;init vbi which is required for quitkey by button
+		lea	_vbi,a0
+		move.l	a0,$6c
+		move	#INTF_VERTB,(intreq,a6)
+		move	#INTF_SETCLR|INTF_VERTB,(intena,a6)
+		waitvb	a6
 	;init timers
 		lea	(_ciab),a4		;A4 = ciab
 		move.b	#-1,(ciatalo,a4)
@@ -153,12 +159,13 @@ MEMSCREEN	= $10000
 		add	#CHARHEIGHT,d1
 
 	;main loop
-.again
-		waitvb	a6
+.again		waitvb	a6
 		bsr	_check
 		bsr	_check
 		sub.l	#8*(CHARHEIGHT+1),d1
-		bra	.again
+		move.b	_keycode,d0
+		cmp.b	#$10,d0
+		bne	.again
 
 	;end
 		pea	TDREASON_OK
@@ -273,6 +280,10 @@ _check		lea	_call,a0
 		bne	.loop
 
 		rts
+
+_vbi		move	#INTF_VERTB,(_custom+intreq)
+		tst	(_custom+intreqr)
+		rte
 
 	CNOP 0,4
 _tags		dc.l	WHDLTAG_ECLOCKFREQ_GET
@@ -461,7 +472,7 @@ _leg7		dc.b	"port   result type blue/rmb/fb2  up  left eticks  call",0
 _data		dc.b	"%4ld %08lx %4d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%8ld%6ld",0
 _detect		db	"detect",0
 _nodetect	db	"      ",0
-_bottom		db	"hold D for detection",0
+_bottom		db	"hold D for detection                   press q to quit",0
 	EVEN
 
 ;============================================================================
