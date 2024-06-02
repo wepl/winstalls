@@ -2,7 +2,7 @@
 ;  :Program.	readjoyport.asm
 ;  :Contents.	Slave to check resload_ReadJoyPort
 ;  :Author.	Wepl
-;  :Version.	$Id: readjoyport.asm 1.2 2024/05/23 01:11:39 wepl Exp wepl $
+;  :Version.	$Id: readjoyport.asm 1.3 2024/05/26 23:05:14 wepl Exp wepl $
 ;  :History.	2024-05-18 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -152,6 +152,9 @@ MEMSCREEN	= $10000
 		lea	_leg7,a0
 		bsr	_ps
 
+_mouse = $100
+		sf	_mouse
+
 	;first calls
 		waitvb	a6
 		bsr	_check
@@ -162,7 +165,11 @@ MEMSCREEN	= $10000
 .again		waitvb	a6
 		bsr	_check
 		bsr	_check
-		sub.l	#8*(CHARHEIGHT+1),d1
+		add	#CHARHEIGHT,d1
+		st	_mouse
+		bsr	_check
+		sf	_mouse
+		sub.l	#CHARHEIGHT+12*(CHARHEIGHT+1),d1
 		move.b	_keycode,d0
 		cmp.b	#$10,d0
 		bne	.again
@@ -192,7 +199,10 @@ _check		lea	_call,a0
 		tst.b	d6
 		beq	.nodetect
 		bset	#RJPB_DETECT,d0
-.nodetect
+.nodetect	tst.b	_mouse
+		beq	.nomouse
+		bset	#RJPB_WANTMOUSE,d0
+.nomouse
 		bset	#CIACRAB_LOAD,(ciacra,a4)
 		bsr	_getta
 		jsr	(resload_ReadJoyPort,a5)
