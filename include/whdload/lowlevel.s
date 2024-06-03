@@ -3,11 +3,14 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: lowlevel.s 1.7 2021/01/31 16:12:56 wepl Exp wepl $
+;  :Version.	$Id: lowlevel.s 1.8 2021/01/31 16:34:00 wepl Exp wepl $
 ;  :History.	2020-10-29 initial, based on resourced original
 ;		2020-11-03 moved .in jump one inst before in joypad read
-;		2021-01-31 changed db to dc.b for better assembler comptibility
+;		2021-01-31 changed db to dc.b for better assembler compatibility
 ;			   switched for ElapsedTime to 68000 compatible code
+;		2024-05-26 add support for resload_ReadJoyPort, only enabled
+;			   if ws_Version >= 19
+;			   disabled old ReadJoyPort code for port 2/3
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1008,15 +1011,16 @@ _B1C	tst.w	d1
 	move.b	#2,(14,a0)
 .BEE	rts
 
-libportnumoffset	dc.w	$60
-	dc.w	$A0
-	dc.w	$134
-	dc.w	$174
-
 ;-----------------------
 ; return the state of the selected joy/mouse port
 ; IN:	D0 = ULONG portNumber
 ; OUT:	D0 = ULONG portState
+
+libportnumoffset	;offsets in libbase where struct for port# starts
+	dc.w	$60
+	dc.w	$A0
+	dc.w	$134
+	dc.w	$174
 
 ReadJoyPort
 
@@ -1064,27 +1068,48 @@ ReadJoyPort
 
 	ENDC
 
-	move.w	d0,d1	;portnumber 0..3
-	add.b	d1,d1
-	lea	(libportnumoffset,pc),a0
-	move.w	(a0,d1.w),d1
+	IFGE	slv_Version-19
+	cmp	#3,d0		;supports port 0..3
+	ELSE
+	cmp	#1,d0		;ignore port 2..3
+	ENDC
+	bhi	.error
+	move	d0,d1		;portnumber 0..3
+	add	d1,d1
+	move	(libportnumoffset,pc,d1.w),d1
 	lea	(a6,d1.w),a0
-	move.l	($3C,a0),d1
-	beq.b	initport
+	move.l	($3C,a0),d1	;if already detected the function pointer port_...
+	beq	.detect
 	movea.l	d1,a0
 	jmp	(a0)
 
-initport	movem.l	d2-d7/a2-a6,-(sp)
+.error	moveq	#0,d0
+	rts
+
+.detect
+
+	IFGE	slv_Version-19
+
+	;if resload_ReadJoyPort is available, we call it
+	;result will be GAMECTRL or JOYSTK but never MOUSE
+	;mouse is only possible via SetJoyPortAttrsA
+
+	move.l	(_resload,pc),a0
+	jmp	(resload_ReadJoyPort,a0)
+
+	ELSE
+
+	;original lowlevel code
+	
+	movem.l	d2-d7/a2-a6,-(sp)
 	movea.l	#_custom,a3
 	movea.l	#_ciaa,a4
 	movea.l	a6,a5
 	moveq	#0,d6
 	move.l	d0,d2
-	cmp.l	#3,d2
-	bhi.w	RJP_error
-	movea.l	a0,a2
+	movea.l	a0,a2		;A2 = port struct ib libbase
 	btst	#0,d2
-	bne.b	.CD2
+	bne.b	.port1
 	bset	#1,(13,a2)
 	bne.w	RJP_error
 	move.l	#$A0000,d7
@@ -1118,7 +1143,7 @@ initport	movem.l	d2-d7/a2-a6,-(sp)
 .CCE	move.l	d7,(a2)
 	bra.b	.CEE
 
-.CD2	bset	#1,($6D,a5)
+.port1	bset	#1,($6D,a5)
 	bne.w	RJP_error
 	move.l	#$C0000,d7
 	move.w	(joy1dat,a3),d7
@@ -1328,6 +1353,10 @@ joydir_d7_d0	move.w	d7,d1
 	and.b	d0,d1
 	rts
 
+	ENDC	;slv_Version >= 19
+
+	;vblank int code
+
 _ll_F16	btst	#2,($6D,a1)
 	bne.b	.F2C
 	movea.l	($4C,a1),a1
@@ -1338,7 +1367,17 @@ _ll_F16	btst	#2,($6D,a1)
 .F2C	moveq	#0,d0
 	rts
 
-SetJoyPortAttrsA	movem.l	d0/d2/a2/a3,-(sp)
+SetJoyPortAttrsA
+	movem.l	d0/d2/a2/a3,-(sp)
+
+	IFGE	slv_Version-19
+
+	cmp.l	#3,d0
+	bls.b	.F94
+
+	ELSE
+
+	;some init required for the functions below
 	movem.l	d0/a1/a5/a6,-(sp)
 	movea.l	a6,a5
 	lea	($60,a6),a2
@@ -1361,8 +1400,12 @@ SetJoyPortAttrsA	movem.l	d0/d2/a2/a3,-(sp)
 	jsr	(_LVOAddIntServer,a6)
 .F7E	jsr	(_LVOPermit,a6)
 .F82	movem.l	(sp)+,d0/a1/a5/a6
-	cmp.l	#3,d0
+
+	cmp.l	#1,d0		;ignore port 2..3
 	bls.b	.F94
+
+	ENDC
+
 	moveq	#0,d0
 	bra.w	.1062
 
@@ -1443,22 +1486,74 @@ SetJoyPortAttrsA	movem.l	d0/d2/a2/a3,-(sp)
 .1062	movem.l	(sp)+,d0/d2/a2/a3
 	rts
 
-port_type_list	dc.w	port_unknown-port_type_list
+	IFGE	slv_Version-19
+
+port_type_list
+
+	;port 0
+	dc.w	port_unknown-port_type_list
 	dc.w	port_gamectlr_0-port_type_list
 	dc.w	port_mouse_0-port_type_list
 	dc.w	port_joystck_0-port_type_list
+	;port 1
 	dc.w	port_unknown-port_type_list
 	dc.w	port_gamectlr_1-port_type_list
 	dc.w	port_mouse_1-port_type_list
 	dc.w	port_joystck_1-port_type_list
+	;port 2
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_joystck_2-port_type_list
+	;port 3
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_unknown-port_type_list
+	dc.w	port_joystck_3-port_type_list
+
+port_unknown	moveq	#0,d0
+		rts
+
+port_mouse_0
+port_mouse_1	bset	#RJPB_WANTMOUSE,d0
+port_joystck_0
+port_joystck_1
+port_joystck_2
+port_joystck_3
+port_gamectlr_0
+port_gamectlr_1
+		move.l	(_resload,pc),a0
+		jmp	(resload_ReadJoyPort,a0)
+
+        ELSE
+
+port_type_list
+
+	;port 0
+	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_0-port_type_list
+	dc.w	port_mouse_0-port_type_list
+	dc.w	port_joystck_0-port_type_list
+	;port 1
+	dc.w	port_unknown-port_type_list
+	dc.w	port_gamectlr_1-port_type_list
+	dc.w	port_mouse_1-port_type_list
+	dc.w	port_joystck_1-port_type_list
+
+	IFEQ 1	;disabled
+
+	;port 2
 	dc.w	port_unknown-port_type_list
 	dc.w	port_gamectlr_2-port_type_list
 	dc.w	port_unknown-port_type_list
 	dc.w	port_unknown-port_type_list
+	;port 3
 	dc.w	port_unknown-port_type_list
 	dc.w	port_gamectlr_3-port_type_list
 	dc.w	port_unknown-port_type_list
 	dc.w	port_unknown-port_type_list
+
+	ENDC	;disabled
 
 port_unknown	moveq	#0,d0
 	rts
@@ -1531,7 +1626,8 @@ port_mouse_0	movem.l	d2/d4/a3-a6,-(sp)
 	movem.l	(sp)+,d2/d4/a3-a6
 	rts
 
-port_joystck_0	movem.l	d2/d4/a3-a6,-(sp)
+port_joystck_0	
+	movem.l	d2/d4/a3-a6,-(sp)
 	movea.l	a6,a5
 	bset	#1,($6D,a5)
 	bne.b	.1202
@@ -1575,7 +1671,8 @@ port_joystck_0	movem.l	d2/d4/a3-a6,-(sp)
 	movem.l	(sp)+,d2/d4/a3-a6
 	rts
 
-port_joystck_1	movem.l	d2/d4/a3-a6,-(sp)
+port_joystck_1
+	movem.l	d2/d4/a3-a6,-(sp)
 	movea.l	a6,a5
 	moveq	#0,d0
 	bset	#1,($6D,a5)
@@ -1620,7 +1717,8 @@ port_joystck_1	movem.l	d2/d4/a3-a6,-(sp)
 	movem.l	(sp)+,d2/d4/a3-a6
 	rts
 
-port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
+port_gamectlr_0
+	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($60,a6),a2
 	bset	#1,(13,a2)
 	bne.w	.quit
@@ -1679,7 +1777,8 @@ port_gamectlr_0	movem.l	d2-d4/a2-a4/a6,-(sp)
 .quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
 
-port_gamectlr_1	movem.l	d2-d4/a2-a4/a6,-(sp)
+port_gamectlr_1
+	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($A0,a6),a2
 	bset	#1,(-$33,a2)
 	bne.w	.quit
@@ -1737,6 +1836,10 @@ port_gamectlr_1	movem.l	d2-d4/a2-a4/a6,-(sp)
 	bclr	#1,(-$33,a2)
 .quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
+
+	ENDC	;slv_Version >= 19
+
+	IFEQ 1	;disabled
 
 port_gamectlr_2	movem.l	d2-d4/a2-a4/a6,-(sp)
 	lea	($134,a6),a2
@@ -1855,6 +1958,8 @@ port_gamectlr_3	movem.l	d2-d4/a2-a4/a6,-(sp)
 	bclr	#1,(-$107,a2)
 .quit	movem.l	(sp)+,d2-d4/a2-a4/a6
 	rts
+
+	ENDC	;disabled
 
 QueryKeys	movem.l	d2/a2/a5/a6,-(sp)
 	movea.l	a6,a5
