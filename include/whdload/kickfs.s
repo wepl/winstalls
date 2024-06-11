@@ -2,7 +2,7 @@
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kickfs.s 1.26 2020/05/11 00:43:34 wepl Exp wepl $
+;  :Version.	$Id: kickfs.s 1.27 2022/10/03 14:18:03 wepl Exp wepl $
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -38,6 +38,8 @@
 ;		10.05.20 if Kickstart v37 is present ACTION_FIND_UPDATE now
 ;			 creates a nonexistent file
 ;		02.10.22 flush cache on write if cache is completely filled
+;		07.06.24 added ACTION_RENAME_DISK
+;		10.06.24 avoid writing special files
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -326,6 +328,7 @@ KFSDPKT	MACRO
 	CNOP 0,4
 .action		KFSDPKT	CURRENT_VOLUME,current_volume	      ;7      7
 		KFSDPKT	LOCATE_OBJECT,locate_object	      ;8      8
+		KFSDPKT	RENAME_DISK,rename_disk		      ;9      9
 		KFSDPKT	FREE_LOCK,free_lock		      ;f      15
 		KFSDPKT	DELETE_OBJECT,delete_object	      ;10     16
 		KFSDPKT	COPY_DIR,copy_dir		      ;13     19
@@ -381,6 +384,13 @@ KFSDPKT	MACRO
 	;	a4 = packet
 	;	a5 = MsgPort
 	;	a6 = execbase
+
+;---------------
+; IN:	dp_Arg1 = BPTR new volume name
+
+.a_rename_disk	move.l	#ERROR_DISK_WRITE_PROTECTED,d1
+		move.l	#DOSFALSE,d0
+		bra	.reply2
 
 ;---------------
 
@@ -849,6 +859,17 @@ KFSDPKT	MACRO
 		cmp.l	(fl_Task,a0),a5
 		bne	_debug4
 	ENDC
+	IFD BOOTDOS
+	;special files
+		move.l	(fl_Key,a0),a0			;name
+		bsr	.specialfile
+		tst.l	d0
+		beq	.write_nospec
+		move.l	#ERROR_WRITE_PROTECTED,d1
+		move.l	#DOSFALSE,d0
+		bra	.reply2
+.write_nospec	move.l	(dp_Arg1,a4),a0
+	ENDC
 	IFND IOCACHE
 		move.l	(dp_Arg3,a4),d0			;len
 		beq	.write_end
@@ -1008,6 +1029,21 @@ KFSDPKT	MACRO
 		bsr	.buildname
 		move.l	d0,d2			;d2 = name
 		beq	.reply2
+	IFD BOOTDOS
+	;special files
+		move.l	d2,a0			;name
+		bsr	.specialfile
+		tst.l	d0
+		beq	.findout_nospec
+	;free the name
+		move.l	d2,a1
+		move.l	-(a1),d0
+		jsr	(_LVOFreeMem,a6)
+		move.l	#ERROR_WRITE_PROTECTED,d1
+		move.l	#DOSFALSE,d0
+		bra	.reply2
+.findout_nospec
+	ENDC
 	;create an empty file
 		move.l	d2,a0
 		sub.l	a1,a1
@@ -1410,6 +1446,7 @@ KFSDPKT	MACRO
 .snoopfshead		dc.b	"[KICKFS] ",0
 .f_current_volume	dc.b	"%sCURRENT_VOLUME ErrorReport() dl=$%B r2=%ld fha1=$%lx",0
 .f_locate_object	dc.b	"%sLOCATE_OBJECT         Lock() fl=$%B r2=%ld fl=$%B name=%b mode=%ld",0
+.f_rename_disk		dc.b	"%sRENAME_DISK        Relabel() succ=%ld r2=%ld name=%b",0
 .f_free_lock		dc.b	"%sFREE_LOCK           UnLock() succ=%ld r2=%ld fl=$%B",0
 .f_delete_object	dc.b	"%sDELETE_OBJECT   DeleteFile() succ=%ld r2=%ld fl=$%B name=%b",0
 .f_copy_dir		dc.b	"%sCOPY_DIR           DupLock() fl=$%B r2=%ld fl=$%B",0
