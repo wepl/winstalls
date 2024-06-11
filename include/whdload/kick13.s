@@ -2,7 +2,7 @@
 ;  :Modul.	kick13.s
 ;  :Contents.	interface code and patches for kickstart 1.3
 ;  :Author.	Wepl, Psygore
-;  :Version.	$Id: kick13.s 0.82 2023/02/19 02:38:10 wepl Exp wepl $
+;  :Version.	$Id: kick13.s 0.83 2023/11/11 21:24:00 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		18.01.00 trd_write with writeprotected fixed
 ;			 diskchange fixed
@@ -1269,7 +1269,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 ;============================================================================
 
 	IFD DEBUG
-_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug1		tst	-1	;unknown packet (=d4) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;invalid lock specified

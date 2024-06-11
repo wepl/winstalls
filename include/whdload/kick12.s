@@ -2,7 +2,7 @@
 ;  :Modul.	kick12.s
 ;  :Contents.	interface code and patches for kickstart 1.2
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick12.s 1.40 2021/08/03 00:22:42 wepl Exp wepl $
+;  :Version.	$Id: kick12.s 1.41 2021/08/04 21:21:47 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick13.s and kick12.s from JOTD
 ;		18.11.02 illegal trackdisk-patches enabled if DEBUG
 ;		30.11.02 FONTHEIGHT added
@@ -1045,7 +1045,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 ;============================================================================
 
 	IFD DEBUG
-_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug1		tst	-1	;unknown packet (=d4) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;invalid lock specified

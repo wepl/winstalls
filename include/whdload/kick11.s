@@ -2,7 +2,7 @@
 ;  :Modul.	kick11.s
 ;  :Contents.	interface code and patches for kickstart 1.1 (Amiga 1000 PAL)
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick11.s 1.41 2021/08/04 21:21:47 wepl Exp wepl $
+;  :Version.	$Id: kick11.s 1.2 2022/06/21 21:49:44 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick12.s from JOTD
 ;
 ;		02.08.21 patch for gfx_WaitBlit added
@@ -1022,7 +1022,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 ;============================================================================
 
 	IFD DEBUG
-_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug1		tst	-1	;unknown packet (=d4) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;invalid lock specified

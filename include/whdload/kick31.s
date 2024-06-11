@@ -2,7 +2,7 @@
 ;  :Modul.	kick31.s
 ;  :Contents.	interface code and patches for kickstart 3.1 from A1200
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick31.s 1.50 2021/01/02 01:36:52 wepl Exp wepl $
+;  :Version.	$Id: kick31.s 1.51 2021/11/15 20:40:52 wepl Exp wepl $
 ;  :History.	04.03.03 rework/cleanup
 ;		04.04.03 disk.ressource cleanup
 ;		06.04.03 some dosboot changes
@@ -1312,7 +1312,7 @@ _flushcache	move.l	(_resload,pc),-(a7)
 ;============================================================================
 
 	IFD DEBUG
-_debug1		tst	-1	;unknown packet (=d2) for dos handler
+_debug1		tst	-1	;unknown packet (=d4) for dos handler
 _debug2		tst	-2	;no lock given for a_copy_dir (dos.DupLock)
 _debug3		tst	-3	;error in _dos_assign
 _debug4		tst	-4	;invalid lock specified
