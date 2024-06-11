@@ -3,7 +3,7 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.20 2022/10/03 14:28:04 wepl Exp wepl $
+;  :Version.	$Id: kick31.asm 1.21 2024/02/03 19:25:27 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -92,7 +92,7 @@ WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
-slv_Version	= 18
+slv_Version	= 19
 slv_Flags	= WHDLF_NoError|WHDLF_Examine
 slv_keyexit	= $59	;F10
 
