@@ -1,9 +1,10 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	glubble.asm
-;  :Contents.	Slave for "Glubble" from XYMOX Project
+;  :Contents.	Slave for "Glubble" from Oyxgene
 ;  :Author.	wepl <wepl@whdload.de>
-;  :Version.	$Id: winditup.asm 1.7 2002/02/19 21:09:47 wepl Exp wepl $
+;  :Version.	$Id: glubble.asm 1.1 2024/06/16 11:11:26 wepl Exp wepl $
 ;  :History.	2024-06-14 start (at Flashback Symposium #1)
+;		2024-06-30 finished
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -16,7 +17,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"ctemp:daten/games/glubble/Glubble.Slave"
+	OUTPUT	"wart:gh/glubble/Glubble.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -25,7 +26,7 @@
 	SUPER					;disable supervisor warnings
 	ENDC
 
-CHIPSIZE = $100000
+CHIPSIZE = $81000
 FASTSIZE = $80000
 DISKSIZE = 540672
 
@@ -85,10 +86,10 @@ _Start	;	A0 = resident loader
 	;8	fast/exp ptr
 	;12	fast free largest
 	;$10	bb ioreq
-	;$14	= chip ptr
+	;$14	= chip ptr, buffer
 	;$18	loaded adf-image	-> $f2
 	;$1c	0			-> $f6
-	;$22.w	?			-> ($16,a6)
+	;$22.w	entropy			-> ($16,a6)
 	;d6 = start arg
 		lea	(-$22,a7),a7
 		move.l	#$400,(a7)		;mem chip
@@ -98,13 +99,6 @@ _Start	;	A0 = resident loader
 		clr.l	(16,a7)			;ioreq
 		move.l	(a7),($14,a7)
 		clr.l	($18,sp)		;loaded adf
-
-		moveq	#0,d0			;offset
-		move.l	#$1e00,d1		;size
-		moveq	#1,d2			;disk
-		move.l	(a7),a0			;destination
-		move.l	(_resload,pc),a2
-		jsr	(resload_DiskLoad,a2)
 
 	;preload complete disk image
 		moveq	#0,d0			;offset
@@ -116,70 +110,83 @@ _Start	;	A0 = resident loader
 		move.l	(_resload,pc),a2
 		jsr	(resload_DiskLoad,a2)
 
-	movea.l	($14,sp),a1	;mem chip 2
-	lea	($7C00,a1),a0	;offset for unpacked data
-	lea	($11A,a1),a1	;data start
-	pea	(a0)		;remember
-	move.w	(a1)+,d0	;unpacked size
-	lea	(a0,d0.w),a3
-	moveq	#0,d7
-	move.w	(a1),d6
+	;check version
+		move.l	#$1e00,d0
+		move.l	($18,sp),a0		;loaded adf
+		jsr	(resload_CRC16,a2)
+		cmp	#$8c84,d0
+		beq	.verok
+		pea	TDREASON_WRONGVER
+		jmp	(resload_Abort,a2)
+.verok
+
+	;unpack kernel
+		movea.l	($14,sp),a1	;mem chip 2
+		lea	($7C00,a1),a0	;offset for unpacked data
+		move.l	($18,sp),a1
+		lea	($11A,a1),a1	;data start
+		pea	(a0)		;remember
+		move.w	(a1)+,d0	;unpacked size
+		lea	(a0,d0.w),a3
+		moveq	#0,d7
+		move.w	(a1),d6
 lbC0000AE	move.w	d6,d1
-	bmi.b	lbC0000C4
-	moveq	#9,d3
-	bsr.b	lbC000100
-	move.b	d2,(a0)+
+		bmi.b	lbC0000C4
+		moveq	#9,d3
+		bsr.b	lbC000100
+		move.b	d2,(a0)+
 lbC0000B8	cmpa.l	a3,a0
-	bls.b	lbC0000AE
-	bra	_kernel
+		bls.b	lbC0000AE
+		bra	_kernel
 
 lbC0000C4	moveq	#6,d4
-	moveq	#6,d2
-	bsr.b	lbC0000EA
-	add.w	d2,d5
-	move.w	d6,d1
-	move.w	d5,d0
-	moveq	#3,d4
-	moveq	#12,d2
-	bsr.b	lbC0000EA
-	ror.w	#7,d5
-	add.w	d5,d2
-	neg.w	d2
-	lea	(-1,a0,d2.w),a2
-	move.b	(a2)+,(a0)+
+		moveq	#6,d2
+		bsr.b	lbC0000EA
+		add.w	d2,d5
+		move.w	d6,d1
+		move.w	d5,d0
+		moveq	#3,d4
+		moveq	#12,d2
+		bsr.b	lbC0000EA
+		ror.w	#7,d5
+		add.w	d5,d2
+		neg.w	d2
+		lea	(-1,a0,d2.w),a2
+		move.b	(a2)+,(a0)+
 lbC0000E2	move.b	(a2)+,(a0)+
-	dbra	d0,lbC0000E2
-	bra.b	lbC0000B8
+		dbra	d0,lbC0000E2
+		bra.b	lbC0000B8
 
 lbC0000EA	moveq	#0,d3
-	moveq	#0,d5
+		moveq	#0,d5
 lbC0000EE	addq.w	#1,d3
-	add.w	d1,d1
-	bcc.b	lbC0000FA
-	addx.w	d5,d5
-	dbra	d4,lbC0000EE
+		add.w	d1,d1
+		bcc.b	lbC0000FA
+		addx.w	d5,d5
+		dbra	d4,lbC0000EE
 lbC0000FA	sub.w	d4,d2
-	bsr.b	lbC000106
-	move.w	d2,d3
+		bsr.b	lbC000106
+		move.w	d2,d3
 lbC000100	move.w	d6,d2
-	swap	d2
-	rol.l	d3,d2
+		swap	d2
+		rol.l	d3,d2
 lbC000106	sub.b	d3,d7
-	bcs.b	lbC00010E
-	rol.l	d3,d6
-	rts
+		bcs.b	lbC00010E
+		rol.l	d3,d6
+		rts
 
 lbC00010E	add.b	#$10,d7
-	move.l	(a1),d6
-	addq.l	#2,a1
-	ror.l	d7,d6
-	rts
+		move.l	(a1),d6
+		addq.l	#2,a1
+		ror.l	d7,d6
+		rts
 
 _kernel		lea	_pl_kernel,a0
 		move.l	(a7),a1
 		move.l	(_resload),a2
 		jsr	(resload_Patch,a2)
 
+	IFEQ 1
 	;before kernel is moved
 		clr.l	-(a7)
 		move.l	(4,a7),-(a7)
@@ -195,13 +202,83 @@ _kernel		lea	_pl_kernel,a0
 		move.l	a7,a0
 		jsr	(resload_Control,a2)
 		add	#12,a7
+	ENDC
+
+		move.l	#WCPUF_Base_NC|WCPUF_Exp_NC,d0
+		move.l	#WCPUF_Base|WCPUF_Exp,d1
+		jsr	(resload_SetCPU,a2)
 
 		move.l	#$1D780060,d6
 		rts
 
 _pl_kernel	PL_START
-		PL_S	$10,$5c-$10	;skip os stuff
-		PL_W	$25e4,$1fe	;fmode -> noop
+		PL_S	$10,$5c-$10		;skip os stuff
+		PL_S	$6e,4			;skip int off because keyboard
+		PL_W	$1a0,$7fff-INTF_PORTS
+		PL_S	$914,$93a-$914		;skip set vectors
+		PL_W	$a64,$7fff-INTF_PORTS
+		PL_W	$d84,$7fff-INTF_PORTS
+		PL_PS	$183c,.relocate
+		PL_W	$25e4,$1fe		;fmode -> noop
+		PL_END
+
+.relocate	move.l	(a7)+,a3		;return address
+	IFEQ 1
+	;save all files
+		move.l	($25b0-$1842,a3),a1	;file start
+		move.l	($25b4-$1842,a3),d0	;file size
+		move	($25ae-$1842,a3),d1	;file number
+		ext.l	d1
+		add.b	#"0",d1
+		ror.l	#8,d1
+		move.l	d1,-(a7)	;file name
+		move.l	a7,a0
+		move.l	_resload,a2
+		jsr	(resload_SaveFile,a2)
+		addq	#4,a7
+	ENDC
+		move.b	#$78,$f1	;original
+	;inject .patch
+		pea	(a3)
+		pea	.patch
+		jmp	(a3)
+
+.patch		move.l	(a7)+,a3
+
+		clr.l	-(a7)
+		move.l	($25b0-$1842,a3),-(a7)	;file start
+		pea	WHDLTAG_DBGADR_SET
+		move.l	a7,a0
+		move.l	(_resload),a2
+		jsr	(resload_Control,a2)
+		add	#12,a7
+
+		move	($25ae-$1842,a3),d1	;file number
+		cmp	#0,d1
+		beq	.patch_0
+		cmp	#2,d1
+		beq	.patch_2
+
+		rts
+
+.patch_0	lea	_pl_0_chip,a0
+		sub.l	a1,a1
+		jmp	(resload_Patch,a2)
+
+.patch_2	lea	_pl_2_chip,a0
+		sub.l	a1,a1
+		jmp	(resload_Patch,a2)
+
+_pl_0_chip	PL_START
+		PL_W	$f000,$1fe	;fmode -> noop
+		PL_W	$f00c,$1fe	;fmode -> noop
+		PL_W	$f068,$1fe	;fmode -> noop
+		PL_W	$f06c,$1fe	;fmode -> noop
+		PL_W	$f070,$1fe	;fmode -> noop
+		PL_END
+
+_pl_2_chip	PL_START
+		PL_W	$1400,$1fe	;fmode -> noop
 		PL_END
 
 ;--------------------------------
