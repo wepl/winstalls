@@ -2,7 +2,6 @@
 ;  :Program.	glubble.asm
 ;  :Contents.	Slave for "Glubble" from Oyxgene
 ;  :Author.	wepl <wepl@whdload.de>
-;  :Version.	$Id: glubble.asm 1.1 2024/06/16 11:11:26 wepl Exp wepl $
 ;  :History.	2024-06-14 start (at Flashback Symposium #1)
 ;		2024-06-30 finished
 ;  :Requires.	-
@@ -292,7 +291,7 @@ _end		move.l	(_resload,pc),-(a7)
 
 ;======================================================================
 
-	INCLUDE	Sources:whdload/keyboard.s
+	INCLUDE	whdload/keyboard.s
 
 ;======================================================================
 
