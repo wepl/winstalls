@@ -1,0 +1,29 @@
+#version=3
+#P_MakeImages#3
+
+      (set #file "Glubble.adf")
+      (set #dir
+        (askdir
+          (prompt (cat "Where have you extracted the Glubble archive?\nThe file \"" #file "\" must be present there."))
+	  (default @default-dest)
+          (help @askfile-help)
+        )
+      )
+      (copyfiles
+        (source (tackon #dir #file))
+        (dest #dest)
+	(newname "disk.1")
+        (help @copyfiles-help)
+      )
+
+      ; copy readme if present
+      (set #readme "Glubble.txt")
+      (if
+        (exists (tackon #dir #readme))
+        (copyfiles
+          (source (tackon #dir #readme))
+          (dest #dest)
+          (help @copyfiles-help)
+        )
+      )
+

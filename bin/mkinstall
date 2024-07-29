@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+# create Amiga Installer script from template
+
+use strict;
+use warnings;
+
+@ARGV != 3 and die "usage: mkinstall template prep destination";
+my ($template,$prep,$dest) = @ARGV;
+
+# read the template
+my $script = do {
+	local $/ = undef;
+	open my $in, "<", $template or die "template file '$template' missing:$!";
+	<$in>;
+};
+
+# parse the prep file
+my (%vars, $func, %funcnum, %functxt);
+open my $in, "<", $prep or die "prep file '$prep' missing:$!";
+while (<$in>) {
+	# variables
+	if (/^#(\w+)=(\d+)$/) {
+		$vars{$1} = $2;
+		$func = undef;
+	# function head
+	} elsif (/^#(P_\w+)#(\d+)$/) {
+		$func = $1;
+		$funcnum{$func} = $2;
+	# function text
+	} elsif (/^[^#]/ and $func) {
+		$functxt{$func} .= $_;
+	} else {
+		chomp;
+		die "cannot parse prep data '$_'";
+	}
+}
+
+# replace vars
+foreach my $var (keys %vars) {
+	$script =~ s/^\(set #$var .*?\)/(set #$var $vars{$var})/m or die "could not replace '$var'";
+}
+
+# replace function code
+my $P_MakeImages = '(procedure P_MakeImages
+  (select #version
+    ("P_MakeImages 0")
+    ("P_MakeImages 1")
+    ("P_MakeImages 2")
+    ("P_MakeImages 3")
+    ("P_MakeImages 4")
+    ("P_MakeImages 5")
+    ("P_MakeImages 6")
+  )
+)';
+$script =~ s/^\(procedure P_MakeImages.*?^\)/$P_MakeImages/ms or die 'could not replace P_MakeImages';
+foreach my $func (keys %funcnum) {
+	$script =~ s/\("$func $funcnum{$func}"\)/(\n$functxt{$func}    )/m or die "could not replace $func $funcnum{$func}";
+}
+
+# write result
+open my $out, ">", $dest or die "cannot open '$dest':$!";
+print $out $script or die "cannot write '$dest':$!";
+close $out;
+

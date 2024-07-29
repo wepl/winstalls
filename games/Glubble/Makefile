@@ -1,7 +1,6 @@
 
-SLAVE := Glubble.Slave
-SLAVESRC := glubble.asm
+BASE := Glubble
 SLAVEDEST := wart:gh/glubble
 
-include ../../Makefile
+include ../../Makemacros
 

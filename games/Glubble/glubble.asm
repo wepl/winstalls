@@ -48,21 +48,12 @@ _expmem		dc.l	FASTSIZE+DISKSIZE	;ws_ExpMem
 
 ;============================================================================
 
-	IFD	BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 _name		dc.b	"Glubble",0
 _copy		dc.b	"2024 Oxygene",0
 _info		dc.b	"installed by Wepl",10
 		db	"during Flash<<Back Symposium #1",10
 		dc.b	"Version 1.0 "
-	IFD	BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 	EVEN
 

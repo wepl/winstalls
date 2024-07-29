@@ -1,0 +1,198 @@
+#
+# Makefile macros for WHDLoad Slaves
+# supports basm/vasm on Amiga/MacOS/Linux
+# supported targets:
+#	(default)	build Slave
+#	dest		copy Slave to install directory for testing
+#	inst		build install package
+#	arc		build install package archive
+#	clean		remove all generated artefacts
+#
+# $@ target
+# $< first dependency
+# $^ all dependencies
+
+# enable a non-debug assemble:
+# 'setenv DEBUG=0' or 'make DEBUG=0'
+
+# print all make variables
+#$(foreach v,$(.VARIABLES),$(info $(v) = $($(v))))
+# print all make variables defined between both statements
+#VARS_OLD := $(.VARIABLES)
+#$(foreach v,$(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES)),$(info $(v) = $($(v))))
+
+ARCH=$(shell uname -p)
+BIN=bin/arch-$(ARCH)
+INCLUDE=../../include
+
+# different commands for build under Amiga or Vamos
+ifdef AMIGA
+
+# basm options: -x+ = use cachefile.library -s1+ = create SAS/D1 debug hunks -sa+ = create symbol hunks
+BASMOPT=-x+
+BASMOPTDBG=-sa+
+# vincludeos3: must before netinclude: because broken netinclude
+CFLAGS=-Ivincludeos3: -Inetinclude:
+CP=Copy Clone
+DATE=wdate >.date
+LHA=lha -Fr a
+MKDIR=Makedir
+RM=Delete All
+
+# on Amiga default=DEBUG
+ifndef DEBUG
+DEBUG=1
+endif
+
+else
+
+# basm options: -x- = don't use cachefile.library -sa+ = create symbol hunks
+BASMOPT=-x-
+BASMOPTDBG=-sa+
+VASMOPT=-I$(INCLUDE)
+CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
+CP=cp -p
+DATE=date "+(%d.%m.%Y)" | xargs printf >.date
+LHA=lha a
+MKDIR=mkdir
+RM=rm -fr
+VAMOS=vamos -qC68020 -m4096 -s128 --
+
+# on Vamos default=NoDEBUG
+ifndef DEBUG
+DEBUG=0
+endif
+
+endif
+
+ifeq ($(DEBUG),1)
+
+# Debug options
+# ASM creates executables, ASMB binary files, ASMO object files
+# BASM: -H to show all unused Symbols/Labels, requires -OG-
+ASM=$(VAMOS) basm -v+ $(BASMOPT) $(BASMOPTDBG) -O+ -ODc- -ODd- -wo- -dDEBUG=1
+ASMB=$(ASM)
+ASMO=$(ASM)
+ASMDEF=-d
+ASMOUT=-o
+CC=vc -c99 -g -I. $(CFLAGS) -DOS_AMIGAOS -DDEBUG -sc
+
+else
+
+# normal options
+# VASM: -wfail -warncomm -databss
+ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-movem -opt-nmoveq -opt-pea -opt-size -opt-st
+ASM=$(ASMBASE) -Fhunkexe
+ASMB=$(ASMBASE) -Fbin
+ASMO=$(ASMBASE) -Fhunk
+ASMDEF=-D
+ASMOUT=-o 
+CC=vc -c99 -g -I. $(CFLAGS) -DOS_AMIGAOS -O2 -size -sc
+
+endif
+
+# general programs
+RELOC=$(VAMOS) Reloc
+LN=vlink -bamigahunk -Bstatic -Cvbcc -nostdlib -s -Rstd -sc -o
+MKINFO=perl ../../bin/mkinfo
+MKINSTALL=perl ../../bin/mkinstall
+
+# lower case function
+lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$1))))))))))))))))))))))))))
+
+#
+# variable definitions
+#
+SLAVE ?= $(BASE).Slave
+SLAVESRC ?= $(call lc,$(BASE)).asm
+INSTDIR ?= $(BASE)\ Install
+
+#
+# default target: build Slave
+#
+$(SLAVE) : $(SLAVESRC)
+	$(DATE)
+	$(ASM) $(ASMOUT)$@ $<
+
+#
+# target: copy Slave to installed location for testing
+#
+dest : $(SLAVE)
+	$(CP) $< $(SLAVEDEST)
+
+#
+# target: build install package
+#
+INSTTPLBASE := ../../inst
+INSTTPLDIRICON := $(INSTTPLBASE)/Xxx\ Install.info
+INSTTPLINSTALL := $(INSTTPLBASE)/Install
+INSTTPLINSTALLICON := $(INSTTPLBASE)/Install.info
+INSTTPLREADMEICON := $(INSTTPLBASE)/ReadMe.info
+INSTDIRICON := $(INSTDIR).info
+INSTALL := $(INSTDIR)/Install
+INSTALLPREP := inst/install.prep
+INSTALLICON := $(INSTDIR)/Install.info
+INSTREADME := inst/ReadMe
+INSTALLREADME := $(INSTDIR)/ReadMe
+INSTALLREADMEICON := $(INSTDIR)/ReadMe.info
+INSTICONS := $(wildcard inst/*.inf inst/*icon)
+INSTALLICONS := $(INSTDIR)/$(notdir $(INSTICONS))
+INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
+INSTALLSRCDIR := $(INSTDIR)/src
+INSTALLSRCSLAVE := $(INSTDIR)/src/$(SLAVESRC)
+$(INSTDIR) :
+	$(MKDIR) '$@'
+$(INSTDIRICON) :
+	$(CP) $(INSTTPLDIRICON) '$@'
+$(INSTALL) : $(INSTTPLINSTALL) $(INSTALLPREP)
+	$(MKINSTALL) $^ '$@'
+$(INSTALLICON) : $(INSTTPLINSTALLICON)
+	$(MKINFO) $< '$@' APPNAME=$(BASE)
+$(INSTALLREADME) : $(INSTREADME)
+	$(CP) $< '$@'
+$(INSTALLREADMEICON) : $(INSTTPLREADMEICON)
+	$(CP) $< '$@'
+$(INSTALLICONS) : $(INSTICONS)
+	$(CP) $< '$@'
+$(INSTALLSLAVE) : $(SLAVE)
+	$(CP) $< '$@'
+$(INSTALLSRCDIR) :
+	$(MKDIR) '$@'
+$(INSTALLSRCSLAVE) : $(SLAVESRC)
+	$(CP) $< '$@'
+inst : $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) $(INSTALLSLAVE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+
+#
+# target: build install package archive
+#
+INSTALLARCHIVE := $(BASE).lha
+$(INSTALLARCHIVE) : inst
+	$(LHA) $@ $(INSTDIR) $(INSTDIRICON)
+arc : $(INSTALLARCHIVE)
+
+#
+# target: copy archive to release
+#
+rel : $(INSTALLARCHIVE)
+	scp $(INSTALLARCHIVE) rel:
+
+#
+# generic rules
+#
+
+%.abs : %.exe
+	$(RELOC) ADR=0 $< $@ FailRelocs
+
+%.o : %.s
+	${ASMO} $(ASMOUT)$@ $<
+
+%.o : %.c
+	$(CC) -o $@ -c $<
+
+#
+# generic targets
+#
+
+clean :
+	$(RM) .date $(SLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE)
+
