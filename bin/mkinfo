@@ -1,0 +1,113 @@
+#!/usr/bin/perl
+# manipulate Amiga .info file
+
+use strict;
+use warnings;
+
+@ARGV != 3 and die "usage: mkinfo source destination tooltype";
+my ($source,$dest,$tooltype) = @ARGV;
+
+# read the source
+my $icon = do {
+	local $/ = undef;
+	open my $in, "<", $source or die ".info file '$source' missing:$!";
+	<$in>;
+};
+
+# check tooltype
+$tooltype =~ /^(\w+)=(\w+)$/ or die "tooltype must be like name=value";
+my ($ttname,$ttval) = ($1,$2);
+
+# decode structure DiskObject (workbench.i)
+my $size = length($icon);
+my $iconout;
+if ($size < 0x4e) {
+	die "$source: file too small ($size)";
+}
+my (	$magic,$version,$ggnext,$ggleft,$ggtop,$ggwidth,$ggheight,$ggflags,
+	$ggacti,$ggtype,$gggadget,$ggselect,$ggtext,$ggmutual,$ggspecial,$ggid,$gguser,
+	$type,$pad,$defaulttool,$tooltypes,$currentx,$currenty,$drawerdata,$toolwindow,$stacksize
+) = unpack('n n N n n n n n n n N N N N N n N C C N N N N N N N',$icon);
+if ($magic != 0xe310) {
+	die "$source: magic mismatch ($magic)";
+}
+if ($version != 1) {
+	die "$source: version mismatch ($version)";
+}
+my $offset = 0x4e;
+if ($drawerdata) {
+	# decode structure DrawerData (workbench.i) which includes NewWindow (intuition.i)
+	my (	$nwleft,$nwtop,$nwwidth,$nwheight,$nwdpen,$nwbpen,$nwidcmp,$nwflags,$nwgadget,$nwcheck,$nwtitle,
+		$nwscreen,$nwbitmap,$nwminwidth,$nwminheight,$nwmaxwidth,$nwmaxheight,$nwtype,$ddx,$ddy
+	) = unpack('n n n n c c N N N N N N N n n n n n N N',substr($icon,$offset));
+	$ddx = unpack('s',pack('S',$ddx));	# convert to unsigned
+	$ddy = unpack('s',pack('S',$ddy));	# convert to unsigned
+	$offset += 56;
+}
+if ($gggadget) {
+	# decode structure Image (intuition.i)
+	my ($igleft,$igtop,$igwidth,$igheight,$igdepth,$igdata,$igpick,$igonoff,$ignext) = unpack('n n n n n N c c N',substr($icon,$offset));
+	$igdepth = unpack('s',pack('S',$igdepth));	# convert to unsigned
+	my $imgsize = int(($igwidth+15)/16)*2 * $igheight * $igdepth;
+	$offset += 20 + $imgsize;
+}
+if ($ggselect) {
+	# decode structure Image (intuition.i)
+	my ($igleft,$igtop,$igwidth,$igheight,$igdepth,$igdata,$igpick,$igonoff,$ignext) = unpack('n n n n n N c c N',substr($icon,$offset));
+	$igdepth = unpack('s',pack('S',$igdepth));	# convert to unsigned
+	my $imgsize = int(($igwidth+15)/16)*2 * $igheight * $igdepth;
+	$offset += 20 + $imgsize;
+}
+if ($defaulttool) {
+	my ($dtlen,$dt) = unpack('N Z*',substr($icon,$offset));
+	$offset += 4 + $dtlen;
+}
+if ($tooltypes) {
+	my $ttcnt = unpack('N',substr($icon,$offset)) /4 -1;
+	my $off = $offset + 4;
+	my $found = 0;
+	my $i = 0;
+	my @tt;
+	while ($i != $ttcnt) {
+		my ($ttlen,$tt) = unpack('N Z*',substr($icon,$off));
+		$ttlen != length($tt) + 1 and warn "$source: tooltype length mismatch, $ttlen != " . length($tt) + 1;
+		$off += 4 + $ttlen;
+		# print "$tt\n";
+		if ($tt =~ /^$ttname=/i) {
+			push @tt,$tooltype;
+			$found++;
+		} else {
+			push @tt,$tt;
+		}
+		$i++;
+	}
+	$found or push @tt,$tooltype;
+	$iconout = substr($icon,0,$offset) . pack('N', (@tt + 1) * 4);
+	foreach my $tt (@tt) {
+		$iconout .= pack('N Z*', length($tt) + 1, $tt);
+	}
+	$offset = $off;
+} else { die "no tooltypes found"; }
+if ($drawerdata and $gguser & 1) {
+	# decode structure DrawerData2 (workbench.i)
+	my ($dd2flags,$dd2vm) = unpack('N n',substr($icon,$offset));
+	$iconout .= substr($icon,$offset,6);
+	$offset += 6;
+}
+if ($size != $offset) {
+	if (substr($icon,$offset,4) eq 'FORM') {
+		# color icon data in iff structure
+		my ($id,$len) = unpack('N N',substr($icon,$offset));
+		$iconout .= substr($icon, $offset, 8 + $len);
+		$offset += 8 + $len;
+	}
+}
+if ($size != $offset) {
+	warn "$source: filesize doesn't match structure, size=$size offset=$offset";
+}
+
+# write result
+open my $out, ">", $dest or die "cannot open '$dest':$!";
+print $out $iconout or die "cannot write '$dest':$!";
+close $out;
+
