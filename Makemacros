@@ -53,7 +53,7 @@ VASMOPT=-I$(INCLUDE)
 CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
 CP=cp -p
 DATE=date "+(%d.%m.%Y)" | xargs printf >.date
-LHA=lha a
+LHA=lha c1
 MKDIR=mkdir
 RM=rm -fr
 VAMOS=vamos -qC68020 -m4096 -s128 --
@@ -121,7 +121,7 @@ dest : $(SLAVE)
 	$(CP) $< $(SLAVEDEST)
 
 #
-# target: build install package
+# target: build install package files
 #
 INSTTPLBASE := ../../inst
 INSTTPLDIRICON := $(INSTTPLBASE)/Xxx\ Install.info
@@ -160,13 +160,14 @@ $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
 	$(CP) $< '$@'
-inst : $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) $(INSTALLSLAVE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) $(INSTALLSLAVE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+inst : $(INSTALLFILES)
 
 #
 # target: build install package archive
 #
 INSTALLARCHIVE := $(BASE).lha
-$(INSTALLARCHIVE) : inst
+$(INSTALLARCHIVE) : $(INSTALLFILES)
 	$(LHA) $@ $(INSTDIR) $(INSTDIRICON)
 arc : $(INSTALLARCHIVE)
 
@@ -194,5 +195,5 @@ rel : $(INSTALLARCHIVE)
 #
 
 clean :
-	$(RM) .date $(SLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE)
+	$(RM) .date $(SLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
 
