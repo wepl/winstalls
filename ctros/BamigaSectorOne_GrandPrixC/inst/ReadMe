@@ -1,0 +1,59 @@
+Short:    AGA/HD fix for Bamiga Sector One "GP-Circuit" Cracktro
+Author:   S.Pucino@gmx.de (Max Headroom/TEX)
+Uploader: S.Pucino@gmx.de (Max Headroom/TEX)
+Version:  1.0
+Type:     demo/patch
+Requires: WHD-Load v14.x+
+
+This patch applies to Grand Prix Circuit Crack-Intro, © 198x Bamiga Sector One & Cybertech
+
+And another old-school masterpiece was fixed ;)
+This cracktro fascinated my friend because of it's childish song. It sounds
+like a circus song and could have been done by a clown ;)
+I reworked the source a bit.  It's easier to maintain now.  Some "fixed"
+addresses are replaced by variables.
+Enjoy the intro and look out for more patches ;-)
+
+REQUIREMENTS:
+~~~~~~~~~~~~~
+ - WHD-Load V14+
+ - The executable itself ! Download it under...
+   <http://ftp.amigascne.org/pub/groups/b/bamiga_sector_one/bs1-crackgrandprixcircuit>
+ - Intro req. 0.5 MB ChipMem
+ - Barfly or ASM-One for compilation. I prefer ASM-One for smaller code ^_^
+
+FEATURES:
+~~~~~~~~~
+ - File-loader via OSEmu (included)
+ - Replaced empty DBRA-loop by VHPOSR-waiter (SoundTracker-bug)
+ - Removed access fault: BYTE-Write to $BFD100
+ - Complete and fully commented source-code included !
+
+CAVEATS:
+~~~~~~~~
+ - Tested ONLY on my A1230/50 MHz (2MB Chip, 16MB Fast).
+   Sorry, no more hardware at home.  ^_^
+ - I haven't done an icon for it. A little bit too lazy now.
+   Enjoy a standard icon ^,-
+ - I'm a BEGINNER ! Please don't expect something like an assembler-crack
+   who gives you a PPC-native slave ;)
+
+Still in work...
+~~~~~~~~~~~~~~~~
+ - Vixen / She-Fox (70%)
+ - Thrust "Impossible Mission II" cracktro (30%)
+ - Thrust "The Blub" intro (80%)
+ - WildFire Crew - Two music-discs and small beta-intros (10%)
+
+                 Full WHDLoad package and other installs:
+                          http://www.whdload.org/
+
+       If you have problems and/or questions regarding this release,
+              please call our toll-free service hotline at...
+
++++ ATH LogOff...
+
+.--[MAX HEADROOM/THE EXTERMINATORS]--[S.Pucino@gmx.de]------------.
+: Stefano PUCINO ^_^ BiNARy DiGiTAL: http://go.to/max_headroom ^,^:CPC_
+:  CPC-Musix: http://amstrad.at/cpc8912 ! MangaNET-Administration :_ //
+`-{Old Programmers never die - they just GOSUB but don't RETURN}--'\X/PSX
