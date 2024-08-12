@@ -1,6 +1,6 @@
 
 BASE := Glubble
-SLAVEDEST := wart:gh/glubble
+DEST := wart:gh/glubble
 
 include ../../Makemacros
 
