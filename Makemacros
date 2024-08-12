@@ -15,11 +15,8 @@
 # enable a non-debug assemble:
 # 'setenv DEBUG=0' or 'make DEBUG=0'
 
-# print all make variables
-#$(foreach v,$(.VARIABLES),$(info $(v) = $($(v))))
-# print all make variables defined between both statements
-#VARS_OLD := $(.VARIABLES)
-#$(foreach v,$(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES)),$(info $(v) = $($(v))))
+# save all vars here to print new created ones later
+VARS_OLD := $(.VARIABLES)
 
 ARCH=$(shell uname -p)
 BIN=bin/arch-$(ARCH)
@@ -29,7 +26,7 @@ INCLUDE=../../include
 ifdef AMIGA
 
 # basm options: -x+ = use cachefile.library -s1+ = create SAS/D1 debug hunks -sa+ = create symbol hunks
-BASMOPT=-x+
+BASMOPT=-x+ -i//include
 BASMOPTDBG=-sa+
 # vincludeos3: must before netinclude: because broken netinclude
 CFLAGS=-Ivincludeos3: -Inetinclude:
@@ -47,7 +44,7 @@ endif
 else
 
 # basm options: -x- = don't use cachefile.library -sa+ = create symbol hunks
-BASMOPT=-x-
+BASMOPT=-x- -i//include
 BASMOPTDBG=-sa+
 VASMOPT=-I$(INCLUDE)
 CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
@@ -81,7 +78,7 @@ else
 
 # normal options
 # VASM: -wfail -warncomm -databss
-ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-movem -opt-nmoveq -opt-pea -opt-size -opt-st
+ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-movem -opt-nmoveq -opt-pea -opt-size -opt-st -ldots
 ASM=$(ASMBASE) -Fhunkexe
 ASMB=$(ASMBASE) -Fbin
 ASMO=$(ASMBASE) -Fhunk
@@ -103,9 +100,29 @@ lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(s
 #
 # variable definitions
 #
+ifndef BASE
+$(error variable BASE must be set)
+endif
 SLAVE ?= $(BASE).Slave
-SLAVESRC ?= $(call lc,$(BASE)).asm
-INSTDIR ?= $(BASE)\ Install
+# determine name of slave source if not yet set
+ifneq ("$(wildcard $(BASE).asm)","")
+	SLAVESRC ?= $(BASE).asm
+endif
+ifneq ("$(wildcard $(call lc,$(BASE)).asm)","")
+	SLAVESRC ?= $(call lc,$(BASE)).asm
+endif
+ifneq ("$(wildcard $(basename $(SLAVE)).asm)","")
+	SLAVESRC ?= $(basename $(SLAVE)).asm
+endif
+ifndef SLAVESRC
+$(error variable SLAVESRC could not be determined and is not set)
+endif
+# determine name install directory if not yet set
+ifdef NOINSTALL
+	INSTDIR ?= $(BASE)
+else
+	INSTDIR ?= $(BASE)\ Install
+endif
 
 #
 # default target: build Slave
@@ -115,31 +132,41 @@ $(SLAVE) : $(SLAVESRC)
 	$(ASM) $(ASMOUT)$@ $<
 
 #
-# target: copy Slave to installed location for testing
+# target: copy Slave/ReadMe to installed location for testing
 #
 dest : $(SLAVE)
-	$(CP) $< $(SLAVEDEST)
+	$(CP) $< $(INSTREADME) $(DEST)
 
 #
 # target: build install package files
 #
+# location of install template
 INSTTPLBASE := ../../inst
 INSTTPLDIRICON := $(INSTTPLBASE)/Xxx\ Install.info
 INSTTPLINSTALL := $(INSTTPLBASE)/Install
 INSTTPLINSTALLICON := $(INSTTPLBASE)/Install.info
 INSTTPLREADMEICON := $(INSTTPLBASE)/ReadMe.info
 INSTDIRICON := $(INSTDIR).info
+ifndef NOINSTALL
 INSTALL := $(INSTDIR)/Install
 INSTALLPREP := inst/install.prep
 INSTALLICON := $(INSTDIR)/Install.info
+endif
 INSTREADME := inst/ReadMe
 INSTALLREADME := $(INSTDIR)/ReadMe
 INSTALLREADMEICON := $(INSTDIR)/ReadMe.info
-INSTICONS := $(wildcard inst/*.inf inst/*icon)
+# there are the icons to be renamed by Install and the ones to be just copied!
+INSTICONS := $(wildcard inst/*.inf inst/*icon inst/*.info)
 INSTALLICONS := $(INSTDIR)/$(notdir $(INSTICONS))
 INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
-INSTALLSRCDIR := $(INSTDIR)/src
-INSTALLSRCSLAVE := $(INSTDIR)/src/$(SLAVESRC)
+ifdef INSTFILES
+INSTFILESMORE := $(wildcard inst/$(INSTFILES))
+INSTALLFILESMORE := $(INSTDIR)/$(notdir $(INSTFILESMORE))
+endif
+INSTREADME := inst/ReadMe
+# we have decided to not include sources anymore, instead link to github in readme
+#INSTALLSRCDIR := $(INSTDIR)/src
+#INSTALLSRCSLAVE := $(INSTDIR)/src/$(SLAVESRC)
 $(INSTDIR) :
 	$(MKDIR) '$@'
 $(INSTDIRICON) :
@@ -156,11 +183,14 @@ $(INSTALLICONS) : $(INSTICONS)
 	$(CP) $< '$@'
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
+$(INSTALLFILESMORE) : $(INSTFILESMORE)
+	$(CP) $< '$@'
 $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
 	$(CP) $< '$@'
-INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) $(INSTALLSLAVE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) \
+	$(INSTALLSLAVE) $(INSTALLFILESMORE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
 inst : $(INSTALLFILES)
 
 #
@@ -176,6 +206,12 @@ arc : $(INSTALLARCHIVE)
 #
 rel : $(INSTALLARCHIVE)
 	scp $(INSTALLARCHIVE) rel:
+
+#
+# target: copy archive to wepl
+#
+wepl : $(INSTALLARCHIVE)
+	scp $(INSTALLARCHIVE) juno:
 
 #
 # generic rules
@@ -196,4 +232,12 @@ rel : $(INSTALLARCHIVE)
 
 clean :
 	$(RM) .date $(SLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
+
+#
+# targets to always build
+#
+.PHONY : dest inst arc rel wepl clean
+
+# print all make variables defined between saving vars to VARS_OLD and here
+#$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))
 
