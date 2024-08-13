@@ -155,9 +155,9 @@ endif
 INSTREADME := inst/ReadMe
 INSTALLREADME := $(INSTDIR)/ReadMe
 INSTALLREADMEICON := $(INSTDIR)/ReadMe.info
-# there are the icons to be renamed by Install and the ones to be just copied!
-INSTICONS := $(wildcard inst/*.inf inst/*icon inst/*.info)
-INSTALLICONS := $(INSTDIR)/$(notdir $(INSTICONS))
+# these are the icons to be renamed by Install and the ones to be just copied!
+INSTICONS := $(wildcard inst/*.inf inst/*.rom* inst/*.new* inst/*.col* inst/*.box* inst/*.info)
+INSTALLICONS := $(addprefix $(INSTDIR)/, $(notdir $(INSTICONS)))
 INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
 ifdef INSTFILES
 INSTFILESMORE := $(wildcard inst/$(INSTFILES))
@@ -180,7 +180,7 @@ $(INSTALLREADME) : $(INSTREADME)
 $(INSTALLREADMEICON) : $(INSTTPLREADMEICON)
 	$(CP) $< '$@'
 $(INSTALLICONS) : $(INSTICONS)
-	$(CP) $< '$@'
+	$(CP) $^ $(INSTDIR)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
 $(INSTALLFILESMORE) : $(INSTFILESMORE)

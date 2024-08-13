@@ -1,125 +1,132 @@
+;*---------------------------------------------------------------------------
+;  :Program.	BamigaSectorOne-GPC.asm
+;  :Author.	Max Headroom, wepl <wepl@whdload.de>
+;  :History.	2024-08-06 resourced Slave due lack of original source
+;		2024-08-12 final
+;  :Requires.	-
+;  :Copyright.	Public Domain
+;  :Language.	68000 Assembler
+;  :Translator.	Barfly V2.9, vasm
+;  :To Do.
+;---------------------------------------------------------------------------*
 
-WHDLF_NoError	equ	$2
-resload_LoadFileDecrunch	equ	$1C
-resload_Abort	equ	$4
-resload_SetCACR	equ	$10
-TDREASON_OK	equ	$FFFFFFFF
-_LVOLoadSeg	equ	-$96
-CACRF_EnableI	equ	$1
-_LVOOpenLibrary	equ	-$228
-****************************************************************************
-	exeobj
-	errfile	'ram:assem.output'
-	objfile	'BamigaSectorOne-GPC.slave'
-;_[]
-	SECTION	BamigaSectorOneGPCslave000000,CODE
-ProgStart
-ws	moveq	#-1,d0	;ws_Security
-	rts
+	INCDIR	Includes:
+	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
 
-	db	'WHDLOADS'	;ws_ID
-	dw	14	;ws_Version
-	dw	WHDLF_NoError	;ws_Flags
-	dl	$80000	;ws_BaseMemSize
-	dl	0	;ws_ExecInstall
+;======================================================================
+
+ws	SLAVE_HEADER			;ws_Security + ws_ID
+	dw	14			;ws_Version
+	dw	WHDLF_NoError		;ws_Flags
+	dl	$6b000			;ws_BaseMemSize
+	dl	0			;ws_ExecInstall
 	dw	slv_GameLoader-ws	;ws_GameLoader
-	dw	0	;ws_CurrentDir
-	dw	0	;ws_DontCache
-	db	$5F	;ws_keydebug
-	db	$5D	;ws_keyexit
-	dl	0	;ws_ExpMem
-	dw	slv_name-ws	;ws_name
-	dw	slv_copy-ws	;ws_copy
-	dw	slv_info-ws	;ws_info
+	dw	0			;ws_CurrentDir
+	dw	0			;ws_DontCache
+_keydebug	db	$5F		;ws_keydebug
+_keyexit	db	$5D		;ws_keyexit
+	dl	0			;ws_ExpMem
+	dw	slv_name-ws		;ws_name
+	dw	slv_copy-ws		;ws_copy
+	dw	slv_info-ws		;ws_info
+
+;======================================================================
+
 slv_name	db	'Grand Prix Circuit Crack-Intro',0
 slv_copy	db	'198x Bamiga Sector One & Cybertech',0
 slv_info	db	'-----------------------------',$A
-	db	'Installed by',$A
-	db	'Max Headroom',$A
-	db	'of',$A
-	db	'The Exterminators',$A
-	db	'-----------------------------',$A
-	db	'Version 1.0 ',0
+		db	'Installed by',$A
+		db	'Max Headroom',$A
+		db	'of',$A
+		db	'The Exterminators',$A
+		db	'Updated by Wepl',10
+		db	'-----------------------------',$A
+		db	'Version 1.1 '
+		INCBIN	.date
+		db	0
+	EVEN
+
+;======================================================================
 
 slv_GameLoader	lea	(_resload,pc),a1
 	move.l	a0,(a1)
 	movea.l	a0,a2
+
 	move.l	#CACRF_EnableI,d0
 	move.l	d0,d1
 	jsr	(resload_SetCACR,a0)
-	lea	($10000).l,a0
-	move.l	#$6FFFFF,d0
-lbC000104	clr.l	(a0)+
-	dbra	d0,lbC000104
-	lea	(OSEmu400.MSG,pc),a0
-	lea	($400).w,a1
-	jsr	(resload_LoadFileDecrunch,a2)
-	movea.l	a2,a0
-	lea	(ws,pc),a1
-	jsr	($400).w
-	move.w	#0,sr
-	moveq	#0,d0
-	lea	(doslibrary.MSG,pc),a1
-	movea.l	(4).w,a6
-	jsr	(_LVOOpenLibrary,a6)
-	lea	(_execbase,pc),a4
-	move.l	d0,(a4)
-	movea.l	d0,a6
+
+	;install keyboard quitter
+	bsr	_SetupKeyboard
+
 	lea	(bs1crackgrand.MSG,pc),a0
-	move.l	a0,d1
-	jsr	(_LVOLoadSeg,a6)
-	lsl.l	#2,d0
-	movea.l	d0,a1
-	addq.l	#4,a1
-	suba.l	a0,a0
-	moveq	#0,d0
-	lea	(_start,pc),a2
-	move.l	a1,(a2)
-	jsr	(_patch_dec,pc)
-	movea.l	(_start,pc),a1
-	lea	(doslibrary.MSG0,pc),a0
-	moveq	#1,d0
-	jsr	(a1)
-	jmp	(_quit,pc)
+	lea	$2000,a3
+	move.l	a3,a1
+	jsr	(resload_LoadFileDecrunch,a2)
+	move.l	a3,a0
+	sub.l	a1,a1
+	jsr	(resload_Relocate,a2)
 
-_patch_dec	movea.l	(_start,pc),a1
-	move.w	#$4EF9,($AA,a1)
+	move	#DMAF_SETCLR|DMAF_MASTER|DMAF_BLITTER,(_custom+dmacon)	; expected by ctro
+
+	move.w	#$4EF9,($AA,a3)
 	pea	(_patch,pc)
-	move.l	(sp)+,($AC,a1)
-	rts
+	move.l	(sp)+,($AC,a3)
+	jmp	(a3)			;decrunch bytekiller
 
-_patch	move.w	#$4EB9,($336E8).l
-	pea	(_wait4lines,pc)
-	move.l	(sp)+,($336EA).l
-	move.w	#$4E71,($336EE).l
-	move.w	#$4E71,($3279E).l
-	move.w	#$4E71,($327A0).l
-	move.w	#$4E71,($327A2).l
-	move.w	#$4E71,($327A4).l
-	move.w	#$4E71,($327A6).l
-	move.w	#$4E71,($327AE).l
-	move.w	#$4E71,($327B0).l
-	jmp	($30000).l
+_patch	lea	$30000,a3
+	lea	_pl,a0
+	move.l	a3,a1
+	movea.l	(_resload,pc),a2
+	jsr	(resload_Patch,a2)
+
+	moveq	#0,d0
+	move.l	d0,d1
+	jsr	(resload_SetCACR,a2)
+
+	jsr	(a3)
 
 _quit	pea	(TDREASON_OK).l
 	movea.l	(_resload,pc),a0
 	jmp	(resload_Abort,a0)
 
-_wait4lines	movem.l	d0-d7/a0-a6,-(sp)
+_pl	PL_START
+	PL_W	$2680,$200			;bplcon0.color
+	PL_W	$26fc,$200			;bplcon0.color
+	PL_AW	$278e,~INTF_PORTS		;keep keyboard alive
+	PL_S	$279e,$27b2-$279e		;cia access
+	PL_PSS	$2824,_dmaon,2
+	PL_R	$31b8				;restore gfx clist
+	PL_W	$360e+4,9			;audvol
+	PL_PSS	$36e8,_wait4lines,2
+	PL_W	$37dc+4,9			;audvol
+	PL_END
+
+_dmaon	move.l	#$32616,(cop1lc,a0)		;original
+	waitvb a0
+	move	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER,(dmacon,a0)
+	rts
+
+_wait4lines	movem.l	d0-d1,-(sp)
 	move.w	#3,d1
 .loop	move.b	($DFF006).l,d0
 .wait	cmp.b	($DFF006).l,d0
 	beq.b	.wait
 	dbra	d1,.loop
-	movem.l	(sp)+,d0-d7/a0-a6
+	movem.l	(sp)+,d0-d1
 	rts
 
-OSEmu400.MSG	db	'OSEmu.400',0
-bs1crackgrand.MSG	db	'bs1-crackgrandprixcircuit',0
-_resload	dl	0
-_execbase	dl	0
-_start	dl	0
-doslibrary.MSG0	db	10
-doslibrary.MSG	db	'dos.library',0,0
+bs1crackgrand.MSG	db	'bs1-crackgrandprixcircuid',0
+
+;======================================================================
+
+	INCLUDE	whdload/keyboard.s
+
+;======================================================================
+
+_resload	dx.l	0		;address of resident loader
+
+;======================================================================
 
 	end

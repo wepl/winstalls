@@ -1,9 +1,9 @@
 Short:    AGA/HD fix for Bamiga Sector One "GP-Circuit" Cracktro
 Author:   S.Pucino@gmx.de (Max Headroom/TEX)
 Uploader: S.Pucino@gmx.de (Max Headroom/TEX)
-Version:  1.0
+Version:  1.1
 Type:     demo/patch
-Requires: WHD-Load v14.x+
+Requires: WHDLoad v14.x+
 
 This patch applies to Grand Prix Circuit Crack-Intro, © 198x Bamiga Sector One & Cybertech
 
@@ -18,16 +18,26 @@ REQUIREMENTS:
 ~~~~~~~~~~~~~
  - WHD-Load V14+
  - The executable itself ! Download it under...
-   <http://ftp.amigascne.org/pub/groups/b/bamiga_sector_one/bs1-crackgrandprixcircuit>
+   http://ftp.amigascne.org/pub/groups/b/bamiga_sector_one/bs1-crackgrandprixcircuit
  - Intro req. 0.5 MB ChipMem
  - Barfly or ASM-One for compilation. I prefer ASM-One for smaller code ^_^
 
 FEATURES:
 ~~~~~~~~~
- - File-loader via OSEmu (included)
  - Replaced empty DBRA-loop by VHPOSR-waiter (SoundTracker-bug)
  - Removed access fault: BYTE-Write to $BFD100
- - Complete and fully commented source-code included !
+
+HISTORY:
+~~~~~~~~
+ 1.1 (2024-08-12) by Wepl
+ - made working, due typo this never worked before, looks like Max put on old Slave
+   into the archive because it also did not match some info from the ReadMe
+ - removed OSEmu usage
+ - added keyboard quit
+ - removed Snoop issues
+ - tested on 68060/50
+ - new icons created by Irek Kloska, thanks!
+ - source: https://github.com/wepl/winstalls/tree/master/ctros/BamigaSectorOne_GrandPrixC
 
 CAVEATS:
 ~~~~~~~~
@@ -46,7 +56,7 @@ Still in work...
  - WildFire Crew - Two music-discs and small beta-intros (10%)
 
                  Full WHDLoad package and other installs:
-                          http://www.whdload.org/
+                          http://www.whdload.de/
 
        If you have problems and/or questions regarding this release,
               please call our toll-free service hotline at...
