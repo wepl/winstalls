@@ -30,7 +30,7 @@ BASMOPT=-x+ -i//include
 BASMOPTDBG=-sa+
 # vincludeos3: must before netinclude: because broken netinclude
 CFLAGS=-Ivincludeos3: -Inetinclude:
-CP=Copy Clone
+CP=Copy
 DATE=wdate >.date
 LHA=lha -Fr a
 MKDIR=Makedir
@@ -48,7 +48,7 @@ BASMOPT=-x- -i//include
 BASMOPTDBG=-sa+
 VASMOPT=-I$(INCLUDE)
 CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
-CP=cp -p
+CP=cp
 DATE=date "+(%d.%m.%Y)" | xargs printf >.date
 LHA=lha c1
 MKDIR=mkdir
@@ -179,7 +179,7 @@ $(INSTALLREADME) : $(INSTREADME)
 	$(CP) $< '$@'
 $(INSTALLREADMEICON) : $(INSTTPLREADMEICON)
 	$(CP) $< '$@'
-$(INSTALLICONS) : $(INSTICONS)
+$(INSTALLICONS) &: $(INSTICONS)
 	$(CP) $^ $(INSTDIR)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
