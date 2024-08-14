@@ -1,0 +1,52 @@
+Short:    AGA/HD fix for World of Wonders "Crazy Cars 2" Cracktro
+Author:   S.Pucino@gmx.de (Max Headroom/TEX)
+Uploader: S.Pucino@gmx.de (Max Headroom/TEX)
+Version:  1.0
+Type:     demo/intro
+Requires: demo/ecs/wow_crak.lha, WHD-Load v14.x+
+
+This patch applies to Crazy Cars 2 Crack-Intro, ©World of Wonders
+
+This intro was rather easy to patch. I'm getting better ;-))
+
+REQUIREMENTS:
+~~~~~~~~~~~~~
+ - WHD-Load V14+
+ - Intro req. 0.5 MB ChipMem
+ - Barfly or ASM-One for compilation. I prefer ASM-One for smaller code ^_^
+ - The intro itself ;) Download it under...: Aminet: demo/ecs/wow_crak.lha
+
+FEATURES:
+~~~~~~~~~
+ - File-loader via OSEmu (included)
+ - Replaced empty DBRA-Loop in SoundTracker-player
+ - Nice OS3.5 Icon included.
+ - Complete and fully commented source-code included !
+
+CAVEATS:
+~~~~~~~~
+ - Tested ONLY on my A1230/50 MHz (2MB Chip, 16MB Fast).
+   Sorry, no more hardware at home.  ^_^
+ - I'm a BEGINNER ! Please don't expect something like an assembler-crack
+   who gives you a PPC-native slave ;)
+
+Still in work...
+~~~~~~~~~~~~~~~~
+ - Vixen / She-Fox (70%)
+ - Thrust "Impossible Mission II" cracktro (30%)
+ - Thrust "Blub" intro (80%)
+ - WildFire Crew - Two music-discs and small beta-intros (10%)
+ - The WHD-Load Newbie-Guide (50%) ...surprise...surprise... ^_^
+
+                 Full WHDLoad package and other installs:
+                          http://www.whdload.org/
+
+       If you have problems and/or questions regarding this release,
+              please call our toll-free service hotline at...
+
++++ ATH LogOff...
+
+.--[MAX HEADROOM/THE EXTERMINATORS]--[S.Pucino@gmx.de]------------.
+: Stefano PUCINO ^_^ BiNARy DiGiTAL: http://go.to/max_headroom ^,^:CPC_
+:  CPC-Musix: http://amstrad.at/cpc8912 ! MangaNET-Administration :_ //
+`-{Old Programmers never die - they just GOSUB but don't RETURN}--'\X/PSX
