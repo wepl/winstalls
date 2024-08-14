@@ -1,9 +1,9 @@
 Short:    AGA/HD fix for World of Wonders "Crazy Cars 2" Cracktro
 Author:   S.Pucino@gmx.de (Max Headroom/TEX)
 Uploader: S.Pucino@gmx.de (Max Headroom/TEX)
-Version:  1.0
+Version:  1.1
 Type:     demo/intro
-Requires: demo/ecs/wow_crak.lha, WHD-Load v14.x+
+Requires: demo/ecs/wow_crak.lha, WHDLoad v14.x+
 
 This patch applies to Crazy Cars 2 Crack-Intro, ©World of Wonders
 
@@ -11,17 +11,25 @@ This intro was rather easy to patch. I'm getting better ;-))
 
 REQUIREMENTS:
 ~~~~~~~~~~~~~
- - WHD-Load V14+
+ - WHDLoad V14+
  - Intro req. 0.5 MB ChipMem
  - Barfly or ASM-One for compilation. I prefer ASM-One for smaller code ^_^
  - The intro itself ;) Download it under...: Aminet: demo/ecs/wow_crak.lha
 
 FEATURES:
 ~~~~~~~~~
- - File-loader via OSEmu (included)
  - Replaced empty DBRA-Loop in SoundTracker-player
  - Nice OS3.5 Icon included.
- - Complete and fully commented source-code included !
+ - Complete and fully commented source-code included!
+
+HISTORY:
+~~~~~~~~
+ 1.1 (2024-08-14) by Wepl
+ - made 68000 compatible (_resload at odd address)
+ - removed OSEmu usage
+ - added keyboard quit
+ - tested on 68060/50
+ - source: https://github.com/wepl/winstalls/tree/master/ctros/
 
 CAVEATS:
 ~~~~~~~~
@@ -36,10 +44,10 @@ Still in work...
  - Thrust "Impossible Mission II" cracktro (30%)
  - Thrust "Blub" intro (80%)
  - WildFire Crew - Two music-discs and small beta-intros (10%)
- - The WHD-Load Newbie-Guide (50%) ...surprise...surprise... ^_^
+ - The WHDLoad Newbie-Guide (50%) ...surprise...surprise... ^_^
 
                  Full WHDLoad package and other installs:
-                          http://www.whdload.org/
+                          http://www.whdload.de/
 
        If you have problems and/or questions regarding this release,
               please call our toll-free service hotline at...

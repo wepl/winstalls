@@ -7,10 +7,13 @@
 ;  :Language.   68000 Assembler
 ;  :Translator. ASM-One v1.21 / Barfly v2.00
 ;  :To Do.
-;
-;  :History.
-;               06.10.2001 - Version 1.0
+;  :History.	06.10.2001 - Version 1.0
 ;                NEW: Fixed empty DBRA-loop (SoundTracker-bug)
+;		2024-08-14 by Wepl
+;		 fixed for 68000, _resload was at odd address
+;		 remove osemu using
+;		 add keyboard quitter
+;		 some gfx fixes
 ;---------------------------------------------------------------------------*
 
 ;======================================================================
@@ -20,21 +23,6 @@
     INCDIR  INCLUDE:
     INCLUDE whdload.i
     INCLUDE whdmacros.i
-    INCLUDE lvo/exec_lib.i
-    INCLUDE lvo/dos_lib.i
-
-;======================================================================
-; Special BarFly options and optimisations
-;======================================================================
-  IFD BARFLY
-   OUTPUT  "WorldOfWonders.slave"           ; Name of the slave
-   BOPT    O+ OG+                           ; Enable optimizing
-   BOPT    ODd- ODe-                        ; Disable mul optimizing
-   BOPT    w4-                              ; Disable 64k warnings
-   SUPER                                    ; Disable supervisor warnings
-  ENDC
-
-CLEARMEM    set 1                           ; 0=Leave it, 1=Clear mem
 
 ;======================================================================
 
@@ -70,15 +58,10 @@ _info                                       ; Who am I ? ;)
     dc.b    "Max Headroom",10
     dc.b    "of",10
     dc.b    "The Exterminators",10
+	db	'Updated by Wepl',10
     dc.b    "-----------------------------",10
-    dc.b    "Version 1.0 "                  ; Installer-version
-    IFD      BARFLY
-        IFND    .passchk
-            DOSCMD  "WDate  >T:date"
-            INCBIN  "T:date"                ; Include current date of slave
-.passchk
-        ENDC
-    ENDC
+    dc.b    "Version 1.1 "                  ; Installer-version
+	INCBIN	.date
     dc.b    0                               ; End this string
     even
 
@@ -102,107 +85,41 @@ _Start                                      ; A0 = resident loader
     move.l  d0,d1                           ; Mask
     jsr     (resload_SetCACR,a0)            ; WHD SetCache()
 
-;======================================================================
-; Load the OSEmu module
-;======================================================================
-
-    lea     _OSEmu(pc),a0                   ; file name
-    lea     $400.w,a1                       ; A3 = OSEmu base address
-    jsr     (resload_LoadFileDecrunch,a2)   ; Load and decrunch OSEmu file
-
-; Initialize OSEmu
-
-    move.l  a2,a0                           ; resload
-    lea     _base(pc),a1                    ; slave structure
-    jsr     $400.w                          ; Start it
-
-    move.w  #0,sr                           ; switch to user mode
-
-; Open dos.library to provide file loading function
-
-    moveq.l #0,d0                           ; Clear d0 (=lib-version not important)
-    lea     _dosname(pc),a1                 ; load dos.library
-
-    move.l  $4.w,a6                         ; Get execbase to a6
-    jsr     _LVOOpenLibrary(a6)             ; Open the library
-    lea.l   _dospointer(pc),a4              ; Load dos-pointer address to a4
-    move.l  d0,(a4)                         ; Put dos-pointer to a4
-    move.l  d0,a6                           ; Put it also to a6
+	;install keyboard quitter
+	bsr	_SetupKeyboard
 
 ;======================================================================
-; Clear Memory
-;======================================================================
-
-; This isn't important, so you can also leave this out. But for
-; a nice and real clean memory we will "simulate" a software reset
-; by clearing the memory from $10000 to $80000.
-
- IFD CLEARMEM
-    lea.l   $10000,a0                       ; Get Start into a0
-    move.l	#$6fffff,d0                     ; How many bytes to clear ?
-.clearloop
-    clr.l	(a0)+                           ; Clear a0 ($10000)
-    dbra    d0,.clearloop                   ; Continue until d0 is -1
- ENDIF
-
-;======================================================================
-; Load the intro via dos.library LoadSeg() function
+; Load the intro
 ;======================================================================
 
     lea     _exe(pc),A0                     ; Get executable-filename
-    move.l  a0,d1                           ; And copy it to d0 also
-    jsr     _LVOLoadSeg(A6)                 ; Load the file now.
+	lea	$2000,a3
+	move.l	a3,a1
+	jsr	(resload_LoadFileDecrunch,a2)
+	move.l	a3,a0
+	sub.l	a1,a1
+	jsr	(resload_Relocate,a2)
 
-    lsl.l   #2,d0                           ; Left-scroll result by 2
-    move.l  d0,a1                           ; Copy result to a1
-    addq.l  #4,a1                           ; Add 4 to it
+	pea	(_patch,pc)
+	move.l	(sp)+,($AC,a3)
+	jmp	(a3)			;decrunch bytekiller
 
-    sub.l   a0,a0                           ; Clear a0 now
-    moveq.l #0,d0                           ; No pointer on argumentline
+_patch	lea	$38000,a3
+	lea	_pl,a0
+	move.l	a3,a1
+	movea.l	(_resload,pc),a2
+	jsr	(resload_Patch,a2)
 
-    lea     _introstart(pc),a2               ; Get variable
-    move.l  a1,(a2)                         ; Save start-address of intro
+	moveq	#0,d0			;Disable CPU Instruction-Cache
+	move.l  #CACRF_EnableI,d1	;mask
+	jsr	(resload_SetCACR,a2)
 
-;======================================================================
-; The now loaded and relocated executable will be fixed here.
-;======================================================================
-
-    jsr     _patchdecruncher(pc)            ; Jump to the fixing-routine
-
-    move.l  _introstart(pc),a1              ; Source-Address
-    lea.l   _arg(pc),a0                     ; Argument line
-    moveq.l #1,d0                           ; One argument
-    jsr     (a1)                            ; Start the decruncher
-    jmp     _exitintro(pc)                  ; Jump to EXIT-OF-INTRO
-
-_patchdecruncher:
-JMPADR  =   $aa                             ; Relative address of Intro-JUMP
-
-    move.l  _introstart(pc),a1              ; Source-Address
-    move.w  #$4ef9,JMPADR(a1)               ; Poke JMP to destination
-    pea     (_fix,pc)                       ; Put Fix-List on Stack
-    move.l  (a7)+,(JMPADR+$2,a1)            ; Write Stack to destination
-    rts
-
-_fix
-
-; First fix the soundtracker-bug
-
-INTROSTART = $38000                         ; Start-address of the intro
-BUGADR     = INTROSTART+$EE0                ; Address of the SoundTracker-loop
-
-    move.w  #$4eb9,BUGADR                   ; Poke JSR to destination
-    pea     (_dbra,pc)                      ; Put SoundTracker-fix on Stack
-    move.l  (a7)+,BUGADR+$2                 ; Write Stack to destination
-    move.w  #$4e71,BUGADR+$6                ; Add NOP-word after the call
-
-    jmp     INTROSTART                      ; Start the Intro now
+	move	#DMAF_SETCLR|DMAF_MASTER|DMAF_BLITTER,(_custom+dmacon)	; expected by ctro
+	jsr	(a3)
 
 ;======================================================================
 ; Exit slave
 ;======================================================================
-
-_exitintro
 
 ; We put the "OK" reason to the stack and load the resident-base to a0.
 ; Then we abort the whole show giving WHD the reason.
@@ -210,6 +127,29 @@ _exitintro
     pea     TDREASON_OK                     ; Everything went O.K.
     move.l  (_resload,pc),a0                ; Put base to a0 for use
     jmp     (resload_Abort,a0)              ; Exit the slave
+
+;======================================================================
+; patches
+;======================================================================
+
+_pl	PL_START
+	PL_S	$3e8,4				;open gfx
+	PL_PS	$4be,_dmaon
+	PL_S	$4ee,4				;exec.Forbid
+	PL_PS	$504,_waitvb
+	PL_S	$524,8				;restore gfx clist
+	PL_PSS	$EE0,_dbra,2			; Address of the SoundTracker-loop
+	PL_END
+
+_dmaon	move.l	a0,(_custom+cop1lc)		;original
+	waitvb
+	move	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER,(_custom+dmacon)
+	rts
+
+	; avoid gfx trash when disable dma
+_waitvb	lea	_custom,a0			;original
+	waitvb	a0
+	rts
 
 ;======================================================================
 ; FIX Routines
@@ -264,12 +204,17 @@ DBRALOOPS   = 5
     movem.l (a7)+,d0-d7/a0-a6               ; Restore registers
     rts                                     ; And return to old code
 
-_OSEmu      dc.b    'OSEmu.400',0           ; Name of the OSEmu module to emulate DOS functions
 _exe        dc.b    "wow-crak.exe",0        ; Name of the intro-executable
+	EVEN
 
-_resload    dc.l    0                       ; Address of resident loader
-_dospointer dc.l    0                       ; DOS.library base pointer
-_introstart  dc.l    0                       ; Start-address after LoadSeg()
-_arg        dc.b    $a                      ; Argument-line (= Empty)
-_dosname    dc.b    'dos.library',0         ; DOS.library name
-    even
+;======================================================================
+
+	INCLUDE	whdload/keyboard.s
+
+;======================================================================
+
+_resload	dx.l	0		;address of resident loader
+
+;======================================================================
+
+	end
