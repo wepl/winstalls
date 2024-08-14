@@ -100,9 +100,7 @@ lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(s
 #
 # variable definitions
 #
-ifndef BASE
-$(error variable BASE must be set)
-endif
+BASE ?= $(notdir $(CURDIR))
 SLAVE ?= $(BASE).Slave
 # determine name of slave source if not yet set
 ifneq ("$(wildcard $(BASE).asm)","")

@@ -1,6 +1,5 @@
 
-# basename of install/archive
-BASE := BamigaSectorOne_GrandPrixC
+# slave name differs from default
 SLAVE := BamigaSectorOne-GPC.Slave
 # where to install via 'make dest'
 DEST := cwart:BamigaSectorOne\ GrandPrix
