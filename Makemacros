@@ -158,8 +158,8 @@ INSTICONS := $(wildcard inst/*.inf inst/*.rom* inst/*.new* inst/*.col* inst/*.bo
 INSTALLICONS := $(addprefix $(INSTDIR)/, $(notdir $(INSTICONS)))
 INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
 ifdef INSTFILES
-INSTFILESMORE := $(wildcard inst/$(INSTFILES))
-INSTALLFILESMORE := $(INSTDIR)/$(notdir $(INSTFILESMORE))
+INSTFILESMORE := $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
+INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file)))
 endif
 INSTREADME := inst/ReadMe
 # we have decided to not include sources anymore, instead link to github in readme
@@ -177,12 +177,12 @@ $(INSTALLREADME) : $(INSTREADME)
 	$(CP) $< '$@'
 $(INSTALLREADMEICON) : $(INSTTPLREADMEICON)
 	$(CP) $< '$@'
-$(INSTALLICONS) &: $(INSTICONS)
+$(INSTALLICONS) &:: $(INSTICONS)
 	$(CP) $^ $(INSTDIR)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
-$(INSTALLFILESMORE) : $(INSTFILESMORE)
-	$(CP) $< '$@'
+$(INSTALLFILESMORE) &:: $(INSTFILESMORE)
+	$(CP) $^ $(INSTDIR)
 $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
