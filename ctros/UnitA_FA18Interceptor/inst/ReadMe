@@ -1,9 +1,9 @@
 Short:    AGA/HD fix for Unit-A "F/A18 Interceptor" Cracktro
-Author:   S.Pucino@gmx.de (Max Headroom/TEX)
+Author:   S.Pucino@gmx.de (Max Headroom/TEX), Wepl
 Uploader: S.Pucino@gmx.de (Max Headroom/TEX)
-Version:  1.0
+Version:  1.1
 Type:     demo/intro
-Requires: WHD-Load v14.x+
+Requires: WHDLoad v16+
 
 This patch applies to F/A 18 Interceptor Crack-Intro, © 02/06/1988 by Unit-A
 
@@ -13,17 +13,23 @@ The intro had this cool bass and impressed me with the UA-animation.
 
 REQUIREMENTS:
 ~~~~~~~~~~~~~
- - WHD-Load V14+
+ - WHDLoad V16+
  - Intro req. 0.5 MB ChipMem
  - Barfly or ASM-One for compilation. I prefer ASM-One for smaller code ^_^
 
 FEATURES:
 ~~~~~~~~~
- - File-loader via OSEmu (included)
  - Replaced empty DBRA-Loop in SoundTracker-player
  - Removed useless "UNIT" check at $80
  - Nice OS3.5 Icon included.
- - Complete and fully commented source-code included !
+ - Source: https://github.com/wepl/winstalls
+
+HISTORY:
+~~~~~~~~
+ 1.1 (2024-08-18) by Wepl
+ - using kickemu instead OSEmu now
+ - added the original text message
+ - wait on RMB release on exit
 
 CAVEATS:
 ~~~~~~~~
@@ -40,7 +46,7 @@ Still in work...
  - WildFire Crew - Two music-discs and small beta-intros (10%)
 
                  Full WHDLoad package and other installs:
-                          http://www.whdload.org/
+                          http://www.whdload.de/
 
        If you have problems and/or questions regarding this release,
               please call our toll-free service hotline at...
