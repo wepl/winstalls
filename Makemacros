@@ -160,6 +160,8 @@ INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
 ifdef INSTFILES
 INSTFILESMORE := $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
 INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file)))
+$(INSTALLFILESMORE) &:: $(INSTFILESMORE)
+	$(CP) $^ $(INSTDIR)
 endif
 INSTREADME := inst/ReadMe
 # we have decided to not include sources anymore, instead link to github in readme
@@ -181,8 +183,6 @@ $(INSTALLICONS) &:: $(INSTICONS)
 	$(CP) $^ $(INSTDIR)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
-$(INSTALLFILESMORE) &:: $(INSTFILESMORE)
-	$(CP) $^ $(INSTDIR)
 $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
