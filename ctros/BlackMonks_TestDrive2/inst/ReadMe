@@ -1,0 +1,45 @@
+Short:    HD-Installer for Black Monks "Test Drive 2" Cracktro V1.0
+Author:   Codetapper/Action (codetapper@hotmail.com), ICQ: 26051687
+Uploader: Codetapper/Action (codetapper@hotmail.com)
+Version:  1.0
+Type:     game/patch
+
+This patch applies to "Test Drive 2 Cracktro" (c) 1989 Black Monks.
+
+REQUIREMENTS:
+- Slave requires WHDLoad V13+.
+- Game requires 512kb chip mem (+150kb other memory for preload option)
+
+FEATURES:
+- Full load from HD
+- Keyboard routine added
+- Blitter wait added
+- Snoop bug fixed
+- High pass filter disabled for clearer sound
+- Copperlist bugs fixed (x2)
+- Intro can be compressed to save space (FImp, Propack etc)
+- Source included
+- Quit option (default key is 'F10')
+
+TO DO:
+- RomIcon, NewIcon and GlowIcon (created by ???!)
+
+A nice little intro with the music ripped from Hybris!
+
+
+Codetapper/Action (06-Jan-2002)
+
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de/
+
+            ________  ________  ________  ____  ________  ________
+           _)       \_)       \_)       \_)   \_)       \_)       \
+   __ ___ /___/     /   /_____/\  /     /     /   /     /   /     /
+  /_//__// \___    /   /     /CT\/     /     /   /     /   /     /
+        /___/     /___      /   /     /_____/___      /___/     /___ __
+            \____/    \____/    \____/          \____/    \____//__//_/
+
+
+           Visit the Action website for more of our productions:
+                           http://zap.to/action/
