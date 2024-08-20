@@ -15,17 +15,18 @@ my $script = do {
 };
 
 # parse the prep file
-my (%vars, $func, %funcnum, %functxt);
+my (%vars, $func, %functxt);
 open my $in, "<", $prep or die "prep file '$prep' missing:$!";
 while (<$in>) {
 	# variables
-	if (/^#(\w+)=(\d+)$/) {
-		$vars{$1} = $2;
+	if (/^#([\w\-]+)=(.+$)/) {
+		my ($name,$val) = ($1,$2);
+		# if there are non digits in $val surround it with "
+		$vars{$name} = $val =~ /^\d$/ ? $val : "\"$val\"";
 		$func = undef;
 	# function head
-	} elsif (/^#(P_\w+)#(\d+)$/) {
+	} elsif (/^#(P_\w+#\d+)$/) {
 		$func = $1;
-		$funcnum{$func} = $2;
 	# function text
 	} elsif (/^[^#]/ and $func) {
 		$functxt{$func} .= $_;
@@ -35,12 +36,38 @@ while (<$in>) {
 	}
 }
 
-# replace vars
-foreach my $var (keys %vars) {
-	$script =~ s/^\(set #$var .*?\)/(set #$var $vars{$var})/m or die "could not replace '$var'";
-}
-
-# replace function code
+# replace functions
+my $P_SelectVersion = '(procedure P_SelectVersion
+  (if (= #multiple-versions "")
+    ("")
+    (
+      (set #version
+        (askchoice
+          (prompt ("Which version of %s would you like to install?" @app-name))
+          (default 0)
+	  (choices
+		"P_SelectVersion-Name-0"
+		"P_SelectVersion-Name-1"
+		"P_SelectVersion-Name-2"
+		"P_SelectVersion-Name-3"
+		"P_SelectVersion-Name-4"
+		"P_SelectVersion-Name-5"
+	  )
+          (help @askchoice-help)
+        )
+      )
+      (select #version
+        ("P_SelectVersion-Code 0")
+        ("P_SelectVersion-Code 1")
+        ("P_SelectVersion-Code 2")
+        ("P_SelectVersion-Code 3")
+        ("P_SelectVersion-Code 4")
+        ("P_SelectVersion-Code 5")
+      )
+    )
+  )
+)';
+$script =~ s/^\(procedure P_SelectVersion.*?^\)/$P_SelectVersion/ms or die 'could not replace P_SelectVersion';
 my $P_MakeImages = '(procedure P_MakeImages
   (select #version
     ("P_MakeImages 0")
@@ -51,11 +78,24 @@ my $P_MakeImages = '(procedure P_MakeImages
     ("P_MakeImages 5")
     ("P_MakeImages 6")
   )
+  ("P_MakeImages 99")
 )';
-$script =~ s/^\(procedure P_MakeImages.*?^\)/$P_MakeImages/ms or die 'could not replace P_MakeImages';
-foreach my $func (keys %funcnum) {
-	$script =~ s/\("$func $funcnum{$func}"\)/(\n$functxt{$func}    )/m or die "could not replace $func $funcnum{$func}";
+
+# replace vars
+foreach my $var (keys %vars) {
+	$script =~ s/^\(set #$var .*?\)/(set #$var $vars{$var})/m or
+	$script =~ s/"$var"/$vars{$var}/m or
+	die "could not replace '$var'";
 }
+
+# replace function code
+$script =~ s/^\(procedure P_MakeImages.*?^\)/$P_MakeImages/ms or die 'could not replace P_MakeImages';
+foreach my $func (keys %functxt) {
+	my ($name,$num) = split "#",$func;
+	$script =~ s/^(\s+)\("$name $num"\)/$1(\n$functxt{$func}$1)/m or die "could not replace $name $num";
+}
+# clear unused P_SelectVersion names
+$script =~ s/P_SelectVersion-Name-\d//gm;
 
 # write result
 open my $out, ">", $dest or die "cannot open '$dest':$!";

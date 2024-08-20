@@ -3,7 +3,7 @@
 #
 
 TOPTARGETS := inst arc wepl clean
-SUBDIRS := apps ctros games
+SUBDIRS := $(wildcard */.)
 
 $(TOPTARGETS): $(SUBDIRS)
 $(SUBDIRS):

@@ -1,0 +1,51 @@
+#multiple-versions=y
+#version=3
+#sub-dir=data
+#P_SelectVersion-Name-0=English (1.3)
+#P_SelectVersion-Name-1=German (1.3D)
+#P_MakeImages#0
+      ;----- 0 = English 1.3 -----
+      (set #AD_disk "Workbench1.3")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "Extras 1.3")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(all)
+      )
+#P_MakeImages#1
+      ;----- 1 = German 1.3D -----
+      (set #AD_disk "Workbench1.3D")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "Extras1.3D")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(all)
+      )
+#P_MakeImages#99
+  (message
+    (cat
+      "\nYou must manuelly edit the 'S/Startup-Sequence' and "
+      "comment out the following commands:\n"
+      "  SetPatch\n"
+      "  SetClock Load\n"
+      "otherwise you will get an Access Fault during boot."
+    )
+  )

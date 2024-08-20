@@ -2,7 +2,6 @@
 ;  :Modul.	workbench13.asm
 ;  :Contents.	Workbench 1.3
 ;  :Author.	Wepl
-;  :Version.	$Id: workbench13.asm 1.13 2023/02/19 02:42:48 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick13.asm
 ;		18.01.07 chip & fast mem increased
 ;		08.01.12 v17 config stuff added
@@ -14,6 +13,7 @@
 ;		18.02.22 NOFAST added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;		06.02.23 WHDCTRL added
+;		19.08.24 git import
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -21,7 +21,6 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
@@ -88,17 +87,9 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick13.s
 
 ;============================================================================
-
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
 
 slv_CurrentDir	dc.b	"data",0
 	IFD NOFAST
@@ -108,10 +99,8 @@ slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005",0
 	ENDC
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.8 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"Version 1.9 "
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Trainer",0
