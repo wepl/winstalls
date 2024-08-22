@@ -1,8 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Module.	whdmacros.i
-;  :Contens.	useful macros for WHDLoad-Slaves
+;  :Contens.	useful macros and symbols for WHDLoad-Slaves
 ;  :Author.	Bert Jahn
-;  :EMail.	wepl@whdload.de
 ;  :History.	11.04.99 separated from whdload.i
 ;		07.09.00 macro 'skip' fixed for distance of 2
 ;		21.09.00 macro 'blitz' small fix
@@ -13,9 +12,8 @@
 ;		06.09.07 adapted to work with Devpac 3.18
 ;		26.12.20 macro 'blitz' no longer uses movem to avoid breaking
 ;			 _MOVEMREGS/_MOVEMBYTES 
-;  :Copyright.	© 1996-2007,2020 Bert Jahn, All Rights Reserved
+;		21.12.20 macro LOG added
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
 ;---------------------------------------------------------------------------*
 
  IFND WHDMACROS_I
@@ -385,6 +383,37 @@ resetregs	MACRO
 		sub.l	a4,a4
 		sub.l	a5,a5
 		sub.l	a6,a6
+	ENDM
+
+****************************************************************
+***** create message in .whdl_log
+***** requires WHDLoad version 18 and active option FileLog/S
+***** label _resload must contain Resload base
+***** all arguments must be long
+***** all registers are preserved
+***** this macro only works with vasm!
+***** LOG <"text %s d0=%lx d1=%ld">,d0,d1
+
+LOG MACRO
+		move.l	a0,-(a7)	; don't use movem to preserve _MOVEMREGS/BYTES
+		move.l	a1,-(a7)
+		move.l	a2,-(a7)
+CARG SET \#
+	REPT \#-1
+		move.l	\-,-(a7)
+	ENDR
+		bra	.skip\@
+.fmt\@		db	\1,0
+	EVEN
+.skip\@		lea	(.fmt\@),a0
+		move.l	a7,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_Log,a2)
+
+		add	#(\#-1)*4,a7
+		move.l	(a7)+,a2
+		move.l	(a7)+,a1
+		move.l	(a7)+,a0
 	ENDM
 
 ;=============================================================================
