@@ -471,7 +471,7 @@
 	(choices
 	  "real floppy disks"
 	  "standard disk images (adf, 901120 bytes)"
-	  "CAPS/SPS images or warp files (ipf,mfm,wrp,wwp,...)"
+	  "CAPS/SPS images or warp files (ipf,mfm,wrp,wwp)"
 	)
 	(help
 	  "To install from 'real floppy disks' you have to insert your physical disks into"
