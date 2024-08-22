@@ -37,7 +37,8 @@
 ;		17.01.21 WHDLTAG_Private7 added
 ;			 replaced IFMI with IFLT to improve compatibility
 ;		13.01.23 WHDLTAG_Private8/9 added
-;  :Copyright.	© 1996-2023 Bert Jahn, All Rights Reserved
+;		12.05.24 added resload_ReadJoyPort
+;  :Copyright.	© 1996-2024 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
 ;---------------------------------------------------------------------------*
@@ -569,6 +570,13 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		;   (4,a7) = LABEL  argument array
 		; OUT:	-
 
+******* the following functions require ws_Version >= 19
+
+	ULONG	resload_ReadJoyPort
+		; return the state of the selected joy/mouse port (8c)
+		; IN:	d0 = ULONG  port/flags
+		; OUT:	d0 = ULONG  state
+
 	LABEL	resload_SIZEOF
 
 ******* compatibility for older slave sources:
@@ -1070,6 +1078,38 @@ PL_ENDIF	MACRO
 PLIFCNT SET PLIFCNT-1
 	dc.w	PLCMDF_CTRL+PLCMD_ENDIF
 		ENDM
+
+;=============================================================================
+; flags for resload_ReadJoyPort
+;=============================================================================
+
+; input flags:
+
+ BITDEF RJP,DETECT,31		; request new detection (GAMECTRL/JOYSTK)
+ BITDEF RJP,WANTMOUSE,30	; get mouse result
+
+; output flags:
+
+RJP_TYPE_GAMECTRL = 1<<28	; cd32pad
+RJP_TYPE_MOUSE = 2<<28		; mouse
+RJP_TYPE_JOYSTK = 3<<28		; joystick
+RJP_TYPE_MASK	= 15<<28
+
+ BITDEF RJP,BLUE,23		; pad-blue/stop, mouse-right, stick-2nd-fire
+ BITDEF RJP,RED,22		; pad-red/select, mouse-left, stick-fire
+ BITDEF RJP,YELLOW,21		; pad-yellow/repeat
+ BITDEF RJP,GREEN,20		; pad-green/shuffle
+ BITDEF RJP,FORWARD,19		; pad-forward
+ BITDEF RJP,REVERSE,18		; pad-reverse
+ BITDEF RJP,PLAY,17		; pad-play/pause, mouse-middle, stick-3rd-fire
+
+ BITDEF RJP,UP,3
+ BITDEF RJP,DOWN,2
+ BITDEF RJP,LEFT,1
+ BITDEF RJP,RIGHT,0
+
+RJP_MHORZ_MASK = 255<<0		; mouse horizontal position
+RJP_MVERT_MASK = 255<<8		; mouse vertical position
 
 ;=============================================================================
 
