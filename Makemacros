@@ -112,6 +112,9 @@ endif
 ifneq ("$(wildcard $(basename $(SLAVE)).asm)","")
 	SLAVESRC ?= $(basename $(SLAVE)).asm
 endif
+ifneq ("$(wildcard $(basename $(SLAVE)).s)","")
+	SLAVESRC ?= $(basename $(SLAVE)).s
+endif
 ifndef SLAVESRC
 $(error variable SLAVESRC could not be determined and is not set)
 endif

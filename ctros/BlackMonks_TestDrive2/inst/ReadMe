@@ -1,7 +1,7 @@
-Short:    HD-Installer for Black Monks "Test Drive 2" Cracktro V1.0
+Short:    HD-Installer for Black Monks "Test Drive 2" Cracktro
 Author:   Codetapper/Action (codetapper@hotmail.com), ICQ: 26051687
 Uploader: Codetapper/Action (codetapper@hotmail.com)
-Version:  1.0
+Version:  1.1
 Type:     game/patch
 
 This patch applies to "Test Drive 2 Cracktro" (c) 1989 Black Monks.
@@ -15,11 +15,14 @@ FEATURES:
 - Keyboard routine added
 - Blitter wait added
 - Snoop bug fixed
-- High pass filter disabled for clearer sound
 - Copperlist bugs fixed (x2)
 - Intro can be compressed to save space (FImp, Propack etc)
-- Source included
+- Source: https://github.com/wepl/winstalls
 - Quit option (default key is 'F10')
+
+HISTORY:
+2024-08-21 Version 1.1 by Wepl
+- fixed to work on 68000 (some os left over)
 
 TO DO:
 - RomIcon, NewIcon and GlowIcon (created by ???!)

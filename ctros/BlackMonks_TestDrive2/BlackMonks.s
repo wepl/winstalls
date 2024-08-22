@@ -12,14 +12,18 @@
 ;		         - Intro can be compressed to save space (FImp, Propack etc)
 ;		         - Source included
 ;		         - Quit option (default key is 'F10')
-; Requires:	WHDLoad 10+
+;		2024-08-21 v1.1 by Wepl
+;			- fixed access fault on 68000
+;			- use standard keyboard routine
+;		2024-08-22 by Wepl
+;			- removed some dead code
+; Requires:	WHDLoad 13+
 ; Copyright:	Public Domain
 ; Language:	68000 Assembler
 ; Translator:	Barfly
 ; Info:
 ;---------------------------------------------------------------------------*
 
-		INCDIR	Include:
 		INCLUDE	whdload.i
 		INCLUDE	whdmacros.i
 
@@ -52,20 +56,12 @@ _expmem		dc.l	$0			;ws_ExpMem
 		dc.w	_info-_base		;ws_info
 
 ;============================================================================
-		IFND	.passchk
-		DOSCMD	"WDate  >T:date"
-.passchk
-		ENDC
 
 _name		dc.b	"Black Monks Cracktro",0
 _copy		dc.b	"1989 Black Knight",0
 _info		dc.b	"Installed by Codetapper/Action!",10
-		dc.b	"Version 1.0 "
-		IFD	BARFLY
-		INCBIN	"T:date"
-		ELSE
-		dc.b	"(06.01.2001)"
-		ENDC
+		dc.b	"Version 1.1 "
+		INCBIN	.date
 		dc.b	0
 _MainFile	dc.b	"BlackMonks",0
 		EVEN
@@ -77,6 +73,8 @@ _Start	;	A0 = resident loader
 		lea	_resload(pc),a1
 		move.l	a0,(a1)			;save for later use
 
+		bsr	_SetupKeyboard
+
 _restart	lea	_MainFile(pc),a0
 		lea	$3c084,a1
 		move.l	a1,a5
@@ -87,23 +85,17 @@ _restart	lea	_MainFile(pc),a0
 		move.l	a5,a1
 		jsr	resload_Patch(a2)
 
-		bset	#1,$bfe001		;Disable high pass filter for clearer sound
-
-		pea	_Level2Int(pc)		;Setup keyboard routine
-		move.l	(sp)+,$68		;and enable it
-		move.w	#$c008,$dff09a
-
 		move.w	#$83d0,$dff096		;Enable DMA
 
-		jsr	$58000			;Start the intro
+		jsr	$58000+$1bf9c-$1bf7c	;Start the intro, skip OS access at start
 	
-		bra	_exit
+		pea	TDREASON_OK
+		move.l	(_resload),-(a7)
+		add.l	#resload_Abort,(a7)
+		rts
 
 _PL_Intro	PL_START
 		PL_P	$3462,_ByteWrite	;clr.b (6,a0,d0.w)
-		PL_L	$1bf82,$4e714e71	;Forbid
-		PL_L	$1bf8a,$70ff4e71	;Open graphics.library
-		PL_L	$1bf98,$4e714e71	;Close graphics.library
 		PL_R	$1c048			;Restore O/S
 		PL_PS	$1c26c,_Blt_dd6_dff058
 		PL_W	$1c272,$4e71
@@ -124,48 +116,9 @@ _BlitWait	btst	#6,$dff002
 
 ;======================================================================
 
-_EmptyDBF	movem.l	d0-d1,-(sp)
-		moveq	#3-1,d1			;wait because handshake min 75 탎
-.int2w1		move.b	(_custom+vhposr),d0
-.int2w2		cmp.b	(_custom+vhposr),d0	;one line is 63.5 탎
-		beq	.int2w2
-		dbf	d1,.int2w1		;(min=127탎 max=190.5탎)
-		movem.l	(sp)+,d0-d1
-		rts
-
-;======================================================================
-
-_Level2Int	movem.l	d0/a0,-(sp)
-		lea	($BFE000).l,a0
-		move.b	($D01,a0),d0
-		btst	#3,d0
-		beq.b	_NotKeybdInt
-		clr.w	d0
-		move.b	($C01,a0),d0
-		bset	#6,$e01(a0)
-		not.b	d0
-		lsr.b	#1,d0
-		cmp.b	_keyexit(pc),d0
-		beq	_exit
-_NotKeyDown	bsr	_EmptyDBF
-		bclr	#6,($BFEE01).l
-_NotKeybdInt	movem.l	(sp)+,d0/a0
-		move.w	#8,($DFF09C).l
-		nop
-		nop
-		nop
-		nop
-		rte
+	INCLUDE	whdload/keyboard.s
 
 ;======================================================================
 _resload	dc.l	0		;address of resident loader
 ;======================================================================
 
-_exit		pea	TDREASON_OK
-		bra	_end
-;_debug		pea	TDREASON_DEBUG
-;		bra	_end
-_wrongver	pea	TDREASON_WRONGVER
-_end		move.l	(_resload),-(a7)
-		add.l	#resload_Abort,(a7)
-		rts
