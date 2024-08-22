@@ -1,5 +1,6 @@
 
-	;	Include file for RawDIC
+; $Id$
+; Include file for RawDIC
 
 		ifnd	EXEC_TYPES_I
 		include	exec/types.i
@@ -179,7 +180,7 @@ IERR_TRCK_UNS	equ	-33	; wwarp track header version unsupported
 IERR_TRCK_TYPE	equ	-34	; wwarp track type unsupported
 IERR_TRCK_FLAG	equ	-35	; wwarp track flags unsupported
 IERR_TWLIB	equ	-36	; trackwarp library not found or wrong version
-IERR_SLAVEVERSION equ	-36	; rawdic function called requires a higher slave version
+IERR_SLAVEVER	equ	-37	; rawdic function called requires a higher slave version
 
  STRUCTURE	SlaveStructure,0
 
