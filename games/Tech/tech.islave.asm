@@ -2,7 +2,6 @@
 ;  :Program.	tech.islave.asm
 ;  :Contents.	Imager for Tech
 ;  :Author.	Wepl
-;  :Version.	$Id: tech.islave.asm 1.1 2001/06/20 00:33:52 wepl Exp wepl $
 ;  :History.	28.10.01 started
 ;		31.10.01 finished
 ;  :Requires.	-
@@ -21,16 +20,7 @@
 ;
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	RawDic.i
-
-	IFD BARFLY
-	OUTPUT	"Develop:Installs/Tech Install/Tech.ISlave"
-	BOPT	O+			;enable optimizing
-	BOPT	OG+			;enable optimizing
-	BOPT	ODd-			;disable mul optimizing
-	BOPT	ODe-			;disable mul optimizing
-	ENDC
 
 ;============================================================================
 
@@ -46,8 +36,7 @@
 		dc.b	"$VER: "
 _text		dc.b	"Tech Imager",10
 		dc.b	"Done by Wepl, Version 1.0 "
-	DOSCMD	"WDate >T:date"
-	INCBIN	"T:date"
+	INCBIN	.date
 		dc.b	".",0
 _0a		dc.b	"Tech.0a",0
 _03		dc.b	"Tech.03",0

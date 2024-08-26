@@ -12,17 +12,8 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-
-	OUTPUT	"wart:t/tech/Tech.Slave"
-	BOPT	O+				;enable optimizing
-	BOPT	OG+				;enable optimizing
-	BOPT	ODd-				;disable mul optimizing
-	BOPT	ODe-				;disable mul optimizing
-	BOPT	w4-				;disable 64k warnings
-	SUPER
 
 ;============================================================================
 
@@ -47,7 +38,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	14			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
+		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_EmulPriv	;ws_flags
 		dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
@@ -69,7 +60,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 _name		dc.b	"Tech",0
 _copy		dc.b	"1989 Gainstar/The Omega Team",0
 _info		dc.b	"adapted by Wepl",10
-		dc.b	"Version 1.0 "
+		dc.b	"Version 1.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -220,8 +211,8 @@ _2		illegal
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick13.s
-	INCLUDE	Sources:whdload/dbffix.s
+	INCLUDE	whdload/kick13.s
+	INCLUDE	whdload/dbffix.s
 
 ;======================================================================
 
