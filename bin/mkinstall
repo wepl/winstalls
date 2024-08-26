@@ -80,16 +80,19 @@ my $P_MakeImages = '(procedure P_MakeImages
   )
   ("P_MakeImages 99")
 )';
+# if #last-file is set we don't replace P_MakeImages
+if (! exists $vars{'last-file'}) {
+	$script =~ s/^\(procedure P_MakeImages.*?^\)/$P_MakeImages/ms or die 'could not replace P_MakeImages';
+}
 
 # replace vars
 foreach my $var (keys %vars) {
-	$script =~ s/^\(set #$var .*?\)/(set #$var $vars{$var})/m or
+	$script =~ s/^(\s*)\(set #$var .*?\)/$1(set #$var $vars{$var})/m or
 	$script =~ s/"$var"/$vars{$var}/m or
 	die "could not replace '$var'";
 }
 
 # replace function code
-$script =~ s/^\(procedure P_MakeImages.*?^\)/$P_MakeImages/ms or die 'could not replace P_MakeImages';
 foreach my $func (keys %functxt) {
 	my ($name,$num) = split "#",$func;
 	$script =~ s/^(\s+)\("$name $num"\)/$1(\n$functxt{$func}$1)/m or die "could not replace $name $num";

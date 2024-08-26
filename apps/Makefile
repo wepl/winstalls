@@ -2,7 +2,7 @@
 # recurse over all directories
 #
 
-TOPTARGETS := inst arc wepl clean
+TOPTARGETS := img inst arc wepl clean
 SUBDIRS := $(wildcard */.)
 
 $(TOPTARGETS): $(SUBDIRS)

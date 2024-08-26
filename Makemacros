@@ -4,6 +4,7 @@
 # supported targets:
 #	(default)	build Slave
 #	dest		copy Slave to install directory for testing
+#	img		build RawDIC Slave
 #	inst		build install package
 #	arc		build install package archive
 #	clean		remove all generated artefacts
@@ -102,7 +103,7 @@ lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(s
 #
 BASE ?= $(notdir $(CURDIR))
 SLAVE ?= $(BASE).Slave
-# determine name of slave source if not yet set
+# determine name of Slave source if not yet set
 ifneq ("$(wildcard $(BASE).asm)","")
 	SLAVESRC ?= $(BASE).asm
 endif
@@ -118,6 +119,16 @@ endif
 ifndef SLAVESRC
 $(error variable SLAVESRC could not be determined and is not set)
 endif
+# determine name of RawDIC Slave source if not yet set
+ifneq ("$(wildcard $(BASE).islave.asm)","")
+	ISLAVESRC ?= $(BASE).islave.asm
+endif
+ifneq ("$(wildcard $(call lc,$(BASE)).islave.asm)","")
+	ISLAVESRC ?= $(call lc,$(BASE)).islave.asm
+endif
+ifdef ISLAVESRC
+	ISLAVE ?= $(BASE).ISlave
+endif
 # determine name install directory if not yet set
 ifdef NOINSTALL
 	INSTDIR ?= $(BASE)
@@ -129,6 +140,14 @@ endif
 # default target: build Slave
 #
 $(SLAVE) : $(SLAVESRC)
+	$(DATE)
+	$(ASM) $(ASMOUT)$@ $<
+
+#
+# target: build RawDIC Slave
+#
+img : $(ISLAVE)
+$(ISLAVE) : $(ISLAVESRC)
 	$(DATE)
 	$(ASM) $(ASMOUT)$@ $<
 
@@ -160,6 +179,9 @@ INSTALLREADMEICON := $(INSTDIR)/ReadMe.info
 INSTICONS := $(wildcard inst/*.inf inst/*.rom* inst/*.new* inst/*.col* inst/*.box* inst/*.info)
 INSTALLICONS := $(addprefix $(INSTDIR)/, $(notdir $(INSTICONS)))
 INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
+ifdef ISLAVE
+INSTALLISLAVE := $(INSTDIR)/$(ISLAVE)
+endif
 ifdef INSTFILES
 INSTFILESMORE := $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
 INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file)))
@@ -186,12 +208,14 @@ $(INSTALLICONS) &:: $(INSTICONS)
 	$(CP) $^ $(INSTDIR)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $< '$@'
+$(INSTALLISLAVE) : $(ISLAVE)
+	$(CP) $< '$@'
 $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
 	$(CP) $< '$@'
 INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) \
-	$(INSTALLSLAVE) $(INSTALLFILESMORE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+	$(INSTALLSLAVE) $(INSTALLISLAVE) $(INSTALLFILESMORE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
 inst : $(INSTALLFILES)
 
 #
@@ -232,12 +256,12 @@ wepl : $(INSTALLARCHIVE)
 #
 
 clean :
-	$(RM) .date $(SLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
+	$(RM) .date $(SLAVE) $(ISLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
 
 #
 # targets to always build
 #
-.PHONY : dest inst arc rel wepl clean
+.PHONY : dest img inst arc rel wepl clean
 
 # print all make variables defined between saving vars to VARS_OLD and here
 #$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))
