@@ -2,13 +2,12 @@
 ;  :Program.	tech.asm
 ;  :Contents.	Slave for "Tech" by Gainstar
 ;  :Author.	Wepl
-;  :Version.	$Id: tech.asm 1.1 1998/03/16 16:58:59 jah Exp $
 ;  :History.	08.03.97
 ;		01.11.01 finished
+;		27.08.24 new kickemu interface, use "data" directory
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V1.131
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
@@ -17,53 +16,57 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= $000
-NUMDRIVES	= 1
-WPDRIVES	= %1111
+CHIPMEMSIZE	= $80000	;size of chip memory
+FASTMEMSIZE	= $0		;size of fast memory
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %0000		;write protection of floppy drives
 
-;DISKSONBOOT
-;HRTMON
-;MEMFREE	= $100
-;NEEDFPU
-;SETPATCH
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+;BOOTDOS			;enable _bootdos routine
+BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+;CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+;HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+;IOCACHE	= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+;SEGTRACKER			;add segment tracker
+;SETKEYBOARD			;activate host keymap
+;SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
-KICKSIZE	= $40000			;34.005
-BASEMEM		= CHIPMEMSIZE
-EXPMEM		= KICKSIZE+FASTMEMSIZE
-
-;======================================================================
-
-_base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	14			;ws_Version
-		dc.w	WHDLF_NoError|WHDLF_EmulTrap|WHDLF_EmulPriv	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
-		dc.l	0			;ws_ExecInstall
-		dc.w	_start-_base		;ws_GameLoader
-		dc.w	0			;ws_CurrentDir
-		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
-_keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	EXPMEM			;ws_ExpMem
-		dc.w	_name-_base		;ws_name
-		dc.w	_copy-_base		;ws_copy
-		dc.w	_info-_base		;ws_info
+slv_Version	= 16
+slv_Flags	= WHDLF_NoError
+slv_keyexit	= $59		;F10
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
+	INCLUDE	whdload/kick13.s
 
-_name		dc.b	"Tech",0
-_copy		dc.b	"1989 Gainstar/The Omega Team",0
-_info		dc.b	"adapted by Wepl",10
+;============================================================================
+
+slv_CurrentDir	dc.b	"data",0
+slv_name	dc.b	"Tech",0
+slv_copy	dc.b	"1989 Gainstar/The Omega Team",0
+slv_info	dc.b	"adapted by Wepl",10
 		dc.b	"Version 1.1 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	.date
 		dc.b	0
 _tech		dc.b	"Tech.00",0
 	EVEN
@@ -71,9 +74,6 @@ _tech		dc.b	"Tech.00",0
 ;============================================================================
 _start	;	A0 = resident loader
 ;============================================================================
-
-	;initialize kickstart and environment
-		bra	_boot
 
 _bootearly
 		moveq	#10,d0
@@ -97,11 +97,8 @@ _bootearly
 		lea	.pl,a0
 		move.l	(a7),a1
 		move.l	_resload,a2
-		jsr	(resload_Patch,a2)
+		jmp	(resload_Patch,a2)
 		
-		nop
-		rts
-
 .pl		PL_START
 		PL_R	$9416		;initdrive
 		PL_P	$9464,_poscyl
@@ -211,7 +208,6 @@ _2		illegal
 
 ;============================================================================
 
-	INCLUDE	whdload/kick13.s
 	INCLUDE	whdload/dbffix.s
 
 ;======================================================================

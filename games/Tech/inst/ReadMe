@@ -44,6 +44,12 @@
  - button wait for titel picture inserted
  - all files can be compressed using ProPack/FImp
  I like that game, nice design, nice graphics and great synthesizer sound :)
+
+ version 1.1 (27.08.24) done by Wepl:
+ - Slave now uses new style kickemu which avoids one OS switch
+ - new imager which has builtin CRCs for all tracks (issue #6450)
+ - new install script
+ - files are placed in 'data' sub directory now
  
- Many thanks to Sören for providing an original image.
+ Many thanks to Sören and Christoph Gleisberg for providing an original image.
 
