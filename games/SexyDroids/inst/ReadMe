@@ -29,16 +29,14 @@
  directory as the kickstart image. It can be found in the archive
  "util/boot/skick346.lha" on aminet.
 
- Features:
- ---------
-
-
  History:
  --------
  version 1.0 (27.08.2024) done by Wepl:
  - initial release
+ - empty loop in audio player fixed
  - thanks to nujack for the image
-
+ - thanks for the icons to Chris Vella, Dr. Zarkov
+ - source available: https://github.com/wepl/winstalls
 
  Contact:
  --------

@@ -153,7 +153,17 @@ _bootdos
 		jmp	(resload_Abort,a2)
 
 _pl_program	PL_START
+		PL_PS	$2b76,_dbf1	;empty loop in sound player
 		PL_END
+
+; original $51 loops with nop+dbf
+
+_dbf1		moveq	#4,d5
+.1		move.b	($dff006),d3
+.2		cmp.b	($dff006),d3
+		beq	.2
+		dbf	d5,.1
+		rts
 
 _disk1		dc.b	"DF0",0		;for Assign
 _program	dc.b	"r",0
