@@ -2,11 +2,12 @@
 # Makefile macros for WHDLoad Slaves
 # supports basm/vasm on Amiga/MacOS/Linux
 # supported targets:
-#	(default)	build Slave
-#	dest		copy Slave to install directory for testing
+#			build Slave (default)
+#	dest		copy Slave/ReadMe to install directory for testing
 #	img		build RawDIC Slave
 #	inst		build install package
 #	arc		build install package archive
+#	rel		copy install archive to release location
 #	clean		remove all generated artefacts
 #
 # $@ target
@@ -129,7 +130,7 @@ endif
 ifdef ISLAVESRC
 	ISLAVE ?= $(BASE).ISlave
 endif
-# determine name install directory if not yet set
+# determine name of install directory if not yet set
 ifdef NOINSTALL
 	INSTDIR ?= $(BASE)
 else
@@ -154,8 +155,8 @@ $(ISLAVE) : $(ISLAVESRC)
 #
 # target: copy Slave/ReadMe to installed location for testing
 #
-dest : $(SLAVE)
-	$(CP) $< $(INSTREADME) $(DEST)
+dest :
+	$(CP) $(SLAVE) $(INSTREADME) $(DEST)
 
 #
 # target: build install package files
@@ -189,7 +190,7 @@ $(INSTALLFILESMORE) &:: $(INSTFILESMORE)
 	$(CP) $^ $(INSTDIR)
 endif
 INSTREADME := inst/ReadMe
-# we have decided to not include sources anymore, instead link to github in readme
+# we have decided to not include sources anymore, instead link to github in ReadMe
 #INSTALLSRCDIR := $(INSTDIR)/src
 #INSTALLSRCSLAVE := $(INSTDIR)/src/$(SLAVESRC)
 $(INSTDIR) :
@@ -228,15 +229,17 @@ arc : $(INSTALLARCHIVE)
 
 #
 # target: copy archive to release
+# requires proper .ssh/config
 #
 rel : $(INSTALLARCHIVE)
-	scp $(INSTALLARCHIVE) rel:
+	scp $< rel:
 
 #
 # target: copy archive to wepl
+# requires proper .ssh/config
 #
 wepl : $(INSTALLARCHIVE)
-	scp $(INSTALLARCHIVE) juno:
+	scp $< juno:
 
 #
 # generic rules
@@ -263,6 +266,6 @@ clean :
 #
 .PHONY : dest img inst arc rel wepl clean
 
-# print all make variables defined between saving vars to VARS_OLD and here
+# debugging: print all make variables defined between saving vars to VARS_OLD and here
 #$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))
 

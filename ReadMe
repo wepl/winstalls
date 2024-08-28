@@ -1,0 +1,24 @@
+
+Repository for WHDLoad install sources
+--------------------------------------
+
+Builds ready to release install archives from sources.
+
+Supported platforms: Linux, MacOS, Amiga
+Requires:
+- GNU Make
+- vasm or basm
+- lha
+Requires on Amiga:
+- WDate (https://whdload.de/whdload/WHDLoad_dev.lha)
+- perl (https://aminet.net/package/dev/gg/perl571)
+
+Make targets:
+			build Slave (default)
+	img		build RawDIC Slave
+	dest		copy Slave/ReadMe to install directory for testing
+	inst		build install package
+	arc		build install package archive
+	rel		copy install archive to release location
+	clean		remove all generated artefacts
+
