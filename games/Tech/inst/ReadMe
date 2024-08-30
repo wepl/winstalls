@@ -50,6 +50,7 @@
  - new imager which has builtin CRCs for all tracks (issue #6450)
  - new install script
  - files are placed in 'data' sub directory now
+ - source available: https://github.com/wepl/winstalls
  
  Many thanks to Sören and Christoph Gleisberg for providing an original image.
 
