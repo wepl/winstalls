@@ -1,7 +1,6 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	picture.s
 ;  :Contents.	show picture (init custom/copper, decrunch pic)
-;  :Version.	$Id: picture.s 1.1 1998/06/14 20:54:50 jah Exp $
 ;  :History.	30.08.97 extracted form slave sources
 ;  :Requires.	_resload	long variable containing resload base
 ;		_colors		color table

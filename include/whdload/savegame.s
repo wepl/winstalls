@@ -12,7 +12,6 @@
 ;		it prior including this source with a label _font and define
 ;		a variable EXTSGFONT=1
 ;  :Author.	Wepl, JOTD, ross
-;  :Version.	$Id: savegame.s 1.5 2007/07/29 15:56:17 wepl Exp wepl $
 ;  :History.	14.06.98 extracted from Interphase slave
 ;		15.06.98 returncode fixed
 ;			 problem with savegames larger than $7fff fixed

@@ -4,7 +4,6 @@
 ;		will be constructed directly in memory
 ;		all data will be written to single file 'nvram'
 ;  :Author.	Wepl
-;  :Version.	$Id: nonvolatile.s 1.4 2020/02/09 22:42:38 wepl Exp wepl $
 ;  :History.	22.03.18 created for game UFO
 ;		17.08.18 made compatible to vasm
 ;		21.08.18 _GetNVInfo fixed

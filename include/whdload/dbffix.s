@@ -3,7 +3,6 @@
 ;  :Contents.	routine to fix empty dbf loops
 ;		the dbf loop will be replaced by a wait based on the vertical
 ;		raster position
-;  :Version.	$Id: dbffix.s 1.2 1999/05/09 20:03:47 jah Exp jah $
 ;  :History.	19.03.99 written based on the stfix routine
 ;		07.10.99 some documentation mistakes fixed
 ;  :Requires.	-

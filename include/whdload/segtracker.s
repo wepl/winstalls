@@ -2,7 +2,6 @@
 ;  :Modul.	segtracker.s
 ;  :Contents.	implementation of SegTracker with WHDLoad KickEmu
 ;  :Author.	Wepl
-;  :Version.	$Id: segtracker.s 1.2 2019/01/02 22:04:33 wepl Exp wepl $
 ;  :History.	30.05.18 started
 ;		28.12.18 completed for 3.1 roms
 ;		01.01.19 completed for 1.x roms

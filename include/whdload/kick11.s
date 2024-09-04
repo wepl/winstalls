@@ -2,7 +2,6 @@
 ;  :Modul.	kick11.s
 ;  :Contents.	interface code and patches for kickstart 1.1 (Amiga 1000 PAL)
 ;  :Author.	Wepl, JOTD, Psygore
-;  :Version.	$Id: kick11.s 1.2 2022/06/21 21:49:44 wepl Exp wepl $
 ;  :History.	17.04.02 created from kick12.s from JOTD
 ;
 ;		02.08.21 patch for gfx_WaitBlit added

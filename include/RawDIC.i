@@ -1,5 +1,4 @@
 
-; $Id$
 ; Include file for RawDIC
 
 		ifnd	EXEC_TYPES_I

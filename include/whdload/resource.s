@@ -2,7 +2,6 @@
 ;  :Modul.	resource.s
 ;  :Contents.	whdload.resource for kick emulation under WHDLoad
 ;  :Author.	Wepl
-;  :Version.	$Id: kickfs.s 1.26 2020/05/11 00:43:34 wepl Exp wepl $
 ;  :History.	13.11.21 created
 ;  :Requires.	-
 ;  :Copyright.	Public Domain

@@ -3,7 +3,6 @@
 ;  :Contents.	lowlevel.library
 ;		will be constructed directly in memory
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: lowlevel.s 1.8 2021/01/31 16:34:00 wepl Exp wepl $
 ;  :History.	2020-10-29 initial, based on resourced original
 ;		2020-11-03 moved .in jump one inst before in joypad read
 ;		2021-01-31 changed db to dc.b for better assembler compatibility
