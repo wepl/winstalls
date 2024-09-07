@@ -1,0 +1,54 @@
+Short:    HD-Installer for Zyconix V1.1
+Author:   Codetapper (codetapper@hotmail.com)
+Uploader: Codetapper (codetapper@hotmail.com)
+Version:  1.1
+Type:     game/patch
+
+This patch applies to "Zyconix" (c) 1992 Accolade - 1 disk. 
+Thanks to Gunnar Andersson, Xavier Bodenand and Irek Kloska for sending 
+the original! Supported versions: - SPS 1057
+                                  - Crystal crack
+
+REQUIREMENTS:
+- Slave requires WHDLoad V13+.
+- Game requires 512k chip mem (+0.9Mb other memory for preload option)
+
+FEATURES: (25-May-2001)
+- Full load from HD
+- Empty DBF loops fixed
+- Original game bugs fixed (move.b #$82,$bfd01 -> move.b #$82,$bfed01)
+- RomIcon, NewIcon and OS3.5 coloricon (created by me!)
+- Quit option (default key is 'F10')
+
+VERSION 1.1: (25-May-2021)
+- Now supports the original (only 20 years late!)
+- Loads and saves high scores
+- Source code included
+
+The most interesting thing about this game is the strange disk format,
+which I believe was only ever used on this one title.  Each track contains
+a header containing a longword that indicates the number of bytes that are
+still left to load.  The game itself doesn't know the length of the data
+it's loading, only the disk format itself does!
+
+Special greetings to Gunnar, Xavier and Irek for their patience, Riempie
+for originally requesting this install, CFou for interesting chats and the
+motivation to finish this patch, and the rest of the original WHDLoad team!
+
+
+Codetapper/Action (25-May-2021)
+
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de/
+
+            ________  ________  ________  ____  ________  ________
+           _)       \_)       \_)       \_)   \_)       \_)       \
+   __ ___ /___/     /   /_____/\  /     /     /   /     /   /     /
+  /_//__// \___    /   /     /CT\/     /     /   /     /   /     /
+        /___/     /___      /   /     /_____/___      /___/     /___ __
+            \____/    \____/    \____/          \____/    \____//__//_/
+
+
+               Visit my website for more Amiga productions:
+                          https://codetapper.com/
