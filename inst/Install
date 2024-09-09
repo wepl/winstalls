@@ -43,6 +43,8 @@
 (set #ico_suffix_40 "boxicon")
 (set #ico_suffix_41 "boxicon2")
 (set #ico_suffix_42 "boxirek")
+(set #ico_suffix_50 "pngbox")
+(set #ico_suffix_51 "pngbox2")
 
 ;Icon descriptions (max 21 chars if you have > 9 entries, or 27 chars otherwise.
 ;These are renamed to "gamename.info" so no illegal characters like :/* etc
@@ -75,6 +77,8 @@
 (set #ico_desc_40 "OS3.5 BoxIcon")
 (set #ico_desc_41 "OS3.5 BoxIcon 2")
 (set #ico_desc_42 "OS3.5 BoxIcon Irek")
+(set #ico_desc_50 "PNG BoxIcon")
+(set #ico_desc_51 "PNG BoxIcon 2")
 
 ;---------------------------------------------------------------------
 ; Which version does the user want to install? This routine doesn't need
@@ -1018,6 +1022,8 @@
 (procedure P_SelectIcon
   (if #icon_newname ("") (set #icon_newname #icon_prefix))
   (set #icnt 0)
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_51)) (set #icon #ico_suffix_51 #icnt (+ 1 #icnt) #icon_51 #ico_desc_51) (set #icon_51 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_50)) (set #icon #ico_suffix_50 #icnt (+ 1 #icnt) #icon_50 #ico_desc_50) (set #icon_50 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_42)) (set #icon #ico_suffix_42 #icnt (+ 1 #icnt) #icon_42 #ico_desc_42) (set #icon_42 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_41)) (set #icon #ico_suffix_41 #icnt (+ 1 #icnt) #icon_41 #ico_desc_41) (set #icon_41 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_40)) (set #icon #ico_suffix_40 #icnt (+ 1 #icnt) #icon_40 #ico_desc_40) (set #icon_40 ""))
@@ -1081,6 +1087,8 @@
       (if #icon_40 ((set #icon-suf #ico_suffix_40) (set #icon-name #ico_desc_40) (P_Icon)))
       (if #icon_41 ((set #icon-suf #ico_suffix_41) (set #icon-name #ico_desc_41) (P_Icon)))
       (if #icon_42 ((set #icon-suf #ico_suffix_42) (set #icon-name #ico_desc_42) (P_Icon)))
+      (if #icon_50 ((set #icon-suf #ico_suffix_50) (set #icon-name #ico_desc_50) (P_Icon)))
+      (if #icon_51 ((set #icon-suf #ico_suffix_51) (set #icon-name #ico_desc_51) (P_Icon)))
       (openwbobject #icon-dir)
     ))
     ;the following statement should enable proportional font for 'askchoice'
@@ -1093,7 +1101,8 @@
 		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16
 		 #icon_20 #icon_21 #icon_22 #icon_23 #icon_24 #icon_25 #icon_26 #icon_27 #icon_28 #icon_29
 		 #icon_30 #icon_31 #icon_32 #icon_33
-		 #icon_40 #icon_41 #icon_42)
+		 #icon_40 #icon_41 #icon_42
+		 #icon_50 #icon_51)
         (default #icon)
         (help @askchoice-help)
       )
@@ -1131,6 +1140,8 @@
       (set #icon #ico_suffix_40)
       (set #icon #ico_suffix_41)
       (set #icon #ico_suffix_42)
+      (set #icon #ico_suffix_50)
+      (set #icon #ico_suffix_51)
     )
   ))
   (copyfiles
