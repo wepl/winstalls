@@ -12,6 +12,9 @@
 ;		         - Now supports the original (only 20 years late!)
 ;		         - Loads and saves high scores
 ;		         - Source code included
+;		17.11.24 - v1.2
+;			 - fix gfx distortion because dma off/on
+;			 - fix movem copy routine for 68040 (issue #3575)
 ; Requires:	WHDLoad 13+
 ; Copyright:	Public Domain
 ; Language:	68000 Assembler
@@ -72,13 +75,9 @@ _expmem		dc.l	0			;ws_ExpMem
 
 _name		dc.b	"Zyconix",0
 _copy		dc.b	"1992 Accolade",0
-_info		dc.b	"Installed by Codetapper!",10
-		dc.b	"Version 1.1 "
-		IFND	.passchk
-		DOSCMD	"WDate >T:date"
-.passchk
-		ENDC
-		INCBIN	"T:date"
+_info		dc.b	"Installed by Codetapper, Wepl",10
+		dc.b	"Version 1.2 "
+		INCBIN	.date
 		dc.b	-1,"Thanks to Gunnar Andersson, Xavier Bodenand and"
 		dc.b	10,"Irek Kloska for sending the originals!"
 		dc.b	-1,"Greetings to Riempie and CFou!"
@@ -109,6 +108,10 @@ _Start						;a0 = resident loader
 		lea	_resload(pc),a1
 		move.l	a0,(a1)			;save for later use
 
+		move.l	a0,a1
+		lea	_tags,a0
+		jsr	(resload_Control,a1)
+
 _restart	resetregs
 
 		lea	$30000,a0		;Load original data
@@ -124,8 +127,14 @@ _restart	resetregs
 
 _PL_Accolade	PL_START
 		PL_P	$3006c,_Game
+		;PL_I	$3006c			;to dump 'game'
 		PL_P	$304f6,_Loader		;Load data
+		PL_PS	$35440,_waitvb
+		;PL_AL	$354e6+2,$54d0-$54c6	;skip strange int64 start
 		PL_END
+
+_waitvb		waitvb				;avoid gfx distortion
+		rts
 
 ;======================================================================
 
@@ -153,11 +162,20 @@ _PL_AccoladeCrk	PL_START
 		PL_P	$3006c,_Game		;Patch game
 		PL_R	$304ec			;Stupid delay after loading
 		PL_P	$3186e,_LoaderCrystal
+		PL_PS	$35440,_waitvb
 		PL_END
 
 ;======================================================================
 
-_Game		PatList	_PL_Game
+_Game		lea	_PL_Game,a0
+		move.l	_attn,d0
+		btst	#AFB_68040,d0
+		beq	.no40
+		lea	_PL_Game_40,a0
+.no40		sub.l	a1,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+
 		jmp	$e8d0			;Stolen code
 
 _PL_Game	PL_START
@@ -167,11 +185,26 @@ _PL_Game	PL_START
 		PL_L	$3cce,$4eb80100
 		PL_L	$bf6e,$4eb80100
 		PL_L	$bfaa,$4eb80100
+		PL_PS	$d99e,_waitvb
+		PL_I	$db66
 		PL_L	$df8a,$bfed01		;move.b #$82,$bfd01
-		PL_PS	$dfe4,_EmptyDBF
-		PL_W	$dfea,$4e71
+		PL_PSS	$dfe4,_EmptyDBF,2
 		PL_PS	$dff2,_Keybd		;Detect quit key
+		PL_S	$ea86,8			;skip dma off, gfx distortion
 		PL_END
+
+_PL_Game_40	PL_START
+		PL_P	$13042,.copyscr
+		PL_NEXT	_PL_Game
+
+	;movem is too slow on 68040
+.copyscr	move	#$7d00/16-1,d0
+.copy		move.l	(a0)+,(a1)+
+		move.l	(a0)+,(a1)+
+		move.l	(a0)+,(a1)+
+		move.l	(a0)+,(a1)+
+		dbf	d0,.copy
+		rts
 
 ;======================================================================
 
@@ -212,6 +245,7 @@ _DiskLoad	movem.l	d0-d1/a0-a2,-(sp)
 		move.l	a1,a0
 
 .NormalDiskLoad	moveq	#1,d2			;d2 = Disk number
+		;bset	#31,d2			;dump all files
 		movea.l	_resload(pc),a2
 		jsr	resload_DiskLoad(a2)
 .Done		movem.l	(sp)+,d0-d1/a0-a2
@@ -271,8 +305,6 @@ _Keybd		not.b	d0			;Stolen code
 		rts
 
 ;======================================================================
-_resload	dc.l	0			;Address of resident loader
-;======================================================================
 
 _exit		pea	TDREASON_OK
 		bra	_end
@@ -283,4 +315,13 @@ _end		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
+;======================================================================
+
+_tags		dl	WHDLTAG_ATTNFLAGS_GET
+_attn		dx.l	2
+_resload	dx.l	1			;Address of resident loader
+
+;======================================================================
+
 		END
+

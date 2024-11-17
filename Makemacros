@@ -127,6 +127,9 @@ endif
 ifneq ("$(wildcard $(call lc,$(BASE)).islave.asm)","")
 	ISLAVESRC ?= $(call lc,$(BASE)).islave.asm
 endif
+ifneq ("$(wildcard $(BASE).islave.s)","")
+	ISLAVESRC ?= $(BASE).islave.s
+endif
 ifdef ISLAVESRC
 	ISLAVE ?= $(BASE).ISlave
 endif

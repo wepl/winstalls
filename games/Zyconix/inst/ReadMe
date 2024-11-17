@@ -1,7 +1,7 @@
 Short:    HD-Installer for Zyconix V1.1
-Author:   Codetapper (codetapper@hotmail.com)
+Author:   Codetapper (codetapper@hotmail.com), Wepl
 Uploader: Codetapper (codetapper@hotmail.com)
-Version:  1.1
+Version:  1.2
 Type:     game/patch
 
 This patch applies to "Zyconix" (c) 1992 Accolade - 1 disk. 
@@ -13,7 +13,7 @@ REQUIREMENTS:
 - Slave requires WHDLoad V13+.
 - Game requires 512k chip mem (+0.9Mb other memory for preload option)
 
-FEATURES: (25-May-2001)
+FEATURES:
 - Full load from HD
 - Empty DBF loops fixed
 - Original game bugs fixed (move.b #$82,$bfd01 -> move.b #$82,$bfed01)
@@ -24,6 +24,12 @@ VERSION 1.1: (25-May-2021)
 - Now supports the original (only 20 years late!)
 - Loads and saves high scores
 - Source code included
+
+VERSION 1.2: (17-Nov-2024) done by Wepl
+- fixed 68040 gfx problems in intro due slow movem copy routine (issue #3575)
+- fixed some gfx glitches due dma on/off
+- Exotica icons added
+- source: https://github.com/wepl/winstalls/tree/master/games/Zyconix
 
 The most interesting thing about this game is the strange disk format,
 which I believe was only ever used on this one title.  Each track contains
