@@ -3,7 +3,6 @@
 ;  :Contents.	Workbench 3.1 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: workbench31.asm 1.15 2022/09/28 00:16:21 wepl Exp wepl $
 ;  :History.	18.12.06 derived from kick31.asm
 ;		07.01.07 version bumped for kick A600 support
 ;		09.04.10 supporting multiple slaves with different memory setups
@@ -17,6 +16,7 @@
 ;		13.11.21 INIT_RESOURCE added
 ;		15.11.21 WHDCTRL added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
+;		24.11.24 git repo integration
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -24,7 +24,6 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
@@ -45,16 +44,25 @@
 	IFEQ MEM-1
 CHIPMEMSIZE	= $ff000	;size of chip memory
 FASTMEMSIZE	= $100000	;size of fast memory
+MEMTXT	MACRO
+		db	"1"
+	ENDM
 	OUTPUT	"awart:workbench31/Workbench31_1.Slave"
 	ELSE
 	IFEQ MEM-4
 CHIPMEMSIZE	= $1ff000	;size of chip memory
 FASTMEMSIZE	= $400000	;size of fast memory
+MEMTXT	MACRO
+		db	"4"
+	ENDM
 	OUTPUT	"awart:workbench31/Workbench31_4.Slave"
 	ELSE
 	IFEQ MEM-32
 CHIPMEMSIZE	= $1ff000	;size of chip memory
 FASTMEMSIZE	= $2000000	;size of fast memory
+MEMTXT	MACRO
+		db	"32"
+	ENDM
 	OUTPUT	"awart:workbench31/Workbench31_32.Slave"
 	ELSE
 	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
@@ -117,26 +125,18 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick31.s
 
 ;============================================================================
-
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
 
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.9 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"Version 1.10 "
+		MEMTXT
+		dc.b	" MiB "
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Trainer",0

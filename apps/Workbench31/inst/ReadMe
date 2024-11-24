@@ -1,0 +1,101 @@
+
+ THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, STATUTORY OR OTHERWISE. THE ENTIRE RISK AS TO USE, RESULTS AND
+ PERFORMANCE OF THE PACKAGE IS ASSUMED BY YOU AND IF THE PACKAGE SHOULD PROVE
+ TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR OTHER REMEDIATION.
+ UNDER NO CIRCUMSTANCES, CAN THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE
+ CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
+ PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+
+ This install applies to "Workbench 3.1" © 1993 CBM.
+
+ Requirements:
+ -------------
+ This install requires WHDLoad to be in the path.
+
+ The installed program requires 1..2 MB ChipMem and 2..33 MB OtherMem.
+ It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
+
+ The game requires an installed A600/A1200/A4000 Kickstart 3.1 image.
+ The kickstart image must be located in the directory "Devs:Kickstarts" and
+ must be named "kick40063.A600", "kick40068.A1200" or "kick40068.A4000". The
+ image can be extracted from a A600/A1200/A4000 with tools like 'GrabKick' or
+ similar which can be found on aminet.
+ If the image is of wrong version or altered in any way WHDLoad will quit with
+ an appropriate message.
+ Additionally the file "kick40063.A600.RTB", "kick40068.A1200.RTB" or
+ "kick40068.A4000.RTB" must be installed in the same directory as the kickstart
+ image. It can be found in the archive "util/boot/skick346.lha" on aminet.
+
+ Features:
+ ---------
+ This installs the Workbench under WHDLoad. You may add other software manually
+ by copying it to the installation directory.
+ It is tested with original 6 disk DD Floppy release. It should also work with
+ the 3 disk HD floppy release, but this is untested.
+ To speedup the preload process you may delete all unwanted files, e.g. other
+ languages, fonts etc.
+
+ provided and installed are 3 slaves with different memory requirements:
+  Workbench31_1.Slave   1 MB Chip  1 MB Fast
+  Workbench31_4.Slave   2 MB Chip  4 MB Fast
+  Workbench31_32.Slave  2 MB Chip 32 MB Fast
+
+ History:
+ --------
+ version 1.9 (2024-06-10) done by Wepl:
+ - recompiled with latest sources
+
+ version 1.8 (2022-01-02) done by Wepl:
+ - fixed crash with _cb_dosLoadSeg and empty names
+ - fixed a bug bug in kickfs with write cache
+ thanks to Radek for reports 
+
+ version 1.7 (2021-11-15) done by Wepl:
+ - reassembled with latest kickemu
+ - activated internal resident command WHDCtrl which can quit WHDLoad ATM
+
+ version 1.6 (2021-01-03) done by Wepl:
+ - reassembled with latest kickemu
+ - activated Host SetKeyboard, requires WHDLoad 18.7
+
+ version 1.5 (2019-01-19) done by Wepl:
+ - reassembled with latest kickemu, SegTracker added
+
+ version 1.4 (05.10.17) done by Wepl:
+ - adapted for latest kickemu, with that also the cache setup has changed:
+   before it was inst/data cacheable in expansion memory, without MMU non
+   cacheable, now it is inst cachable in all memory, also without MMU
+   use option NoCache if this breaks compatibility with extra software
+   installed
+ - updated install script
+
+ version 1.2 (09.04.10) done by Wepl:
+ - providing additional slaves with more memory
+ - slaves reassembled with latest kickemu version
+
+ version 1.1.1 (17.02.07) done by Wepl:
+ - install script corrected to place files from Storage disk into own folder
+
+ version 1.1 (21.01.07) done by Wepl:
+ - supports A600 kickstart due updated kickemu, with that 68000 compatible
+ - new install script
+ - greetings to Don Adan
+
+ version 1.0 (18.12.06) done by Wepl:
+ - initial release on eab
+
+ Contact:
+ --------
+ If you have problems with this installation please try and get a newer
+ version of this package from the WHDLoad WWW-Page. If that doesn't help try
+ some Tooltypes like NOCACHE, NOAUTOVEC, EXPCHIP, NOMMU, PAL or NTSC. If
+ that also fails, please inform the author via the Bug-Report-Form which
+ can be accessed on the WHDLoad WWW-Page.
+
+ For the full WHDLoad package, other installs and updates refer to:
+	http://www.whdload.de/
+ or	aminet:dev/misc/whdload#?
+ and	aminet:game/patch/
+

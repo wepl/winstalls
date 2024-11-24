@@ -1,0 +1,92 @@
+#version=3
+#sub-dir=data
+#P_MakeImages#3
+      (set #AD_disk "Workbench3.1")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "Extras3.1")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (if (exists (tackon #AD_disk "Fonts"))
+	(
+	; HD floppies
+          (set #AD_disk "Install3.1")
+	  (P_AskDisk)
+          (copyfiles
+            (help @copyfiles-help)
+            (source ("%s:Storage" #AD_disk))
+            (dest #dest)
+            (all)
+          )
+	)
+	(
+	; DD floppies
+          (set #AD_disk "Storage3.1")
+	  (P_AskDisk)
+          (copyfiles
+            (help @copyfiles-help)
+            (source ("%s:" #AD_disk))
+	    (dest (tackon #dest "Storage"))
+	    (pattern "~(Disk.info)")
+          )
+	  (copyfiles
+	    (help @copyfiles-help)
+	    (source (tackon #dest "System.info"))
+	    (newname "Storage.info")
+	    (dest #dest)
+	  )
+	  (tooltype
+	    (dest (tackon #dest "Storage"))
+	    (noposition)
+	  )
+	  (set #AD_disk "Fonts")
+	  (P_AskDisk)
+          (copyfiles
+            (help @copyfiles-help)
+            (source ("%s:" #AD_disk))
+	    (dest (tackon #dest "Fonts"))
+	    (pattern "~(Disk.info)")
+          )
+          (set #AD_disk "Locale")
+	  (P_AskDisk)
+          (copyfiles
+            (help @copyfiles-help)
+            (source ("%s:" #AD_disk))
+	    (dest (tackon #dest "Locale"))
+	    (pattern "~(Disk.info)")
+          )
+	  (tooltype
+	    (dest (tackon #dest "Utilities"))
+	    (noposition)
+	  )
+	)
+      )
+#P_MakeIcons#0
+  (set #icon_desc "start")
+  (set #icon_prefix #prefix)
+  (set #icon_newname ("%s 1 MB" #prefix))
+  (set #icon_slave "Workbench31_1")
+  (set #icon_set_slave_preload "")
+  (set #icon_set_deftool_stack "true")
+  (P_CopySlave)
+  (P_SelectIcon)
+
+  (set #icon_newname ("%s 4 MB" #prefix))
+  (set #icon_slave "Workbench31_4")
+  (P_CopySlave)
+  (P_SelectIcon)
+
+  (set #icon_newname ("%s 32 MB" #prefix))
+  (set #icon_slave "Workbench31_32")
+  (P_CopySlave)
+  (P_SelectIcon)

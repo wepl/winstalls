@@ -143,9 +143,11 @@ endif
 #
 # default target: build Slave
 #
+ifndef NOSLAVERULE
 $(SLAVE) : $(SLAVESRC)
 	$(DATE)
 	$(ASM) $(ASMOUT)$@ $<
+endif
 
 #
 # target: build RawDIC Slave
@@ -182,14 +184,14 @@ INSTALLREADMEICON := $(INSTDIR)/ReadMe.info
 # these are the icons to be renamed by Install and the ones to be just copied!
 INSTICONS := $(wildcard inst/*.inf inst/*.rom* inst/*.new* inst/*.col* inst/*.box* inst/*.info)
 INSTALLICONS := $(addprefix $(INSTDIR)/, $(notdir $(INSTICONS)))
-INSTALLSLAVE := $(INSTDIR)/$(SLAVE)
+INSTALLSLAVE := $(foreach file,$(SLAVE),$(INSTDIR)/$(file))
 ifdef ISLAVE
 INSTALLISLAVE := $(INSTDIR)/$(ISLAVE)
 endif
 ifdef INSTFILES
 INSTFILESMORE := $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
 INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file)))
-$(INSTALLFILESMORE) &:: $(INSTFILESMORE)
+$(INSTALLFILESMORE) : $(INSTFILESMORE)
 	$(CP) $^ $(INSTDIR)
 endif
 INSTREADME := inst/ReadMe
@@ -208,10 +210,12 @@ $(INSTALLREADME) : $(INSTREADME)
 	$(CP) $< '$@'
 $(INSTALLREADMEICON) : $(INSTTPLREADMEICON)
 	$(CP) $< '$@'
-$(INSTALLICONS) &:: $(INSTICONS)
+# $(info INSTALLICONS=$(INSTALLICONS))
+$(INSTALLICONS) : $(INSTICONS)
 	$(CP) $^ $(INSTDIR)
+# $(info INSTALLSLAVE=$(INSTALLSLAVE))
 $(INSTALLSLAVE) : $(SLAVE)
-	$(CP) $< '$@'
+	$(CP) $^ $(INSTDIR)
 $(INSTALLISLAVE) : $(ISLAVE)
 	$(CP) $< '$@'
 $(INSTALLSRCDIR) :
