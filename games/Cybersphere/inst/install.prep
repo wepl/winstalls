@@ -1,0 +1,11 @@
+#version=3
+#sub-dir=data
+#P_MakeImages#3
+      (set #AD_disk "CyberSphere")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:CyberSphere" #AD_disk))
+        (dest #dest)
+	(pattern "(Cybersphere|CybersphereData.dat)")
+      )
