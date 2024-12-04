@@ -102,7 +102,7 @@ my $P_MakeIcons = '(procedure P_MakeIcons
   ("P_MakeIcons 0")
 )';
 # we replace P_MakeIcons only if specified
-if (! exists $functxt{'P_MakeIcons'}) {
+if (exists $functxt{'P_MakeIcons#0'}) {
 	$script =~ s/^\(procedure P_MakeIcons.*?^\)/$P_MakeIcons/ms or die 'could not replace P_MakeIcons';
 }
 
