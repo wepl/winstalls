@@ -881,7 +881,7 @@
 ; #CI_disknum  - number of the disk image to create
 ; #CI_diskname - label of the disk
 ; #CI_disklen  - length of disk image to create
-; #CI_skiptrk  - track to skip, -1 means no skip
+; #CI_skiptrk  - track to skip, "" or -1 means no skip
 ; #CI_drive    - drive to create image from
 
 (procedure P_CreateImage
@@ -914,7 +914,7 @@
       (PDI_Insert)
     )
   )
-  (if (= #CI_skiptrk "")
+  (if (OR (= #CI_skiptrk "") (= #CI_skiptrk -1))
     (set #option "")
     (set #option (cat " SKIPTRACK=" #CI_skiptrk))
   )
