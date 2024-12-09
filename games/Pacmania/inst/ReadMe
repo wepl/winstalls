@@ -1,7 +1,7 @@
-Short:    HD-Installer for Pacmania V1.0
+Short:    HD-Installer for Pacmania
 Author:   Codetapper/Action (codetapper@hotmail.com), ICQ: 26051687
 Uploader: Codetapper/Action (codetapper@hotmail.com)
-Version:  1.0
+Version:  1.1
 Type:     game/patch
 
 This patch applies to "Pacmania" (c) 1988 Grandslam - 1 disk.
@@ -25,6 +25,13 @@ Special thanks to Keith Krellwitz for the original JST install and Frank
 for the cool icons!
 
 Codetapper/Action (23-Feb-2001)
+
+Version 1.1 (2024-12-04) by Wepl:
+- added ciaintmask init to make compatible with WHDLoad 19 (issue #6646)
+- added splash window button
+- skip track #1 on imaging
+- updated install script
+- source: https://github.com/wepl/winstalls
 
 
          Bug report form, full WHDLoad package and other installs:

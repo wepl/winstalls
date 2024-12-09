@@ -1,3 +1,16 @@
+;*---------------------------------------------------------------------------
+; Program:	Pacmania.s
+; Contents:	Slave for "Pac-Mania" (c) Namco/Grandslam
+; Author:	Codetapper, Wepl
+; History:	2024-12-04 v1.1
+;		- init ciaicm for WHDLoad 19.0 (issue #6646)
+;		- add splash bw button
+; Requires:	WHDLoad 17+
+; Copyright:	Public Domain
+; Language:	68000 Assembler
+; Translator:	Barfly
+; Info:
+;---------------------------------------------------------------------------*
 
 		INCDIR	Include:
 		INCLUDE	whdload.i
@@ -17,7 +30,7 @@
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	10			;ws_Version
+		dc.w	17			;ws_Version
 		dc.w	WHDLF_EmulTrap|WHDLF_NoError		;ws_flags
 		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -30,21 +43,22 @@ _expmem		dc.l	0			;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0			;ws_kickname
+		dc.l	0			;ws_kicksize
+		dc.w	0			;ws_kickcrc
+		dc.w	_config-_base		;ws_config
 
 ;============================================================================
-		IFND	.passchk
-		DOSCMD	"WDate  >T:date"
-.passchk
-		ENDC
 
 _name		dc.b	"Pacmania",0
 _copy		dc.b	"1988 Grandslam",0
 _info		dc.b	"Installed by Codetapper/Action!",10
-		dc.b	"Version 1.0 "
-		INCBIN	"T:date"
+		dc.b	"Version 1.1 "
+		INCBIN	.date
 		dc.b	-1,"Keys: Help - Toggle infinite lives",10
-		dc.b	"       Del - Toggle permanent turbo",-1
+		dc.b	"Del - Toggle permanent turbo",-1
 		dc.b	"Thanks to Chris Vella for the original!",0
+_config		dc.b	"BW",0
 _Highs		dc.b	"Pacmania.highs",0
 _CheatFlag	dc.b	0
 		EVEN
@@ -55,6 +69,8 @@ _Start	;	A0 = resident loader
 
 		lea	_resload(pc),a1
 		move.l	a0,(a1)			;save for later use
+
+		move.b	#$82,_ciaa+ciaicr	;init int mask
 
 _restart	lea	$8,a0
 		lea	$7f000,a1
@@ -404,8 +420,6 @@ _DelayD0	move.l	a0,-(a7)		;Waits for d0 frames or
 		rts
 
 ;======================================================================
-_resload	dc.l	0		;address of resident loader
-;======================================================================
 
 _exit		pea	TDREASON_OK
 		bra	_end
@@ -455,4 +469,12 @@ _Bootblock	dc.l	$524E4301,$400,$2EA,$2049542F,$11C11
 		dc.l	$B4044401,$B6033301,$B800D601,$BA01A701,$BC019501
 		dc.l	$BE018337,$567143E3,$181E401,$9F90FFFA,$22CA86FF
 		dc.l	$FFF1DE00
-		END
+
+;======================================================================
+
+_resload	dx.l	1		;address of resident loader
+
+;======================================================================
+
+	END
+

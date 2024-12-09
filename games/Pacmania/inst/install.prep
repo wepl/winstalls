@@ -1,0 +1,8 @@
+#version=2
+#highs-file=Pacmania.highs
+#P_MakeImages#2
+  (set #CI_disknum 1)
+  (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
+  (set #CI_disklen 901120)
+  (set #CI_skiptrk 1)
+  (P_CreateImage)
