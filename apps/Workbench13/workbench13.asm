@@ -351,11 +351,12 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 		lea	(_cbls_patch,pc),a1
 .next		move.l	(a1)+,d3
 		movem.w	(a1)+,d4-d5
-		beq	.end
+		beq	.end		;end of list
+		bmi	.name		;ignore length check
 		cmp.l	d2,d3		;length match?
 		bne	.next
 	;compare name
-		lea	(_cbls_patch,pc,d4.w),a2
+.name		lea	(_cbls_patch,pc,d4.w),a2
 		move.l	a0,a3
 		move.l	d0,d6
 .cmp		move.b	(a3)+,d7
@@ -390,7 +391,7 @@ _cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
 .end		rts
 
 LSPATCH	MACRO
-		dc.l	\1		;cumulated size of hunks (not filesize!)
+		dc.l	\1		;cumulated size of hunks (not filesize!), negative = ignore check
 		dc.w	\2-_cbls_patch	;name
 		dc.w	\3-_cbls_patch	;patch list
 	ENDM
