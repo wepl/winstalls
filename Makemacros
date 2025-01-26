@@ -20,8 +20,6 @@
 # save all vars here to print new created ones later
 VARS_OLD := $(.VARIABLES)
 
-ARCH=$(shell uname -p)
-BIN=bin/arch-$(ARCH)
 INCLUDE=../../include
 
 # different commands for build under Amiga or Vamos
@@ -159,12 +157,6 @@ $(ISLAVE) : $(ISLAVESRC)
 	$(ASM) $(ASMOUT)$@ $<
 
 #
-# target: copy Slave/ReadMe to installed location for testing
-#
-dest : $(SLAVE) $(INSTREADME)
-	$(CP) $^ $(DEST)
-
-#
 # target: build install package files
 #
 # location of install template
@@ -189,12 +181,19 @@ INSTALLSLAVE := $(foreach file,$(SLAVE),$(INSTDIR)/$(file))
 ifdef ISLAVE
 INSTALLISLAVE := $(INSTDIR)/$(ISLAVE)
 endif
+# additional files to be copied
+# referenced in the install.prep
+INSTFILESMORE := $(foreach file,$(shell perl -ne '/^\#\w+-file=(.*)/ and !/last-file=/ and print "$$1\n"' < $(INSTALLPREP)),inst/$(file))
+# add ones specified in the Makefile
 ifdef INSTFILES
-INSTFILESMORE := $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
+INSTFILESMORE += $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
+endif
+ifneq ($(INSTFILESMORE),)
 INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file)))
 $(INSTALLFILESMORE) : $(INSTFILESMORE)
 	$(CP) $^ $(INSTDIR)
 endif
+# ReadMe
 INSTREADME := inst/ReadMe
 # we have decided to not include sources anymore, instead link to github in ReadMe
 #INSTALLSRCDIR := $(INSTDIR)/src
@@ -234,6 +233,12 @@ INSTALLARCHIVE := $(BASE).lha
 $(INSTALLARCHIVE) : $(INSTALLFILES)
 	$(LHA) $@ $(INSTDIR) $(INSTDIRICON)
 arc : $(INSTALLARCHIVE)
+
+#
+# target: copy Slave/ReadMe to installed location for testing
+#
+dest : $(SLAVE) $(INSTREADME)
+	$(CP) $^ $(DEST)
 
 #
 # target: copy archive to release
