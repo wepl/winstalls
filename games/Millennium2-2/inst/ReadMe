@@ -65,3 +65,7 @@
    emulators
  - updated install script
 
+ version 1.5 (26.01.2025) done by Wepl:
+ - support for german version added, thanks Retroplay for media
+ - source available: https://github.com/wepl/winstalls
+

@@ -85,6 +85,7 @@
 ;		02.08.21 patch for gfx_WaitBlit added
 ;		05.02.23 WHDCTRL added
 ;		19.02.23 CLI/Resident patch for WHDCtrl added
+;		19.01.25 on DEBUG and FileLog/S dump all files read via trackdisk.device
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -878,6 +879,9 @@ trd_readwrite	movem.l	d2/a1-a2,-(a7)
 
 .read		moveq	#0,d2
 		move.b	(_trd_disk,pc,d1.w),d2	;disk
+	IFD DEBUG
+		bset	#31,d2			;dump all files if FileLog/S is enabled
+	ENDC
 		move.l	(IO_OFFSET,a1),d0	;offset
 		move.l	(IO_LENGTH,a1),d1	;length
 		move.l	d1,(IO_ACTUAL,a1)	;actually read (fix for Hacker)

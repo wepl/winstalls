@@ -15,7 +15,7 @@ my $icon = do {
 };
 
 # check tooltype
-$tooltype =~ /^(\w+)=(\w+)$/ or die "tooltype must be like name=value";
+$tooltype =~ /^(\w+)=(\w[\w\-]+\w)$/ or die "tooltype must be like name=value";
 my ($ttname,$ttval) = ($1,$2);
 
 # decode structure DiskObject (workbench.i)

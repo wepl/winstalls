@@ -1,0 +1,28 @@
+#version=2
+#man-file=Manual-Other
+#hint-file=Manual-Partial
+#P_MakeImages#2
+      (set #CI_disknum 1)
+      (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
+      (set #CI_disklen 754688)
+      (set #CI_skiptrk "1")
+      (P_CreateImage)
+
+(set #choice
+  (askbool
+    (prompt "\nDo you have a Save Disk and want to have it installed?")
+    (default 1)
+    (choices "Yes" "No")
+    (help @askbool-help)
+  )
+)
+(if
+  (= #choice 1)
+  (
+    (set #CI_disknum 2)
+    (set #CI_diskname "Save Disk")
+    (set #CI_disklen 112640)
+    (P_CreateImage)
+  )
+)
+
