@@ -1,53 +1,23 @@
-_DSK
-
 ;*---------------------------------------------------------------------------
-;  :Modul.	kick13.asm
-;  :Contents.	kickstart 1.3 booter example
-;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.23 2019/01/19 18:53:35 wepl Exp wepl $
-;  :History.	19.10.99 started
-;		20.09.01 ready for JOTD ;)
-;		23.07.02 RUN patch added
-;		04.03.03 full caches
-;		20.06.03 rework for whdload v16
-;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
-;		25.05.04 error msg on program loading
-;		23.02.05 startup init code for BCPL programs fixed
-;		04.11.05 Shell-Seg access fault fixed
-;		03.05.06 made compatible to ASM-One
-;		20.11.08 SETSEGMENT added (JOTD)
-;		20.11.10 _cb_keyboard added
-;		08.01.12 v17 config stuff added
-;		10.11.13 possible endless loop in _cb_dosLoadSeg fixed
-;		30.01.14 version check optimized
-;		01.07.14 fix for Assign command via _cb_dosLoadSeg added
-;		03.10.17 new options CACHECHIP/CACHECHIPDATA
-;		28.12.18 segtracker added
-;		19.01.19 test code for keyrepeat on osswitch added
+;  :Modul.	Exodus3010.asm
+;  :Contents.	Exodus 3010
+;  :Author.	CFou!, Wepl
+;  :History.	2025-01-13 repo integration, increase ExpMem
+;			removed unused code, add intro skip, move loader to ExpMem,
+;			use patch lists, fix access fault in engine, fix intro end;
+;			clean source code
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38
 ;  :To Do.
-;		Wings of Fury slave
-;		V1.0 done by cfou
-;		- only password protection removed
-;		V1.1
-;		- support for Rob Northen encrypted version (SPS 599)		
-;	
 ;---------------------------------------------------------------------------*
-;_Flash
-;_Flash2
-;_Flash3
-QUIT_AFTER_PROGRAM_EXIT
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-		OUTPUT	"exodus3010.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -57,93 +27,73 @@ QUIT_AFTER_PROGRAM_EXIT
 	SUPER
 	ENDC
 
+	STRUCTURE globals,$100
+		STRUCT	CLIST,3*4
+		WORD	CODENUM
+		BYTE	EN
+
 ;============================================================================
 
-CHIPMEMSIZE	= $80000*2	;size of chip memory
-FASTMEMSIZE	= $20000*0		;size of fast memory
+CHIPMEMSIZE	= $172000	;size of chip memory
+FASTMEMSIZE	= $26f000	;size of fast memory
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %0001		;write protection of floppy drives
 
-BLACKSCREEN			;set all initial colors to black
-
-	IFD _DSK
+;BLACKSCREEN			;set all initial colors to black
 BOOTBLOCK			;enable _bootblock routine
-DISKSONBOOT			;insert disks in floppy drives
-	ELSE
-BOOTDOS				;enable _bootdos routine
-CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
-HDINIT				;initialize filesystem handler
-DOSASSIGN			;enable _dos_assign routine
-
-	ENDC
-
-;BOOTDOS				;enable _bootdos routine
+;BOOTDOS			;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
-CBKEYBOARD			;enable _cb_keyboard routine
-;CACHE				;enable inst/data cache for fast memory with MMU
+;CBKEYBOARD			;enable _cb_keyboard routine
+CACHE				;enable inst/data cache for fast memory with MMU
 ;CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-;DEBUG				;add more internal checks
+DEBUG				;add more internal checks
+DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
+;HDINIT				;initialize filesystem handler
 ;HRTMON				;add support for HrtMON
-;IOCACHE		= 1024		;cache for the filesystem handler (per fh)
-;MEMFREE	= $200		;location to store free memory counter
+;IOCACHE	= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $120		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;POINTERTICKS	= 1		;set mouse speed
 ;SEGTRACKER			;add segment tracker
+;SETKEYBOARD			;activate host keymap
 ;SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
 slv_Version	= 17
-slv_Flags	= WHDLF_NoError|WHDLF_Examine|WHDLF_EmulPriv	;|WHDLF_ClearMem 
-slv_keyexit	= $59	;F10
+slv_Flags	= WHDLF_NoError
+slv_keyexit	= $59		;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick13.s
+	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
-slv_CurrentDir	dc.b	"",0
+slv_CurrentDir	dc.b	0
 slv_name	dc.b	"Exodus 3010 ",0
-slv_copy	dc.b	"1993 Demonware/Telmet.",0
-slv_info	dc.b	"adapted for WHDLoad by CFou!",-1
-		dc.b	"Version 1.0 "
-	IFD BARFLY
-		INCBIN	"T:date"
+slv_copy	dc.b	"1993 Demonware/Telmet",0
+slv_info	dc.b	"adapted for WHDLoad by CFou!, Wepl",10
+		dc.b	"Version 1.1 "
+		INCBIN	.date
 		dc.b 	-1
-	ENDC
 		dc.b	"using Wepl's kick13 emul"
 		dc.b	0
 	IFGE slv_Version-17
-slv_config	;dc.b	"C1:B:Unlimited lives for Bono & his friend;"
-		;dc.b	"C2:L:Start Level:Default,L02,L03,L04,L05,L06,L07,L08,L09,L10,L11,L12,L13,L14,L15,L16,L17,L18,L19,L20,L21,L22;"
-	ENDC
+slv_config	db	"C1:B:Skip Intro"
 		dc.b	0
+	ENDC
         EVEN
 
-
-;============================================================================
-; entry before any diskaccess is performed, no dos.library available
-
-	IFD BOOTEARLY
-
-_bootearly	blitz
-		rts
-
-	ENDC
 
 ;============================================================================
 ; bootblock from "Disk.1" has been loaded, no dos.library available
@@ -154,115 +104,246 @@ _bootearly	blitz
 ; A4 = buffer (1024 bytes)
 ; A6 = execbase
 
-_bootblock	;blitz
-
-		patch	$82(a4),_Patch
-		bsr	_FlushCache
-		
+_bootblock	;move	#$4e71,($3c,a4)			;clist
+		clr.l	($4a,a4)			;MEMF_ANY, loader -> ExpMem
+		patch	$84(a4),_loader
 		jmp	(12,a4)
 
-_Patch
-	; crack
+_loader		movem.l	a0-a1,-(a7)			;a0 = loader, a1 = ioreq
+		move.l	a0,a3				;a3 = loader
 
-		movem.l	d1/a0-a2,-(a7)
-		move.l	a0,a0
+		clr.l	-(a7)
+		move.l	a0,-(a7)
+		pea	WHDLTAG_DBGADR_SET
+		move.l	a7,a0
+		move.l	(_resload,pc),a2		;A2 = resload
+		jsr	(resload_Control,a2)
+		add	#12,a7
+
+		move.l	a3,a0				;loader
 		move.l	#$1800,d0
-		move.l	(_resload,pc),a2	;A2 = resload
 		jsr	(resload_CRC16,a2)
 
-		cmp.w	#$3bab,d0	;EN
-		beq	.EN
-		cmp.w	#$cde7,d0	
-		beq	.DE
-		pea	TDREASON_WRONGVER
-		jmp	(resload_Abort,a2)
-.EN
-		move.l	#$c3700050,d0
-		bra.b	.common
-.DE
-		move.l	#$d9680050,d0
+		move.l	#$c3700050,d1
+		cmp.w	#$3bab,d0			;EN
+		seq	EN
+		beq	.common
+		move.l	#$d9680050,d1
+		cmp.w	#$cde7,d0			;DE
+		bne	_wrongver
 .common
-		movem.l	(a7)+,d1/a0-a2
-		nop
+		move.l 	d0,$2c8(a3) 			; crack, this gets overwritten -> never used
 
-		;patchs	$22(a0),_Crack
-		move.l	#$4e714e71,$22(a0)		; crack	
-		move.l 	d0,$a760-$a498(a0) 		; crack
-		movem.l	a0,-(a7)
-		lea 	$a754-$a498(a0),a0
-		move.l	a0,$dff080
-		movem.l	(a7)+,a0	
-	; end crack
-		patch	$b7d0-$a498(a0),_ChangeDSK
+		lea	_pl_loader,a0
+		move.l	a3,a1
+		jsr	(resload_Patch,a2)
 
+		movem.l	(a7)+,a0-a1
+		jmp (a0)
 
-		patch	$B006-$a498(a0),_PatchGame
-	
-		bsr	_FlushCache
-	; end crack
-	move.l	(a2),a1		;TrackDisk Handler
-	jmp (a0)
+_pl_loader	PL_START
+		PL_IFC1
+		PL_B	$14,$60				; beq -> bra, skip intro
+		PL_ENDIF
+		PL_S	$22,4				; skip protection
+	;	PL_S	$46,4				; skip logos
+		PL_P	$2ac,_callcode
+		PL_W	$2c2,$200			; bplcon0.color
+		PL_PS	$378,_setcodenum
+		PL_P	$3a6,_patchcode
+		PL_PS	$a74,_chgmem
+		PL_P	$d62,_endloadseg
+		PL_P	$d68,_freecode
+		PL_P	$1338,_ChangeDSK
+		PL_END
 
+	; move one hunk of game to chip memory
+	; to avoid that savegame contains addresses in fast memory
+_chgmem		jsr	(a0)				;original
+		move.l	d0,d4				;original
+		move.l	d4,d7				;original
+		cmp.l	#$91c/4,d0			;game de hunk #2
+		beq	.chip
+		cmp.l	#$8f8/4,d0			;game en hunk #2
+		bne	.ret
+.chip		or.l	#$40000000,d7
+.ret		rts
 
+_callcode	lea	CLIST,a0
+		move.l	a0,a1
+		move.l	#$1800000,(a1)+
+		move.l	#$1000200,(a1)+
+		move.l	#-2,(a1)
+		waitvb
+		move.l	a0,_custom+cop1lc
+		movem.l	(a7)+,d0-a6			;original
+		rts					;original
 
-_PatchGame
-	movem.l	a0,-(a7)
+	;remember which exe got loaded
+_setcodenum	move	d0,CODENUM
+		mulu	#$1a,d0				;original
+		add	d0,a0				;original
+		rts
 
-	; patch EN
-	bsr	_PatchLoadGameGen
-	bsr	_PatchSaveGameGen
+	; new routine because we changed the seglist to a standard one
+_freecode	movem.l	d2/a6,-(a7)
+		move.l	(_MOVEMBYTES+4,a7),d2
+		subq.l	#4,d2
+		lsr.l	#2,d2
+.loop		lsl.l	#2,d2
+		move.l	d2,a1
+		move.l	(a1),d2				;next
+		move.l	-(a1),d0
+		move.l	4,a6
+		jsr	(_LVOFreeMem,a6)
+		tst.l	d2
+		bne	.loop
+		movem.l	(a7)+,_MOVEMREGS
+		rts
 
-	; patch DE
-	lea	-$90(a0),a0
-	bsr	_PatchLoadGameGen
-	lea	 $90(a0),a0
-	lea	-$114(a0),a0
-	bsr	_PatchSaveGameGen
-	lea	 $114(a0),a0
+_patchcode	move.l	d0,d2				;d2 = load address
+		beq	.fail
 
-	movem.l	(a7)+,a0
-	movem.l	(a7)+,d4-d7
-	unlk	a5
-	rts
+	;transform to a standard dos seglist
+	;so we can use PatchSeg & DBGSEG
+		move.l	d2,a1
+.segloop	move.l	-(a1),d0
+		beq	.segend
+		move.l	d0,d1
+		lsr.l	#2,d0
+		subq.l	#1,d0
+		move.l	d0,(a1)
+		move.l	d1,a1
+		bra	.segloop
+.segend
+		move.l	d2,d3
+		subq.l	#4,d3
+		lsr.l	#2,d3				;d3 = bptr
+		clr.l	-(a7)
+		move.l	d3,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		move.l	_resload,a2
+		jsr	(resload_Control,a2)
+		add	#12,a7
 
-_PatchLoadGameGen
-	cmp.l	#'GAME',-$1e2(a0)
-	bne .noL
-	
-		move.l	#$7e016012,-$28e(a0) 	;$7c6ea		; remove alerte message
-		move.w	#$5479,-$278(a0)	;$7c450
-		patchs	-$23e(a0),_InsertSaveDisk3		; save
-		move.w	#$4e71,-$23e+6(a0)
+		move	CODENUM,d1
 
-		patchs	-$204(a0),_InsertPreviousDsk
-		bsr	_FlushCache
-.noL
-	rts
+		lea	_pl_music,a0
+		cmp	#2,d1
+		beq	.patch
 
-_PatchSaveGameGen
-	cmp.l	#'GAME',-$51a(a0)
-	bne .noS
-	
-		move.l	#$7e016012,-$53e(a0) 	;$7c6ea		; remove alerte message
-		move.w	#$5479,-$528(a0)	;$7c450
-		patchs	-$4d0(a0),_InsertSaveDisk3		; save
-		move.w	#$4e71,-$4d0+6(a0)
+	;de-intro is one hunk, but en-intro has 4 hunks!
+		cmp	#3,d1
+		bne	.not3
+		lea	_pl_intro_de,a0
+		tst.b	EN
+		beq	.patch
+		lea	_pl_intro_en,a0
+		bra	.patch
+.not3
+		cmp	#4,d1
+		bne	.ok
+		lea	_pl_game_de,a0
+		tst.b	EN
+		beq	.patch
+		lea	_pl_game_en,a0
 
-		patchs	-$4a4(a0),_InsertPreviousDsk
-		bsr	_FlushCache
-.noS
+.patch		move.l	d3,a1
+		jsr	(resload_PatchSeg,a2)
 
-	rts
+.ok		move.l	d2,d0
+		move.l	d2,a0
+		bra	.end
 
-;*******************
+.fail		moveq	#-1,d0
+.end		movem.l	(a7)+,d1-d7/a1-a6
+		rts
 
-;_Crack
-;	move.l	a0,a6
-;	move.l #$c3700050,$a760 	; crack EN
-;	move.l #$d9680050,$a760 	; crack De
-;	move.l	#$a754,$dff080
-;	rts
-;*******************
+; flush caches after loading an executable
+
+_endloadseg	move.l	d0,d5				;rc
+		move.l	_resload,a0
+		jsr	(resload_FlushCache,a0)
+		move.l	d5,d0
+		movem.l	(a7)+,d5-d7/a3/a6		;original
+		rts					;original
+
+_pl_music	PL_START
+	;	PL_BKPT	$68				;init
+		PL_DATA	$70,6				;fix d1 msw init
+			moveq	#0,d1
+			nop
+			nop
+		PL_PSS	$214,_stfix,4
+		PL_END
+
+_stfix		move	#$1f4/34,d1			;loop counter
+.1		move.b	($dff006),d0
+.2		cmp.b	($dff006),d0
+		beq	.2
+		dbf	d1,.1
+		rts
+
+_pl_intro_de	PL_START
+	;	PL_S	$6a,$452-$6a			;skip to credits
+	;	PL_BKPT	$4a0
+	;	PL_L	$5f0,-1				;terminate credits
+		PL_B	$4b4fd,$fd			;fix endless loop + af on credits end
+		PL_END
+
+_pl_intro_en	PL_START
+		PL_B	$4b491,$fd			;fix endless loop + af on credits end
+		PL_END
+
+_pl_game	PL_START
+		PL_PSS	$28e,_stfix,4
+		PL_END
+
+_pl_game_de	PL_START
+		PL_PSS	$44c62,_af1,2
+	;save game
+		PL_DATA	$6b066,4			; remove alerte message
+			moveq	#1,d7
+			bra.b	*+$14
+		PL_W	$6b07c,$5479			; addq.w #2,
+		PL_PSS	$6b0d4,_InsertSaveDisk3,2
+		PL_PS	$6b100,_InsertPreviousDsk
+	;load game
+		PL_DATA	$6b39a,4			; remove alerte message
+			moveq	#1,d7
+			bra.b	*+$14
+		PL_W	$6b3b0,$5479			; addq.w #2,
+		PL_PSS	$6b3ea,_InsertSaveDisk3,2
+		PL_PS	$6b424,_InsertPreviousDsk
+		PL_NEXT	_pl_game
+
+_pl_game_en	PL_START
+		PL_PSS	$44a74,_af1,2
+	;save game
+		PL_DATA	$6a762,4			; remove alerte message
+			moveq	#1,d7
+			bra.b	*+$14
+		PL_W	$6a778,$5479			; addq.w #2,
+		PL_PSS	$6a7d0,_InsertSaveDisk3,2
+		PL_PS	$6a7fc,_InsertPreviousDsk
+	;load game
+		PL_DATA	$6aa12,4			; remove alerte message
+			moveq	#1,d7
+			bra.b	*+$14
+		PL_W	$6aa28,$5479			; addq.w #2,
+		PL_PSS	$6aa62,_InsertSaveDisk3,2
+		PL_PS	$6aa9c,_InsertPreviousDsk
+		PL_END
+
+_af1		add	#$3c,a3				;original
+		moveq	#0,d0				;original
+		move.b	(a1),d0				;original
+		cmp	#$3c,d0
+		bls	.ok
+		moveq	#-1,d0				;skip
+.ok		tst	d0
+		rts
 
 _ChangeDSK
 	movem.l	d0-a6,-(a7)
@@ -276,17 +357,14 @@ _ChangeDSK
 	movem.l	(a7)+,d0-a6
 	rts
 
-
-
 _InsertSaveDisk3
 	move.l	#$200,$24(a1)	; original code
-_cont	movem.l	d0-a6,-(a7)
+	movem.l	d0-a6,-(a7)
 	clr.l 	d0		; drive
 	move.l	#3,D1
 	bsr	 _trd_changedisk
 	movem.l	(a7)+,d0-a6
 	rts
-
 
 _InsertPreviousDsk
 	movem.l	d0-a6,-(a7)
@@ -297,151 +375,18 @@ _InsertPreviousDsk
 	move.w	#$4,$1c(a1)		; original code
 	rts
 
-
-
 	ENDC
-
-
-
-_cb_keyboard
-	cmp.B	#$58,d0
-	bne	.no
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$f0,$dff180
-	move.w #$0,$dff180
-
-.no
-
-
-	rts
-
-
-
-_Keyboard
-		move.b	$bfec01,d0
-		not.b	d0		; original code
-		movem.l	d0-d1/a0,-(sp)
-		;not.b	d0
-		ror.b	#1,d0
-		cmp.b	_keyexit(pc),d0
-		beq	_exit
-		cmp.b	#$58,d0		; F9 pressed? (color test)
-		bne	.noflash
-		move.w	#$f0,$dff180
-		move.w	#$f0,$dff180
-		;move.w	#$0,$dff180
-.noflash
-
-		movem.l	(sp)+,d0-D1/a0
-		rts
-
-;======================================================================
-_FlushCache
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_FlushCache(a2)
-		movem.l	(sp)+,d0-d1/a0-a2
-		rts
-;======================================================================
-
-_END_VBL_INTERUPT:
-	BSR	BEAM_DELAY
-;	move.w	#$90,$dff180
-	MOVE.W	#$70,$dff09c
-	movem.l	(a7)+,d0-a6
-	rte
-_Delay=14
-
-BEAM_DELAY
-        move.l  d0,-(a7)
-	;move.l	_custom2(pc),d0
-	;beq	.skip
-	subq	#1,d0
-	beq	.exit
-        mulu  #_Delay,D0
-	bra	.loop1
-.skip
-        move  #_Delay,D0
-.loop1
-        move.w  d0,-(a7)
-        move.b  $dff006,d0      ; VPOS
-	;move.w	d0,$dff180
-
-.loop2  cmp.b   $dff006,d0
-        beq 	  .loop2
-        move.w  (a7)+,d0
-        dbf     d0,.loop1
-.exit
-        move.l  (a7)+,d0
-     	rts
 
 ;======================================================================
 
 _exit		pea	TDREASON_OK
 		bra	_end
-_debug		pea	TDREASON_DEBUG
-		bra	_end
 _wrongver	pea	TDREASON_WRONGVER
-		bra	_end
-_mustregister	pea	TDREASON_MUSTREG
 _end		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
 ;======================================================================
 
-_tag2
-		dc.l	WHDLTAG_CUSTOM1_GET
-_custom1	dc.l	0
-		dc.l	WHDLTAG_CUSTOM2_GET
-_custom2	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM3_GET
-;_custom3	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM4_GET
-;_custom4	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM5_GET
-;_custom5	dc.l	0
-;		dc.l	WHDLTAG_BUTTONWAIT_GET
-;_ButtonWait	dc.l	0
-		dc.l	0
-
-
 	END
 
-
-_DelayVBL_PAL
-	move.w #$90,$dff180
-	movem.l d0,-(a7)
-.wait	move.l	$dff004,d0
-	and.l	#$1ff00,d0
-	cmp.l	#303<<8,d0
-	bne .wait
-	movem.l	(a7)+,d0
-	move.w #$000,$dff180
-	rts
-	END
-
-
-_DelayVBL_NTSC
-;	move.w #$0f0,$dff180
-	movem.l d0,-(a7)
-.wait	move.l	$dff004,d0
-	and.l	#$1ff00,d0
-	cmp.l	#262<<8,d0
-	bne .wait
-	movem.l	(a7)+,d0
-;	move.w #$000,$dff180
-	rts

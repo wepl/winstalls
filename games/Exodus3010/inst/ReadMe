@@ -14,7 +14,7 @@
  the WHDLoad package.
  To install from a different drive than DF0: select installation mode Expert.
 
- The installed program requires 1.0 MB ChipMem and 1.5 MB OtherMem.
+ The installed program requires 512 KiB ChipMem and 2 MiB OtherMem.
  It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
 
  If you have problems with this installation please try and get a newer
@@ -28,6 +28,19 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
+ version 1.1 (26.01.25) done by Wepl:
+ - added more memory to support german game version
+ - added manual and icon provided by Torti the Smurf
+ - fixed crash on intro end
+ - fixed access fault on Engines
+ - moved loader to expmem
+ - added intro skip option
+ - updated install script
+ - source available: https://github.com/wepl/winstalls
+ - due changed memory setup and the fact that the savegame contains
+   absolute code addresses, old savegames became invalid and will 
+   crash the game, you have to start new
+
  version 1.0 (06.03.20) done by C-Fou!:
  - Initial release
  - Dic imager used to make disk images for German & English versions
@@ -39,5 +52,5 @@
 
  Remarks:
  - you need save game first to init save game
- - English save game are not compatible with German save game
+ - English save game is not compatible with German save game
  

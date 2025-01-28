@@ -1,0 +1,12 @@
+#version=2
+#man-file=Manual-DE
+#P_MakeImages#2
+  (set #CI_disknum 1)
+  (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
+  (set #CI_disklen 901120)
+  (set #CI_skiptrk "")
+  (P_CreateImage)
+
+  (set #CI_disknum 2)
+  (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
+  (P_CreateImage)
