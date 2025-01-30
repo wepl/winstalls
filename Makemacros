@@ -183,7 +183,9 @@ INSTALLISLAVE := $(INSTDIR)/$(ISLAVE)
 endif
 # additional files to be copied
 # referenced in the install.prep
+ifneq ($(wildcard $(INSTALLPREP)),)
 INSTFILESMORE := $(foreach file,$(shell perl -ne '/^\#\w+-file=(.*)/ and !/last-file=/ and print "$$1\n"' < $(INSTALLPREP)),inst/$(file))
+endif
 # add ones specified in the Makefile
 ifdef INSTFILES
 INSTFILESMORE += $(foreach file,$(INSTFILES),$(wildcard inst/$(file)))
