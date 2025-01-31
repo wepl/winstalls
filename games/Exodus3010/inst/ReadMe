@@ -28,7 +28,7 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
- version 1.1 (26.01.25) done by Wepl:
+ version 1.1 (01.02.25) done by Wepl:
  - added more memory to support german game version
  - added manual and icon provided by Torti the Smurf
  - fixed crash on intro end
@@ -53,4 +53,4 @@
  Remarks:
  - you need save game first to init save game
  - English save game is not compatible with German save game
- 
+

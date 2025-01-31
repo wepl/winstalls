@@ -6,6 +6,7 @@
 ;			removed unused code, add intro skip, move loader to ExpMem,
 ;			use patch lists, fix access fault in engine, fix intro end;
 ;			clean source code
+;		2025-02-01 mem fixed
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -34,8 +35,8 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $172000	;size of chip memory
-FASTMEMSIZE	= $26f000	;size of fast memory
+CHIPMEMSIZE	= $72000	;size of chip memory
+FASTMEMSIZE	= $17d000	;size of fast memory
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %0001		;write protection of floppy drives
 
@@ -49,14 +50,14 @@ BOOTBLOCK			;enable _bootblock routine
 CACHE				;enable inst/data cache for fast memory with MMU
 ;CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-DEBUG				;add more internal checks
+;DEBUG				;add more internal checks
 DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
 ;HDINIT				;initialize filesystem handler
 ;HRTMON				;add support for HrtMON
 ;IOCACHE	= 1024		;cache for the filesystem handler (per fh)
-;MEMFREE	= $120		;location to store free memory counter
+MEMFREE	= $120		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;POINTERTICKS	= 1		;set mouse speed
 ;SEGTRACKER			;add segment tracker
@@ -81,7 +82,7 @@ slv_keyexit	= $59		;F10
 
 slv_CurrentDir	dc.b	0
 slv_name	dc.b	"Exodus 3010 ",0
-slv_copy	dc.b	"1993 Demonware/Telmet",0
+slv_copy	dc.b	"1993 Demonware/Temet",0
 slv_info	dc.b	"adapted for WHDLoad by CFou!, Wepl",10
 		dc.b	"Version 1.1 "
 		INCBIN	.date
@@ -243,11 +244,16 @@ _patchcode	move.l	d0,d2				;d2 = load address
 		bra	.patch
 .not3
 		cmp	#4,d1
-		bne	.ok
+		bne	.not4
 		lea	_pl_game_de,a0
 		tst.b	EN
 		beq	.patch
 		lea	_pl_game_en,a0
+		bra	.patch
+.not4
+		cmp	#5,d1
+		bne	.ok
+		lea	_pl_space,a0
 
 .patch		move.l	d3,a1
 		jsr	(resload_PatchSeg,a2)
@@ -301,6 +307,7 @@ _pl_game	PL_START
 		PL_END
 
 _pl_game_de	PL_START
+		PL_W	$be,$200			;bplcon0.color
 		PL_PSS	$44c62,_af1,2
 	;save game
 		PL_DATA	$6b066,4			; remove alerte message
@@ -344,6 +351,20 @@ _af1		add	#$3c,a3				;original
 		moveq	#-1,d0				;skip
 .ok		tst	d0
 		rts
+
+_pl_space	PL_START
+		PL_PS	$767e,.bw1
+		PL_P	$7ba4,.intack1
+		PL_END
+
+.bw1		BLITWAIT a5
+		clr	($64,a5)			;original
+		rts
+
+.intack1	move	#$70,$dff09c			;original
+		tst	_custom+intreqr
+		movem.l	(a7)+,d0-a6			;original
+		rte					;original
 
 _ChangeDSK
 	movem.l	d0-a6,-(a7)
