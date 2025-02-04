@@ -3,13 +3,17 @@
 ;  :Contents.	Slave for "Elvira" from Accolade
 ;  :Author.	Wepl
 ;  :Original	v1
-;  :Version.	$Id: elvira.asm 1.9 2018/04/10 00:23:29 wepl Exp wepl $
+;  :Version.	$Id: elvira.asm 1.10 2018/04/10 00:30:37 wepl Exp wepl $
 ;  :History.	03.08.01 started
 ;		10.11.01 beta version for whdload-dev ;)
 ;		21.12.01 nearly complete
 ;		19.02.02 final
 ;		17.04.02 POINTERTICKS added
 ;		02.04.17 reassmebled because quitkey problem
+;		08.12.22 dma wait fixed
+;			 audio volume patched
+;			 quit slave when game exits added
+;		15.12.22 supports ntsc screen
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -20,15 +24,17 @@
 	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
+;	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"wart:e/elvira/Elvira.Slave"
+	OUTPUT	"sd0:Elvira.Slave"
+;	OUTPUT	"wart:e/elvira/Elvira.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-				;disable 64k warnings
 	SUPER
 	ENDC
 
@@ -83,7 +89,7 @@ slv_keyexit	= $59	;F10
 slv_name	dc.b	"Elvira - Mistress of the Dark",0
 slv_copy	dc.b	"1990 Accolade",0
 slv_info	dc.b	"adapted by Wepl",10
-		dc.b	"Version 1.2 "
+		dc.b	"Version 1.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -98,6 +104,11 @@ _args_end
 ;============================================================================
 
 _bootdos
+
+	;tags
+		lea	(_tags_elvira,pc),a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_Control,a2)
 
 	;open doslib
 		lea	(_dosname,pc),a1
@@ -131,19 +142,27 @@ _bootdos
 		add.l	d3,a7
 		
 		lea	(_plde),a0
+		lea	(_plde_ntsc),a1
 		cmp.w	#$e419,d0
 		beq	.p
 		lea	(_plen),a0
+		lea	(_plen_ntsc),a1
 		cmp.w	#$feb9,d0
 		beq	.p
 		lea	(_plfr),a0
+		lea	(_plfr_ntsc),a1
 		cmp.w	#$3be1,d0
 		beq	.p
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
 		
 	;patch
-.p		move.l	d7,a1
+.p
+		move.l	(_modeid,pc),d0
+		cmp.l	#NTSC_MONITOR_ID,d0
+		bne	.PAL
+		move.l	a1,a0
+.PAL		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
 	IFD DEBUG
@@ -167,14 +186,22 @@ _bootdos
 		movem.l	d2/d7/a2/a6,-(a7)
 		jsr	(4,a1)
 		movem.l	(a7)+,d2/d7/a2/a6
+		pea	TDREASON_OK
+		jmp	(resload_Abort,a2)
 
-	;remove exe
-		move.l	d7,d1
-		jsr	(_LVOUnLoadSeg,a6)
-
+;	;remove exe
+;		move.l	d7,d1
+;		jsr	(_LVOUnLoadSeg,a6)
+;
 .end		moveq	#0,d0
 		rts
 
+
+_plde_ntsc
+	PL_START
+	PL_W	$DA56,0		;remove X offset screen
+	PL_PS	$1C8E0,_replay_music
+	PL_NEXT	_plde
 
 _plde	PL_START
 	PL_S	$20b2,$c8-$b2	;disable DeleteFile
@@ -185,37 +212,57 @@ _plde	PL_START
 	PL_PS	$19d08,_dbffix
 	PL_W	$19d08+6,$1f4
 	PL_PS	$19dba,_dbffix
-	PL_W	$19dba+6,$5000
+	PL_W	$19dba+6,300	;v1.3 was $5000
 	PL_PS	$1cafc,_dbffix
-	PL_W	$1cafc+6,$50
+	PL_W	$1cafc+6,300	;v1.3 was $50
 	PL_PS	$1cb12,_dbffix
 	PL_W	$1cb12+6,$30
+
+	PL_B	$1CD8E+5,9	;v1.3 audio.vol byte fix
 	PL_END
+
+_plen_ntsc
+	PL_START
+	PL_W	$DE8A,0		;remove X offset screen
+	PL_PS	$1CCE4,_replay_music
+	PL_NEXT	_plen
 
 _plen	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
 	;PL_W	$16cea,21780	;io buffer size
+
 	PL_PS	$1a10c,_dbffix
 	PL_W	$1a10c+6,$1f4
 	PL_PS	$1a1be,_dbffix
-	PL_W	$1a1be+6,$5000
+	PL_W	$1a1be+6,300	;v1.3 was $5000
 	PL_PS	$1cf00,_dbffix
-	PL_W	$1cf00+6,$50
+	PL_W	$1cf00+6,300	;v1.3 was $50
 	PL_PS	$1cf16,_dbffix
 	PL_W	$1cf16+6,$30
+
+	PL_B	$1D192+5,9	;v1.3 audio.vol byte fix
 	PL_END
+
+_plfr_ntsc
+	PL_START
+	PL_W	$DE8A,0		;remove X offset screen
+	PL_PS	$1CD46,_replay_music
+	PL_NEXT	_plfr
 
 _plfr	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
 	;PL_W	$16cea,21780	;io buffer size
+
 	PL_PS	$1a15e,_dbffix
 	PL_W	$1a15e+6,$1f4
 	PL_PS	$1a210,_dbffix
-	PL_W	$1a210+6,$5000
-	PL_PS	$1cf62,_dbffix
-	PL_W	$1cf62+6,$50
-	PL_PS	$1cf78,_dbffix
+	PL_W	$1a210+6,300	;v1.3 was $5000
+	PL_PS	$1cf62,_dbffix	;soundtrack dma wait
+	PL_W	$1cf62+6,300	;v1.3 was $50
+	PL_PS	$1cf78,_dbffix	;soundtrack dma wait
 	PL_W	$1cf78+6,$30
+
+	PL_B	$1D1F4+5,9	;v1.3 audio.vol byte fix
 	PL_END
 
 _dbffix		movem.l	d0-d1/a0,-(a7)
@@ -230,6 +277,23 @@ _dbffix		movem.l	d0-d1/a0,-(a7)
 		movem.l	(a7)+,d0-d1/a0
 		addq.l	#2,(a7)
 		rts
+
+;----------------------------------------------
+; skip 1 frame every 5 frames to slowdown music in ntsc screen
+
+_replay_music	move.l	(sp)+,d0		;return address
+		addq.l	#2,d0			;skip lea (,pc),a0 (not used)
+		movem.l	d0-d4/a0-a3/a5/a6,-(sp)	;ori
+		move.l	d0,-(sp)
+		lea	(.1,pc),a0
+		addq.b	#1,(a0)
+		cmp.b	#5+1,(a0)
+		bne	.ok
+		clr.b	(a0)
+		addq.l	#6,(sp)			;skip addq.b #1, for mt_speed 
+.ok		rts
+
+.1		dc.b	0,0
 
 ;============================================================================
 
@@ -304,5 +368,10 @@ _intro		lea	_custom,a5		;A5 = custom
 	EVEN
 
 ;============================================================================
+
+;----------------------------------------------
+_tags_elvira	dc.l	WHDLTAG_MONITOR_GET
+_modeid		dc.l	0
+		dc.l	TAG_DONE
 
 	END

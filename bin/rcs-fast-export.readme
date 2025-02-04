@@ -1,6 +1,6 @@
 
 # RCS files with ending ,v must be copied to correct subdirs
-
+# from the root directory of the repository
 rcs-fast-export.rb --log-filename . | git fast-import
 # use new tip from: warning: Not updating refs/heads/master (new tip d2... does not contain c2...)
 git log d21cdc7d4f1ced80715ff8f66342f9ac7cfd6004
