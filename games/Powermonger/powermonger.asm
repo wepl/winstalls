@@ -10,6 +10,7 @@
 ;		30.12.96 ws_DontCache removed (WARNING ws_Version is only 1)
 ;		22.04.98 keyboard changed, adapted for new whdload, rework
 ;		17.07.02 rework, intro sound fixed
+;		09.02.24 repo import
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -17,12 +18,10 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	wart:pl/powermonger/Powermonger.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -52,20 +51,11 @@ _expmem		dc.l	0				;ws_ExpMem
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 _name		dc.b	"Powermonger",0
 _copy		dc.b	"1990 Bullfrog Productions",0
 _info		dc.b	"installed & fixed by Wepl",10
 		dc.b	"version 1.3 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 _keyexit2	dc.b	$45				;ws_keyexit = ESC
 	IFD DEBUG
@@ -345,8 +335,7 @@ _end		move.l	(_resload),-(a7)
 
 ;======================================================================
 
-	INCDIR	Sources:whdload
-	INCLUDE	keyboard.s
+	INCLUDE	whdload/keyboard.s
 
 ;======================================================================
 

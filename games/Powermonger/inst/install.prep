@@ -1,0 +1,15 @@
+#version=2
+#man-file=Manual
+#hint-file=Tips
+#sol-file=Clues
+#extra-file=Manual.pdf
+#P_MakeImages#2
+  (set #CI_disknum 1)
+  (set #CI_diskname ("%s Disk %ld" @app-name #CI_disknum))
+  (set #CI_disklen 901120)
+  (set #CI_skiptrk "")
+  (P_CreateImage)
+
+  (makedir (tackon #dest "save")
+    (help @makedir-help)
+  )

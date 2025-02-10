@@ -1,8 +1,5 @@
 ;##########################################################################
-; $Id$
-;##########################################################################
 
-	INCDIR	Includes:
 	INCLUDE	lvo/exec.i
 	INCLUDE	exec/memory.i
 	INCLUDE	lvo/dos.i
@@ -23,12 +20,9 @@ LOC	EQUR	A5		;a5 for local vars
 
 ;##########################################################################
 
-	SECTION	"",CODE,RELOC16
-
 VER	MACRO
 		dc.b	"sgsaver 0.1 "
-	DOSCMD	"WDate >t:date"
-	INCBIN	"t:date"
+	INCBIN	".date"
 		dc.b	" by WEPL"
 	ENDM
 
@@ -116,7 +110,6 @@ _Main		movem.l	d2/a2-a6,-(a7)
 
 ;##########################################################################
 
-	INCDIR	Sources:
 	INCLUDE	files.i
 		LoadFileMsg
 		SaveFileMsg

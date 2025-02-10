@@ -21,14 +21,15 @@
 VARS_OLD := $(.VARIABLES)
 
 INCLUDE=../../include
+SOURCES=../../sources
 
 # different commands for build under Amiga or Vamos
 ifdef AMIGA
 
 # basm options: -x+ = use cachefile.library -s1+ = create SAS/D1 debug hunks -sa+ = create symbol hunks
-BASMOPT=-x+ -i//include
+BASMOPT=-x+ -i//include -i//sources
 BASMOPTDBG=-sa+
-VASMOPT=-I//include
+VASMOPT=-I//include -I//sources
 # vincludeos3: must before netinclude: because broken netinclude
 CFLAGS=-Ivincludeos3: -Inetinclude:
 CP=Copy
@@ -45,11 +46,11 @@ endif
 else
 
 # basm options: -x- = don't use cachefile.library -sa+ = create symbol hunks
-BASMOPT=-x- -i//include
+BASMOPT=-x- -i//include -i//sources
 BASMOPTDBG=-sa+
-VASMOPT=-I$(INCLUDE)
+VASMOPT=-I$(INCLUDE) -I$(SOURCES)
 CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
-CP=cp
+CP=cp -R
 DATE=date "+(%d.%m.%Y)" | xargs printf >.date
 LHA=lha c1
 MKDIR=mkdir
@@ -195,6 +196,11 @@ INSTALLFILESMORE := $(foreach file,$(INSTFILESMORE),$(INSTDIR)/$(notdir $(file))
 $(INSTALLFILESMORE) : $(INSTFILESMORE)
 	$(CP) $^ $(INSTDIR)
 endif
+ifneq ($(GENFILES),)
+INSTALLGENFILES := $(foreach file,$(GENFILES),$(INSTDIR)/$(notdir $(file)))
+$(INSTALLGENFILES) : $(GENFILES)
+	$(CP) $^ $(INSTDIR)
+endif
 # ReadMe
 INSTREADME := inst/ReadMe
 # we have decided to not include sources anymore, instead link to github in ReadMe
@@ -225,7 +231,7 @@ $(INSTALLSRCDIR) :
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
 	$(CP) $< '$@'
 INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) \
-	$(INSTALLSLAVE) $(INSTALLISLAVE) $(INSTALLFILESMORE) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
+	$(INSTALLSLAVE) $(INSTALLISLAVE) $(INSTALLFILESMORE) $(INSTALLGENFILES) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
 inst : $(INSTALLFILES)
 
 #
@@ -274,7 +280,7 @@ wepl : $(INSTALLARCHIVE)
 #
 
 clean :
-	$(RM) .date $(SLAVE) $(ISLAVE) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
+	$(RM) .date $(SLAVE) $(ISLAVE) $(GENFILES) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
 
 #
 # targets to always build
