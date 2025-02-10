@@ -1,5 +1,4 @@
 
-
 	THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER
 	EXPRESS OR IMPLIED, STATUTORY OR OTHERWISE.
 	THE ENTIRE RISK AS TO USE, RESULTS AND PERFORMANCE OF THE PACKAGE IS
@@ -11,32 +10,25 @@
 	OWNER OR A THIRD PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF
 	DAMAGE.
 
-
 	That install applies to "Powermonger" © 1990 Bullfrog.
-
 
 	That install requires WHDLoad and DIC to be in the path. Both
 	can be found in the whdload package.
-
 
 	You need 0.5 MB ChipMem and 0.5 MB OtherMem.
 	You can quit the game by pressing ESC or F10 (key can be changed with
 	Tooltype "QuitKey=")
 
-
 	Manual protection has been removed. One Access Fault fixed. Savegame
 	redirected to harddisk. Keyboard routine fixed.
-	
 
 	To extract your savegames from a floppy :
 		create a disk image using DIC from your savegame disk
 		enter the directory where "Disk.1" is stored, and
 		execute "sgsaver", all valid savegames are extracted,
-		move them now to the PowerMonger save directory ...
+		move them now to the Powermonger save directory ...
 
-
-	Thanx to Peter Schreck for media support.
-
+	Thanx to Peter Schreck and Harley Kingston for media support.
 
 	If you have problems with this installation please report them via
 	the Bug-Report-Form which can be accessed via
@@ -56,6 +48,8 @@
 	- More icons added
 	- Various docs/maps added
 	- New install script
+	- Source available: https://github.com/wepl/winstalls
+
 	version 1.3 (17.7.2002) done by Wepl:
 	- sound replay in intro fixed for 68040/60
 
