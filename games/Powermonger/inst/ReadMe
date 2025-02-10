@@ -47,7 +47,15 @@
 	or	aminet:dev/misc/whdload#?
 	and	aminet:game/patch/
 
-
+	version 1.4 (10.02.2025) done by Paraj and Wepl:
+	- Use fast RAM to speed up rendering (configurable, defaults to
+	  on if 030+). If the game is now too fast, "CUSTOM2" can be used
+	  to limit the update rate, e.g. CUSTOM2=4 for 12.5Hz if PAL.
+	- Added trainer options to start with all maps and win on retire.
+	- Copy protection dialog is automatically dismissed.
+	- More icons added
+	- Various docs/maps added
+	- New install script
 	version 1.3 (17.7.2002) done by Wepl:
 	- sound replay in intro fixed for 68040/60
 
