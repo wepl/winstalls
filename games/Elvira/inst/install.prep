@@ -1,0 +1,59 @@
+#version=3
+#sub-dir=data
+#man-file=Manual
+#hint-file=Loesung
+#sol-file=Solution
+#extra-file=Rezepte
+#extra2-file=ClueBook
+#extra3-file=Maps
+#P_MakeImages#3
+      ;if the disk can be requested by the volume name:
+      (set #AD_disk "Disk1")
+      (set #AD_diskname "Disk 1")	;this optional, default is #AD_disk
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "([0-9]#?|icon.dat|runit|gameamiga|start)")
+      )
+
+      (set #AD_disk "Disk2")
+      (set #AD_diskname "Disk 2")	;this optional, default is #AD_disk
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "[0-9]#?")
+      )
+
+      (set #AD_disk "Disk3")
+      (set #AD_diskname "Disk 3")	;this optional, default is #AD_disk
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "[0-9]#?")
+      )
+
+      (set #AD_disk "Disk4")
+      (set #AD_diskname "Disk 4")	;this optional, default is #AD_disk
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "[0-9]#?")
+      )
+
+      (set #AD_disk "Disk5")
+      (set #AD_diskname "Disk 5")	;this optional, default is #AD_disk
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "[0-9]#?")
+      )

@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	elvira.asm
 ;  :Contents.	Slave for "Elvira" from Accolade
-;  :Author.	Wepl
+;  :Author.	Wepl, Psygore
 ;  :Original	v1
 ;  :Version.	$Id: elvira.asm 1.10 2018/04/10 00:30:37 wepl Exp wepl $
 ;  :History.	03.08.01 started
@@ -14,6 +14,8 @@
 ;			 audio volume patched
 ;			 quit slave when game exits added
 ;		15.12.22 supports ntsc screen
+;		09.02.24 fix % umlauts in german translation
+;		12.02.24 added patch for german texts in gameamiga
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -21,13 +23,11 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-;	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"sd0:Elvira.Slave"
+;	OUTPUT	"sd0:Elvira.Slave"
 ;	OUTPUT	"wart:e/elvira/Elvira.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
@@ -78,21 +78,15 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick13.s
+	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
-
 slv_name	dc.b	"Elvira - Mistress of the Dark",0
 slv_copy	dc.b	"1990 Accolade",0
-slv_info	dc.b	"adapted by Wepl",10
-		dc.b	"Version 1.3 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+slv_info	dc.b	"adapted by Wepl, Psygore",10
+		dc.b	"Version 1.4 "
+		INCBIN	".date"
 		dc.b	0
 slv_CurrentDir	dc.b	"data",0
 _runit		dc.b	"runit",0
@@ -196,6 +190,7 @@ _bootdos
 .end		moveq	#0,d0
 		rts
 
+; $23=#=ä $24=$=ö $25=%=ü $2b=+=ß $99=Ö $9a=Ü
 
 _plde_ntsc
 	PL_START
@@ -204,8 +199,13 @@ _plde_ntsc
 	PL_NEXT	_plde
 
 _plde	PL_START
+	PL_PS	$87a,.printf
 	PL_S	$20b2,$c8-$b2	;disable DeleteFile
+;	PL_BKPT	$7142		;load gameamiga header
+;	PL_BKPT	$79aa		;load gameamiga texts
+	PL_P	$7a0c,_texts
 	;PL_W	$168b6,21780	;io buffer size
+	PL_B	$184a7,$25	;Überschreiben
 	;PL_R	$192ec		;check if hd installed
 	;PL_I	$1984c		;largest chip mem
 	;PL_I	$19882		;largest fast mem
@@ -217,8 +217,76 @@ _plde	PL_START
 	PL_W	$1cafc+6,300	;v1.3 was $50
 	PL_PS	$1cb12,_dbffix
 	PL_W	$1cb12+6,$30
-
 	PL_B	$1CD8E+5,9	;v1.3 audio.vol byte fix
+	PL_END
+
+; % is used as 'ü' which breaks printf formatting
+; we disable formatting except % is followed by l/s
+
+.printf		cmp.b	#"l",(a2)		;%ld
+		beq	.do
+		cmp.b	#"s",(a2)		;%s
+		bne	.skip
+		cmp.b	#"e",(1,a2)		;%se
+		beq	.skip
+		cmp.b	#"s",(1,a2)		;%ss
+		beq	.skip
+		cmp.b	#"t",(1,a2)		;%st
+		bne	.do
+.skip		add.l	#$894-$87a-6,(a7)
+		rts
+
+.do		move.l	(a7)+,d0
+		move.l	a3,-(a7)		;original
+		pea	(-10,a5)		;original
+		move.l	d0,-(a7)
+		rts
+
+_texts		movem.l	d1/a0-a2,-(a7)
+		lea	.pl,a0
+		move.l	(-4,a5),a1
+		sub	#$14,a1			;offset in file
+		move.l	(_resload),a2
+		jsr	(resload_Patch,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		movem.l	(-$10,a5),d7/a3		;original
+		unlk	a5			;original
+		rts				;original
+
+.pl	PL_START
+	PL_STR	$15e,< >				;- 20
+	PL_STR	$17f,<Igitt! Schon irgendwie eklig.>	;Ups ! Mu+test Du so grob sein
+	PL_STR	$fd2,<villeicht ein kleiner Hinweis>	;Scher Dich hier raus Bastard
+	PL_STR	$12af,< >			;- 20
+	PL_STR	$17ad,<Spanner>			;Bastard
+	PL_STR	$18b6,<Gartensieb>		;ein R#tsel
+	PL_STR	$1931,<o+enflasche >		;aucenflasche
+	PL_STR	$1b73,<E>			;e 45
+	PL_STR	$1dc2,<leines St%ck Z%ndschnur>	;urzes St%ck wei+ses Band
+	PL_STR	$1e42,<Bild von  >		;(Oe)lbild von
+	PL_STR	$20da,<%>			;(Ue)
+	PL_STR	$2653,<E>			;e
+	PL_STR	$27c6,<r EX Vampirin>		; Ex-Vampirin
+	PL_STR	$29d9,<S>			;s
+	PL_STR	$2b42,<STUNG>			;stung
+	PL_STR	$30cf,<Mein Held, daf%r werde ich dich ganz besonders verw$hnen>
+		      ;Ohh, mein Held! Wer ist denn nun der gro+e, starke Junge
+	PL_STR	$31bb,<Buttergolem losgeworden > ;Schmalzeimer los geworden
+	PL_STR	$33f6,< abgekn$pft>		;abgekn$pft.
+	PL_STR	$3727,< ..deine Hose PLATZT gleich.      >
+		      ;Elvira wirft Dir den Schl%ssel zu.
+	PL_STR	$389b,<S>			;s
+	PL_STR	$3b9f,<S>			;s
+	PL_STR	$3d3c,<z mit >			;sz mit
+	PL_STR	$3e98,<!!>			; -
+	PL_STR	$40e3,<C>			;c
+	PL_STR	$4390,<                           Also, ich kriech auf allen vieren herum, w#hrend du hier (.)(.)>
+		      ;Ich kriech' hier auf allen Vieren rum, w#hrnd Du dastehst und dumm aus der W#sche guckst."
+	PL_STR	$4539,<u darfst dich sp#ter daf%r ausgiebig bei mir bedanken!>
+		      ;a, sieh hin, ich bin so schlau wie ich verfressen bin.
+	PL_STR	$4581,<%>			;(Ue)
+	PL_STR	$48c3,< >			;- 20
+	PL_STR	$5096,< >			;- 20
 	PL_END
 
 _plen_ntsc
@@ -230,7 +298,6 @@ _plen_ntsc
 _plen	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
 	;PL_W	$16cea,21780	;io buffer size
-
 	PL_PS	$1a10c,_dbffix
 	PL_W	$1a10c+6,$1f4
 	PL_PS	$1a1be,_dbffix
@@ -239,7 +306,6 @@ _plen	PL_START
 	PL_W	$1cf00+6,300	;v1.3 was $50
 	PL_PS	$1cf16,_dbffix
 	PL_W	$1cf16+6,$30
-
 	PL_B	$1D192+5,9	;v1.3 audio.vol byte fix
 	PL_END
 
@@ -252,7 +318,6 @@ _plfr_ntsc
 _plfr	PL_START
 	PL_S	$2122,$38-$22	;disable DeleteFile
 	;PL_W	$16cea,21780	;io buffer size
-
 	PL_PS	$1a15e,_dbffix
 	PL_W	$1a15e+6,$1f4
 	PL_PS	$1a210,_dbffix
@@ -261,7 +326,6 @@ _plfr	PL_START
 	PL_W	$1cf62+6,300	;v1.3 was $50
 	PL_PS	$1cf78,_dbffix	;soundtrack dma wait
 	PL_W	$1cf78+6,$30
-
 	PL_B	$1D1F4+5,9	;v1.3 audio.vol byte fix
 	PL_END
 
@@ -290,7 +354,7 @@ _replay_music	move.l	(sp)+,d0		;return address
 		cmp.b	#5+1,(a0)
 		bne	.ok
 		clr.b	(a0)
-		addq.l	#6,(sp)			;skip addq.b #1, for mt_speed 
+		addq.l	#6,(sp)			;skip addq.b #1, for mt_speed
 .ok		rts
 
 .1		dc.b	0,0
@@ -369,7 +433,6 @@ _intro		lea	_custom,a5		;A5 = custom
 
 ;============================================================================
 
-;----------------------------------------------
 _tags_elvira	dc.l	WHDLTAG_MONITOR_GET
 _modeid		dc.l	0
 		dc.l	TAG_DONE
