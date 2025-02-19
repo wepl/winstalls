@@ -21,4 +21,6 @@ Make targets:
 	arc		build install package archive
 	rel		copy install archive to release location
 	clean		remove all generated artefacts
+	get		download install package from WHDLoad web site
+			(e.g. to modify without Slave rebuild)
 

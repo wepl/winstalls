@@ -39,6 +39,9 @@
 	or	aminet:dev/misc/whdload#?
 	and	aminet:game/patch/
 
+	version 1.4.1 (19.02.2025):
+	- made Manual.pdf compatible to APDF, thanks Retroplay
+
 	version 1.4 (10.02.2025) done by Paraj and Wepl:
 	- Use fast RAM to speed up rendering (configurable, defaults to
 	  on if 030+). If the game is now too fast, "CUSTOM2" can be used

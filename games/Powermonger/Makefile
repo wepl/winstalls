@@ -7,5 +7,6 @@ GENFILES := sgsaver
 include ../../Makemacros
 
 sgsaver : sgsaver.asm
+	$(DATE)
 	$(ASM) $(ASMOUT)$@ $<
 

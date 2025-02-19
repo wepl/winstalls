@@ -35,6 +35,7 @@ CFLAGS=-Ivincludeos3: -Inetinclude:
 CP=Copy
 DATE=wdate >.date
 LHA=lha -Fr a
+LHAX=lha x
 MKDIR=Makedir
 RM=Delete All
 
@@ -53,6 +54,7 @@ CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
 CP=cp -R
 DATE=date "+(%d.%m.%Y)" | xargs printf >.date
 LHA=lha c1
+LHAX=lha x
 MKDIR=mkdir
 RM=rm -fr
 VAMOS=vamos -qC68020 -m4096 -s128 --
@@ -263,6 +265,17 @@ wepl : $(INSTALLARCHIVE)
 	scp $< juno:
 
 #
+# target: retrieve install archive from whdload web page and unarchive it
+# update timestamp of Slave source to avoid rebuild
+#
+get :
+	$(RM) $(INSTALLARCHIVE)
+	wget whdload.de/$(notdir $(patsubst %/,%,$(dir $(CURDIR))))/$(INSTALLARCHIVE)
+	$(LHAX) $(INSTALLARCHIVE)
+	$(CP) $(INSTALLSLAVE) $(SLAVE)
+	touch -r $(INSTALLSLAVE) $(SLAVESRC) $(SLAVE)
+
+#
 # generic rules
 #
 
@@ -285,7 +298,7 @@ clean :
 #
 # targets to always build
 #
-.PHONY : dest img inst arc rel wepl clean
+.PHONY : dest get img inst arc rel wepl clean
 
 # debugging: print all make variables defined between saving vars to VARS_OLD and here
 #$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))
