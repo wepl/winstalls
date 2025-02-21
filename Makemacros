@@ -53,7 +53,7 @@ VASMOPT=-I$(INCLUDE) -I$(SOURCES)
 CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
 CP=cp -R
 DATE=date "+(%d.%m.%Y)" | xargs printf >.date
-LHA=lha c1
+LHA=lha c1o6
 LHAX=lha x
 MKDIR=mkdir
 RM=rm -fr
@@ -241,6 +241,7 @@ inst : $(INSTALLFILES)
 #
 INSTALLARCHIVE := $(BASE).lha
 $(INSTALLARCHIVE) : $(INSTALLFILES)
+	$(RM) $@
 	$(LHA) $@ $(INSTDIR) $(INSTDIRICON)
 arc : $(INSTALLARCHIVE)
 
