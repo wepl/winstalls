@@ -221,11 +221,15 @@ _plde	PL_START
 	PL_END
 
 ; % is used as 'ü' which breaks printf formatting
-; we disable formatting except % is followed by l/s
+; we disable formatting except % is followed by d/l/s
 
 .printf		cmp.b	#"l",(a2)		;%ld
 		beq	.do
-		cmp.b	#"s",(a2)		;%s
+		cmp.b	#"d",(a2)		;%d
+		bne	.s
+		cmp.b	#"e",(1,a2)		;%de -> müde
+		bne	.do
+.s		cmp.b	#"s",(a2)		;%s
 		bne	.skip
 		cmp.b	#"e",(1,a2)		;%se
 		beq	.skip
@@ -263,28 +267,23 @@ _texts		movem.l	d1/a0-a2,-(a7)
 	PL_STR	$1931,<o+enflasche >		;aucenflasche
 	PL_STR	$1b73,<E>			;e 45
 	PL_STR	$1dc2,<leines St%ck Z%ndschnur>	;urzes St%ck wei+ses Band
-	PL_STR	$1e42,<Bild von  >		;(Oe)lbild von
-	PL_STR	$20da,<%>			;(Ue)
+	PL_STR	$1e42,<Bild von  >		;Ölbild von
+	PL_STR	$20da,<%>			;Ü
 	PL_STR	$2653,<E>			;e
 	PL_STR	$27c6,<r Ex-Vampirin>		; Ex-Vampirin
-	PL_STR	$29d9,<S>			;s
-	PL_STR	$2b42,<STUNG>			;stung
 	;PL_STR	$30cf,<Mein Held, daf%r werde ich dich ganz besonders verw$hnen>
 		      ;Ohh, mein Held! Wer ist denn nun der gro+e, starke Junge
 	;PL_STR	$31bb,<Buttergolem losgeworden > ;Schmalzeimer los geworden
 	PL_STR	$33f6,< abgekn$pft>		;abgekn$pft.
 	;PL_STR	$3727,< ..deine Hose PLATZT gleich.      >
 		      ;Elvira wirft Dir den Schl%ssel zu.
-	PL_STR	$389b,<S>			;s
-	PL_STR	$3b9f,<S>			;s
 	PL_STR	$3d3c,<z mit >			;sz mit
-	PL_STR	$3e98,<!!>			; -
-	PL_STR	$40e3,<C>			;c
+	PL_STR	$3e98,<!!>			;.-
 	;PL_STR	$4390,<                           Also, ich kriech auf allen vieren herum, w#hrend du hier (.)(.)>
 		      ;Ich kriech' hier auf allen Vieren rum, w#hrnd Du dastehst und dumm aus der W#sche guckst."
 	;PL_STR	$4539,<u darfst dich sp#ter daf%r ausgiebig bei mir bedanken!>
 		      ;a, sieh hin, ich bin so schlau wie ich verfressen bin.
-	PL_STR	$4581,<%>			;(Ue)
+	PL_STR	$4581,<%>			;Ü
 	PL_STR	$48c3,< >			;- 20
 	PL_STR	$5096,< >			;- 20
 	PL_END
