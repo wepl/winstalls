@@ -15,7 +15,7 @@
  To install from a different drive than DF0: select Expert as installation
  mode.
 
- You need 0.5 MB ChipMem and 0.5 MB OtherMem.
+ You need 0.5 MB ChipMem and 1.0 MB OtherMem.
  You can quit the game by pressing F10 (key can be changed with Tooltype
  "QuitKey=").
 
@@ -40,10 +40,16 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
- version 1.7 (29.05.16) done by JOTD:
+ version 2.0 (28.01.2019) done by JOTD:
+ - Game now uses "data" directory so it's consistent with install script (issue #0003880)
+ - Smart support for 2nd button joystick (fixes wrong joypad button reads on non-CD32 joysticks)
+ - FWD+BWD CD32 pad buttons trigger retreat / ESC in the map section (quit game)
+ - CUSTOM1 now allows 2nd player to control mouse with joystick in the map (issue #0003206)
+ 
+ version 1.7 (29.05.2016) done by JOTD:
  - Adapted to new kickemu
  
- version 1.6 (03.05.13) done by CFou!:
+ version 1.6 (03.05.2013) done by CFou!:
  - NTSC version supported (SPS 1780)
  - NTSC test skipped (game freezed on title screen)
  - User can choose between to install disk image or extracted file
@@ -57,11 +63,11 @@
  - New install script
  - source code included
 
- version 1.5 (02.06.03) done by Wepl:
+ version 1.5 (02.06.2003) done by Wepl:
  - minor changes
  - Two multilanguage versions supported (SPS 2397 & SPS 0194) 
 
- version 1.4 (17.02.01) done by Wepl:
+ version 1.4 (17.02.2001) done by Wepl:
  - uses kickemu instead osemu
  - new icon (rom/color)
 

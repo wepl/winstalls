@@ -71,7 +71,7 @@ slv_keyexit	= $5D	; num '*'
 	ENDC
 
 DECL_VERSION:MACRO
-	dc.b	"1.7"
+	dc.b	"2.0"
 	IFD BARFLY
 		dc.b	" "
 		INCBIN	"T:date"
@@ -80,24 +80,17 @@ DECL_VERSION:MACRO
 
 slv_name		dc.b	"North & South",0
 slv_copy		dc.b	"1989 Infogrames",0
-slv_info		dc.b	"adapted by Wepl, CFou! & Mr.Larmer",10,10
+slv_info		dc.b	"adapted by Wepl, CFou!, Mr.Larmer & JOTD",10,10
+			dc.b	"Use 2nd joystick button / CD32 pad blue to switch units",10
+			dc.b	"Use CD32 pad FWD+BWD to retreat",10,10
 			dc.b	"Version "
 			DECL_VERSION
 		dc.b	0
 slv_CurrentDir:
-	dc.b	0
+	dc.b	"data",0
 slv_config		
-		DC.B	"C1:X:Second Button Support (PL1&PL2) & CD32 PAD (PL1):0;"
-		DC.B	"C1:X:To force Joytick or CD32Pad for PL2 (mouse port):1;"
-		;DC.B	"C1:X:Unvulnerability:2;"
-		;DC.B	"C1:X:Unlimited Time:3;"
-                ;dc.b    "C2:L:as starting Level for PL1&PL2:Level 1,Level 2,Level 3,Level 4,Level 5,Level 6,Level 7;"
-                ;dc.b    "C3:L:as starting Weapon for PL1&PL2:Flames,Spear (Default),Axe,Crucifix,Knives;"
-		;dc.b 	"BW;"
-		;DC.B	"C1:X:Second button to jump (CD32 PAD):4;"
-		;DC.B	"C1:X:Turn in jump possibility:5;"
-		;DC.B	"C1:X:Skip CFou's intro (no leave it!!!):6;"
-		;DC.B	"C1:X:Skip CFou's trainer (no leave it too!!!):7;"
+;		DC.B	"C1:X:Second Button Support (PL1&PL2) & CD32 PAD (PL1):0;"
+		DC.B	"C1:B:Forces Joystick or CD32Pad for PL2 (mouse port);"
                 dc.b    0
 	even
 ; version xx.slave works
@@ -130,7 +123,9 @@ patch2	MACRO
 	;a4 = buffer (1024 bytes)
 	;a6 = execbase
 _bootblock;
-
+	; just to be able to use 2-button joysticks
+	bsr	_detect_controller_types
+	
 .versionTest
 	;get tags
 		lea	(_tag,pc),a0
@@ -163,7 +158,7 @@ _bootblock;
 		jmp	(12,a4)
 .patch
 
-		addq.l	#8,A0;
+		addq.l	#8,A0
 ;***************************;***************************;***************************
 ;***************************;***************************;***************************
 ;***************************** Version 1
@@ -171,11 +166,16 @@ _bootblock;
 ;***************************;***************************;***************************
 		cmp.l	#$61A64A40,$7FFE(A0)		;V1 multilanguage
 		bne	.another
-		move.w	#$7001,$7FFE(A0)		; skip protection;
+		
+		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	a0,a1
+		move.l	_resload(pc),a2
+		lea	pl_version_1(pc),a0
+		jsr	resload_Patch(a2)
+		movem.l	(a7)+,d0-d1/a0-a2
+		
+
 ;------------------------ Second Button Patch
-			move.l	_custom1(pc),d0
-			tst.l	d0
-			beq	.noSB
 			add.l	#$8348,a0
 			cmp.l	#$1B6CBE2D,(A0)
 			bne	.noFoundJoy
@@ -215,6 +215,7 @@ _bootblock;
 		jmp	(a0)
 
 
+	
 ;***************************;***************************;***************************
 ;***************************;***************************;***************************
 ;***************************** Version 3
@@ -222,11 +223,18 @@ _bootblock;
 ;***************************;***************************;***************************
 .another	cmp.l	#$61A64A40,$7F42(A0)		;V3 Multlanguage
 		bne	.another2
-		move.w	#$7001,$7F42(A0)		; skip protection;
+		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	a0,a1		
+		move.l	_resload(pc),a2
+		lea	pl_version_3(pc),a0
+		jsr	resload_Patch(a2)
+		movem.l	(a7)+,d0-d1/a0-a2
+		
+
 ;------------------------ Second Button Patch
-			move.l	_custom1(pc),d0
-			tst.l	d0
-			beq	.noSBV3
+	;		move.l	_custom1(pc),d0
+	;		tst.l	d0
+	;		beq	.noSBV3
 			add.l	#$13B48-$B8C0,a0
 			cmp.l	#$1B6CBE2B,(A0)
 			bne	.noFoundJoyV3
@@ -270,8 +278,14 @@ _bootblock;
 ;***************************;***************************;***************************
 .another2	cmp.l	#$61A64A40,$7EF6(A0)		;V2 English NTSC
 		bne	.not_support
-		move.w	#$7001,$7F42(A0)		; skip protection;
-		move.b	#$60,$9AE(A0)			; Skip NTSC test (freezed on title screen;
+		
+		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	a0,a1
+		move.l	_resload(pc),a2
+		lea	pl_version_2(pc),a0
+		jsr	resload_Patch(a2)
+		movem.l	(a7)+,d0-d1/a0-a2
+		
 		add.l	#$119A2-8,a0
 		cmp.l	#$08B90007,(A0)		;
 		bne	.not_support
@@ -280,9 +294,10 @@ _bootblock;
 		patch	$0(a0),_Crack		; crack disk protection
 		sub.l	#$119A2-8,a0
 ;------------------------ Second Button Patch
-			move.l	_custom1(pc),d0
-			tst.l	d0
-			beq	.noSBV2
+; JOTD why not enabling it anyway? no need for custom1
+;			move.l	_custom1(pc),d0
+;			tst.l	d0
+;			beq	.noSBV2
 			add.l	#$13B00-$B8C0,a0
 			cmp.l	#$1B6CBE21,(A0)
 			bne	.noFoundJoyV2
@@ -359,7 +374,113 @@ _bootblock;
 _FileVersion	dc.l	0
 	
 
-.error	bra	.error
+
+pl_version_1
+	PL_START
+	PL_W	$7FFE,$7001		; skip protection;
+	; menu keyboard read: joypad FWD+BWD = ESC
+	PL_PSS	$1362C-$B8C0,keyboard_read,4
+	
+	PL_IFC1
+	; remove mouse read
+	PL_W	$136D4-$B8C0,$7000
+	PL_NOP	$136D6-$B8C0,4
+	; double joystick read
+	PL_PS	$13674-$B8C0,joysticks_menu_read
+	PL_ELSE
+	PL_PS	$13674-$B8C0,joysticks_menu_read_mouse
+	PL_ENDIF
+	
+	PL_END
+
+
+pl_version_2
+	PL_START
+	PL_W	$7F42,$7001		; skip protection;
+	PL_B	$9AE,$60        ; Skip NTSC test (freezed on title screen;
+	; menu keyboard read: joypad FWD+BWD = ESC
+	PL_PSS	$13524-$B8C0,keyboard_read,4
+	
+	PL_IFC1
+	; remove mouse read
+	PL_W	$135CC-$B8C0,$7000
+	PL_NOP	$135CE-$B8C0,4
+	; double joystick read
+	PL_PS	$1356C-$B8C0,joysticks_menu_read
+	PL_ELSE
+	PL_PS	$1356C-$B8C0,joysticks_menu_read_mouse
+	PL_ENDIF
+	
+	PL_END
+	
+pl_version_3
+	PL_START
+	PL_W	$7F42,$7001		; skip protection;
+	; menu keyboard read: joypad FWD+BWD = ESC
+	PL_PSS	$13570-$B8C0,keyboard_read,4
+	
+	PL_IFC1
+	; remove mouse read
+	PL_W	$13618-$B8C0,$7000
+	PL_NOP	$1361A-$B8C0,4
+	; double joystick read
+	PL_PS	$135B8-$B8C0,joysticks_menu_read
+	PL_ELSE
+	PL_PS	$135B8-$B8C0,joysticks_menu_read_mouse
+	PL_ENDIF
+	
+	PL_END
+
+	
+keyboard_read
+	move.l	joy0(pc),d0
+	btst	#JPB_BTN_FORWARD,d0
+	beq.b	.j1
+	btst	#JPB_BTN_REVERSE,d0
+	beq.b	.j1
+	bra.b	.esc
+.j1
+	move.l	joy1(pc),d0
+	btst	#JPB_BTN_FORWARD,d0
+	beq.b	.kb
+	btst	#JPB_BTN_REVERSE,d0
+	beq.b	.kb
+.esc
+	move.b	#$45,d0
+	bra.b	.out
+.kb
+	MOVE.B $00bfec01,D0
+    ROR.B #$01,D0
+    NOT.B D0
+.out
+	rts
+	
+joysticks_menu_read_mouse
+	bsr	_joystick
+	move.w	$DFF00C,d0
+	RTS
+
+joysticks_menu_read
+	movem.l	d0-d2,-(a7)
+	move.l	$DFF00A,d2	; save value
+	bsr	_joystick
+	move.l	joy1(pc),d0
+	bne.b	.joy1_move
+	; check if all directions neutral. If all neutral, check 2nd joystick
+	swap	d2
+	;;move.w	#$F00,$DFF180
+	;;bra	.xx
+.joy1_move
+	;;move.w	#$F0,$DFF180
+;;.xx
+	lea	.joybuff(pc),a0
+	move.w	d2,(a0)
+	movem.l	(a7)+,d0-d2
+	rts
+	
+.joybuff
+	dc.w	0
+	
 ;---------------------------
 ;===============V1
 ;---------------------------
@@ -381,24 +502,25 @@ _TestJoy1Gen
 	move.l	joy1(pc),d0
 .2PLmode	
 
-	move.l	_custom1(pc),d1
-	btst	#1,d1			; CD32 PAD FOR PLAYER 2 MOUSE PORT
-	BEQ	.noCD32PAD
-	btst	#JPB_JOY_U,d0
+	move.l	_mouse_as_joy(pc),d1
+;;	btst	#1,d1			; CD32 PAD FOR PLAYER 2 MOUSE PORT
+	BEQ	.noCD32PAD	
+	; JOTD: up & down were reversed
+	btst	#JPB_BTN_DOWN,d0
 	beq	.noU
 	bset	#1,d3			; UP
-.noU	btst	#JPB_JOY_D,d0
+.noU	btst	#JPB_BTN_UP,d0
 	beq	.noD
 	bset	#0,d3			; DOWN
-.noD	btst	#JPB_JOY_L,d0
+.noD	btst	#JPB_BTN_LEFT,d0
 	beq	.noL
 	bset	#2,d3			; LEFT
-.noL	btst	#JPB_JOY_R,d0
+.noL	btst	#JPB_BTN_RIGHT,d0
 	beq	.noR
 	bset	#3,d3			; RIGHT
 .noR
 .noCD32PAD
-		btst	#JPB_BTN_BLU,d0	; fixe second button winuae
+		btst	#JPB_BTN_BLU,d0	; fix second button winuae
 		bne	.noSB
 	btst	#JPB_BTN_RED,d0
 	beq	.noSB
@@ -432,6 +554,28 @@ _TakePL2JOY0
 	movem.l	(a7)+,d0-D1
 	move.B	-$41D4(A4),-2(A5)	; $8x=Fire | $01=Down | $02=Up | $04=Left | $08= Right
 	rts
+	
+
+ROK_MACRO:MACRO
+rest_of_keys_\1_\2
+	btst	#JPB_BTN_REVERSE,d3
+	beq	.no_retreat
+	btst	#JPB_BTN_FORWARD,d3
+	beq	.no_retreat
+	move.b	#$\2,-$\1(a4)		; RShift
+.no_retreat
+	rts
+	ENDM
+	
+	; player 1
+	ROK_MACRO	41DC,45
+	ROK_MACRO	41E8,45
+	ROK_MACRO	41DE,45
+	; player 2
+	ROK_MACRO	41DC,41
+	ROK_MACRO	41E8,41
+	ROK_MACRO	41DE,41
+	
 ;---------------------------
 _TakeSpecialKeyPL1
 ;	bsr	_CD32_Read
@@ -439,7 +583,9 @@ _TakeSpecialKeyPL1
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	D4,-$41DC(a4)		; RShift
-.noSB	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
+.noSB
+	bsr	rest_of_keys_41DC_45
+	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
 	ext.W	d3
 	rts
 ;---------------------------
@@ -449,12 +595,15 @@ _TakeSpecialKeyPL2
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	#$61,-$41DC(a4)		; RShift
-.noSB	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
+.noSB
+	bsr	rest_of_keys_41DC_41
+
+	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
 	ext.W	d3
 	rts
 ;---------------------------
 
-
+	
 ;==============V2
 _TakePL1JOY1_V2
 	bsr	_CD32_Read
@@ -463,7 +612,8 @@ _TakePL1JOY1_V2
 	move.b	-$41DF(a4),d3
 	bsr	_TestJoy0Gen
 	move.b	D3,-$41DF(a4)
-.noSB	move.B	-$41DF(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
+.noSB	
+	move.B	-$41DF(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
 
 	move.l	(a7)+,d0
 	rts
@@ -485,7 +635,9 @@ _TakeSpecialKeyPL1_V2
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	D4,-$41E8(a4)		; LShift
-.noSB	move.b	-$41E8(a4),d3
+.noSB
+	bsr	rest_of_keys_41E8_45
+	move.b	-$41E8(a4),d3
 	ext.W	d3			; $60=LShift | $45=Esc
 	rts
 ;---------------------------
@@ -495,7 +647,9 @@ _TakeSpecialKeyPL2_V2
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	#$61,-$41E8(a4)		; RShift
-.noSB	move.b	-$41E8(a4),d3		; $61=RShift | $45=Esc
+.noSB
+	bsr	rest_of_keys_41E8_41
+	move.b	-$41E8(a4),d3		; $61=RShift | $45=Esc
 	ext.W	d3
 	rts
 ;---------------------------
@@ -509,7 +663,8 @@ _TakePL1JOY1_V3
 	move.b	-$41D5(a4),d3
 	bsr	_TestJoy0Gen
 	move.b	D3,-$41D5(a4)
-.noSB	move.B	-$41D5(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
+.noSB
+	move.B	-$41D5(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
 
 	move.l	(a7)+,d0
 	rts
@@ -533,7 +688,9 @@ _TakeSpecialKeyPL1_V3
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	D4,-$41DE(a4)		; LShift
-.noSB	move.b	-$41DE(a4),d3
+.noSB
+	bsr	rest_of_keys_41DE_45
+	move.b	-$41DE(a4),d3
 	ext.W	d3			; $60=LShift | $45=Esc
 	rts
 ;---------------------------
@@ -543,7 +700,9 @@ _TakeSpecialKeyPL2_V3
 	btst	#JPB_BTN_BLU,d3
 	beq	.noSB
 	move.b	#$61,-$41DE(a4)		; RShift
-.noSB	move.b	-$41DE(a4),d3		; $61=RShift | $45=Esc
+.noSB
+	bsr	rest_of_keys_41DE_41
+	move.b	-$41DE(a4),d3		; $61=RShift | $45=Esc
 	ext.W	d3
 	rts
 ;---------------------------
@@ -776,7 +935,7 @@ _GameNamePrec	dc.l	0
 _tag		dc.l	WHDLTAG_ATTNFLAGS_GET
 CPUFLAGS	dc.l	0
 		dc.l	WHDLTAG_CUSTOM1_GET
-_custom1	dc.l	0
+_mouse_as_joy	dc.l	0
 ;		dc.l	WHDLTAG_CUSTOM2_GET
 ;_custom2	dc.l	0
 ;		dc.l	WHDLTAG_CUSTOM3_GET
