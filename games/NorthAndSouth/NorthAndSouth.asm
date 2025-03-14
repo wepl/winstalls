@@ -13,25 +13,24 @@
 ;  :To Do.;
 ;---------------------------------------------------------------------------*;
 ;
-	INCDIR	Includes:;
-	INCLUDE	whdload.i;
-	INCLUDE	whdmacros.i;
+	INCDIR	Include:
+	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
+	;INCLUDE	lvo/dos.i
 
-	IFD BARFLY;
-	OUTPUT	"North&South.Slave";
-;	BOPT	O+	;enable optimizing;
-;	BOPT	OG+	;enable optimizing;
-;	BOPT	ODd-	;disable mul optimizing;
-;	BOPT	ODe-	;disable mul optimizing;
-;	BOPT	w4-	;disable 64k warnings;
-	SUPER;
-	ENDC;
+	IFD BARFLY
+	OUTPUT	"NorthAndSouth.Slave"
+	BOPT	O+				;enable optimizing
+	BOPT	OG+				;enable optimizing
+	BOPT	ODd-				;disable mul optimizing
+	BOPT	ODe-				;disable mul optimizing
+	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-			;disable optimizer warnings
+	SUPER
+	ENDC
 Execbase	=	4
+;============================================================================
 
-;_Flash
-;_FlashFiles
-;============================================================================;
-;
 CHIPMEMSIZE	= $80000
 FASTMEMSIZE	= 0000
 NUMDRIVES	= 1
@@ -41,6 +40,7 @@ WPDRIVES	= %0000
 CACHE
 ;DEBUG
 DISKSONBOOT
+BOOTBLOCK
 ;DOSASSIGN
 ;FONTHEIGHT	= 8
 ;HDINIT
@@ -53,34 +53,40 @@ SETPATCH
 ;STACKSIZE	= 6000
 TRDCHANGEDISK
 
-;============================================================================;
-;
-KICKSIZE	= $40000			;34.005;
-BASEMEM		= CHIPMEMSIZE;
-EXPMEM		= KICKSIZE+FASTMEMSIZE;
-;
-;============================================================================;
-;
-_base		SLAVE_HEADER			;ws_Security + ws_ID;
-		dc.w	17			;ws_Version;
-		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulPriv	;ws_flags;
-		dc.l	BASEMEM			;ws_BaseMemSize;
-		dc.l	0			;ws_ExecInstall;
-		dc.w	_boot-_base		;ws_GameLoader;
-		dc.w	0			;ws_CurrentDir;
-		dc.w	0			;ws_DontCache;
-_keydebug	dc.b	0			;ws_keydebug;
-_keyexit	dc.b	$59			;ws_keyexit = F10;
-_expmem		dc.l	EXPMEM			;ws_ExpMem;
-		dc.w	_name-_base		;ws_name;
-		dc.w	_copy-_base		;ws_copy;
-		dc.w	_info-_base		;ws_info;
-                dc.w	0				;ws_kickname
-                dc.l	0				;ws_kicksize
-                dc.w	0				;ws_kickcrc
-                dc.w	_config-_base			;ws_config   		; V17
+;============================================================================
 
-_config
+
+slv_Version=17
+slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_keyexit	= $5D	; num '*'
+
+	include 	kick13.s
+	include readjoypad.s
+
+
+;============================================================================
+
+	IFD BARFLY
+	DOSCMD	"WDate  >T:date"
+	ENDC
+
+DECL_VERSION:MACRO
+	dc.b	"1.7"
+	IFD BARFLY
+		dc.b	" "
+		INCBIN	"T:date"
+	ENDC
+	ENDM
+
+slv_name		dc.b	"North & South",0
+slv_copy		dc.b	"1989 Infogrames",0
+slv_info		dc.b	"adapted by Wepl, CFou! & Mr.Larmer",10,10
+			dc.b	"Version "
+			DECL_VERSION
+		dc.b	0
+slv_CurrentDir:
+	dc.b	0
+slv_config		
 		DC.B	"C1:X:Second Button Support (PL1&PL2) & CD32 PAD (PL1):0;"
 		DC.B	"C1:X:To force Joytick or CD32Pad for PL2 (mouse port):1;"
 		;DC.B	"C1:X:Unvulnerability:2;"
@@ -93,25 +99,12 @@ _config
 		;DC.B	"C1:X:Skip CFou's intro (no leave it!!!):6;"
 		;DC.B	"C1:X:Skip CFou's trainer (no leave it too!!!):7;"
                 dc.b    0
-;
-;============================================================================;
-;
-_name		dc.b	"North & South",0;
-_copy		dc.b	"1989 Infogrames",0;
-_info		dc.b	"adapted by Wepl, CFou! & Mr.Larmer",10;
-		dc.b	"Version 1.6 "
-		IFD	BARFLY
-		IFND	.passchk
-		DOSCMD	"WDate >T:date"
-.passchk
-		ENDC
-		INCBIN	"T:date"
-		ELSE
-		dc.b	"(07.12.2002)"
-		ENDC
-		dc.b	0;
-		EVEN;
-;
+	even
+; version xx.slave works
+
+	dc.b	"$","VER: slave "
+	DECL_VERSION
+	dc.b	0
 patchs2	MACRO
 	IFNE	NARG-2
 		FAIL	arguments "patchs2"
@@ -131,19 +124,12 @@ patch2	MACRO
 		move.l	(a7)+,2+\1
 		move.w	#$4E71,6+\1
 	ENDM
-
 ;============================================================================;
 ;
 	;a1 = ioreq ($2c+a5);
 	;a4 = buffer (1024 bytes)
 	;a6 = execbase
 _bootblock;
-
-	IFD	_Flash
-.t	move.w	#$f0,$dff180
-	btst	#6,$bfe001
-	bne	.t	
-	ENDC
 
 .versionTest
 	;get tags
@@ -802,9 +788,12 @@ _custom1	dc.l	0
 		dc.l	TAG_END;0	; End
 ;====================================================================== 
 
-	INCLUDE	Sources:whdload/kick13.s;
-	include readjoypad.s
 ;
 ;============================================================================;
 ;
 	END;
+	IFD	_Flash
+.t	move.w	#$f0,$dff180
+	btst	#6,$bfe001
+	bne	.t	
+	ENDC

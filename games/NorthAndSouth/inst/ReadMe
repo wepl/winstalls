@@ -27,7 +27,7 @@
  a appropriate requester.
  Additionally the file "kick34005.A500.RTB" must be installed in the same
  directory as the kickstart image. It can be found in the archive 
- "util/boot/skick343.lha" on aminet.
+ "util/boot/skick346.lha" on aminet.
 
  If you have problems with this installation please try first to get a newer
  version of this package from the WHDLoad's WWW-Page. If that doesn't help try
@@ -40,6 +40,9 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
+ version 1.7 (29.05.16) done by JOTD:
+ - Adapted to new kickemu
+ 
  version 1.6 (03.05.13) done by CFou!:
  - NTSC version supported (SPS 1780)
  - NTSC test skipped (game freezed on title screen)
