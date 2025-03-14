@@ -36,13 +36,33 @@
  can be accessed on the WHDLoad's WWW-Page.
 
  For full WHDLoad package, other installs and updates refer to:
-	http://www.whdload.org/
+	http://www.whdload.de/
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
+ version 1.6 (03.05.13) done by CFou!:
+ - NTSC version supported (SPS 1780)
+ - NTSC test skipped (game freezed on title screen)
+ - User can choose between to install disk image or extracted file
+ - Rawdic used now to image disk or to extract files
+ - Second button support to select unit & CD32 PAD for player 1&2
+   CUSTOM1=1:To use second button (PL1&PL2) to select unit and CD32Pad for PL1
+   (if mouse connected PL2 can use LMB to fire and RMB to select unit+cursors)
+   CUSTOM1=2:To force JOYSTICK or CD32 PAD for PL2 (mouse port)
+   CUSTOM1=3:To use second button to select unit and two CD32 Pads for PL1&PL2
+  - Manual included
+ - New install script
+ - source code included
 
+ version 1.5 (02.06.03) done by Wepl:
+ - minor changes
+ - Two multilanguage versions supported (SPS 2397 & SPS 0194) 
 
- Features:
+ version 1.4 (17.02.01) done by Wepl:
+ - uses kickemu instead osemu
+ - new icon (rom/color)
+
+ Version 1.0-1.3 (1998) done by Mr.Larmer/Wanted Team
  - protection removed,
  - game using OSEmu module done by Harry, Wepl and me,
  - nice MWB/NI icons included,
@@ -50,13 +70,3 @@
  Thanx to:
  - Mark Knibbs for original disk image,
  - Wolfgang Unger for second disk version.
-
-Mr.Larmer/Wanted Team in 1998.
-
- version 1.4 (17.02.01) done by Wepl:
- - uses kickemu instead osemu
- - new icon (rom/color)
-
- version 1.5 (02.06.03) done by Wepl:
- - minor changes
-
