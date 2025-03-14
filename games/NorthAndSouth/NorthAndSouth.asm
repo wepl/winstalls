@@ -71,7 +71,7 @@ slv_keyexit	= $5D	; num '*'
 	ENDC
 
 DECL_VERSION:MACRO
-	dc.b	"2.0"
+	dc.b	"2.1"
 	IFD BARFLY
 		dc.b	" "
 		INCBIN	"T:date"
@@ -457,7 +457,7 @@ keyboard_read
 	
 joysticks_menu_read_mouse
 	bsr	_joystick
-	move.w	$DFF00C,d0
+	lea	$DFF00C,A0
 	RTS
 
 joysticks_menu_read
@@ -468,11 +468,7 @@ joysticks_menu_read
 	bne.b	.joy1_move
 	; check if all directions neutral. If all neutral, check 2nd joystick
 	swap	d2
-	;;move.w	#$F00,$DFF180
-	;;bra	.xx
 .joy1_move
-	;;move.w	#$F0,$DFF180
-;;.xx
 	lea	.joybuff(pc),a0
 	move.w	d2,(a0)
 	movem.l	(a7)+,d0-d2

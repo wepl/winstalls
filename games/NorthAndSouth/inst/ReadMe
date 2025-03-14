@@ -40,6 +40,12 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
+ version 2.1 (09.02.2019):
+ - fixed patch error in standard mouse mode (cursor moved on its own)
+ 
+ version 2.0-B (30.01.2019):
+ - fixed duplicate slaves & install script (files containing the "&" character were renamed)
+ 
  version 2.0 (28.01.2019) done by JOTD:
  - Game now uses "data" directory so it's consistent with install script (issue #0003880)
  - Smart support for 2nd button joystick (fixes wrong joypad button reads on non-CD32 joysticks)
