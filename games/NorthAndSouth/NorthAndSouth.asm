@@ -1,22 +1,23 @@
-;---------------------------------------------------------------------------;
-;  :Program.	North&South.asm;
-;  :Contents.	Slave for "North & South" from Infogrames;
-;  :Author.	Mr.Larmer of Wanted Team, Wepl;
-;  :Original	;
-;  :Version.	$Id: North&South.asm 1.2 2001/02/17 19:59:05 jah Exp $;
-;  :History.	17.02.01 Wepl adjusted;
-;		02.06.03 Wepl minor changes;
-;  :Requires.	-;
-;  :Copyright.	Public Domain;
-;  :Language.	68000 Assembler;
-;  :Translator.	Asm-One 1.44;
-;  :To Do.;
-;---------------------------------------------------------------------------*;
-;
-	INCDIR	Include:
+;---------------------------------------------------------------------------
+;  :Program.	North&South.asm
+;  :Contents.	Slave for "North & South" from Infogrames
+;  :Author.	Mr.Larmer of Wanted Team, Wepl
+;  :Original
+;  :History.	17.02.01 Wepl adjusted
+;		02.06.03 Wepl minor changes
+;		?	   other devs were too lazy to add sth to the history
+;		2025-03-15 imported to repo
+;		2025-03-17 cleanup, use v19/resload_ReadJoyPort, use some ExpMem
+;		2025-03-17 code simplified
+;  :Requires.	-
+;  :Copyright.	Public Domain
+;  :Language.	68000 Assembler
+;  :Translator.	Asm-One 1.44
+;  :To Do.
+;---------------------------------------------------------------------------*
+
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	;INCLUDE	lvo/dos.i
 
 	IFD BARFLY
 	OUTPUT	"NorthAndSouth.Slave"
@@ -25,112 +26,95 @@
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
-	BOPT	wo-			;disable optimizer warnings
+	BOPT	wo-				;disable optimizer warnings
 	SUPER
 	ENDC
-Execbase	=	4
+
+	STRUCTURE globals,0
+	BYTE	gl_files
+
 ;============================================================================
 
-CHIPMEMSIZE	= $80000
-FASTMEMSIZE	= 0000
+CHIPMEMSIZE	= $79000
+FASTMEMSIZE	= $7000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
-;BLACKSCREEN
-CACHE
-;DEBUG
-DISKSONBOOT
-BOOTBLOCK
-;DOSASSIGN
-;FONTHEIGHT	= 8
-;HDINIT
-;HRTMON
-;IOCACHE	= 1024
-;MEMFREE	= $100
-;NEEDFPU
-;POINTERTICKS	= 1
-SETPATCH
-;STACKSIZE	= 6000
-TRDCHANGEDISK
+;BLACKSCREEN			;set all initial colors to black
+BOOTBLOCK			;enable _bootblock routine
+;BOOTDOS			;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+CACHE				;enable inst/data cache for fast memory with MMU
+;CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+DISKSONBOOT			;insert disks in floppy drives
+;DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+;HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+;IOCACHE	= 1024		;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+;SEGTRACKER			;add segment tracker
+;SETKEYBOARD			;activate host keymap
+;SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
-
-slv_Version=17
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_Version	= 19
+slv_Flags	= WHDLF_NoError
 slv_keyexit	= $5D	; num '*'
 
-	include 	kick13.s
-	include readjoypad.s
+;============================================================================
 
+	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
-
-DECL_VERSION:MACRO
-	dc.b	"2.1"
-	IFD BARFLY
-		dc.b	" "
-		INCBIN	"T:date"
-	ENDC
-	ENDM
-
-slv_name		dc.b	"North & South",0
-slv_copy		dc.b	"1989 Infogrames",0
-slv_info		dc.b	"adapted by Wepl, CFou!, Mr.Larmer & JOTD",10,10
-			dc.b	"Use 2nd joystick button / CD32 pad blue to switch units",10
-			dc.b	"Use CD32 pad FWD+BWD to retreat",10,10
-			dc.b	"Version "
-			DECL_VERSION
+slv_name	dc.b	"North & South",0
+slv_copy	dc.b	"1989 Infogrames",0
+slv_info	dc.b	"adapted by Wepl, CFou!, Mr.Larmer & JOTD",-1
+		dc.b	"Use 2nd joystick button / CD32 pad blue to switch units",10
+		dc.b	"Use CD32 pad FWD+BWD to retreat",-1
+		dc.b	"Version 2.2 "
+		INCBIN	.date
 		dc.b	0
-slv_CurrentDir:
-	dc.b	"data",0
-slv_config		
-;		DC.B	"C1:X:Second Button Support (PL1&PL2) & CD32 PAD (PL1):0;"
-		DC.B	"C1:B:Forces Joystick or CD32Pad for PL2 (mouse port);"
+slv_CurrentDir	dc.b	"data",0
+slv_config	DC.B	"C1:B:Forces Joystick or CD32Pad for PL2 (mouse port)"
                 dc.b    0
+_Boot2Name	dc.b	'boot2.bin',0
+_nsname		db	"ns.am2",0
 	even
-; version xx.slave works
 
-	dc.b	"$","VER: slave "
-	DECL_VERSION
-	dc.b	0
-patchs2	MACRO
-	IFNE	NARG-2
-		FAIL	arguments "patchs2"
-	ENDC
-		move.w	#$4eb9,\1
-		pea	(\2,pc)
-		move.l	(a7)+,2+\1
-		move.w	#$4E71,6+\1
-	ENDM
+;============================================================================
+; bootblock from "Disk.1" has been loaded, no dos.library available
+; A1 = ioreq ($2c+a5)
+; A4 = buffer (1024 bytes)
+; A6 = execbase
 
-patch2	MACRO
-	IFNE	NARG-2
-		FAIL	arguments "patchs2"
-	ENDC
-		move.w	#$4ef9,\1
-		pea	(\2,pc)
-		move.l	(a7)+,2+\1
-		move.w	#$4E71,6+\1
-	ENDM
-;============================================================================;
-;
-	;a1 = ioreq ($2c+a5);
-	;a4 = buffer (1024 bytes)
-	;a6 = execbase
-_bootblock;
-	; just to be able to use 2-button joysticks
-	bsr	_detect_controller_types
+_bootblock
 	
-.versionTest
 	;get tags
 		lea	(_tag,pc),a0
-		move.l	_resload(pc),a2
+		move.l	(_resload,pc),a2
 		jsr	(resload_Control,a2)
+
+	;check for files instead diskimage
+		lea	_nsname,a0
+		jsr	(resload_GetFileSize,a2)
+		tst.l	d0
+		sne	gl_files
+
+.versionTest
 
 	;check version
 		move.l	#$2A4,d0
@@ -142,23 +126,37 @@ _bootblock;
 		beq	.verok
 		cmp.w	#$4A39,D0	V2 NTSC	; english version (hidden bootblock)
 		beq	.USversion
-.not_support
-		pea	TDREASON_WRONGVER
+.not_support	pea	TDREASON_WRONGVER
+		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
-.verok		pea	.patch(pc)
 
+.USversion	tst.b	gl_files
+		bne	.filesversionUS
 
-		Lea	_DIR1Name(pc),a0
-		BSR	_GetFileSize
-		tst.l	d0
-		bne	.filesversion
+		move.l	a4,a0
+		move.l	#$DBC00,D0
+		move.l	#$400,d1	; SKIP TRACK PROTECT
+		move.l	#1,d2		; RUN GOOD HIDDEN BOOTBLOCK
+		jsr	(resload_DiskLoad,a2)
+		BRA	.versionTest
+
+.filesversionUS
+		lea	_Boot2Name(pc),a0
+		move.l	a4,a1
+		jsr	(resload_LoadFile,a2)
+		BRA	.versionTest
+
+.verok		tst.b	gl_files
+		beq	.boot
+		patch2	$298(A4),_LoadFilePart200	; PATCH DOIT FUNCTION FOR TRACKDISKDEVICE
+
 	;call bootblock
-
+.boot		pea	.patch(pc)
 		lea	($2c,a5),a1
 		jmp	(12,a4)
 .patch
-
 		addq.l	#8,A0
+
 ;***************************;***************************;***************************
 ;***************************;***************************;***************************
 ;***************************** Version 1
@@ -203,8 +201,7 @@ _bootblock;
 .noSB
 ;------------------------
 ;------------------------	Files version PAtch
-			move.l	_FileVersion(pc),d0
-			tst.l	d0
+			tst.b	gl_files
 			beq	.nofiles
 			add.l	#$13B62-8,a0
 			patch2	$0(a0),_LoadFilePart200Game	; Patch TRackDisk access to load files
@@ -261,8 +258,7 @@ _bootblock;
 .noSBV3
 ;------------------------
 ;------------------------
-			move.l	_FileVersion(pc),d0
-			tst.l	d0
+			tst.b	gl_files
 			beq	.nofiles3
 			add.l	#$13B24-8,a0
 			patch2	$0(a0),_LoadFilePart200Game	; Patch TRackDisk access to load files
@@ -323,8 +319,7 @@ _bootblock;
 .noSBV2
 ;------------------------
 ;------------------------
-			move.l	_FileVersion(pc),d0
-			tst.l	d0
+			tst.b	gl_files
 			beq	.nofiles2
 			add.l	#$139D8-8,a0
 			patch2	$0(a0),_LoadFilePart200Game	; Patch TRackDisk access to load files
@@ -332,47 +327,6 @@ _bootblock;
 .nofiles2
 ;------------------------
 		bra	.go
-.USversion
-		Lea	_DIR1Name(pc),a0
-		BSR	_GetFileSize
-		tst.l	d0
-		bne	.filesversionUS
-
-		move.l	a4,a0
-		move.l	#$DBC00,D0
-		move.l	#$400,d1	; SKIP TRACK PROTECT
-		move.l	#1,d2		; RUN GOOD HIDDEN BOOTBLOCK
-		BSR	_LoadDisk	
-		BRA	.versionTest
-.filesversionUS
-
-		lea	_FileVersion(pc),a1
-		move.l	#1,(A1)
-		lea	_Boot2Name(pc),a0
-		move.l	a4,a1
-		bsr	_ReadFile
-		BRA	.versionTest
-
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-;***************************	File version V1,V2,V3 patch boot block
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-.filesversion
-
-	IFD	_FlashFiles
-.t	move.w	#$f0,$dff180
-	btst	#6,$bfe001
-	bne	.t	
-	ENDC
-		patch2	$298(A4),_LoadFilePart200	; PATCH DOIT FUNCTION FOR TRACKDISKDEVICE
-		lea	_FileVersion(pc),a1
-		move.l	#1,(A1)
-	;call bootblock
-		lea	($2c,a5),a1
-		jmp	(12,a4)
-_FileVersion	dc.l	0
-	
 
 
 pl_version_1
@@ -434,16 +388,16 @@ pl_version_3
 	
 keyboard_read
 	move.l	joy0(pc),d0
-	btst	#JPB_BTN_FORWARD,d0
+	btst	#RJPB_FORWARD,d0
 	beq.b	.j1
-	btst	#JPB_BTN_REVERSE,d0
+	btst	#RJPB_REVERSE,d0
 	beq.b	.j1
 	bra.b	.esc
 .j1
 	move.l	joy1(pc),d0
-	btst	#JPB_BTN_FORWARD,d0
+	btst	#RJPB_FORWARD,d0
 	beq.b	.kb
-	btst	#JPB_BTN_REVERSE,d0
+	btst	#RJPB_REVERSE,d0
 	beq.b	.kb
 .esc
 	move.b	#$45,d0
@@ -483,9 +437,9 @@ joysticks_menu_read
 ;---------------------------
 _TestJoy0Gen
 	move.l	joy1(pc),d0
-		btst	#JPB_BTN_BLU,d0	; fix second button winuae
+		btst	#RJPB_BLUE,d0	; fix second button winuae
 		bne	.noSB
-	btst	#JPB_BTN_RED,d0
+	btst	#RJPB_RED,d0
 	beq	.noSB
 	bset	#7,d3			; fire
 .noSB	rTs
@@ -502,23 +456,23 @@ _TestJoy1Gen
 ;;	btst	#1,d1			; CD32 PAD FOR PLAYER 2 MOUSE PORT
 	BEQ	.noCD32PAD	
 	; JOTD: up & down were reversed
-	btst	#JPB_BTN_DOWN,d0
+	btst	#RJPB_DOWN,d0
 	beq	.noU
 	bset	#1,d3			; UP
-.noU	btst	#JPB_BTN_UP,d0
+.noU	btst	#RJPB_UP,d0
 	beq	.noD
 	bset	#0,d3			; DOWN
-.noD	btst	#JPB_BTN_LEFT,d0
+.noD	btst	#RJPB_LEFT,d0
 	beq	.noL
 	bset	#2,d3			; LEFT
-.noL	btst	#JPB_BTN_RIGHT,d0
+.noL	btst	#RJPB_RIGHT,d0
 	beq	.noR
 	bset	#3,d3			; RIGHT
 .noR
 .noCD32PAD
-		btst	#JPB_BTN_BLU,d0	; fix second button winuae
+		btst	#RJPB_BLUE,d0	; fix second button winuae
 		bne	.noSB
-	btst	#JPB_BTN_RED,d0
+	btst	#RJPB_RED,d0
 	beq	.noSB
 	bset	#7,d3			; fire
 .noSB
@@ -554,9 +508,9 @@ _TakePL2JOY0
 
 ROK_MACRO:MACRO
 rest_of_keys_\1_\2
-	btst	#JPB_BTN_REVERSE,d3
+	btst	#RJPB_REVERSE,d3
 	beq	.no_retreat
-	btst	#JPB_BTN_FORWARD,d3
+	btst	#RJPB_FORWARD,d3
 	beq	.no_retreat
 	move.b	#$\2,-$\1(a4)		; RShift
 .no_retreat
@@ -576,7 +530,7 @@ rest_of_keys_\1_\2
 _TakeSpecialKeyPL1
 ;	bsr	_CD32_Read
 	move.l	joy1(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	D4,-$41DC(a4)		; RShift
 .noSB
@@ -588,7 +542,7 @@ _TakeSpecialKeyPL1
 _TakeSpecialKeyPL2
 ;	bsr	_CD32_Read
 	move.l	joy0(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	#$61,-$41DC(a4)		; RShift
 .noSB
@@ -628,7 +582,7 @@ _TakePL2JOY0_V2
 _TakeSpecialKeyPL1_V2
 	bsr	_CD32_Read
 	move.l	joy1(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	D4,-$41E8(a4)		; LShift
 .noSB
@@ -640,7 +594,7 @@ _TakeSpecialKeyPL1_V2
 _TakeSpecialKeyPL2_V2
 	bsr	_CD32_Read
 	move.l	joy0(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	#$61,-$41E8(a4)		; RShift
 .noSB
@@ -681,7 +635,7 @@ _TakePL2JOY0_V3
 _TakeSpecialKeyPL1_V3
 	bsr	_CD32_Read
 	move.l	joy1(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	D4,-$41DE(a4)		; LShift
 .noSB
@@ -693,7 +647,7 @@ _TakeSpecialKeyPL1_V3
 _TakeSpecialKeyPL2_V3
 	bsr	_CD32_Read
 	move.l	joy0(pc),d3
-	btst	#JPB_BTN_BLU,d3
+	btst	#RJPB_BLUE,d3
 	beq	.noSB
 	move.b	#$61,-$41DE(a4)		; RShift
 .noSB
@@ -702,7 +656,6 @@ _TakeSpecialKeyPL2_V3
 	ext.W	d3
 	rts
 ;---------------------------
-
 
 _CD32_Read	move.l	d0,-(A7)
 		bsr	_joystick
@@ -747,16 +700,17 @@ _LoadFilePart200
 	move.l	$2C(a1),d1	; OFFSET
 	move.l	$28(a1),a1	; dest
 
-
 	lea	_GameName(pc),a0
 	cmp.l	#$400,d1	; DiR
 	bne	.pasdir
 
 	lea	_DirectoryAdr(pc),a0
 	move.l	a1,(a0)			; save directory adress
-	lea	_DIR1Name(pc),a0	
-	clr.l	D1
-	bsr	_LoadFileOffset
+	exg.l	d0,d1			; offset <> length
+	moveq	#1,d2			; disk number
+	move.l	a1,a0			; destination
+	move.l	_resload,a2
+	jsr	(resload_DiskLoad,a2)
 	bsr	_TakeFirstFileInfo
 .skip	movem.l	(a7)+,d0-a6
 	rts
@@ -849,106 +803,42 @@ _TakeFileInfo
 .nom	movem.l (a7)+,d0-D2/a0-A2
 	rts
 
-
-
-_FileOffsetAdr	dc.l	0
-_FileLengthAdr	dc.l	0
-_DirectoryAdr	dc.l	0
-;--------------------------------
-_GetFileSize
-	movem.l	d1-a6,-(a7)
-;	lea	_FileName(pc),a0
-	move.l	(_resload,pc),a2
-	jsr	(resload_GetFileSize,a2)
-	movem.l	(a7)+,d1-a6
-	rts
-;--------------------------------
-; IN:	d0=offset d1=size d2=disk a0=dest
-; OUT:	d0=success
-
-_LoadDisk	movem.l	d0-d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_DiskLoad(a2)
-		movem.l	(a7)+,d0-d1/a0-a2
-		rts
-;--------------------------------
-_Decrunch
-		movem.l	d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_Decrunch(a2)
-		movem.l	(a7)+,d1/a0-a2
-		rts
-;--------------------------------
-_Relocate
-		movem.l	d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_Relocate(a2)
-		movem.l	(a7)+,d1/a0-a2
-		rts
-;--------------------------------
-_ReadFile	movem.l	d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_LoadFile(a2)
-		movem.l	(a7)+,d1/a0-a2
-		rts
 ;--------------------------------
 _LoadFileOffset	movem.l	d1/a0-a2,-(a7)
 		move.l	_resload(pc),a2
 		jsr	resload_LoadFileOffset(a2)
 		movem.l	(a7)+,d1/a0-a2
 		rts
-;--------------------------------
-_AllocMem:
-	move.l Execbase,a6
-	move.l	LG_ALLOC_MEM(PC),d0
-	MOVE.L #$10002,D1		; clear+chip
-;	MOVE.L #$10004,D1		; clear+fast
-	JSR	_LVOAllocMem(A6)
 
-	LEA	ADR_ALLOC_MEM(PC),A1
-	MOVE.L	D0,(A1)
-r	rts
-;--------------------------------------
-_FreeMem:
-	move.l	Execbase,a6
-	move.l	ADR_ALLOC_MEM(pc),a1
-	move.l	LG_ALLOC_MEM(pc),d0
-	tst.l	d0
-	beq	.no
-	jsr	_LVOFreeMem(a6)
-.no	RTS
-;--------------------------------------
-LG_ALLOC_MEM		dc.l	$B800+19000
-ADR_ALLOC_MEM		dc.L	0
-;--------------------------------------
-_Boot2Name	dc.b 'boot2.bin',0
-_DIR1Name	dc.b 'DIR1',0
-dosname		dc.b	'dos.library',0
-		even
-_GameName	dc.l	0,0,0,0		; leave it!!!! name buffer =>if not crash
-_GameNamePrec	dc.l	0
-;============================================================================;
-_tag		dc.l	WHDLTAG_ATTNFLAGS_GET
-CPUFLAGS	dc.l	0
-		dc.l	WHDLTAG_CUSTOM1_GET
-_mouse_as_joy	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM2_GET
-;_custom2	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM3_GET
-;_custom3	dc.l	0
-;		dc.l	WHDLTAG_CUSTOM4_GET
-;_custom4	dc.l	0
-;		dc.l	WHDLTAG_BUTTONWAIT_GET
-;_ButtonWait	dc.l	0
-		dc.l	TAG_END;0	; End
-;====================================================================== 
+;============================================================================
 
-;
-;============================================================================;
-;
-	END;
-	IFD	_Flash
-.t	move.w	#$f0,$dff180
-	btst	#6,$bfe001
-	bne	.t	
-	ENDC
+_joystick	movem.l	d0-d1/a0-a2,-(a7)
+		moveq	#0,d0
+		move.l	_resload,a2
+		jsr	(resload_ReadJoyPort,a2)
+		lea	joy0,a0
+		move.l	d0,(a0)
+		moveq	#1,d0
+		move.l	_resload,a2
+		jsr	(resload_ReadJoyPort,a2)
+		lea	joy1,a0
+		move.l	d0,(a0)
+		movem.l	(a7)+,_MOVEMREGS
+		rts
+
+;============================================================================
+
+_tag		dc.l	WHDLTAG_CUSTOM1_GET
+_mouse_as_joy	dx.l	2
+_GameName	dx.l	4		; leave it!!!! name buffer =>if not crash
+_GameNamePrec	dx.l	1
+joy0		dx.l	1
+joy1		dx.l	1
+_FileOffsetAdr	dx.l	1
+_FileLengthAdr	dx.l	1
+_DirectoryAdr	dx.l	1
+
+;============================================================================
+
+	END
+

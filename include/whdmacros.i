@@ -13,6 +13,7 @@
 ;		26.12.20 macro 'blitz' no longer uses movem to avoid breaking
 ;			 _MOVEMREGS/_MOVEMBYTES 
 ;		21.12.20 macro LOG added
+;		22.03.25 macros patch2 and patchs2 added
 ;  :Language.	68000 Assembler
 ;---------------------------------------------------------------------------*
 
@@ -124,6 +125,17 @@ patch	MACRO
 	ENDM
 
 ****************************************************************
+***** write opcode NOP + JMP \2 to address \1
+patch2	MACRO
+	IFNE	NARG-2
+		FAIL	arguments "patch2"
+	ENDC
+		move.l	#$4e714ef9,\1
+		pea	(\2,pc)
+		move.l	(a7)+,4+\1
+	ENDM
+
+****************************************************************
 ***** write opcode JSR \2 to address \1
 patchs	MACRO
 	IFNE	NARG-2
@@ -132,6 +144,17 @@ patchs	MACRO
 		move.w	#$4eb9,\1
 		pea	(\2,pc)
 		move.l	(a7)+,2+\1
+	ENDM
+
+****************************************************************
+***** write opcode NOP + JSR \2 to address \1
+patchs2	MACRO
+	IFNE	NARG-2
+		FAIL	arguments "patchs2"
+	ENDC
+		move.w	#$4e714eb9,\1
+		pea	(\2,pc)
+		move.l	(a7)+,4+\1
 	ENDM
 
 ****************************************************************

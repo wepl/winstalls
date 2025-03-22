@@ -160,9 +160,11 @@ endif
 # target: build RawDIC Slave
 #
 img : $(ISLAVE)
+ifndef NOISLAVERULE
 $(ISLAVE) : $(ISLAVESRC)
 	$(DATE)
 	$(ASM) $(ASMOUT)$@ $<
+endif
 
 #
 # target: build install package files
@@ -187,7 +189,7 @@ INSTICONS := $(wildcard inst/*.inf inst/*.rom* inst/*.new* inst/*.col* inst/*.bo
 INSTALLICONS := $(addprefix $(INSTDIR)/, $(notdir $(INSTICONS)))
 INSTALLSLAVE := $(foreach file,$(SLAVE),$(INSTDIR)/$(file))
 ifdef ISLAVE
-INSTALLISLAVE := $(INSTDIR)/$(ISLAVE)
+INSTALLISLAVE := $(foreach file,$(ISLAVE),$(INSTDIR)/$(file))
 endif
 # additional files to be copied
 # referenced in the install.prep
@@ -232,7 +234,7 @@ $(INSTALLICONS) : $(INSTICONS)
 $(INSTALLSLAVE) : $(SLAVE)
 	$(CP) $^ $(INSTDIR)
 $(INSTALLISLAVE) : $(ISLAVE)
-	$(CP) $< '$@'
+	$(CP) $^ $(INSTDIR)
 $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)

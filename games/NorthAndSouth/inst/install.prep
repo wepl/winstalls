@@ -1,0 +1,34 @@
+#version=0
+#sub-dir=data
+#man-file=Manual
+#P_MakeImages#0
+      (set #game-version
+        (askchoice
+          (prompt "\nDo you want install game disks or extracted files?\n")
+          (default 0)
+          (choices "Disk image" "Extracted Files")
+          (help @askchoice-help)
+        )
+      )
+      (select #game-version
+        (
+          (set #last-file "Disk.1")		;last file the imager should create
+          (set #islave ("%s.ISlave" #prefix))
+        )
+        (
+          (set #last-file "per.mc0")		;last file the imager should create
+          (set #islave ("%s-files.ISlave" #prefix))
+        )
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source #islave)
+        (dest #dest)
+      )
+      (P_AskSrcDrvRaw)
+      (working "calling RawDIC...")
+      (run ("CD \"%s\"\nRawDIC SLAVE=%s SOURCE=%s\nDelete %s Quiet" #dest #islave #CI_drive #islave))
+      (if (exists (tackon #dest #last-file))
+        ("")
+        (abort "Disk imaging was not successful!\nRawDIC was unable to create all needed files!")
+      )

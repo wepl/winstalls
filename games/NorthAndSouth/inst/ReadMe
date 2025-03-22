@@ -40,6 +40,15 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
+ version 2.2 (22.03.2025) done by Wepl:
+ - requires WHDLoad v19 (ReadJoyPort)
+ - removed obsolete files from imager: DIR1.BIN and PROTECT.BIN, in the multi-
+   language version also BOOT2.bin is obsolete and can be deleted
+ - uses some fast memory now
+ - more icons added
+ - new install script
+ - source: https://github.com/wepl/winstalls/tree/master/games/NorthAndSouth
+
  version 2.1 (09.02.2019):
  - fixed patch error in standard mouse mode (cursor moved on its own)
  
