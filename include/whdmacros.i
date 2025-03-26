@@ -56,7 +56,7 @@ _custom		= $dff000
 ***** write opcode ILLEGAL to specified address
 ill	MACRO
 	IFNE	NARG-1
-		FAIL	arguments "ill"
+		FAIL	"ill: too many arguments"
 	ENDC
 		move.w	#$4afc,\1
 	ENDM
@@ -65,7 +65,7 @@ ill	MACRO
 ***** write opcode RTS to specified address
 ret	MACRO
 	IFNE	NARG-1
-		FAIL	arguments "ret"
+		FAIL	"ret: too many arguments"
 	ENDC
 		move.w	#$4e75,\1
 	ENDM
@@ -74,10 +74,10 @@ ret	MACRO
 ***** skip \1 instruction bytes on address \2
 skip	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "skip"
+		FAIL	"skip: wrong amount of arguments"
 	ENDC
 	IFNE \1&1
-		FAIL	arguments "skip"
+		FAIL	"skip: argument not even"
 	ENDC
 	IFEQ \1-2
 		move.w	#$4e71,\2
@@ -88,7 +88,7 @@ skip	MACRO
 	IFLE \1-32766
 		move.l	#$60000000+\1-2,\2
 	ELSE
-		FAIL	"skip: distance to large"
+		FAIL	"skip: distance to large, max 32766"
 	ENDC
 	ENDC
 	ENDC
@@ -99,7 +99,7 @@ skip	MACRO
 ***** (better to use "skip" instead)
 nops	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "nops"
+		FAIL	"nops: wrong amount of arguments"
 	ENDC
 		movem.l	d0/a0,-(a7)
 		IFGT \1-127
@@ -117,7 +117,7 @@ nops	MACRO
 ***** write opcode JMP \2 to address \1
 patch	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "patch"
+		FAIL	"patch: wrong amount of arguments"
 	ENDC
 		move.w	#$4ef9,\1
 		pea	(\2,pc)
@@ -128,7 +128,7 @@ patch	MACRO
 ***** write opcode NOP + JMP \2 to address \1
 patch2	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "patch2"
+		FAIL	"patch2: wrong amount of arguments"
 	ENDC
 		move.l	#$4e714ef9,\1
 		pea	(\2,pc)
@@ -139,7 +139,7 @@ patch2	MACRO
 ***** write opcode JSR \2 to address \1
 patchs	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "patchs"
+		FAIL	"patchs: wrong amount of arguments"
 	ENDC
 		move.w	#$4eb9,\1
 		pea	(\2,pc)
@@ -150,7 +150,7 @@ patchs	MACRO
 ***** write opcode NOP + JSR \2 to address \1
 patchs2	MACRO
 	IFNE	NARG-2
-		FAIL	arguments "patchs2"
+		FAIL	"patchs2: wrong amount of arguments"
 	ENDC
 		move.w	#$4e714eb9,\1
 		pea	(\2,pc)
@@ -235,6 +235,7 @@ waitvbs	MACRO
 
 ****************************************************************
 ***** wait for pressing any button
+***** better is using resload_Delay for this
 ***** if \1 is given it must be an address register containing _custom
 waitbutton	MACRO
 	IFEQ	NARG
@@ -281,7 +282,7 @@ waitbutton	MACRO
 		rts
 .done\@
 	ELSE
-		FAIL	arguments "waitbutton"
+		FAIL	"waitbutton: wrong amount of arguments"
 	ENDC
 	ENDC
 	ENDM
@@ -313,7 +314,7 @@ waitbuttonup	MACRO
 		beq	.up\@
 		waitvb	\1					;entprellen
 	ELSE
-		FAIL	arguments "waitbuttonup"
+		FAIL	"waitbuttonup: wrong amount of arguments"
 	ENDC
 	ENDC
 	ENDM
@@ -442,3 +443,4 @@ CARG SET \#
 ;=============================================================================
 
  ENDC
+

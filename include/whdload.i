@@ -39,7 +39,7 @@
 ;		13.01.23 WHDLTAG_Private8/9 added
 ;		12.05.24 added resload_ReadJoyPort
 ;		23.02.25 made PL_STR/0 compatible to vasm (broken EVEN)
-;  :Copyright.	© 1996-2024 Bert Jahn, All Rights Reserved
+;  :Copyright.	19© 1996-2025 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
 ;---------------------------------------------------------------------------*
