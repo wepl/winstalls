@@ -177,31 +177,32 @@ _bootblock
 		movem.l	(a7)+,d0-d1/a0-a2
 
 ;------------------------ Second Button Patch
-			add.l	#$8348+8,a0
+			add.l	#$8350,a0
 			cmp.l	#$1B6CBE2D,(A0)
 			bne	.noFoundJoy
-			patchs	$00(a0),_TakePL1JOY1	; Patch PL1 Take JoyOption
+			patchs	(a0),_TakePL1JOY1	; Patch PL1 Take JoyOption
 			patchs	$08(a0),_TakePL2JOY0	; Patch PL2 Take JoyOption
 			patchs	$14(a0),_TakePL2JOY0	; Patch PL2 Take JoyOption
+.noFoundJoy		sub.l	#$8350,a0
 
-.noFoundJoy		sub.l	#$8348+8,a0
-			add.l	#$B5B2+8,a0
+			add.l	#$B5Ba,a0
 			cmp.l	#$162CBE24,(A0)
 			bne	.noFoundLShift
-			patchs	$00(a0),_TakeSpecialKeyPL1	; Patch Take Special Keys 
-.noFoundLShift
-			sub.l	#$B5B2+8,a0
-			add.l	#$B762+8,a0
+			patchs	(a0),_TakeSpecialKeyPL1	; Patch Take Special Keys
+.noFoundLShift		sub.l	#$B5Ba,a0
+
+			add.l	#$B76a,a0
 			cmp.l	#$162CBE24,(A0)
 			bne	.noFoundRShift
-			patchs	$00(a0),_TakeSpecialKeyPL2	; Patch Take Special Keys 
-.noFoundRShift		sub.l	#$B762+8,a0
-			add.l	#$16D96-$B8C0+8,a0
+			patchs	(a0),_TakeSpecialKeyPL2	; Patch Take Special Keys
+.noFoundRShift		sub.l	#$B76a,a0
+
+			add.l	#$B4CE,a0
 			cmp.l	#$7600162C,(A0)
 			bne	.noFoundSwapPORT
 			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORT	sub.l	#$16D96-$B8C0+8,a0
-.noSB
+.noFoundSwapPORT	sub.l	#$B4CE,a0
+
 		jmp	(a0)
 
 ;***************************;***************************;***************************
@@ -210,7 +211,7 @@ _bootblock
 ;***************************;***************************;***************************
 ;***************************;***************************;***************************
 
-.another	cmp.l	#$61A64A40,$7F42+8(A0)		;V3 Multlanguage
+.another	cmp.l	#$61A64A40,$7F4a(A0)		;V3 multilanguage
 		bne	.another2
 		movem.l	d0-d1/a0-a2,-(a7)
 		move.l	a0,a1		
@@ -223,33 +224,32 @@ _bootblock
 		movem.l	(a7)+,d0-d1/a0-a2
 
 ;------------------------ Second Button Patch
-	;		move.l	_custom1(pc),d0
-	;		tst.l	d0
-	;		beq	.noSBV3
-			add.l	#$13B48-$B8C0+8,a0
+			add.l	#$8280,a0
 			cmp.l	#$1B6CBE2B,(A0)
 			bne	.noFoundJoyV3
-			patchs	$00(a0),_TakePL1JOY1_V3	; Patch PL1 Take JoyOption
+			patchs	(a0),_TakePL1JOY1_V3	; Patch PL1 Take JoyOption
 			patchs	$08(a0),_TakePL2JOY0_V3	; Patch PL2 Take JoyOption
 			patchs	$14(a0),_TakePL2JOY0_V3	; Patch PL2 Take JoyOption
-.noFoundJoyV3		sub.l	#$13B48-$B8C0+8,a0
-			add.l	#$16D88-$B8C0+8,a0
+.noFoundJoyV3		sub.l	#$8280,a0
+
+			add.l	#$B4C0,a0
 			cmp.l	#$162CBE22,(A0)
 			bne	.noFoundLShiftV3
-			patchs	$00(a0),_TakeSpecialKeyPL1_V3	; Patch Take Special Keys 
-.noFoundLShiftV3	sub.l	#$16D88-$B8C0+8,a0
-			add.l	#$16F3C-$B8C0+8,a0
+			patchs	(a0),_TakeSpecialKeyPL1_V3	; Patch Take Special Keys
+.noFoundLShiftV3	sub.l	#$B4C0,a0
+
+			add.l	#$B674,a0
 			cmp.l	#$162CBE22,(A0)
 			bne	.noFoundRShiftV3
-			patchs	$00(a0),_TakeSpecialKeyPL2_V3	; Patch Take Special Keys 
-.noFoundRShiftV3	sub.l	#$16F3C-$B8C0+8,a0
-			add.l	#$16CA8-$B8C0+8,a0
+			patchs	(a0),_TakeSpecialKeyPL2_V3	; Patch Take Special Keys
+.noFoundRShiftV3	sub.l	#$B674,a0
+
+			add.l	#$B3E0,a0
 			cmp.l	#$7600162C,(A0)
 			bne	.noFoundSwapPORTV3
 			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORTV3	sub.l	#$16CA8-$B8C0+8,a0
+.noFoundSwapPORTV3	sub.l	#$B3E0,a0
 
-.noSBV3
 		jmp	(a0)
 
 ;***************************;***************************;***************************
@@ -258,7 +258,7 @@ _bootblock
 ;***************************;***************************;***************************
 ;***************************;***************************;***************************
 
-.another2	cmp.l	#$61A64A40,$7EF6+8(A0)		;V2 English NTSC
+.another2	cmp.l	#$61A64A40,$7EFe(A0)		;V2 English NTSC
 		bne	.not_support
 		
 		movem.l	d0-d1/a0-a2,-(a7)
@@ -272,108 +272,95 @@ _bootblock
 		movem.l	(a7)+,d0-d1/a0-a2
 		
 		add.l	#$119A2,a0
-		cmp.l	#$08B90007,(A0)		;
+		cmp.l	#$08B90007,(A0)
 		bne	.not_support
-		cmp.l	#$00BFD100,4(A0)		;
+		cmp.l	#$00BFD100,4(A0)
 		bne	.not_support
 		patch	$0(a0),_Crack		; crack disk protection
 		sub.l	#$119A2,a0
-;------------------------ Second Button Patch
-; JOTD why not enabling it anyway? no need for custom1
-;			move.l	_custom1(pc),d0
-;			tst.l	d0
-;			beq	.noSBV2
-			add.l	#$13B00-$B8C0+8,a0
+
+			add.l	#$8238,a0
 			cmp.l	#$1B6CBE21,(A0)
 			bne	.noFoundJoyV2
-			patchs	$00(a0),_TakePL1JOY1_V2	; Patch PL1 Take JoyOption
+			patchs	(a0),_TakePL1JOY1_V2	; Patch PL1 Take JoyOption
 			patchs	$08(a0),_TakePL2JOY0_V2	; Patch PL2 Take JoyOption
 			patchs	$14(a0),_TakePL2JOY0_V2	; Patch PL2 Take JoyOption
-.noFoundJoyV2		sub.l	#$13B00-$B8C0+8,a0
-			add.l	#$16D6A-$B8C0+8,a0
+.noFoundJoyV2		sub.l	#$8238,a0
+
+			add.l	#$B4A2,a0
 			cmp.l	#$162CBE18,(A0)
 			bne	.noFoundLShiftV2
-			patchs	$00(a0),_TakeSpecialKeyPL1_V2	; Patch Take Special Keys 
-.noFoundLShiftV2	sub.l	#$16D6A-$B8C0+8,a0
-			add.l	#$16F1A-$B8C0+8,a0
+			patchs	(a0),_TakeSpecialKeyPL1_V2	; Patch Take Special Keys
+.noFoundLShiftV2	sub.l	#$B4A2,a0
+
+			add.l	#$B652,a0
 			cmp.l	#$162CBE18,(A0)
 			bne	.noFoundRShiftV2
-			patchs	$00(a0),_TakeSpecialKeyPL2_V2	; Patch Take Special Keys 
-.noFoundRShiftV2	sub.l	#$16F1A-$B8C0+8,a0
-			add.l	#$16C8E-$B8C0+8,a0
+			patchs	(a0),_TakeSpecialKeyPL2_V2	; Patch Take Special Keys
+.noFoundRShiftV2	sub.l	#$B652,a0
+
+			add.l	#$B3C6,a0
 			cmp.l	#$7600162C,(A0)
 			bne	.noFoundSwapPORTV2
 			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORTV2	sub.l	#$16C8E-$B8C0+8,a0
-.noSBV2
+.noFoundSwapPORTV2	sub.l	#$B3C6,a0
+
 		jmp	(a0)
 
 pl_version_1f	PL_START
-		PL_P	$13B62,_LoadFilePart200Game		; Patch TrackDisk access to load files
+		PL_P	$13B62,_LoadFilePart200Game	; Patch TrackDisk access to load files
 		PL_NEXT	pl_version_1
 
-pl_version_1
-	PL_START
-	PL_W	$7FFE+8,$7001		; skip protection;
-	; menu keyboard read: joypad FWD+BWD = ESC
-	PL_PSS	$1362C-$B8C0+8,keyboard_read,4
-	
-	PL_IFC1
-	; remove mouse read
-	PL_W	$136D4-$B8C0+8,$7000
-	PL_NOP	$136D6-$B8C0+8,4
-	; double joystick read
-	PL_PS	$13674-$B8C0+8,joysticks_menu_read
-	PL_ELSE
-	PL_PS	$13674-$B8C0+8,joysticks_menu_read_mouse
-	PL_ENDIF
-	
-	PL_END
+pl_version_1	PL_START
+		PL_PSS	$7d74,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_W	$8006,$7001			; skip protection
+
+		PL_IFC1
+		PL_W	$7E1C,$7000			; remove mouse read
+		PL_NOP	$7E1E,4
+		PL_PS	$7DBC,joysticks_menu_read	; double joystick read
+		PL_ELSE
+		PL_PS	$7DBC,joysticks_menu_read_mouse
+		PL_ENDIF
+
+		PL_END
 
 pl_version_2f	PL_START
-		PL_P	$139d8,_LoadFilePart200Game		; Patch TrackDisk access to load files
+		PL_P	$139d8,_LoadFilePart200Game	; Patch TrackDisk access to load files
 		PL_NEXT	pl_version_2
 
-pl_version_2
-	PL_START
-	PL_W	$7F42+8,$7001		; skip protection;
-	PL_B	$9AE+8,$60        ; Skip NTSC test (freezed on title screen;
-	; menu keyboard read: joypad FWD+BWD = ESC
-	PL_PSS	$13524-$B8C0+8,keyboard_read,4
-	
-	PL_IFC1
-	; remove mouse read
-	PL_W	$135CC-$B8C0+8,$7000
-	PL_NOP	$135CE-$B8C0+8,4
-	; double joystick read
-	PL_PS	$1356C-$B8C0+8,joysticks_menu_read
-	PL_ELSE
-	PL_PS	$1356C-$B8C0+8,joysticks_menu_read_mouse
-	PL_ENDIF
-	
-	PL_END
+pl_version_2	PL_START
+		PL_B	$9b6,$60			; Skip NTSC test, freezed on title screen
+		PL_PSS	$7C6C,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_W	$7F4a,$7001			; skip protection
+
+		PL_IFC1
+		PL_W	$7D14,$7000			; remove mouse read
+		PL_NOP	$7D16,4
+		PL_PS	$7CB4,joysticks_menu_read	; double joystick read
+		PL_ELSE
+		PL_PS	$7CB4,joysticks_menu_read_mouse
+		PL_ENDIF
+
+		PL_END
 
 pl_version_3f	PL_START
-		PL_P	$13B24,_LoadFilePart200Game		; Patch TrackDisk access to load files
+		PL_P	$13B24,_LoadFilePart200Game	; Patch TrackDisk access to load files
 		PL_NEXT	pl_version_3
 
-pl_version_3
-	PL_START
-	PL_W	$7F42+8,$7001		; skip protection;
-	; menu keyboard read: joypad FWD+BWD = ESC
-	PL_PSS	$13570-$B8C0+8,keyboard_read,4
-	
-	PL_IFC1
-	; remove mouse read
-	PL_W	$13618-$B8C0+8,$7000
-	PL_NOP	$1361A-$B8C0+8,4
-	; double joystick read
-	PL_PS	$135B8-$B8C0+8,joysticks_menu_read
-	PL_ELSE
-	PL_PS	$135B8-$B8C0+8,joysticks_menu_read_mouse
-	PL_ENDIF
+pl_version_3	PL_START
+		PL_PSS	$7CB8,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_W	$7F4a,$7001			; skip protection
 
-	PL_END
+		PL_IFC1
+		PL_W	$7D60,$7000			; remove mouse read
+		PL_NOP	$7D62,4
+		PL_PS	$7D00,joysticks_menu_read	; double joystick read
+		PL_ELSE
+		PL_PS	$7D00,joysticks_menu_read_mouse
+		PL_ENDIF
+
+		PL_END
 
 keyboard_read
 	move.l	joy0(pc),d0
@@ -393,10 +380,9 @@ keyboard_read
 	bra.b	.out
 .kb
 	MOVE.B $00bfec01,D0
-    ROR.B #$01,D0
-    NOT.B D0
-.out
-	rts
+	ROR.B #$01,D0
+	NOT.B D0
+.out	rts
 	
 joysticks_menu_read_mouse
 	bsr	_joystick
