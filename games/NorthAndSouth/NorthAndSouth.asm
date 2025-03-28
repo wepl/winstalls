@@ -156,156 +156,31 @@ _bootblock
 		lea	($2c,a5),a1
 		jmp	(12,a4)				; ns.am2 is loaded/relocated from bootblock
 .patch
+		pea	(a0)
 
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-;***************************** Version 1
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-
+		lea	pl_version_1,a3
+		lea	pl_version_1f,a4
 		cmp.l	#$4883b67c,$7FFE(A0)		;V1 multilanguage
-		bne	.another
-		
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	a0,a1
+		beq	.go
+
+		lea	pl_version_2,a3
+		lea	pl_version_2f,a4
+		cmp.l	#$61A64A40,$7EFe(A0)		;V2 English NTSC
+		beq	.go
+
+		lea	pl_version_3,a3
+		lea	pl_version_3f,a4
+		cmp.l	#$61A64A40,$7F4a(A0)		;V3 multilanguage
+		bne	.not_support
+
+.go		move.l	a0,a1
 		move.l	_resload(pc),a2
-		lea	pl_version_1(pc),a0
+		move.l	a3,a0
 		tst.b	gl_files
 		beq	.nofiles
-		lea	pl_version_1f,a0
-.nofiles	jsr	resload_Patch(a2)
-		movem.l	(a7)+,d0-d1/a0-a2
+		move.l	a4,a0
+.nofiles	jmp	resload_Patch(a2)
 
-;------------------------ Second Button Patch
-			add.l	#$8350,a0
-			cmp.l	#$1B6CBE2D,(A0)
-			bne	.noFoundJoy
-			patchs	(a0),_TakePL1JOY1	; Patch PL1 Take JoyOption
-			patchs	$08(a0),_TakePL2JOY0	; Patch PL2 Take JoyOption
-			patchs	$14(a0),_TakePL2JOY0	; Patch PL2 Take JoyOption
-.noFoundJoy		sub.l	#$8350,a0
-
-			add.l	#$B5Ba,a0
-			cmp.l	#$162CBE24,(A0)
-			bne	.noFoundLShift
-			patchs	(a0),_TakeSpecialKeyPL1	; Patch Take Special Keys
-.noFoundLShift		sub.l	#$B5Ba,a0
-
-			add.l	#$B76a,a0
-			cmp.l	#$162CBE24,(A0)
-			bne	.noFoundRShift
-			patchs	(a0),_TakeSpecialKeyPL2	; Patch Take Special Keys
-.noFoundRShift		sub.l	#$B76a,a0
-
-			add.l	#$B4CE,a0
-			cmp.l	#$7600162C,(A0)
-			bne	.noFoundSwapPORT
-			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORT	sub.l	#$B4CE,a0
-
-		jmp	(a0)
-
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-;***************************** Version 3
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-
-.another	cmp.l	#$61A64A40,$7F4a(A0)		;V3 multilanguage
-		bne	.another2
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	a0,a1		
-		move.l	_resload(pc),a2
-		lea	pl_version_3(pc),a0
-		tst.b	gl_files
-		beq	.nofiles3
-		lea	pl_version_3f,a0
-.nofiles3	jsr	resload_Patch(a2)
-		movem.l	(a7)+,d0-d1/a0-a2
-
-;------------------------ Second Button Patch
-			add.l	#$8280,a0
-			cmp.l	#$1B6CBE2B,(A0)
-			bne	.noFoundJoyV3
-			patchs	(a0),_TakePL1JOY1_V3	; Patch PL1 Take JoyOption
-			patchs	$08(a0),_TakePL2JOY0_V3	; Patch PL2 Take JoyOption
-			patchs	$14(a0),_TakePL2JOY0_V3	; Patch PL2 Take JoyOption
-.noFoundJoyV3		sub.l	#$8280,a0
-
-			add.l	#$B4C0,a0
-			cmp.l	#$162CBE22,(A0)
-			bne	.noFoundLShiftV3
-			patchs	(a0),_TakeSpecialKeyPL1_V3	; Patch Take Special Keys
-.noFoundLShiftV3	sub.l	#$B4C0,a0
-
-			add.l	#$B674,a0
-			cmp.l	#$162CBE22,(A0)
-			bne	.noFoundRShiftV3
-			patchs	(a0),_TakeSpecialKeyPL2_V3	; Patch Take Special Keys
-.noFoundRShiftV3	sub.l	#$B674,a0
-
-			add.l	#$B3E0,a0
-			cmp.l	#$7600162C,(A0)
-			bne	.noFoundSwapPORTV3
-			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORTV3	sub.l	#$B3E0,a0
-
-		jmp	(a0)
-
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-;***************************** Version 2
-;***************************;***************************;***************************
-;***************************;***************************;***************************
-
-.another2	cmp.l	#$61A64A40,$7EFe(A0)		;V2 English NTSC
-		bne	.not_support
-		
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	a0,a1
-		move.l	_resload(pc),a2
-		lea	pl_version_2(pc),a0
-		tst.b	gl_files
-		beq	.nofiles2
-		lea	pl_version_2f,a0
-.nofiles2	jsr	resload_Patch(a2)
-		movem.l	(a7)+,d0-d1/a0-a2
-		
-		add.l	#$119A2,a0
-		cmp.l	#$08B90007,(A0)
-		bne	.not_support
-		cmp.l	#$00BFD100,4(A0)
-		bne	.not_support
-		patch	$0(a0),_Crack		; crack disk protection
-		sub.l	#$119A2,a0
-
-			add.l	#$8238,a0
-			cmp.l	#$1B6CBE21,(A0)
-			bne	.noFoundJoyV2
-			patchs	(a0),_TakePL1JOY1_V2	; Patch PL1 Take JoyOption
-			patchs	$08(a0),_TakePL2JOY0_V2	; Patch PL2 Take JoyOption
-			patchs	$14(a0),_TakePL2JOY0_V2	; Patch PL2 Take JoyOption
-.noFoundJoyV2		sub.l	#$8238,a0
-
-			add.l	#$B4A2,a0
-			cmp.l	#$162CBE18,(A0)
-			bne	.noFoundLShiftV2
-			patchs	(a0),_TakeSpecialKeyPL1_V2	; Patch Take Special Keys
-.noFoundLShiftV2	sub.l	#$B4A2,a0
-
-			add.l	#$B652,a0
-			cmp.l	#$162CBE18,(A0)
-			bne	.noFoundRShiftV2
-			patchs	(a0),_TakeSpecialKeyPL2_V2	; Patch Take Special Keys
-.noFoundRShiftV2	sub.l	#$B652,a0
-
-			add.l	#$B3C6,a0
-			cmp.l	#$7600162C,(A0)
-			bne	.noFoundSwapPORTV2
-			move.l	#$76011943,(a0)		; remove swap control PORT
-.noFoundSwapPORTV2	sub.l	#$B3C6,a0
-
-		jmp	(a0)
 
 pl_version_1f	PL_START
 		PL_P	$13B62,_LoadFilePart200Game	; Patch TrackDisk access to load files
@@ -314,6 +189,12 @@ pl_version_1f	PL_START
 pl_version_1	PL_START
 		PL_PSS	$7d74,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$8006,$7001			; skip protection
+		PL_PS	$8350,_TakePL1JOY1		; Patch PL1 Take JoyOption
+		PL_PS	$8358,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_PS	$8364,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_L	$B4dE,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
+		PL_PS	$B5Ba,_TakeSpecialKeyPL1	; Patch Take Special Keys
+		PL_PS	$B76a,_TakeSpecialKeyPL2	; Patch Take Special Keys
 
 		PL_IFC1
 		PL_W	$7E1C,$7000			; remove mouse read
@@ -333,6 +214,13 @@ pl_version_2	PL_START
 		PL_B	$9b6,$60			; Skip NTSC test, freezed on title screen
 		PL_PSS	$7C6C,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$7F4a,$7001			; skip protection
+		PL_PS	$8248,_TakePL1JOY1		; Patch PL1 Take JoyOption
+		PL_PS	$8250,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_PS	$825c,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_L	$b3d6,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
+		PL_PS	$B4b2,_TakeSpecialKeyPL1	; Patch Take Special Keys
+		PL_PS	$B662,_TakeSpecialKeyPL2	; Patch Take Special Keys
+		PL_PS	$119A2,_Crack			; crack disk protection
 
 		PL_IFC1
 		PL_W	$7D14,$7000			; remove mouse read
@@ -351,6 +239,12 @@ pl_version_3f	PL_START
 pl_version_3	PL_START
 		PL_PSS	$7CB8,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$7F4a,$7001			; skip protection
+		PL_PS	$8290,_TakePL1JOY1		; Patch PL1 Take JoyOption
+		PL_PS	$8298,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_PS	$82a4,_TakePL2JOY0		; Patch PL2 Take JoyOption
+		PL_L	$B3f0,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
+		PL_PS	$B4d0,_TakeSpecialKeyPL1	; Patch Take Special Keys
+		PL_PS	$B684,_TakeSpecialKeyPL2	; Patch Take Special Keys
 
 		PL_IFC1
 		PL_W	$7D60,$7000			; remove mouse read
