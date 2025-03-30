@@ -1,0 +1,31 @@
+That patch applies to Emerald Mine (c) 1987 Kingsoft.
+
+This install has the slave-version 1.0.
+It needs WHDLoad16 or higher in the path (eg in c:).
+Supported versions are IPF1525 and the version on the Emerald Mines CD
+(in _OLD_EM/1/ - to install copy the files in that dir to a disk named
+"EMERALD MINE").
+
+Fixed:  CPU dependend loops.
+        Due a programming fault, a few random instructions were overwritten
+          when completing a level, leading to strange effects in the game.
+        Random generator took values from the Kickrom, replaced and stone
+          pushing probability adapted to original generator. Please file
+          a bug report if a stone pushing level is still impossible, or
+          if another random dependend behaviour is weird.
+
+History: V1.0 - 2012-nov-24 Initial slave version.
+
+The install is tested on an 18 MB 68030 and on E-UAE.
+It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
+  for preload.
+
+Disclaimer: Install is Freeware and sourcecode is included. 
+        You use the install wholly on your own risk.
+
+Full whdload package:	aminet:dev/misc/whdload#?.lha
+Other installs:		http://www.whdload.de/
+Report bugs with the bug report form on that page.
+
+Have fun,
+Harry.
