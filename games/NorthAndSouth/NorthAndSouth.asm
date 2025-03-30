@@ -10,6 +10,7 @@
 ;		2025-03-17 cleanup, use v19/resload_ReadJoyPort, use some ExpMem
 ;		2025-03-17 code simplified
 ;		2025-03-27 more code simplified
+;		2025-03-30 joypad handling fixed/rewritten
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -31,7 +32,8 @@
 	SUPER
 	ENDC
 
-	STRUCTURE globals,0
+	STRUCTURE globals,$100
+	LONG	gl_joy0
 	BYTE	gl_files
 
 ;============================================================================
@@ -90,7 +92,7 @@ slv_info	dc.b	"adapted by Wepl, CFou!, Mr.Larmer & JOTD",-1
 		INCBIN	.date
 		dc.b	0
 slv_CurrentDir	dc.b	"data",0
-slv_config	DC.B	"C1:B:Forces Joystick or CD32Pad for PL2 (mouse port)"
+slv_config	DC.B	"C1:B:Force Joystick/CD32Pad instead Mouse"
                 dc.b    0
 _Boot2Name	dc.b	'boot2.bin',0
 _nsname		db	"ns.am2",0
@@ -104,13 +106,9 @@ _nsname		db	"ns.am2",0
 
 _bootblock
 	
-	;get tags
-		lea	(_tag,pc),a0
-		move.l	(_resload,pc),a2
-		jsr	(resload_Control,a2)
-
 	;check for files instead diskimage
 		lea	_nsname,a0
+		move.l	(_resload,pc),a2
 		jsr	(resload_GetFileSize,a2)
 		tst.l	d0
 		sne	gl_files
@@ -187,23 +185,22 @@ pl_version_1f	PL_START
 		PL_NEXT	pl_version_1
 
 pl_version_1	PL_START
-		PL_PSS	$7d74,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PSS	$7d74,keyboard_single,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$8006,$7001			; skip protection
-		PL_PS	$8350,_TakePL1JOY1		; Patch PL1 Take JoyOption
-		PL_PS	$8358,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_PS	$8364,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_L	$B4dE,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
-		PL_PS	$B5Ba,_TakeSpecialKeyPL1	; Patch Take Special Keys
-		PL_PS	$B76a,_TakeSpecialKeyPL2	; Patch Take Special Keys
-
+		PL_PSS	$f350,keyboard_multi,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_IFC1
-		PL_W	$7E1C,$7000			; remove mouse read
-		PL_NOP	$7E1E,4
-		PL_PS	$7DBC,joysticks_menu_read	; double joystick read
-		PL_ELSE
-		PL_PS	$7DBC,joysticks_menu_read_mouse
+		PL_PS	$7de6,_inject_single
+		PL_DATA	$7E1C,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
+		PL_PSS	$f350,keyboard_multi_port0,4	; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PS	$f3ba,_inject_multi
+		PL_DATA	$f406,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
 		PL_ENDIF
-
 		PL_END
 
 pl_version_2f	PL_START
@@ -212,24 +209,23 @@ pl_version_2f	PL_START
 
 pl_version_2	PL_START
 		PL_B	$9b6,$60			; Skip NTSC test, freezed on title screen
-		PL_PSS	$7C6C,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PSS	$7C6C,keyboard_single,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$7F4a,$7001			; skip protection
-		PL_PS	$8248,_TakePL1JOY1		; Patch PL1 Take JoyOption
-		PL_PS	$8250,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_PS	$825c,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_L	$b3d6,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
-		PL_PS	$B4b2,_TakeSpecialKeyPL1	; Patch Take Special Keys
-		PL_PS	$B662,_TakeSpecialKeyPL2	; Patch Take Special Keys
+		PL_PSS	$f248,keyboard_multi,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_PS	$119A2,_Crack			; crack disk protection
-
 		PL_IFC1
-		PL_W	$7D14,$7000			; remove mouse read
-		PL_NOP	$7D16,4
-		PL_PS	$7CB4,joysticks_menu_read	; double joystick read
-		PL_ELSE
-		PL_PS	$7CB4,joysticks_menu_read_mouse
+		PL_PS	$7cde,_inject_single
+		PL_DATA	$7d14,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
+		PL_PSS	$f248,keyboard_multi_port0,4	; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PS	$f2b2,_inject_multi
+		PL_DATA	$f2fe,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
 		PL_ENDIF
-
 		PL_END
 
 pl_version_3f	PL_START
@@ -237,299 +233,145 @@ pl_version_3f	PL_START
 		PL_NEXT	pl_version_3
 
 pl_version_3	PL_START
-		PL_PSS	$7CB8,keyboard_read,4		; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PSS	$7CB8,keyboard_single,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_W	$7F4a,$7001			; skip protection
-		PL_PS	$8290,_TakePL1JOY1		; Patch PL1 Take JoyOption
-		PL_PS	$8298,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_PS	$82a4,_TakePL2JOY0		; Patch PL2 Take JoyOption
-		PL_L	$B3f0,$76011943			; remove swap control PORT, moveq #0,d3 + move.b ea,d3 -> moveq #1,d3 + move.b d3,ea
-		PL_PS	$B4d0,_TakeSpecialKeyPL1	; Patch Take Special Keys
-		PL_PS	$B684,_TakeSpecialKeyPL2	; Patch Take Special Keys
-
+		PL_PSS	$f25a,keyboard_multi,4		; menu keyboard read: joypad FWD+BWD = ESC
 		PL_IFC1
-		PL_W	$7D60,$7000			; remove mouse read
-		PL_NOP	$7D62,4
-		PL_PS	$7D00,joysticks_menu_read	; double joystick read
-		PL_ELSE
-		PL_PS	$7D00,joysticks_menu_read_mouse
+		PL_PS	$7d2a,_inject_single
+		PL_DATA	$7d60,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
+		PL_PSS	$f25a,keyboard_multi_port0,4	; menu keyboard read: joypad FWD+BWD = ESC
+		PL_PS	$f2c4,_inject_multi
+		PL_DATA	$f310,6				; remove mouse read
+			moveq	#0,d0
+			nop
+			nop
 		PL_ENDIF
-
 		PL_END
 
-keyboard_read
-	move.l	joy0(pc),d0
-	btst	#RJPB_FORWARD,d0
-	beq.b	.j1
-	btst	#RJPB_REVERSE,d0
-	beq.b	.j1
-	bra.b	.esc
-.j1
-	move.l	joy1(pc),d0
-	btst	#RJPB_FORWARD,d0
-	beq.b	.kb
-	btst	#RJPB_REVERSE,d0
-	beq.b	.kb
-.esc
-	move.b	#$45,d0
-	bra.b	.out
-.kb
-	MOVE.B $00bfec01,D0
-	ROR.B #$01,D0
-	NOT.B D0
-.out	rts
-	
-joysticks_menu_read_mouse
-	bsr	_joystick
-	lea	$DFF00C,A0
-	RTS
+; single player mode
+; always active except in action sequences (combat, train, capture) in two player mode
 
-joysticks_menu_read
-	movem.l	d0-d2,-(a7)
-	move.l	$DFF00A,d2	; save value
-	bsr	_joystick
-	move.l	joy1(pc),d0
-	bne.b	.joy1_move
-	; check if all directions neutral. If all neutral, check 2nd joystick
-	swap	d2
-.joy1_move
-	lea	.joybuff(pc),a0
-	move.w	d2,(a0)
-	movem.l	(a7)+,d0-d2
-	rts
-	
-.joybuff
-	dc.w	0
-	
-;---------------------------
-;===============V1
-;---------------------------
-;---------------------------
-_TestJoy0Gen
-	move.l	joy1(pc),d0
-		btst	#RJPB_BLUE,d0	; fix second button winuae
-		bne	.noSB
-	btst	#RJPB_RED,d0
-	beq	.noSB
-	bset	#7,d3			; fire
-.noSB	rTs
-;---------------------------
-;---------------------------
-_TestJoy1Gen
-	move.l	joy0(pc),d0
-	tst.b	d1			; 2PL mode=>0? 1PL mode=>2
-	beq	.2PLmode
-	move.l	joy1(pc),d0
-.2PLmode	
+keyboard_single
+		moveq	#1,d0
+		move.l	_resload,a0
+		jsr	(resload_ReadJoyPort,a0)
 
-	move.l	_mouse_as_joy(pc),d1
-;;	btst	#1,d1			; CD32 PAD FOR PLAYER 2 MOUSE PORT
-	BEQ	.noCD32PAD	
-	; JOTD: up & down were reversed
-	btst	#RJPB_DOWN,d0
-	beq	.noU
-	bset	#1,d3			; UP
-.noU	btst	#RJPB_UP,d0
-	beq	.noD
-	bset	#0,d3			; DOWN
-.noD	btst	#RJPB_LEFT,d0
-	beq	.noL
-	bset	#2,d3			; LEFT
-.noL	btst	#RJPB_RIGHT,d0
-	beq	.noR
-	bset	#3,d3			; RIGHT
-.noR
-.noCD32PAD
-		btst	#RJPB_BLUE,d0	; fix second button winuae
-		bne	.noSB
-	btst	#RJPB_RED,d0
-	beq	.noSB
-	bset	#7,d3			; fire
-.noSB
-	rts
-;---------------------------
-;---------------------------
-_TakePL1JOY1
-	bsr	_CD32_Read
-	move.l	d0,-(a7)
-
-	move.b	-$41D3(a4),d3
-	bsr	_TestJoy0Gen
-	move.b	D3,-$41D3(a4)
-
-	move.B	-$41D3(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
-	move.l	(a7)+,d0
-	rts
-
-;---------------------------
-_TakePL2JOY0
-	bsr	_CD32_Read
-	movem.l	d0-d1,-(a7)
-
-	move.B	-$7460(A4),d1		; 1PL MODe =>$02
-	move.b	-$41D4(a4),d3
-	bsr	_TestJoy1Gen
-	move.b	D3,-$41D4(a4)
-
-	movem.l	(a7)+,d0-D1
-	move.B	-$41D4(A4),-2(A5)	; $8x=Fire | $01=Down | $02=Up | $04=Left | $08= Right
-	rts
-	
-
-ROK_MACRO:MACRO
-rest_of_keys_\1_\2
-	btst	#RJPB_REVERSE,d3
-	beq	.no_retreat
-	btst	#RJPB_FORWARD,d3
-	beq	.no_retreat
-	move.b	#$\2,-$\1(a4)		; RShift
-.no_retreat
-	rts
-	ENDM
-	
-	; player 1
-	ROK_MACRO	41DC,45
-	ROK_MACRO	41E8,45
-	ROK_MACRO	41DE,45
-	; player 2
-	ROK_MACRO	41DC,41
-	ROK_MACRO	41E8,41
-	ROK_MACRO	41DE,41
-	
-;---------------------------
-_TakeSpecialKeyPL1
-;	bsr	_CD32_Read
-	move.l	joy1(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	D4,-$41DC(a4)		; RShift
-.noSB
-	bsr	rest_of_keys_41DC_45
-	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
-	ext.W	d3
-	rts
-;---------------------------
-_TakeSpecialKeyPL2
-;	bsr	_CD32_Read
-	move.l	joy0(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	#$61,-$41DC(a4)		; RShift
-.noSB
-	bsr	rest_of_keys_41DC_41
-
-	move.b	-$41DC(a4),d3		; $61=RShift | $45=Esc $60= Left
-	ext.W	d3
-	rts
-;---------------------------
-
-	
-;==============V2
-_TakePL1JOY1_V2
-	bsr	_CD32_Read
-	move.l	d0,-(a7)
-
-	move.b	-$41DF(a4),d3
-	bsr	_TestJoy0Gen
-	move.b	D3,-$41DF(a4)
-.noSB	
-	move.B	-$41DF(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
-
-	move.l	(a7)+,d0
-	rts
-;---------------------------
-_TakePL2JOY0_V2
-	bsr	_CD32_Read
-	movem.l	d0-d1,-(a7)
-	move.B	-$746C(A4),d1		; 1PL MODe =>$02
-	move.b	-$41E0(a4),d3
-	bsr	_TestJoy1Gen
-	move.b	D3,-$41E0(a4)
-	move.B	-$41E0(A4),-2(A5)	; $8x=Fire | $01=Down | $02=Up | $04=Left | $08= Right
-	movem.l	(a7)+,d0-D1
-	rts
-;---------------------------
-_TakeSpecialKeyPL1_V2
-	bsr	_CD32_Read
-	move.l	joy1(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	D4,-$41E8(a4)		; LShift
-.noSB
-	bsr	rest_of_keys_41E8_45
-	move.b	-$41E8(a4),d3
-	ext.W	d3			; $60=LShift | $45=Esc
-	rts
-;---------------------------
-_TakeSpecialKeyPL2_V2
-	bsr	_CD32_Read
-	move.l	joy0(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	#$61,-$41E8(a4)		; RShift
-.noSB
-	bsr	rest_of_keys_41E8_41
-	move.b	-$41E8(a4),d3		; $61=RShift | $45=Esc
-	ext.W	d3
-	rts
-;---------------------------
-
-
-;==============V3
-_TakePL1JOY1_V3
-	bsr	_CD32_Read
-	move.l	d0,-(a7)
-
-	move.b	-$41D5(a4),d3
-	bsr	_TestJoy0Gen
-	move.b	D3,-$41D5(a4)
-.noSB
-	move.B	-$41D5(A4),-2(A5)	; $8x=Fire | $01=Sown | $02=Up | $04=Left | $08= Right
-
-	move.l	(a7)+,d0
-	rts
-;---------------------------
-_TakePL2JOY0_V3
-	bsr	_CD32_Read
-
-	movem.l	d0-d1,-(a7)
-	move.B	-$7460(A4),d1		; 1PL MODe =>$02
-	move.b	-$41D6(a4),d3
-	bsr	_TestJoy1Gen
-	move.b	D3,-$41D6(a4)
-	movem.l	(a7)+,d0-D1
-
-	move.B	-$41D6(A4),-2(A5)	; $8x=Fire | $01=Down | $02=Up | $04=Left | $08= Right
-	rts
-;---------------------------
-_TakeSpecialKeyPL1_V3
-	bsr	_CD32_Read
-	move.l	joy1(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	D4,-$41DE(a4)		; LShift
-.noSB
-	bsr	rest_of_keys_41DE_45
-	move.b	-$41DE(a4),d3
-	ext.W	d3			; $60=LShift | $45=Esc
-	rts
-;---------------------------
-_TakeSpecialKeyPL2_V3
-	bsr	_CD32_Read
-	move.l	joy0(pc),d3
-	btst	#RJPB_BLUE,d3
-	beq	.noSB
-	move.b	#$61,-$41DE(a4)		; RShift
-.noSB
-	bsr	rest_of_keys_41DE_41
-	move.b	-$41DE(a4),d3		; $61=RShift | $45=Esc
-	ext.W	d3
-	rts
-;---------------------------
-
-_CD32_Read	move.l	d0,-(A7)
-		bsr	_joystick
-		move.l	(a7)+,d0
+		btst	#RJPB_FORWARD,d0
+		beq	.nor1
+		btst	#RJPB_REVERSE,d0
+		beq	.nor1
+		moveq	#$45,d0				; escape
 		rts
+.nor1
+		btst	#RJPB_BLUE,d0
+		beq	.noblue1
+		moveq	#$61,d0				; right shift
+		rts
+.noblue1
+		MOVE.B	$bfec01,D0			; normal keyboard check
+		ROR.B	#$01,D0
+		NOT.B	D0
+		rts
+
+_inject_single	eor.b	#CIAF_GAMEPORT1,d0		; original
+		or.b	d0,d1				; original
+		move.l	d1,-(a7)
+		moveq	#0,d0
+		move.l	_resload,a0
+		jsr	(resload_ReadJoyPort,a0)
+		move.l	(a7)+,d1
+		btst	#RJPB_RED,d0
+		beq	.nofire
+		bset	#7,d1
+.nofire		btst	#RJPB_RIGHT,d0
+		beq	.noright
+		bset	#3,d1
+.noright	btst	#RJPB_LEFT,d0
+		beq	.noleft
+		bset	#2,d1
+.noleft		btst	#RJPB_DOWN,d0
+		beq	.nodown
+		bset	#1,d1
+.nodown		btst	#RJPB_UP,d0
+		beq	.noup
+		bset	#0,d1
+.noup		rts
+
+; multiplayer mode
+; only active in action sequences (combat, train, capture) in two player mode
+
+keyboard_multi_port0
+		moveq	#0,d0
+		move.l	_resload,a0
+		jsr	(resload_ReadJoyPort,a0)
+		move.l	d0,gl_joy0
+
+		btst	#RJPB_FORWARD,d0
+		beq	.nor0
+		btst	#RJPB_REVERSE,d0
+		beq	.nor0
+		moveq	#$41,d0				; backspace
+		bra	.port1
+.nor0
+		btst	#RJPB_BLUE,d0
+		beq	.port1
+		moveq	#$61,d0				; right shift
+.port1
+
+keyboard_multi
+		moveq	#1,d0
+		move.l	_resload,a0
+		jsr	(resload_ReadJoyPort,a0)
+
+		btst	#RJPB_FORWARD,d0
+		beq	.nor1
+		btst	#RJPB_REVERSE,d0
+		beq	.nor1
+		moveq	#$45,d0				; escape
+		rts
+.nor1
+		btst	#RJPB_BLUE,d0
+		beq	.noblue1
+		moveq	#$60,d0				; left shift
+		rts
+.noblue1
+		MOVE.B	$bfec01,D0
+		ROR.B	#$01,D0
+		NOT.B	D0
+		rts
+
+; d0=rawkey d4=port0result
+
+_inject_multi
+		move.l	gl_joy0,d1
+		moveq	#0,d4				; overwrite keyboard result, otherwise stick bits gets never released
+		btst	#RJPB_RED,d1
+		beq	.nofire
+		bset	#7,d4
+.nofire		btst	#RJPB_RIGHT,d1
+		beq	.noright
+		bset	#3,d4
+.noright	btst	#RJPB_LEFT,d1
+		beq	.noleft
+		bset	#2,d4
+.noleft		btst	#RJPB_DOWN,d1
+		beq	.nodown
+		bset	#1,d4
+.nodown		btst	#RJPB_UP,d1
+		beq	.noup
+		bset	#0,d4
+.noup
+		move.l	(a7),a0				; return pc
+		move	(-8,a0),d1			; d16 result port0
+		move.b	d4,(a4,d1.w)			; save result port0
+		tst.b	d0				; original
+		bpl	.nokeyup			; original
+		moveq	#0,d0				; original
+.nokeyup	rts
+
 ;----------------------------
 _Crack
 	move.w	#$32E0,d6
@@ -681,28 +523,8 @@ _LoadFileOffset	movem.l	d1/a0-a2,-(a7)
 
 ;============================================================================
 
-_joystick	movem.l	d0-d1/a0-a2,-(a7)
-		moveq	#0,d0
-		move.l	_resload,a2
-		jsr	(resload_ReadJoyPort,a2)
-		lea	joy0,a0
-		move.l	d0,(a0)
-		moveq	#1,d0
-		move.l	_resload,a2
-		jsr	(resload_ReadJoyPort,a2)
-		lea	joy1,a0
-		move.l	d0,(a0)
-		movem.l	(a7)+,_MOVEMREGS
-		rts
-
-;============================================================================
-
-_tag		dc.l	WHDLTAG_CUSTOM1_GET
-_mouse_as_joy	dx.l	2
 _GameName	dx.l	4		; leave it!!!! name buffer =>if not crash
 _GameNamePrec	dx.l	1
-joy0		dx.l	1
-joy1		dx.l	1
 _FileOffsetAdr	dx.l	1
 _FileLengthAdr	dx.l	1
 _DirectoryAdr	dx.l	1
