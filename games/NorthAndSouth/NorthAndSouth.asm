@@ -35,6 +35,7 @@
 	STRUCTURE globals,$100
 	LONG	gl_joy0
 	BYTE	gl_files
+	BYTE	gl_port0flag
 
 ;============================================================================
 
@@ -304,6 +305,10 @@ _inject_single	eor.b	#CIAF_GAMEPORT1,d0		; original
 ; only active in action sequences (combat, train, capture) in two player mode
 
 keyboard_multi_port0
+
+		bclr	#0,gl_port0flag			; avoid that port0 blocks port1
+		bne	keyboard_multi
+
 		moveq	#0,d0
 		move.l	_resload,a0
 		jsr	(resload_ReadJoyPort,a0)
@@ -314,12 +319,14 @@ keyboard_multi_port0
 		btst	#RJPB_REVERSE,d0
 		beq	.nor0
 		moveq	#$41,d0				; backspace
-		bra	.port1
+		st	gl_port0flag
+		rts
 .nor0
 		btst	#RJPB_BLUE,d0
-		beq	.port1
+		beq	keyboard_multi
 		moveq	#$61,d0				; right shift
-.port1
+		st	gl_port0flag
+		rts
 
 keyboard_multi
 		moveq	#1,d0

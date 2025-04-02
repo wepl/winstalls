@@ -40,7 +40,8 @@
  or	aminet:dev/misc/whdload#?
  and	aminet:game/patch/
 
- version 2.2 (22.03.2025) done by Wepl:
+ version 2.2 (02.04.2025) done by Wepl:
+ - fixed 2nd button/joypad support (issue #4331, #4788, #5147, #5645)
  - requires WHDLoad v19 (ReadJoyPort)
  - removed obsolete files from imager: DIR1.BIN and PROTECT.BIN, in the multi-
    language version also BOOT2.bin is obsolete and can be deleted
