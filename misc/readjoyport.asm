@@ -2,7 +2,7 @@
 ;  :Program.	readjoyport.asm
 ;  :Contents.	Slave to check resload_ReadJoyPort
 ;  :Author.	Wepl
-;  :Version.	$Id: readjoyport.asm 1.3 2024/05/26 23:05:14 wepl Exp wepl $
+;  :Version.	$Id: readjoyport.asm 1.4 2024/06/02 23:50:15 wepl Exp wepl $
 ;  :History.	2024-05-18 started
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -92,7 +92,7 @@ MEMSCREEN	= $10000
 		lea	_vbi,a0
 		move.l	a0,$6c
 		move	#INTF_VERTB,(intreq,a6)
-		move	#INTF_SETCLR|INTF_VERTB,(intena,a6)
+		move	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,(intena,a6)
 		waitvb	a6
 	;init timers
 		lea	(_ciab),a4		;A4 = ciab
