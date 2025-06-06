@@ -26,6 +26,8 @@
 ;			 (Mantis issue 3509) but decided not to include
 ;			 it, too much of a hack and the game should be played
 ;		         without cheating anyway in my opinion
+;		26.11.17 DMA wait in level 4 interrupt fixed, samples
+;			 are now played properly (issue #3644)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -95,11 +97,11 @@ _expmem		dc.l	$1000			;ws_ExpMem
 _name		dc.b	"IK+",0
 _copy		dc.b	"1987/8 Archer Maclean",0
 _info		dc.b	"installed and fixed by Wepl & StingRay",10
-		dc.b	"Version 1.7 "
+		dc.b	"Version 1.8 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ELSE
-		dc.b	"(14.08.2016)"
+		dc.b	"(26.11.2017)"
 	dc.b	0
 _file		dc.b	"IK+.Image",0
 _savename	dc.b	"IK+.Highs",0
@@ -246,7 +248,15 @@ _pl	PL_START
 ;	PL_P	$55c+$600,.cheat	; blue player never wins (2 player mode)
 ;	PL_ENDIF
 
+
+
+; v1.8, 26-Nov-2017, fix CPU  dependent DMA wait
+; in level 4 interrupt so samples are played properly
+	PL_PSS	$ce8+$600,FixDMAWait,4	; fix DMA wait in level 4 interrupt
+
 	PL_END
+
+
 
 ; $7d2.w: white
 ; $7d3.w: red
@@ -298,6 +308,15 @@ _pl	PL_START
 
 .fixint3
 	btst	#10-8,$dff01e
+	rts
+
+
+FixDMAWait
+	moveq	#5-1,d0
+.loop	move.b	$dff006,d1
+.wait	cmp.b	$dff006,d1
+	beq.b	.wait
+	dbf	d0,.loop
 	rts
 
 
