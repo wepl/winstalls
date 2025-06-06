@@ -19,6 +19,13 @@
 ;				     bonus rounds can be disabled with CUSTOM2
 ;				     graphics bug with IK+ shield in bonus
 ;				     round fixed
+;		14.08.16 NTSC support changed, now only the music is played
+;			 at PAL speed, everything else runs at NTSC speed
+;			 code optimised by using PLIF/PLENDIF features
+;			 started to add cheat for 2 player mode as requested
+;			 (Mantis issue 3509) but decided not to include
+;			 it, too much of a hack and the game should be played
+;		         without cheating anyway in my opinion
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -30,7 +37,7 @@
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-;DEBUG
+DEBUG
 
 	IFD	BARFLY
 	OUTPUT	"wart:i/ik+/IK+.Slave"
@@ -56,7 +63,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	0			;ws_CurrentDir
 		ENDC
 		dc.w	0			;ws_DontCache
-_keydebug	dc.b	0			;ws_keydebug
+		dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
 _expmem		dc.l	$1000			;ws_ExpMem
 		dc.w	_name-_base		;ws_name
@@ -74,6 +81,7 @@ _expmem		dc.l	$1000			;ws_ExpMem
 
 .config	dc.b	"C1:B:Disable Timing Fix;"
 	dc.b	"C2:B:Disable Bonus Rounds"
+	;dc.b	"C3:B:Blue Player never wins (2 player mode)"
 	dc.b	0
 
 
@@ -87,11 +95,11 @@ _expmem		dc.l	$1000			;ws_ExpMem
 _name		dc.b	"IK+",0
 _copy		dc.b	"1987/8 Archer Maclean",0
 _info		dc.b	"installed and fixed by Wepl & StingRay",10
-		dc.b	"Version 1.6 "
+		dc.b	"Version 1.7 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ELSE
-		dc.b	"(27.06.2016)"
+		dc.b	"(14.08.2016)"
 	dc.b	0
 _file		dc.b	"IK+.Image",0
 _savename	dc.b	"IK+.Highs",0
@@ -170,17 +178,9 @@ NOBONUSROUND	dc.l	0
 PLNTSC	PL_START
 	PL_PSS	$134e,.setLev6,2	; install level 6 interrupt
 	PL_ORW	$141e+2,1<<13		; enable level 6 interrupt
-	PL_PSS	$13a0,.fixint2,2	; fix write to INTREQR and check CIA int
+	PL_S	$9c8,6			; don't call replayer in VBI
 	PL_END
 
-
-.fixint2
-	btst	#5,$200.w
-	bne.b	.go
-	rts
-
-.go	bchg	#5,$200.w
-	rts
 
 .setLev6
 	pea	.NewLev6(pc)
@@ -206,8 +206,7 @@ PLNTSC	PL_START
 	movem.l	d0-a6,-(a7)
 	tst.b	$bfdd00		; clear timer interrupt (CIA A, timer A)
 
-
-	bset	#5,$200.w
+	jsr	$600+$d3c.w	; call replayer every 1/50th second
 
 	move.w	#1<<13,$dff09c
 	move.w	#1<<13,$dff09c
@@ -236,11 +235,35 @@ _pl	PL_START
 	PL_P	$715c+$600,.waitraster	; fix flickering on fast machines
 
 ; disable bonus rounds if CUSTOM 2 <> 0
+	PL_IFC2
 	PL_P	$b106+$600,.skipbonus	; shields
-	PL_P	$bfac+$600,.skipbonus2	; bombs
+	PL_P	$bfac+$600,.skipbonus	; bombs
+	PL_ENDIF
 
 	PL_PS	$b3da+$600,.fixgfx	; fix gfx bug when shield 2 is selected
+
+;	PL_IFC3
+;	PL_P	$55c+$600,.cheat	; blue player never wins (2 player mode)
+;	PL_ENDIF
+
 	PL_END
+
+; $7d2.w: white
+; $7d3.w: red
+; $7d4.w: blue
+
+;.cheat	cmp.b	#3,$678.w
+;	bne.b	.no
+;	
+;
+;	;cmp.b	#6,$7d4.w		; did blue player win?
+;	;blt.b	.ok
+;	clr.b	$7d4.w			; not anymore! :)
+;	move.b	#6,$7d2.w		; white six points
+;	move.b	#6,$7d3.w		; red too
+;.ok
+;	
+;.no	jmp	$600+$5ec.w
 
 
 .fixgfx	subq.w	#1,d6			; fix height -> no graphics bugs!
@@ -249,27 +272,8 @@ _pl	PL_START
 
 
 .skipbonus
-	move.l	NOBONUSROUND(pc),d0
-	beq.b	.dobonus
-.nobonus
 	move.b	#1,$678.w
 	rts
-
-.dobonus
-	clr.w	d0
-	clr.w	d1
-	clr.w	d2
-	jmp	$600+$b10c
-
-
-.skipbonus2
-	move.l	NOBONUSROUND(pc),d0
-	bne.b	.nobonus
-
-	clr.w	d0
-	clr.w	d1
-	clr.w	d2
-	jmp	$600+$bfb2
 
 
 .waitraster
@@ -291,15 +295,6 @@ _pl	PL_START
 .fixint2
 	btst	#5,$dff01e+1
 	rts
-
-	btst	#5,$200.w
-	bne.b	.go
-	rts
-
-.go	bchg	#5,$200.w
-	rts
-
-
 
 .fixint3
 	btst	#10-8,$dff01e
@@ -368,7 +363,7 @@ _exit		move	#$2700,sr		;otherwise freeze inside whdload
 		lea	($80000),a7		;otherwise "bad stackpointer" on exit
 		pea	(TDREASON_OK).w
 		move.l	(_resload,pc),-(a7)
-		add.l	#resload_Abort,(a7)
+		addq.l	#resload_Abort,(a7)
 		rts
 
 ;--------------------------------
