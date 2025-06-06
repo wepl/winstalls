@@ -39,7 +39,7 @@
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-DEBUG
+;DEBUG
 
 	IFD	BARFLY
 	OUTPUT	"wart:i/ik+/IK+.Slave"
@@ -81,8 +81,10 @@ _expmem		dc.l	$1000			;ws_ExpMem
 	dc.w	.config-_base	; ws_config
 
 
-.config	dc.b	"C1:B:Disable Timing Fix;"
-	dc.b	"C2:B:Disable Bonus Rounds"
+.config	
+	dc.b	"C1:B:Enable cheat keys;"
+	dc.b	"C2:B:Disable Bonus Rounds;"
+	dc.b	"C3:B:Disable Timing Fix;"	
 	;dc.b	"C3:B:Blue Player never wins (2 player mode)"
 	dc.b	0
 
@@ -94,20 +96,30 @@ _expmem		dc.l	$1000			;ws_ExpMem
 	DOSCMD	"WDate  >T:date"
 	ENDC
 
-_name		dc.b	"IK+",0
-_copy		dc.b	"1987/8 Archer Maclean",0
-_info		dc.b	"installed and fixed by Wepl & StingRay",10
-		dc.b	"Version 1.8 "
+DECL_VERSION:MACRO
+	dc.b	"1.9"
 	IFD BARFLY
+		dc.b	" "
 		INCBIN	"T:date"
-	ELSE
-		dc.b	"(26.11.2017)"
+	ENDC
+	IFD	DATETIME
+		dc.b	" "
+		incbin	datetime
+	ENDC
+	ENDM
+	
+_name		dc.b	"International Karate +",0
+_copy		dc.b	"1987/8 Archer Maclean",0
+_info		dc.b	"installed and fixed by Wepl/StingRay/JOTD",10
+		dc.b	"Version "
+		DECL_VERSION
 	dc.b	0
 _file		dc.b	"IK+.Image",0
 _savename	dc.b	"IK+.Highs",0
 		IFD	DEBUG
 _dir		dc.b	"SOURCES:WHD_Slaves/IK+",0
 		ENDC
+
 	EVEN
 
 ;============================================================================
@@ -170,7 +182,7 @@ _start	;	A0 = resident loader
 TAGLIST		dc.l	WHDLTAG_MONITOR_GET
 MON		dc.l	0
 		dc.l	WHDLTAG_CUSTOM1_GET
-NOTIMINGFIX	dc.l	0
+cheat	dc.l	0
 		dc.l	WHDLTAG_CUSTOM2_GET
 NOBONUSROUND	dc.l	0
 
@@ -224,7 +236,10 @@ _pl	PL_START
 	PL_R	$1976			;preserve NMI
 	PL_P	$1aaa,_keyb
 	PL_PS	$12bc+$600,_loadhighs
+	PL_IFC1
+	PL_ELSE
 	PL_PS	$9cde+$600,_savehighs
+	PL_ENDIF
 	PL_S	$11a0+$600,$ba-$a0	;trap stuff
 	PL_S	$c30+$600,4		;move #,sr
 	PL_S	$99a+$600,4		;move #,sr
@@ -234,8 +249,11 @@ _pl	PL_START
 	PL_PSS	$13a0+$600,.fixint2,2	; fix write to INTREQR
 	PL_PSS	$cd0+$600,.fixint3,2	; fix write to INTREQR
 
+	PL_IFC3
+	PL_ELSE
 	PL_P	$715c+$600,.waitraster	; fix flickering on fast machines
-
+	PL_ENDIF
+	
 ; disable bonus rounds if CUSTOM 2 <> 0
 	PL_IFC2
 	PL_P	$b106+$600,.skipbonus	; shields
@@ -252,11 +270,24 @@ _pl	PL_START
 
 ; v1.8, 26-Nov-2017, fix CPU  dependent DMA wait
 ; in level 4 interrupt so samples are played properly
-	PL_PSS	$ce8+$600,FixDMAWait,4	; fix DMA wait in level 4 interrupt
-
+	PL_PSS	$12e8,FixDMAWait,4	; $ce8+$600 fix DMA wait in level 4 interrupt
+	PL_PSS	$1300,.dma_bounce,2
 	PL_END
 
-
+.dma_bounce
+	move.w	#8,_custom+dmacon	; stop channel 4
+	move.w  d0,-(a7)
+	move.w	#3,d0   ; make it 7 if still issues
+.bd_loop1
+	move.w  d0,-(a7)
+    move.b	$dff006,d0	; VPOS
+.bd_loop2
+	cmp.b	$dff006,d0
+	beq.s	.bd_loop2
+	move.w	(a7)+,d0
+	dbf	d0,.bd_loop1
+	move.w	(a7)+,d0
+	rts 
 
 ; $7d2.w: white
 ; $7d3.w: red
@@ -277,7 +308,7 @@ _pl	PL_START
 
 
 .fixgfx	subq.w	#1,d6			; fix height -> no graphics bugs!
-	lea	$600+$2339c,a0		; shield gfx
+	lea	$600+$2339c,a0		; shield gfx (original code)
 	rts
 
 
@@ -287,17 +318,12 @@ _pl	PL_START
 
 
 .waitraster
-	move.l	NOTIMINGFIX(pc),d3
-	bne.b	.orig
-
 	btst	#0,$dff005
 	bne.b	.waitraster
 .wait2	btst	#0,$dff005
 	beq.b	.wait2
 	rts
 
-.orig	move.l	$dff004,d3
-	jmp	$600+$7162.w
 
 .fixint	btst	#4,$dff01e+1
 	rts
@@ -366,7 +392,19 @@ _swaphighs	move.l	(_expmem,pc),a0
 		dbf	d0,.loop
 		rts
 
-_keyb		cmp.b	(_keyexit,pc),d0
+_keyb	
+		move.l	cheat(pc),d1
+		beq.b	.no_cheat_keys
+		cmp.b	#1,d0
+		bne.b	.no_white_wins
+		move.b	#6,$7D2.W	; awards 6 points, ends round now
+.no_white_wins
+		cmp.b	#2,d0
+		bne.b	.no_red_wins
+		move.b	#6,$7D3.W	; awards 6 points, ends round now
+.no_red_wins
+.no_cheat_keys
+		cmp.b	(_keyexit,pc),d0
 		beq.b	_exit
 		jsr	$1b5e.w			;original
 		moveq	#3-1,d1			;wait because handshake min 75 µs
