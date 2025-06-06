@@ -1,0 +1,28 @@
+#multiple-versions=y
+#man-file=Manual
+#P_SelectVersion-Name-0=Normal Floppy Disk
+#P_SelectVersion-Name-1=CDTV Version
+#P_MakeImages#0
+      ;----- 0 = Normal Floppy Disk - RawDIC
+      (set #last-file "IK+.image")		;last file the imager should create
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s.ISlave" #prefix))
+        (dest #dest)
+      )
+      (P_AskSrcDrvRaw)
+      (working "calling RawDIC...")
+      (run ("CD \"%s\"\nRawDIC SLAVE=%s.islave SOURCE=%s\nDelete %s.ISlave Quiet" #dest #prefix #CI_drive #prefix))
+      (if (exists (tackon #dest #last-file))
+        ("")
+        (abort "Disk imaging was not successful!\nRawDIC was unable to create all needed files!")
+      )
+#P_MakeImages#1
+      ;----- 1 = CDTV Version - Files
+      (message "Please insert your IK+ CD.")
+      (copyfiles
+        (help @copyfiles-help)
+        (source "cdtv_test:IK+")
+        (dest #dest)
+        (newname "IK+.Image")
+      )

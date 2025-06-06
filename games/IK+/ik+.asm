@@ -1,8 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	ik+.asm
 ;  :Contents.	Slave for "IK+"
-;  :Author.	Wepl, StingRay
-;  :Version.	$Id: ik+.asm 1.6 2001/08/29 16:12:44 wepl Exp wepl $
+;  :Author.	Wepl, StingRay, JOTD
 ;  :History.	22.09.97 initial
 ;		01.10.97 debug key changed because F9 is used in game
 ;		24.11.98 adapted for v8 (obsoletes novbrmove)
@@ -28,6 +27,7 @@
 ;		         without cheating anyway in my opinion
 ;		26.11.17 DMA wait in level 4 interrupt fixed, samples
 ;			 are now played properly (issue #3644)
+;		06.06.25 repo import, custom=1 to disable interrupt patches
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -35,11 +35,8 @@
 ;  :To Do.	- fix sound problems on fast machines
 ;---------------------------------------------------------------------------*
 
-	INCDIR	SOURCES:Include/
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-
-;DEBUG
 
 	IFD	BARFLY
 	OUTPUT	"wart:i/ik+/IK+.Slave"
@@ -59,11 +56,7 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
-		IFD	DEBUG
-		dc.w	_dir-_base		; ws_CurrentDir
-		ELSE
 		dc.w	0			;ws_CurrentDir
-		ENDC
 		dc.w	0			;ws_DontCache
 		dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
@@ -71,55 +64,28 @@ _expmem		dc.l	$1000			;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0			; ws_kickname
+		dc.l	0			; ws_kicksize
+		dc.w	0			; ws_kickcrc
+		dc.w	.config-_base		; ws_config
 
-; v16
-	dc.w	0		; ws_kickname
-	dc.l	0		; ws_kicksize
-	dc.w	0		; ws_kickcrc
-
-; v17
-	dc.w	.config-_base	; ws_config
-
-
-.config	
-	dc.b	"C1:B:Enable cheat keys;"
-	dc.b	"C2:B:Disable Bonus Rounds;"
-	dc.b	"C3:B:Disable Timing Fix;"	
-	;dc.b	"C3:B:Blue Player never wins (2 player mode)"
-	dc.b	0
-
-
+.config		dc.b	"C1:B:Enable cheat keys;"
+		dc.b	"C2:B:Disable Bonus Rounds;"
+		dc.b	"C3:B:Disable Timing Fix;"
+		;dc.b	"C3:B:Blue Player never wins (2 player mode)"
+		db	"C5:B:Disable Interrupt Patches"
+		dc.b	0
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
-
-DECL_VERSION:MACRO
-	dc.b	"1.9"
-	IFD BARFLY
-		dc.b	" "
-		INCBIN	"T:date"
-	ENDC
-	IFD	DATETIME
-		dc.b	" "
-		incbin	datetime
-	ENDC
-	ENDM
-	
 _name		dc.b	"International Karate +",0
 _copy		dc.b	"1987/8 Archer Maclean",0
 _info		dc.b	"installed and fixed by Wepl/StingRay/JOTD",10
-		dc.b	"Version "
-		DECL_VERSION
-	dc.b	0
+		dc.b	"Version 1.10 "
+		INCBIN	.date
+		dc.b	0
 _file		dc.b	"IK+.Image",0
 _savename	dc.b	"IK+.Highs",0
-		IFD	DEBUG
-_dir		dc.b	"SOURCES:WHD_Slaves/IK+",0
-		ENDC
-
 	EVEN
 
 ;============================================================================
@@ -133,24 +99,24 @@ _start	;	A0 = resident loader
 	IFEQ 1
 		moveq	#0,d0			;offset
 		move.l	#$400,d1		;size
-		lea	$1000.w,a0		;destination
+		lea	$1000,a0		;destination
 		sub.l	a1,a1			;tags
 		jsr	(resload_DiskLoadDev,a2)
 		skip	6*2,$100c+$1a
-		clr.w	$500.w			;stackframe format error
-		jmp	$100c.w
+		clr.w	$500			;stackframe format error
+		jmp	$100c
 	ENDC
 
 		lea	(_file,pc),a0
-		lea	$600.w,a1
+		lea	$600,a1
 		jsr	(resload_LoadFileDecrunch,a2)
-		lea	$600.w,a0
+		lea	$600,a0
 		jsr	(resload_CRC16,a2)
 		cmp.w	#$8570,d0		;Original
 		beq	.ok
 		cmp.w	#$bfb0,d0		;CDTV/HitSquad
 		beq	.ok
-		pea	(TDREASON_WRONGVER).w
+		pea	(TDREASON_WRONGVER)
 		jmp	(resload_Abort,a2)
 .ok
 		lea	(_pl,pc),a0
@@ -161,7 +127,6 @@ _start	;	A0 = resident loader
 		tst.b	(ciaicr,a1)				;clear requests
 		move.b	#CIAICRF_SETCLR|CIAICRF_SP,(ciaicr,a1)	;allow ints
 		and.b	#~(CIACRAF_SPMODE),(ciacra,a1)		;input mode
-
 
 ; stingray, 27-jun-2016: NTSC stuff
 	lea	TAGLIST(pc),a0
@@ -175,17 +140,14 @@ _start	;	A0 = resident loader
 	jsr	resload_Patch(a2)
 
 .isPAL
-
-
-		jmp	$600.w
+		jmp	$600
 
 TAGLIST		dc.l	WHDLTAG_MONITOR_GET
 MON		dc.l	0
 		dc.l	WHDLTAG_CUSTOM1_GET
-cheat	dc.l	0
+cheat		dc.l	0
 		dc.l	WHDLTAG_CUSTOM2_GET
 NOBONUSROUND	dc.l	0
-
 		dc.l	TAG_DONE
 
 
@@ -227,8 +189,6 @@ PLNTSC	PL_START
 	movem.l	(a7)+,d0-a6
 	rte	
 
-
-
 _pl	PL_START
 	PL_R	$2475c			;copylock
 ;	PL_W	$500,0			;stackframe format error
@@ -241,8 +201,13 @@ _pl	PL_START
 	PL_PS	$9cde+$600,_savehighs
 	PL_ENDIF
 	PL_S	$11a0+$600,$ba-$a0	;trap stuff
+	; without these patches it crashes on 68060 with Bad SP
+	; https://eab.abime.net/showthread.php?p=1748587
+	PL_IFC5
+	PL_ELSE
 	PL_S	$c30+$600,4		;move #,sr
 	PL_S	$99a+$600,4		;move #,sr
+	PL_ENDIF
 
 ; stingray, 27-jun-2016
 	PL_PSS	$1394+$600,.fixint,2	; fix write to INTREQR
@@ -265,7 +230,6 @@ _pl	PL_START
 ;	PL_IFC3
 ;	PL_P	$55c+$600,.cheat	; blue player never wins (2 player mode)
 ;	PL_ENDIF
-
 
 
 ; v1.8, 26-Nov-2017, fix CPU  dependent DMA wait
@@ -425,7 +389,7 @@ _exit		move	#$2700,sr		;otherwise freeze inside whdload
 
 ;--------------------------------
 
-_resload	dc.l	0			;address of resident loader
+_resload	dx.l	1			;address of resident loader
 
 ;======================================================================
 

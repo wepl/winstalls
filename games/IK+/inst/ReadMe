@@ -35,14 +35,21 @@
 	author via the Bug-Report-Form which can be accessed on
 		http://www.whdload.de/
 
-	Wepl in September 1997, November 1998.
+	Wepl in September 1997, November 1998, June 2025.
 	StingRay in June 2016.
-	
+
+	version 1.10 (7.6.2025) by Wepl:
+	- interrupt patches can be disabled using Custom5=1, see
+	  https://eab.abime.net/showthread.php?p=1748587
+	- new install script
+	- more icons added
+	- source: https://github.com/wepl/winstalls/tree/master/games/IK%2B
+
 	version 1.9 (18.12.2022) by JOTD:
 	- samples in bouncing ball bonus round are now played properly
-	  on real machines (like on my 68060) (issue #0005537)
+	  on real machines (like on my 68060) (issue #5537)
 	- added cheatkeys: 1: white player wins, 2: red player wins
-    - highscores not saved if cheat is used
+	- highscores not saved if cheat is used
 
 	version 1.8 (26.11.2017) by StingRay:
 	- CPU dependent DMA wait fixed, samples are now played properly
@@ -74,8 +81,4 @@
 	version 1.3 (14.07.2001) by Wepl:
 	- supports another version, thanks to Jan Vieten for sending it
 	- new imager
-
-
-
-
 
