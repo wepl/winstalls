@@ -15,7 +15,7 @@
 # $^ all dependencies
 
 # enable a non-debug assemble:
-# 'setenv DEBUG=0' or 'make DEBUG=0'
+# 'setenv DBG=0' or 'make DBG=0'
 
 # save all vars here to print new created ones later
 VARS_OLD := $(.VARIABLES)
@@ -23,74 +23,7 @@ VARS_OLD := $(.VARIABLES)
 INCLUDE=../../include
 SOURCES=../../sources
 
-# different commands for build under Amiga or Vamos
-ifdef AMIGA
-
-# basm options: -x+ = use cachefile.library -s1+ = create SAS/D1 debug hunks -sa+ = create symbol hunks
-BASMOPT=-x+ -i//include -i//sources
-BASMOPTDBG=-sa+
-VASMOPT=-I//include -I//sources
-# vincludeos3: must before netinclude: because broken netinclude
-CFLAGS=-Ivincludeos3: -Inetinclude:
-CP=Copy
-DATE=wdate >.date
-LHA=lha -Fr a
-LHAX=lha x
-MKDIR=Makedir
-RM=Delete All
-
-# on Amiga default=DEBUG
-ifndef DEBUG
-DEBUG=1
-endif
-
-else
-
-# basm options: -x- = don't use cachefile.library -sa+ = create symbol hunks
-BASMOPT=-x- -i//include -i//sources
-BASMOPTDBG=-sa+
-VASMOPT=-I$(INCLUDE) -I$(SOURCES)
-CFLAGS=-I$(VBCC)/targets/m68k-amigaos/include -I$(INCLUDE)
-CP=cp -R
-DATE=date "+(%d.%m.%Y)" | xargs printf >.date
-LHA=lha c1o6
-LHAX=lha x
-MKDIR=mkdir
-RM=rm -fr
-VAMOS=vamos -qC68020 -m4096 -s128 --
-
-# on Vamos default=NoDEBUG
-ifndef DEBUG
-DEBUG=0
-endif
-
-endif
-
-ifeq ($(DEBUG),1)
-
-# Debug options
-# ASM creates executables, ASMB binary files, ASMO object files
-# BASM: -H to show all unused Symbols/Labels, requires -OG-
-ASM=$(VAMOS) basm -v+ $(BASMOPT) $(BASMOPTDBG) -O+ -ODc- -ODd- -wo- -dDEBUG=1
-ASMB=$(ASM)
-ASMO=$(ASM)
-ASMDEF=-d
-ASMOUT=-o
-CC=vc -c99 -g -I. $(CFLAGS) -DOS_AMIGAOS -DDEBUG -sc
-
-else
-
-# normal options
-# VASM: -wfail -warncomm -databss
-ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-nmoveq -opt-pea -opt-size -opt-st -ldots
-ASM=$(ASMBASE) -Fhunkexe
-ASMB=$(ASMBASE) -Fbin
-ASMO=$(ASMBASE) -Fhunk
-ASMDEF=-D
-ASMOUT=-o 
-CC=vc -c99 -g -I. $(CFLAGS) -DOS_AMIGAOS -O2 -size -sc
-
-endif
+include ../../Maketools
 
 # general programs
 RELOC=$(VAMOS) Reloc

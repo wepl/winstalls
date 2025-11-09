@@ -5,9 +5,9 @@
 ;	Custom1=1 only vbi active performing color cycling
 ;	Custom1=2 also ports interrupt active, quitting on esc
 ;  :Author.	Wepl
-;  :Version.	$Id: zeus.asm 1.1 2012/10/12 20:51:35 wepl Exp wepl $
 ;  :History.	26.09.12 started
 ;		13.11.13 refresh for aca500
+;		09.11.25 imported to winstalls
 ;  :Requires.
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -15,12 +15,11 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:.debug/IVR.Slave"
+	;OUTPUT	"wart:.debug/IVR.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -55,8 +54,7 @@ _name		dc.b	"Interrupt Vector Redirect Test Slave",0
 _copy		dc.b	"Wepl",0
 _info		dc.b	"for testing interrupt hook with Zeus/ACA500 boards",10
 		dc.b	"build "
-	DOSCMD	"WDate  >T:date"
-	INCBIN	"T:date"
+	INCBIN	".date"
 		dc.b	-1
 		dc.b	"can be quit always using LMB",10
 		dc.b	"no ints: no keyboard quit possible",10
@@ -130,7 +128,7 @@ _key_check	cmp.b	#$45,d0
 
 ;======================================================================
 
-	INCLUDE	Sources:whdload/keyboard.s
+	INCLUDE	whdload/keyboard.s
 
 ;======================================================================
 

@@ -3,7 +3,6 @@
 ;  :Contents.	kickstart 1.2 booter
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick12.asm 1.13 2019/01/19 14:51:42 wepl Exp wepl $
 ;  :History.	25.04.02 created
 ;		20.06.03 rework for whdload v16
 ;		18.12.06 adapted for eab release
@@ -20,12 +19,11 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"awart:workbench12/Kick12.Slave"
+	;OUTPUT	"awart:workbench12/Kick12.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -73,14 +71,13 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick12.s
 
 ;============================================================================
 
 	IFD BARFLY
 	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
+	DOSCMD	"WDate  >.date"
 .passchk
 	ENDC
 	ENDC
@@ -90,9 +87,7 @@ slv_name	dc.b	"Kickstarter for 33.180",0
 slv_copy	dc.b	"1986 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		dc.b	"Version 0.6 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Trainer",0

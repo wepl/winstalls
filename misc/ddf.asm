@@ -1,18 +1,26 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: ddf.asm 1.2 2014/04/13 00:13:22 wepl Exp wepl $
+;  :Program.	ddf.asm
+;  :Contents.	test Slave to find correct ddfstrt/stop calculation for the SP (save picture) program
+;  :Author.	Wepl
+;  :History.	09.11.25 imported to winstalls
+;  :Requires.	-
+;  :Copyright.	Public Domain
+;  :Language.	68000 Assembler
+;  :Translator.	Barfly V2.9
+;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-	OUTPUT	"smbfs0:ddf.slave"
-
+	IFD BARFLY
+	;OUTPUT	"smbfs0:ddf.slave"
 	BOPT	O+			;enable optimizing
 	;BOPT	OG+			;enable optimizing
 	BOPT	w4-			;disable 64k warnings
 	BOPT	wo-			;disable optimize warnings
 	SUPER
+	ENDC
 	
 	STRUCTURE globals,$400
 		LONG	_resload
@@ -41,9 +49,7 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 
 _name		dc.b	"DDF Test Slave",0
 _copy		dc.b	"Wepl",0
-_info
-	DOSCMD	"WDate  >T:date"
-	INCBIN	"T:date"
+_info		INCBIN  ".date"
 		dc.b	0
 	EVEN
 
@@ -209,7 +215,7 @@ bpl		move.l	a3,d0
 
 ;======================================================================
 
-	INCLUDE	Sources:whdload/keyboard.s
+	INCLUDE	whdload/keyboard.s
 
 ;======================================================================
 

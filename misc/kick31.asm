@@ -3,7 +3,6 @@
 ;  :Contents.	kickstart 3.1 booter example
 ;  :Author.	Wepl
 ;  :Original.
-;  :Version.	$Id: kick31.asm 1.21 2024/02/03 19:25:27 wepl Exp wepl $
 ;  :History.	04.03.03 started
 ;		22.06.03 rework for whdload v16
 ;		17.02.04 WHDLTAG_DBGSEG_SET in _cb_dosLoadSeg fixed
@@ -30,13 +29,12 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
 
-	OUTPUT	"awart:workbench31/Kick31.Slave"
 	IFD BARFLY
+	;OUTPUT	"awart:workbench31/Kick31.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -98,14 +96,13 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick31.s
 
 ;============================================================================
 
 	IFD BARFLY
 	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
+	DOSCMD	"WDate  >.date"
 .passchk
 	ENDC
 	ENDC
@@ -115,9 +112,7 @@ slv_name	dc.b	"Kickstarter for 40.068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		dc.b	"Version 0.8 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Trainer",0

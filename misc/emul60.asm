@@ -1,19 +1,32 @@
 ;*---------------------------------------------------------------------------
-;  :Version.	$Id: debug.asm 1.14 2000/11/22 20:11:24 jah Exp jah $
+;  :Program.	emul60.asm
+;  :Contents.	test WHDLoad's emulation of unsupported interger instructions on 68060
+;  :Author.	Wepl
+;  :History.	09.11.25 imported to winstalls
+;  :Requires.	-
+;  :Copyright.	Public Domain
+;  :Language.	68000 Assembler
+;  :Translator.	Barfly V2.9
+;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
  BITDEF AF,68060,7
 
-	OUTPUT	"wart:.debug/emul60.slave"
-
+	IFD BARFLY
+	;OUTPUT	"wart:.debug/emul60.slave"
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
 	BOPT	w4-			;disable 64k warnings
 	BOPT	wo-			;disable optimize warnings
 	SUPER
+	ELSE
+QUAD	MACRO
+	CNOP	0,16
+	ENDM
+	ENDC
+
 	MC68040
 	
 	STRUCTURE globals,$400
@@ -42,8 +55,7 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 _name		dc.b	"Test Slave",0
 _copy		dc.b	"Wepl",0
 _info		dc.b	"done by Wepl "
-	DOSCMD	"WDate  >T:date"
-	INCBIN	"T:date"
+	INCBIN	".date"
 		dc.b	0
 	EVEN
 
@@ -293,7 +305,8 @@ _60		moveq	#60,d7
 _99		moveq	#99,d7
 		move.l	#$1,d1
 		move.l	#$1,d2
-		divs.l	#$0,d1:d2
+		moveq	#0,d3
+		divs.l	d3,d1:d2
 		move	ccr,d0
 		cmp.w	#0,d0
 		bne	.i
@@ -689,7 +702,7 @@ _copper		dc.w	diwstop,$29c1
 		dc.w	color+2,$ddd
 		dc.l	-2
 
-_font		INCBIN	sources:pics/pic_font_5x6_br.bin
+_font		INCBIN	pic_font_5x6_br.bin
 _font_
 
 ;======================================================================
@@ -700,7 +713,7 @@ _debug		move	sr,-(a7)
 		clr.w	-(a7)
 		clr.l	-(a7)
 		move.l	#TDREASON_DEBUG,-(a7)
-_end		move.l	(_resload,pc),-(a7)
+_end		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 

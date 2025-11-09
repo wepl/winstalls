@@ -3,8 +3,8 @@
 ;  :Contents.	check for condition codes after divu/s by zero
 ;		http://eab.abime.net/showthread.php?t=68345
 ;  :Author.	Wepl
-;  :Version.	$Id: aladdin.asm 1.6 2013/01/17 22:41:41 wepl Exp wepl $
 ;  :History.	17.03.13 created
+;		09.11.25 imported to winstalls
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -12,19 +12,20 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 
  BITDEF AF,68060,7
  BITDEF AF,UAE,9
 
-	OUTPUT	wart:.debug/DivZero.Slave
+	IFD BARFLY
+	;OUTPUT	wart:.debug/DivZero.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
 	SUPER
+	ENDC
 
 ;======================================================================
 
@@ -45,17 +46,11 @@ _expmem		dc.l	0			;ws_ExpMem
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
-
 _name		dc.b	"Check Division by Zero",0
 _copy		dc.b	"Wepl",0
 _info		dc.b	"created by Wepl",10
 		dc.b	"Version 1.0 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 _res		dc.b	"MC680"
 _cpu		dc.b	"00 UAE="
@@ -121,7 +116,7 @@ _test		moveq	#0,d0
 		moveq	#-1,d1
 		move	d0,ccr
 		jsr	(a1)
-		move	ccr,d6
+		move	sr,d6
 		lea	(4*4,a2),a3
 		moveq	#4,d7
 .lp1		lsr.w	#1,d6
@@ -132,9 +127,9 @@ _test		moveq	#0,d0
 
 		moveq	#0,d0
 		moveq	#-1,d1
-		move	d1,ccr
+		move	d1,sr
 		jsr	(a1)
-		move	ccr,d6
+		move	sr,d6
 		lea	(4*4,a2),a3
 		moveq	#4,d7
 .lp2		lsr.w	#1,d6

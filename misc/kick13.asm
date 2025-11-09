@@ -2,7 +2,6 @@
 ;  :Modul.	kick13.asm
 ;  :Contents.	kickstart 1.3 booter example
 ;  :Author.	Wepl, JOTD
-;  :Version.	$Id: kick13.asm 1.27 2022/10/03 14:27:54 wepl Exp wepl $
 ;  :History.	19.10.99 started
 ;		20.09.01 ready for JOTD ;)
 ;		23.07.02 RUN patch added
@@ -38,7 +37,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	OUTPUT	"awart:workbench13/Kick13.Slave"
+	;OUTPUT	"awart:workbench13/Kick13.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -91,14 +90,13 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
 	IFD BARFLY
 	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
+	DOSCMD	"WDate  >.date"
 .passchk
 	ENDC
 	ENDC
@@ -108,9 +106,7 @@ slv_name	dc.b	"Kickstarter for 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		dc.b	"Version 0.12 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Trainer",0

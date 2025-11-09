@@ -3,7 +3,7 @@
 #
 
 TOPTARGETS := img inst arc wepl clean
-SUBDIRS := apps ctros games
+SUBDIRS := apps ctros games misc
 
 $(TOPTARGETS): $(SUBDIRS)
 $(SUBDIRS):

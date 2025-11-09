@@ -2,8 +2,8 @@
 ;  :Program.	readjoyport.asm
 ;  :Contents.	Slave to check resload_ReadJoyPort
 ;  :Author.	Wepl
-;  :Version.	$Id: readjoyport.asm 1.4 2024/06/02 23:50:15 wepl Exp wepl $
 ;  :History.	2024-05-18 started
+;		2025-11-09 imported to winstalls
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -11,17 +11,17 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
+	IFD BARFLY
 	OUTPUT	"ram:readjoyport.slave"
-
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
 	BOPT	w4-			;disable 64k warnings
 	BOPT	wo-			;disable optimize warnings
 	SUPER
+	ENDC
 
 ;======================================================================
 
@@ -47,8 +47,7 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 _name		dc.b	"Test ReadJoyPort Slave",0
 _copy		dc.b	"2024 Wepl",0
 _info		dc.b	"done by Wepl "
-	DOSCMD	"WDate  >T:date"
-	INCBIN	"T:date"
+	INCBIN	".date"
 _config		dc.b	0
 	EVEN
 
@@ -447,14 +446,13 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		movem.l	(a7)+,d0-d5/a0-a1
 		rts
 
-_font		INCBIN	sources:pics/pic_font_5x6_br.bin
+_font		INCBIN	pic_font_5x6_br.bin
 _font_
 _stuffend
 
 ;============================================================================
 
-	INCDIR	Sources:whdload
-	INCLUDE	keyboard.s
+	INCLUDE	whdload/keyboard.s
 
 ;============================================================================
 
@@ -469,7 +467,7 @@ _copper		dc.w	diwstrt,$1a81
 		dc.l	-2
 
 _top1		dc.b	"ReadJoyPort Testslave "
-	INCBIN	t:date
+	INCBIN	.date
 		dc.b	0
 _top2		dc.b	"AttnFlags=%lx  Eclock=%ld  whdload=%ld.%ld.%ld",0
 _leg1		dc.b	"                               play/pause/mmb/fb3",0
