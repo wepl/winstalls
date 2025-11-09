@@ -86,6 +86,7 @@
 ;		05.02.23 WHDCTRL added
 ;		19.02.23 CLI/Resident patch for WHDCtrl added
 ;		19.01.25 on DEBUG and FileLog/S dump all files read via trackdisk.device
+;		07.11.25 support for ws_MemConfig added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -131,7 +132,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
 		dc.w	slv_Flags|slv_FlagsAdd	;ws_flags
-_basemem	dc.l	BASEMEM			;ws_BaseMemSize
+_basememsize	dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_boot-slv_base		;ws_GameLoader
 		dc.w	slv_CurrentDir-slv_base	;ws_CurrentDir
@@ -143,10 +144,13 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_copy-slv_base	;ws_copy
 		dc.w	slv_info-slv_base	;ws_info
 		dc.w	slv_kickname-slv_base	;ws_kickname
-		dc.l	KICKSIZE		;ws_kicksize
+_kicksize	dc.l	KICKSIZE		;ws_kicksize
 		dc.w	KICKCRC			;ws_kickcrc
 	IFGE slv_Version-17
 		dc.w	slv_config-slv_base	;ws_config
+	ENDC
+	IFGE slv_Version-20
+		dc.w	slv_MemConfig-slv_base	;ws_MemConfig
 	ENDC
 	ENDC
 
@@ -226,7 +230,7 @@ WCPU_VAL SET WCPU_VAL|WCPUF_FPU
 
 	IFND slv_Version
 	;load kickstart
-		move.l	#KICKSIZE,d0			;length
+		move.l	(_kicksize,pc),d0		;length
 		move.w	#KICKCRC,d1			;crc16
 		lea	(slv_kickname,pc),a0		;name
 		jsr	(resload_LoadKick,a5)
@@ -369,19 +373,32 @@ kick_setvecs	move.w	(a1)+,d0
 		rts
 
 kick_detectfast
+	IFGE slv_Version-20
+		move.l	(_expmemsize,pc),a4
+		sub.l	(_kicksize,pc),a4
+		move.l	a4,d0
+		beq	.rts
+		move.l	(_expmem,pc),a4
+		add.l	(_kicksize,pc),a4
+		move.l	a4,($1f0-$1ea,a5)
+		move.l	a4,($1fc-$1ea,a5)
+		add.l	d0,a4
+		bsr	_flushcache
+	ELSE
 	IFEQ FASTMEMSIZE
 		sub.l	a4,a4
 	ELSE
 		move.l	(_expmem,pc),a4
-		add.l	#KICKSIZE,a4
+		add.l	(_kicksize,pc),a4
 		move.l	a4,($1f0-$1ea,a5)
 		move.l	a4,($1fc-$1ea,a5)
 		add.l	#FASTMEMSIZE,a4
 		bsr	_flushcache
 	ENDC
-		jmp	(a5)
+	ENDC
+.rts		jmp	(a5)
 
-kick_detectchip	move.l	#CHIPMEMSIZE,a3
+kick_detectchip	move.l	(_basememsize,pc),a3
 		jmp	(a5)
 
 	IFD HRTMON
@@ -1298,6 +1315,10 @@ _time		dc.l	0
 	IFLT NUMDRIVES
 		dc.l	WHDLTAG_CUSTOM1_GET
 _custom1	dc.l	0
+	ENDC
+	IFGE slv_Version-20
+		dc.l	WHDLTAG_EXPMEMSIZE_GET
+_expmemsize	dc.l	0
 	ENDC
 		dc.l	0
 _resload	dc.l	0

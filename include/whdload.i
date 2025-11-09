@@ -39,6 +39,7 @@
 ;		13.01.23 WHDLTAG_Private8/9 added
 ;		12.05.24 added resload_ReadJoyPort
 ;		23.02.25 made PL_STR/0 compatible to vasm (broken EVEN)
+;		29.10.25 added ws_MemConfig, WHDLTAG_EXPMEMSIZE_GET
 ;  :Copyright.	19© 1996-2025 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -174,6 +175,8 @@ TDREASON_FAILMSG	= 43	;fail with a slave defined message text
 ; version 18.9
  EITEM	WHDLTAG_Private8
  EITEM	WHDLTAG_Private9
+; version 20.0
+ EITEM	WHDLTAG_EXPMEMSIZE_GET	;get allocated expmem size
 
 ;=============================================================================
 ; tagitems for the resload_Relocate function
@@ -264,6 +267,12 @@ TDREASON_FAILMSG	= 43	;fail with a slave defined message text
 ;=============================================================================
 
 	RPTR	ws_config	;configuration of splash window buttons
+
+;=============================================================================
+; additional	Version 20+
+;=============================================================================
+
+	RPTR	ws_MemConfig	;additional base+exp memory configurations
 	LABEL	ws_SIZEOF
 
 ;=============================================================================

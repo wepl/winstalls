@@ -22,6 +22,7 @@
 ;		13.11.21 INIT_RESOURCE added
 ;		14.11.21 WHDCTRL added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
+;		09.11.25 add support for MemConfig
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -115,7 +116,15 @@ slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
-slv_config	dc.b	"C1:B:Trainer",0
+slv_config	= slv_base				; disabled
+;slv_config	dc.b	"BW;C1:B:Trainer",0
+	ENDC
+	EVEN
+	IFGE slv_Version-20
+;slv_MemConfig	= slv_base				; disabled
+slv_MemConfig	dc.l	$ff000,KICKSIZE			; 1M + 0M
+		dc.l	$1ff000,$2000000+KICKSIZE	; 2M + 32M
+		dc.l	0
 	ENDC
 	EVEN
 

@@ -52,6 +52,7 @@
 ;		02.01.21 includes changed from Sources:whdload/... to whdload/...
 ;		13.11.21 INIT_RESOURCE added
 ;		14.11.21 WHDCTRL added
+;		01.11.25 support for ws_MemConfig added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -114,7 +115,7 @@ EXPMEM		= KICKSIZE+FASTMEMSIZE
 slv_base	SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	slv_Version		;ws_Version
 		dc.w	slv_Flags|slv_FlagsAdd	;ws_flags
-		dc.l	BASEMEM			;ws_BaseMemSize
+_basememsize	dc.l	BASEMEM			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_boot-slv_base		;ws_GameLoader
 		dc.w	slv_CurrentDir-slv_base	;ws_CurrentDir
@@ -126,10 +127,13 @@ _expmem		dc.l	EXPMEM			;ws_ExpMem
 		dc.w	slv_copy-slv_base	;ws_copy
 		dc.w	slv_info-slv_base	;ws_info
 		dc.w	slv_kickname-slv_base	;ws_kickname
-		dc.l	KICKSIZE		;ws_kicksize
+_kicksize	dc.l	KICKSIZE		;ws_kicksize
 _kickcrc	dc.w	-1			;ws_kickcrc
 	IFGE slv_Version-17
 		dc.w	slv_config-slv_base	;ws_config
+	ENDC
+	IFGE slv_Version-20
+		dc.w	slv_MemConfig-slv_base	;ws_MemConfig
 	ENDC
 	ENDC
 
@@ -209,7 +213,7 @@ WCPU_VAL SET WCPU_VAL|WCPUF_FPU
 	
 	IFND slv_Version
 	;load kickstart
-		move.l	#KICKSIZE,d0			;length
+		move.l	(_kicksize,pc),d0		;length
 		move.w	#KICKCRC,d1			;crc16
 		lea	(slv_kickname,pc),a0		;name
 		jsr	(resload_LoadKick,a5)
@@ -266,10 +270,8 @@ kick_patch600	PL_START
 	;	PL_S	$422,6				;LED, reboot unexpected int
 	;	PL_S	$430,6				;LED, reboot unexpected int
 		PL_R	$460				;check Fat Gary, RAMSEY, Gayle $de1000
-	IFEQ FASTMEMSIZE
 	IFD HRTMON
 		PL_PS	$5aa,kick_hrtmon
-	ENDC
 	ENDC
 		PL_S	$5e8,$5fe-$5e8			;avoid overwriting vector table
 		PL_PS	$634,kick_setvecs
@@ -380,10 +382,8 @@ kick_patch1200	PL_START
 	;	PL_S	$422,6				;LED, reboot unexpected int
 	;	PL_S	$430,6				;LED, reboot unexpected int
 		PL_R	$460				;check Fat Gary, RAMSEY, Gayle $de1000
-	IFEQ FASTMEMSIZE
 	IFD HRTMON
 		PL_PS	$5aa,kick_hrtmon
-	ENDC
 	ENDC
 		PL_S	$5e8,$5fe-$5e8			;avoid overwriting vector table
 		PL_PS	$634,kick_setvecs
@@ -499,10 +499,8 @@ kick_patch4000	PL_START
 	;	PL_S	$422,6				;LED, reboot unexpected int
 	;	PL_S	$430,6				;LED, reboot unexpected int
 		PL_R	$43A				;check Fat Gary, RAMSEY, Gayle $de1000
-	IFEQ FASTMEMSIZE
 	IFD HRTMON
 		PL_PS	$582,kick_hrtmon
-	ENDC
 	ENDC
 		PL_S	$5c0,$5d6-$5c0			;avoid overwriting vector table
 		PL_PS	$60c,kick_setvecs
@@ -618,27 +616,35 @@ kick_setvecs	move.w	(a1)+,d0
 kick_leaveled	and.b	#~CIAB_LED,$BFE001
 		rts
 
-kick_detectchip	move.l	#CHIPMEMSIZE,a3
+kick_detectchip	move.l	(_basememsize,pc),a3
 		rts
 
 kick_detectfast
+	IFGE slv_Version-20
+		move.l	(_expmemsize,pc),a4
+		sub.l	(_kicksize,pc),a4
+		move.l	a4,d0
+		beq	.rts
+		move.l	(_expmem,pc),a0
+		add.l	(_kicksize,pc),a0	;start
+		lea	(a0,d0.l),a4		;end
+	ELSE
 	IFEQ FASTMEMSIZE
 		sub.l	a4,a4
 	ELSE
 		move.l	(_expmem,pc),a0
-		add.l	#KICKSIZE,a0
+		add.l	(_kicksize,pc),a0	;start
 		move.l	a0,a4
-		add.l	#FASTMEMSIZE,a4
+		add.l	#FASTMEMSIZE,a4		;end
 	ENDC
-		rts
+	ENDC
+.rts		rts
 
-	IFEQ FASTMEMSIZE
 	IFD HRTMON
 kick_hrtmon	add.l	d2,d0
 		subq.l	#8,d0			;hrt reads too many from stack -> avoid af
 		move.l	d0,(SysStkUpper,a6)
 		rts
-	ENDC
 	ENDC
 
 kick_detectcpu	move.l	(_attnflags,pc),d0
@@ -1366,6 +1372,10 @@ _custom1	dc.l	0
 	IFD INIT_LOWLEVEL
 		dc.l	WHDLTAG_LANG_GET
 _language	dc.l	0
+	ENDC
+	IFGE slv_Version-20
+		dc.l	WHDLTAG_EXPMEMSIZE_GET
+_expmemsize	dc.l	0
 	ENDC
 		dc.l	0
 _resload	dc.l	0
