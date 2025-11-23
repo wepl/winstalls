@@ -36,14 +36,23 @@
  the 3 disk HD floppy release, but this is untested.
  To speedup the preload process you may delete all unwanted files, e.g. other
  languages, fonts etc.
-
- provided and installed are 3 slaves with different memory requirements:
-  Workbench31_1.Slave   1 MB Chip  1 MB Fast
-  Workbench31_4.Slave   2 MB Chip  4 MB Fast
-  Workbench31_32.Slave  2 MB Chip 32 MB Fast
+ It is recommend to use option PreloadSmart instead Preload to preload only
+ previously used files.
+ Using option MemConfig you can use different memory configurations:
+   default: 	1 MB Chip + 1 MB Fast
+   MemConfig=1:	2 MB Chip + 4 MB Fast
+   MemConfig=2:	2 MB Chip + 32 MB Fast
+   MemConfig=3: 2 MB Chip no Fast
+   MemConfig=4: 1 MB Chip no Fast
+ Source: https://github.com/wepl/winstalls
 
  History:
  --------
+ version 1.10 (2025-11-23) done by Wepl:
+ - requires WHDLoad version 20
+ - offer different memory configurations
+ - Slaves for different memory configs are replaced by a single Slave
+
  version 1.9 (2024-06-10) done by Wepl:
  - recompiled with latest sources
 

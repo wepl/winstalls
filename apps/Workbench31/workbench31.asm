@@ -17,6 +17,7 @@
 ;		15.11.21 WHDCTRL added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;		24.11.24 git repo integration
+;		02.11.25 switch to MemConfig
 ;  :Requires.	kick31.s kickfs.s segtracker.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,6 +30,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
+	OUTPUT	"awart:workbench31/Workbench31.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -40,43 +42,8 @@
 
 ;============================================================================
 
-	IFD MEM
-	IFEQ MEM-1
 CHIPMEMSIZE	= $ff000	;size of chip memory
 FASTMEMSIZE	= $100000	;size of fast memory
-MEMTXT	MACRO
-		db	"1"
-	ENDM
-	OUTPUT	"awart:workbench31/Workbench31_1.Slave"
-	ELSE
-	IFEQ MEM-4
-CHIPMEMSIZE	= $1ff000	;size of chip memory
-FASTMEMSIZE	= $400000	;size of fast memory
-MEMTXT	MACRO
-		db	"4"
-	ENDM
-	OUTPUT	"awart:workbench31/Workbench31_4.Slave"
-	ELSE
-	IFEQ MEM-32
-CHIPMEMSIZE	= $1ff000	;size of chip memory
-FASTMEMSIZE	= $2000000	;size of fast memory
-MEMTXT	MACRO
-		db	"32"
-	ENDM
-	OUTPUT	"awart:workbench31/Workbench31_32.Slave"
-	ELSE
-	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
-CHIPMEMSIZE	= $1000		;size of chip memory
-FASTMEMSIZE	= $1000		;size of fast memory
-	ENDC
-	ENDC
-	ENDC
-	ELSE
-	FAIL "symbol MEM=1 or MEM=4 or MEM=32 must be defined!"
-CHIPMEMSIZE	= $1000
-FASTMEMSIZE	= $1000
-	ENDC
-
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %1111		;write protection of floppy drives
 
@@ -90,7 +57,7 @@ WPDRIVES	= %1111		;write protection of floppy drives
 ;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-DEBUG				;add more internal checks
+;DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
@@ -119,7 +86,7 @@ WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
-slv_Version	= 16
+slv_Version	= 20
 slv_Flags	= WHDLF_NoError|WHDLF_Examine
 slv_keyexit	= $59	;F10
 
@@ -133,15 +100,22 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.10 "
-		MEMTXT
-		dc.b	" MiB "
+		dc.b	"Version 1.11 "
 		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
-slv_config	dc.b	"C1:B:Trainer",0
+slv_config	= slv_base				; disabled
+;slv_config	dc.b	"BW;C1:B:Trainer",0
 	ENDC
 	EVEN
+	IFGE slv_Version-20
+;slv_MemConfig	= slv_base				; disabled
+slv_MemConfig	dc.l	$1ff000,$400000+KICKSIZE	; 2M + 4M
+		dc.l	$1ff000,$2000000+KICKSIZE	; 2M + 32M
+		dc.l	$1ff000,KICKSIZE		; 2M + 0M
+		dc.l	$ff000,KICKSIZE			; 1M + 0M
+		dc.l	0
+	ENDC
 
 ;============================================================================
 ; entry before any diskaccess is performed, no dos.library available

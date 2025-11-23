@@ -71,22 +71,3 @@
 	  )
 	)
       )
-#P_MakeIcons#0
-  (set #icon_desc "start")
-  (set #icon_prefix #prefix)
-  (set #icon_newname ("%s 1 MB" #prefix))
-  (set #icon_slave "Workbench31_1")
-  (set #icon_set_slave_preload "")
-  (set #icon_set_deftool_stack "true")
-  (P_CopySlave)
-  (P_SelectIcon)
-
-  (set #icon_newname ("%s 4 MB" #prefix))
-  (set #icon_slave "Workbench31_4")
-  (P_CopySlave)
-  (P_SelectIcon)
-
-  (set #icon_newname ("%s 32 MB" #prefix))
-  (set #icon_slave "Workbench31_32")
-  (P_CopySlave)
-  (P_SelectIcon)
