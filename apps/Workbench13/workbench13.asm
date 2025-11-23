@@ -14,6 +14,7 @@
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;		06.02.23 WHDCTRL added
 ;		19.08.24 git import
+;		07.11.25 add support for MemConfig, NOFAST removed
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -26,11 +27,7 @@
 	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
-	IFD NOFAST
-	OUTPUT	"awart:workbench13/Workbench13NF.Slave"
-	ELSE
 	OUTPUT	"awart:workbench13/Workbench13.Slave"
-	ENDC
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -43,11 +40,7 @@
 ;============================================================================
 
 CHIPMEMSIZE	= $ff000	;size of chip memory
-	IFD NOFAST
-FASTMEMSIZE	= 0		;size of fast memory
-	ELSE
 FASTMEMSIZE	= $100000	;size of fast memory
-	ENDC
 NUMDRIVES	= 1		;amount of floppy drives to be configured
 WPDRIVES	= %0000		;write protection of floppy drives
 
@@ -81,7 +74,7 @@ WHDCTRL				;add WHDCtrl resident command
 
 ;============================================================================
 
-slv_Version	= 16
+slv_Version	= 20
 slv_Flags	= WHDLF_NoError|WHDLF_Examine
 slv_keyexit	= $59	;F10
 
@@ -92,20 +85,24 @@ slv_keyexit	= $59	;F10
 ;============================================================================
 
 slv_CurrentDir	dc.b	"data",0
-	IFD NOFAST
-slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005 NoFastMem",0
-	ELSE
 slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005",0
-	ENDC
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		dc.b	"Version 1.9 "
 		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
-slv_config	dc.b	"C1:B:Trainer",0
+slv_config	= slv_base				; disabled
+;slv_config	dc.b	"BW;C1:B:Trainer",0
 	ENDC
 	EVEN
+	IFGE slv_Version-20
+;slv_MemConfig	= slv_base				; disabled
+slv_MemConfig	dc.l	$1ff000,$1000000+KICKSIZE	; 2M + 16M
+		dc.l	$ff000,KICKSIZE			; 1M + 0M
+		dc.l	$80000,KICKSIZE			; 512K + 0M
+		dc.l	0
+	ENDC
 
 ;============================================================================
 ; entry before any diskaccess is performed, no dos.library available

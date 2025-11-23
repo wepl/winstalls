@@ -51,6 +51,14 @@
 
  History:
  --------
+ version 1.9 (2025-11-23) done by Wepl:
+ - requires WHDLoad version 20
+ - offer different memory configurations:
+   default: 	1 MB Chip + 1 MB Fast
+   MemConfig=1:	2 MB Chip + 16 MB Fast
+   MemConfig=2: 1 MB Chip no Fast
+   MemConfig=3: 512 KB Chip no Fast
+
  version 1.8 (2024-06-10) done by Wepl:
  - recompiled with latest sources
 
