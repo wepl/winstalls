@@ -1,15 +1,15 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	emeraldmine1.asm
+;  :Program.	emeraldmine.asm
 ;  :Contents.	Slave for "Emerald Mine"
 ;  :Author.	Harry
 ;  :History.	24.11.2012 V1.0
+;		30.03.2025 repo import
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V1.131
 ;  :To Do.
 ;---------------------------------------------------------------------------*
-
 
 ; game exe checksum is $6efd for IPF1525 and $375f for EMCD:_OLD_EM/1/
 ;hunklist game exe IPF1525
@@ -23,32 +23,8 @@
 ;1 $7268 $470
 ;2 $76e0 0
 
-
-
-		INCDIR	"asm-one:include/"
-		INCLUDE	whdload/whdload.i
-		INCLUDE	whdload/whdmacros.i
-		INCLUDE	dos/dos_lib.i
-		INCLUDE	exec/exec.i
-		INCLUDE exec/exec_lib.i
-		INCLUDE	libraries/expansion_lib.i
-
-	IFNE	0
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
-
-	IFD BARFLY
-	OUTPUT	"wart:li/lordsofwar/LordsOfWar.Slave"
-	BOPT	O+				;enable optimizing
-	BOPT	OG+				;enable optimizing
-	BOPT	ODd-				;disable mul optimizing
-	BOPT	ODe-				;disable mul optimizing
-	BOPT	w4-				;disable 64k warnings
-	SUPER
-	ENDC
-	ENDC
 
 ;============================================================================
 
@@ -57,27 +33,33 @@ FASTMEMSIZE	= $0000
 NUMDRIVES	= 2
 WPDRIVES	= %0000
 
-;BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-CBDOSLOADSEG
-;CBDOSREAD
-;CACHE
-DEBUG
-;DISKSONBOOT
-;DOSASSIGN
-;FONTHEIGHT	= 8
-HDINIT
-;HRTMON
-IOCACHE		= 1024
-;MEMFREE        = $100
-;NEEDFPU
-;POINTERTICKS	= 1
-;SETPATCH
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
-
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+;CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+IOCACHE	= 1024			;cache for the filesystem handler (per fh)
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+;SEGTRACKER			;add segment tracker
+;SETKEYBOARD			;activate host keymap
+;SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -87,36 +69,28 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-;	INCLUDE	Sources:whdload/kick13.s
-	INCLUDE	kick13.s
+	INCLUDE	whdload/kick13.s
 
 ;============================================================================
-
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
 
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Emerald Mine",0
 slv_copy	dc.b	"1987 Kingsoft",0
 slv_info	dc.b	"adapted by Harry",10
-		dc.b	"Version 1.0 "
-;	IFD BARFLY
-;		INCBIN	"T:date"
-;	ENDC
+		dc.b	"Version 1.1 "
+		INCBIN	.date
 		dc.b	0
+slv_config	= slv_base
 _program	dc.b	"em",0
-;_program2	dc.b	"newdef",0
 _args		dc.b	10
-_args_end
-		dc.b	0
+_args_end	dc.b	0
+_disk1		db	"Emerald Mine",0
 	EVEN
 
 ;d0 BSTR Filename
 ;d1 BPTR SegList
 
 _cb_dosLoadSeg
-;.2	bra.s	.2
 
 	movem.l a0-a2/d0-d2,-(a7)
 	move.l	d0,d2
@@ -138,8 +112,6 @@ _cb_dosLoadSeg
 .1	movem.l	(a7)+,a0-a2/d0-d2
 	rts
 
-
-
 ;============================================================================
 ; D0 = ULONG argument line length, including LF
 ; D2 = ULONG stack size
@@ -154,14 +126,18 @@ _cb_dosLoadSeg
 ; (4,SP)     stack size
 ; (8,SP)     previous stack frame -> +4 = A1,A2,A5,A6
 
-
-_bootdos        move.l  (_resload,pc),a2        ;A2 = resload
+_bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 
 	;open doslib
 		lea	(_dosname,pc),a1
 		move.l	(4),a6
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a6			;A6 = dosbase
+
+	;assigns
+		lea	(_disk1,pc),a0
+		sub.l	a1,a1
+		bsr	_dos_assign
 
 	;check version
 		lea	(_program,pc),a0
@@ -181,8 +157,6 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
-
-;	illegal
 
 		cmp.w	#$375f,d0
 		beq	.versionokgameEMCD
@@ -230,24 +204,9 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		lsl.l	#2,d0
 		move.l	d0,$F0.W	;start of exe just for my debugger
 
-	;patch dos-open to allow skipping disk name ("playfielddisk:")
-	move.w	-$1e+4(a6),d0
-	ext.l	d0
-	lea	-$1e+4(a6,d0.l),a0
-	lea	_doslibmainrout(pc),a1
-	move.l	a0,(a1)
-	move.w	#$4ef9,-$1e(a6)
-	pea	_patchdosopen(pc)
-	move.l	(a7)+,-$1e+2(a6)
-
-
-;	illegal
-
-
 		move.w	#$4ef9,$88.w
 		lea	_loopdbf(pc),a0
 		move.l	a0,$8a.w
-
 
 	;patch
 		move.b	version(pc),d0
@@ -263,7 +222,6 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
 		bsr	.call
-;	illegal
 		pea	TDREASON_OK
 		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
@@ -282,9 +240,9 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		move.l	d1,a3
 		jmp	(4,a3)
 
-	IFEQ	0
 ;PL IPF2707
 _pl_program	PL_START
+		;PL_I	$1a2	;after 'pic' loaded
 		PL_PS	$456,_remdiskaccess
 		PL_DATA	$498a,.loopdbfend-.loopdbfstart	;corr dbf delay
 .loopdbfstart
@@ -366,7 +324,6 @@ _pl_program_emcd
 .corrstoneshiftrightend
 
 		PL_END
-	ENDC
 
 _corrstoneshift
 	move.b	(a6),d1	;orig instructions
@@ -385,7 +342,6 @@ _loopdbf7
 	bsr.s	_loopdbfinner
 	move.l	(a7)+,d0
 	rts
-
 
 _loopdbf
 	divu.w	#$2d,d0
@@ -406,26 +362,6 @@ _remdiskaccess
 	move.l	#$4e714e71,0-$7faa(a4)	;visible only at this program state
 	move.w	#$6028,0-$7fa4(a4)	;thus patch here
 	add.l	#$2422c,d3		;orig instruction
-	rts
-
-_patchdosopen
-	bsr	_searchforcolon
-	moveq	#-1,d0			;orig instruction
-	jmp	$00000000
-_doslibmainrout	EQU	*-4
-
-_searchforcolon				;search for colon in filename
-					;skip part before it if found 
-					;used just before dos-open
-	movem.l	d0/a0,-(a7)
-	move.l	d1,a0
-.3	move.b	(a0),d0
-	beq.s	.2
-	add.w	#1,a0
-	cmp.b	#':',d0
-	bne.s	.3
-	move.l	a0,d1
-.2	movem.l	(a7)+,d0/a0
 	rts
 
 _random	lea	RANDOM1(PC),A0
