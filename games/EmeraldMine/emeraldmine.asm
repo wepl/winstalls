@@ -142,19 +142,13 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 		bsr	_dos_assign
 
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d6
-		beq	.program_err
-		move.l	d6,d1
-		move.l	#300,d3
+		lea	(_program,pc),a0	;name
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
-		move.l	d6,d1
-		jsr	(_LVOClose,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
@@ -215,78 +209,54 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 
 ;PL IPF1525
 _pl_program	PL_START
-		;PL_I	$1a2	;after 'pic' loaded
+		;PL_I	$1a2			;after 'pic' loaded
 		PL_PS	$456,_remdiskaccess
-		PL_DATA	$498a,.loopdbfend-.loopdbfstart	;corr dbf delay
-.loopdbfstart
-		jsr	$88.W
-.loopdbfend
 		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$558e,_rndwrap		;let random area wrap
 
-			;fix weird accesses (probably wrong programmed)
-		PL_DATA	$49ec,.fix1end-.fix1
-.fix1
-		move.w	$3c6.w,$f8.w
-.fix1end
-		PL_DATA	$49f8,.fix2end-.fix2
-.fix2
-		move.w	$3ce.w,$fa.w
-.fix2end
-		PL_DATA	$4a02,.fix3end-.fix3
-.fix3
-		move.w	$fa.w,d0
-.fix3end
-		PL_DATA	$4a1e,.fix4end-.fix4
-.fix4
-		mulu.w	$f8.w,d0
-.fix4end
-			;correct stone shifting time due new random generator
-.corrstoneshiftleft
-		PL_PS	$51d8,_corrstoneshift
-.corrstoneshiftleftend
-.corrstoneshiftright
-		PL_PS	$519e,_corrstoneshift
-.corrstoneshiftrightend
+		PL_DATA	$498a,4			;corr dbf delay
+		jsr	$88.W
 
+	;fix weird accesses (probably wrong programmed)
+		PL_DATA	$49ec,6
+		move.w	$3c6.w,$f8.w
+		PL_DATA	$49f8,6
+		move.w	$3ce.w,$fa.w
+		PL_DATA	$4a02,4
+		move.w	$fa.w,d0
+		PL_DATA	$4a1e,4
+		mulu.w	$f8.w,d0
+
+	;correct stone shifting time due new random generator
+	;maybe now obsolete because we are using kickrom again?
+		PL_PS	$51d8,_corrstoneshift
+		PL_PS	$519e,_corrstoneshift
 		PL_END
+
 ;PL EMCD
 _pl_program_emcd
 		PL_START
 		PL_I	0
 		PL_PS	$45A,_remdiskaccess
-		PL_DATA	$48CC,.loopdbfend-.loopdbfstart	;corr dbf delay
-.loopdbfstart
-		jsr	$88.W
-.loopdbfend
 		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$54d0,_rndwrap		;let random area wrap
 
-			;fix weird accesses (probably wrong programmed)
-		PL_DATA	$492e,.fix1end-.fix1
-.fix1
-		move.w	$3c6.w,$f8.w
-.fix1end
-		PL_DATA	$493a,.fix2end-.fix2
-.fix2
-		move.w	$3ce.w,$fa.w
-.fix2end
-		PL_DATA	$4944,.fix3end-.fix3
-.fix3
-		move.w	$fa.w,d0
-.fix3end
-		PL_DATA	$4960,.fix4end-.fix4
-.fix4
-		mulu.w	$f8.w,d0
-.fix4end
-			;correct stone shifting time due new random generator
-.corrstoneshiftleft
-		PL_PS	$511a,_corrstoneshift
-.corrstoneshiftleftend
-.corrstoneshiftright
-		PL_PS	$50e0,_corrstoneshift
-.corrstoneshiftrightend
+		PL_DATA	$48CC,4			;corr dbf delay
+		jsr	$88.W
 
+	;fix weird accesses (probably wrong programmed)
+		PL_DATA	$492e,6
+		move.w	$3c6.w,$f8.w
+		PL_DATA	$493a,6
+		move.w	$3ce.w,$fa.w
+		PL_DATA	$4944,4
+		move.w	$fa.w,d0
+		PL_DATA	$4960,4
+		mulu.w	$f8.w,d0
+
+	;correct stone shifting time due new random generator
+		PL_PS	$511a,_corrstoneshift
+		PL_PS	$50e0,_corrstoneshift
 		PL_END
 
 _corrstoneshift
