@@ -40,6 +40,7 @@
 ;		12.05.24 added resload_ReadJoyPort
 ;		23.02.25 made PL_STR/0 compatible to vasm (broken EVEN)
 ;		29.10.25 added ws_MemConfig, WHDLTAG_EXPMEMSIZE_GET
+;		24.11.25 add PL_VB/W/L
 ;  :Copyright.	19© 1996-2025 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -658,6 +659,10 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_IFC5X		;condition if bit of Custom5/N
 	EITEM	PLCMD_ELSE		;condition alternative
 	EITEM	PLCMD_ENDIF		;end of condition block
+; version 20
+	EITEM	PLCMD_VB		;write byte from Slave memory to specified address
+	EITEM	PLCMD_VW		;write word from Slave memory to specified address
+	EITEM	PLCMD_VL		;write long from Slave memory to specified address
 
 ;=============================================================================
 ; macros to build patchlist
@@ -1089,6 +1094,32 @@ PL_ENDIF	MACRO
 	ENDC
 PLIFCNT SET PLIFCNT-1
 	dc.w	PLCMDF_CTRL+PLCMD_ENDIF
+		ENDM
+
+; version 20
+
+PL_VB		MACRO			;write byte from Slave memory to specified address
+	IFNE	NARG-2
+	FAIL	PL_VB wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_VB,\1
+	dc.w	\2-.patchlist		;source (inside Slave!)
+		ENDM
+
+PL_VW		MACRO			;write word from Slave memory to specified address
+	IFNE	NARG-2
+	FAIL	PL_VW wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_VW,\1
+	dc.w	\2-.patchlist		;source (inside Slave!)
+		ENDM
+
+PL_VL		MACRO			;write long from Slave memory to specified address
+	IFNE	NARG-2
+	FAIL	PL_VL wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_VL,\1
+	dc.w	\2-.patchlist		;source (inside Slave!)
 		ENDM
 
 ;=============================================================================

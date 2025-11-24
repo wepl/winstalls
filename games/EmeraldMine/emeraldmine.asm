@@ -4,6 +4,7 @@
 ;  :Author.	Harry
 ;  :History.	24.11.2012 V1.0
 ;		30.03.2025 repo import
+;		24.11.2025 use kickrom for random
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -49,11 +50,11 @@ DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 ;HRTMON				;add support for HrtMON
-IOCACHE	= 1024			;cache for the filesystem handler (per fh)
+IOCACHE	= 4096			;cache for the filesystem handler (per fh)
 ;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;POINTERTICKS	= 1		;set mouse speed
-;SEGTRACKER			;add segment tracker
+SEGTRACKER			;add segment tracker
 ;SETKEYBOARD			;activate host keymap
 ;SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
@@ -63,7 +64,7 @@ IOCACHE	= 1024			;cache for the filesystem handler (per fh)
 
 ;============================================================================
 
-slv_Version	= 16
+slv_Version	= 20
 slv_Flags	= WHDLF_NoError|WHDLF_Examine
 slv_keyexit	= $59	;F10
 
@@ -76,11 +77,12 @@ slv_keyexit	= $59	;F10
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Emerald Mine",0
 slv_copy	dc.b	"1987 Kingsoft",0
-slv_info	dc.b	"adapted by Harry",10
+slv_info	dc.b	"adapted by Harry, Wepl",10
 		dc.b	"Version 1.1 "
 		INCBIN	.date
 		dc.b	0
 slv_config	= slv_base
+slv_MemConfig	= slv_base
 _program	dc.b	"em",0
 _args		dc.b	10
 _args_end	dc.b	0
@@ -158,41 +160,16 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 
-		cmp.w	#$375f,d0
-		beq	.versionokgameEMCD
+		lea	(_pl_program_emcd,pc),a3
+		cmp.w	#$375f,d0		;EMCD
+		beq	.versionok
 
-		cmp.w	#$6efd,d0
-		beq	.versionokgame2707
+		lea	(_pl_program,pc),a3
+		cmp.w	#$6efd,d0		;SPS #1525
+		beq	.versionok
 .nover		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
-
-.illegal	illegal
-
-.versionokgame2707
-		moveq.l	#0,d0
-		bra.s	.versionok
-
-.versionokgameEMCD
-		moveq.l	#1,d0
 .versionok
-		lea	version(pc),a0
-		move.b	d0,(a0)
-		;prepare random number area
-		move.l	#$41000,d0	;len
-		move.l	#$80000,a1	;place
-		move.l	a6,-(a7)
-		move.l	$4.w,a6
-		jsr	_LVOAllocAbs(a6)
-		move.l	(a7)+,a6
-		tst.l	d0
-		beq.s	.illegal
-		move.l	#$41000/4,d1
-		lea	$80000,a1
-.randinit
-		bsr	_random
-		move.l	d0,(a1)+
-		subq.l	#1,d1
-		bne.s	.randinit
 
 	;load exe
 		lea	(_program,pc),a0
@@ -200,21 +177,17 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 		jsr	(_LVOLoadSeg,a6)
 		move.l	d0,d7			;D7 = segment
 		beq	.program_err
-		move.l	d7,d0
-		lsl.l	#2,d0
-		move.l	d0,$F0.W	;start of exe just for my debugger
+	;	move.l	d7,d0
+	;	lsl.l	#2,d0
+	;	move.l	d0,$F0.W		;start of exe just for my debugger
 
 		move.w	#$4ef9,$88.w
 		lea	_loopdbf(pc),a0
 		move.l	a0,$8a.w
 
 	;patch
-		move.b	version(pc),d0
-		beq.s	.111
-		lea	(_pl_program_emcd,pc),a0
-		bra.s	.112
-.111		lea	(_pl_program,pc),a0
-.112		move.l	d7,a1
+		move.l	a3,a0
+		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
 	;call
@@ -240,7 +213,7 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 		move.l	d1,a3
 		jmp	(4,a3)
 
-;PL IPF2707
+;PL IPF1525
 _pl_program	PL_START
 		;PL_I	$1a2	;after 'pic' loaded
 		PL_PS	$456,_remdiskaccess
@@ -248,14 +221,9 @@ _pl_program	PL_START
 .loopdbfstart
 		jsr	$88.W
 .loopdbfend
-				;set init rand to $80000 instead of $fc0000
-		PL_DATA	$46c,.initrandplaceend-.initrandplace
-.initrandplace	dc.w	$0008
-.initrandplaceend
-				;let random area wrap at $c0000
-		PL_DATA	$558e,.wraprandplaceend-.wraprandplace
-.wraprandplace	BTST	#2,$361.W
-.wraprandplaceend
+		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
+		PL_P	$558e,_rndwrap		;let random area wrap
+
 			;fix weird accesses (probably wrong programmed)
 		PL_DATA	$49ec,.fix1end-.fix1
 .fix1
@@ -285,19 +253,15 @@ _pl_program	PL_START
 ;PL EMCD
 _pl_program_emcd
 		PL_START
+		PL_I	0
 		PL_PS	$45A,_remdiskaccess
 		PL_DATA	$48CC,.loopdbfend-.loopdbfstart	;corr dbf delay
 .loopdbfstart
 		jsr	$88.W
 .loopdbfend
-				;set init rand to $80000 instead of $fc0000
-		PL_DATA	$470,.initrandplaceend-.initrandplace
-.initrandplace	dc.w	$0008
-.initrandplaceend
-				;let random area wrap at $c0000
-		PL_DATA	$54D0,.wraprandplaceend-.wraprandplace
-.wraprandplace	BTST	#2,$361.W
-.wraprandplaceend
+		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
+		PL_P	$54d0,_rndwrap		;let random area wrap
+
 			;fix weird accesses (probably wrong programmed)
 		PL_DATA	$492e,.fix1end-.fix1
 .fix1
@@ -364,30 +328,15 @@ _remdiskaccess
 	add.l	#$2422c,d3		;orig instruction
 	rts
 
-_random	lea	RANDOM1(PC),A0
-	MOVE.L	RANDOM1(PC),D0
-	ADD.L	RANDOM2(PC),D0
-	MOVE.L	D0,(A0)
-	ROR.L	#$04,D0
-	SUB.W	RANDOM2(PC),D0
-	MOVE.L	D0,-(A7)
-	MOVE.W	$DFF014,D0
-	SWAP	D0
-	MOVE.W	$DFF014,D0
-	EOR.L	D0,(A7)
-	MOVE.L	(A7)+,D0
-	EOR.L	D0,RANDOM2-RANDOM1(A0)
-	ADD.L	#$56565311,(A0)
-	RTS
-
-RANDOM1	DC.L	$3F3F751F
-RANDOM2	DC.L	$17179834
-
+	;reset random address if above kickstart end
+_rndwrap	sub.l	#KICKSIZE,a2
+		cmp.l	(_expmem),a2
+		bhs	.write
+		add.l	#KICKSIZE,a2
+.write		move.l	a2,$330
+		rts
 
 ;============================================================================
-
-version	dc.b	0
-	EVEN
 
 	END
 
