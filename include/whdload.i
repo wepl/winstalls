@@ -41,6 +41,7 @@
 ;		23.02.25 made PL_STR/0 compatible to vasm (broken EVEN)
 ;		29.10.25 added ws_MemConfig, WHDLTAG_EXPMEMSIZE_GET
 ;		24.11.25 add PL_VB/W/L
+;		29.11.25 add PL_ANDB/W/L, PL_IFCxEQ, PL_IFCxRG, PL_IFVB/W/L, PL_IFVB/W/LEQ
 ;  :Copyright.	19© 1996-2025 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -663,6 +664,25 @@ resload_CheckFileExist = resload_GetFileSize
 	EITEM	PLCMD_VB		;write byte from Slave memory to specified address
 	EITEM	PLCMD_VW		;write word from Slave memory to specified address
 	EITEM	PLCMD_VL		;write long from Slave memory to specified address
+	EITEM	PLCMD_ANDB		;and byte to specified address
+	EITEM	PLCMD_ANDW		;and word to specified address
+	EITEM	PLCMD_ANDL		;and long to specified address
+	EITEM	PLCMD_IFC1EQ		;condition if Custom1/N is equal to given word
+	EITEM	PLCMD_IFC2EQ		;condition if Custom2/N is equal to given word
+	EITEM	PLCMD_IFC3EQ		;condition if Custom3/N is equal to given word
+	EITEM	PLCMD_IFC4EQ		;condition if Custom4/N is equal to given word
+	EITEM	PLCMD_IFC5EQ		;condition if Custom5/N is equal to given word
+	EITEM	PLCMD_IFC1RG		;condition if Custom1/N is in given range (word values)
+	EITEM	PLCMD_IFC2RG		;condition if Custom2/N is in given range (word values)
+	EITEM	PLCMD_IFC3RG		;condition if Custom3/N is in given range (word values)
+	EITEM	PLCMD_IFC4RG		;condition if Custom4/N is in given range (word values)
+	EITEM	PLCMD_IFC5RG		;condition if Custom5/N is in given range (word values)
+	EITEM	PLCMD_IFVB		;condition if byte from Slave memory is not zero
+	EITEM	PLCMD_IFVW		;condition if word from Slave memory is not zero
+	EITEM	PLCMD_IFVL		;condition if long from Slave memory is not zero
+	EITEM	PLCMD_IFVBEQ		;condition if byte from Slave memory is equal to given word
+	EITEM	PLCMD_IFVWEQ		;condition if word from Slave memory is equal to given word
+	EITEM	PLCMD_IFVLEQ		;condition if long from Slave memory is equal to given word
 
 ;=============================================================================
 ; macros to build patchlist
@@ -1120,6 +1140,155 @@ PL_VL		MACRO			;write long from Slave memory to specified address
 	ENDC
 	PL_CMDADR PLCMD_VL,\1
 	dc.w	\2-.patchlist		;source (inside Slave!)
+		ENDM
+
+PL_ANDB		MACRO			;and byte
+	IFNE	NARG-2
+	FAIL	PL_ANDB wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_ANDB,\1
+	dc.w	\2			;data to and
+		ENDM
+
+PL_ANDW		MACRO			;and word
+	IFNE	NARG-2
+	FAIL	PL_ANDW wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_ANDW,\1
+	dc.w	\2			;data to and
+		ENDM
+
+PL_ANDL		MACRO			;and long
+	IFNE	NARG-2
+	FAIL	PL_ANDL wrong number of arguments
+	ENDC
+	PL_CMDADR PLCMD_ANDL,\1
+	dc.l	\2			;data to and
+		ENDM
+
+PL_IFC1EQ	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC1EQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC1EQ,\1
+		ENDM
+PL_IFC2EQ	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC2EQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC2EQ,\1
+		ENDM
+PL_IFC3EQ	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC3EQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC3EQ,\1
+		ENDM
+PL_IFC4EQ	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC4EQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC4EQ,\1
+		ENDM
+PL_IFC5EQ	MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFC5EQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC5EQ,\1
+		ENDM
+
+PL_IFC1RG	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFC1RG wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC1RG,\1,\2
+		ENDM
+PL_IFC2RG	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFC2RG wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC2RG,\1,\2
+		ENDM
+PL_IFC3RG	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFC3RG wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC3RG,\1,\2
+		ENDM
+PL_IFC4RG	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFC4RG wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC4RG,\1,\2
+		ENDM
+PL_IFC5RG	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFC5RG wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFC5RG,\1,\2
+		ENDM
+
+PL_IFVB		MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFVB wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVB
+	dc.w	\1-.patchlist		;source (inside Slave!)
+		ENDM
+PL_IFVW		MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFVW wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVW
+	dc.w	\1-.patchlist		;source (inside Slave!)
+		ENDM
+PL_IFVL		MACRO
+	IFNE	NARG-1
+	FAIL	PL_IFVL wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVL
+	dc.w	\1-.patchlist		;source (inside Slave!)
+		ENDM
+
+PL_IFVBEQ	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFVBEQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVBEQ
+	dc.w	\1-.patchlist		;source (inside Slave!)
+	dc.w	\2			;value to compare
+		ENDM
+PL_IFVWEQ	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFVWEQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVWEQ
+	dc.w	\1-.patchlist		;source (inside Slave!)
+	dc.w	\2			;value to compare
+		ENDM
+PL_IFVLEQ	MACRO
+	IFNE	NARG-2
+	FAIL	PL_IFVLEQ wrong number of arguments
+	ENDC
+	PLIFCNTINC
+	dc.w	PLCMDF_CTRL+PLCMD_IFVLEQ
+	dc.w	\1-.patchlist		;source (inside Slave!)
+	dc.l	\2			;value to compare
 		ENDM
 
 ;=============================================================================
