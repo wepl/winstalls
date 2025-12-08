@@ -88,7 +88,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbench 1.3 Kickstarter 34.005",0
 slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.9 "
+		dc.b	"Version 1.10 "
 		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17

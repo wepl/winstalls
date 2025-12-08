@@ -39,6 +39,7 @@
 ;		02.10.22 flush cache on write if cache is completely filled
 ;		07.06.24 added ACTION_RENAME_DISK
 ;		10.06.24 avoid writing special files
+;		08.12.25 copy also fib on COPY_DIR to fix e.g. Path command
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -59,12 +60,11 @@
 
 	IFD SNOOPFS
 	IFLT slv_Version-18
-	FAIL SNOOPFS require slv_Version >= 18
+	FAIL SNOOPFS requires slv_Version >= 18
 	ENDC
 	ENDC
 
 ;---------------------------------------------------------------------------*
-;
 ; BootNode
 ; 08 LN_TYPE = NT_BOOTNODE
 ; 0a LN_NAME -> ConfigDev
@@ -95,8 +95,8 @@ HD_NumBuffers		= 5
 	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
 
 	STRUCTURE MyLock,fl_SIZEOF
-		LONG	mfl_pos			;position in file
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
+		LONG	mfl_pos			;position in file
 	IFD IOCACHE
 		LONG	mfl_cpos		;fileoffset cache points to, -1 means nothing cached
 		LONG	mfl_clen		;amount of dirty data in cache
@@ -464,34 +464,35 @@ KFSDPKT	MACRO
 		bne	_debug4
 	ENDC
 		move.l	(fl_Key,a0),a0		;name
-		move.l	-(a0),d0
-		moveq	#0,d1
+		move.l	-(a0),d0		;length of allocated memory
+		moveq	#0,d1			;flags
 		jsr	(_LVOAllocMem,a6)
 		move.l	d0,d2			;d2 = new name
 		beq	.copy_dir_nm
 		move.l	d7,a0
 		move.l	(fl_Key,a0),a0
 		move.l	d2,a1
-		move.l	-(a0),d0		;length
+		move.l	-(a0),d0		;length of allocated memory
 .copy_dir_cpy	move.l	(a0)+,(a1)+
 		subq.l	#4,d0
 		bhi	.copy_dir_cpy
 	;copy lock
-		move.l	#mfl_SIZEOF,d0
-		move.l	#MEMF_CLEAR,d1
+		move.l	#mfl_SIZEOF,d0		;length
+		move.l	#MEMF_CLEAR,d1		;flags
 		jsr	(_LVOAllocMem,a6)
 		tst.l	d0
 		beq	.copy_dir_nm2
-	;fill lock structure
+	;copy lock structure including the FileInfoBlock
 		move.l	d7,a0
 		move.l	d0,a1
-		move.l	(a0)+,(a1)+		;fl_Link
-		addq.l	#4,d2
-		move.l	d2,(a1)+		;fl_Key (name)
-		addq.l	#4,a0
-		move.l	(a0)+,(a1)+		;fl_Access
-		move.l	(a0)+,(a1)+		;fl_Task (MsgPort)
-		move.l	(a0)+,(a1)+		;fl_Volume
+		move	#(mfl_fib+fib_Reserved)/4-1,d1
+.copy_dir_cpyl	move.l	(a0)+,(a1)+
+		dbf	d1,.copy_dir_cpyl
+	;set new name
+		addq.l	#4,d2			;skip length of allocated memory
+		move.l	d0,a1
+		move.l	d2,(fl_Key,a1)		;name
+	;return BPTR
 		lsr.l	#2,d0			;lock
 		bra	.reply1
 

@@ -56,6 +56,9 @@
 
  History:
  --------
+ version 1.10 (2025-12-08) done by Wepl:
+ - fixed DupLock in kickfs to fix Path command display
+
  version 1.9 (2025-11-23) done by Wepl:
  - requires WHDLoad version 20
  - offer different memory configurations
