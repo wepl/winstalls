@@ -2,8 +2,6 @@
 ;  :Program.	GenericKickHD.asm
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
-;  :Original	v1 
-;  :Version.	$Id: GenericKick13HD.asm 1.5 2022/10/03 14:35:35 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta      
@@ -19,10 +17,8 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
 	OUTPUT	"GenericKick13.slave"
@@ -44,7 +40,7 @@ WPDRIVES	= %0000		;write protection of floppy drives
 
 ;BLACKSCREEN			;set all initial colors to black
 ;BOOTBLOCK			;enable _bootblock routine
-BOOTDOS			;enable _bootdos routine
+BOOTDOS				;enable _bootdos routine
 ;BOOTEARLY			;enable _bootearly routine
 CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
@@ -78,26 +74,16 @@ slv_keyexit	= $5D
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick13.s
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 34.005",0
-slv_copy	dc.b	"19xx Any Company",0
+slv_copy	dc.b	"1987 Amiga Inc.",0
 slv_info	dc.b	"by JOTD, Wepl",10
-		dc.b	"Version 1.5 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"Version 1.6 "
+		INCBIN	".date"
 		dc.b	0
 	EVEN
 
@@ -216,5 +202,5 @@ _p_shellseg7080	PL_START
 
 ;============================================================================
 
-	INCLUDE	GenericKickHD.asm
+	INCLUDE	GenericKick.s
 

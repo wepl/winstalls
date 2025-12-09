@@ -220,6 +220,10 @@ get :
 # generic rules
 #
 
+%.Slave : %.asm
+	$(DATE)
+	$(ASM) $(ASMOUT)$@ $<
+
 %.abs : %.exe
 	$(RELOC) ADR=0 $< $@ FailRelocs
 

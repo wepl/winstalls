@@ -2,7 +2,6 @@
 ;  :Program.	GenericKickHD.asm
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
-;  :Original	v1 
 ;  :Version.	$Id: GenericKick31HD.asm 1.4 2021/11/15 21:51:50 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
@@ -17,10 +16,8 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
 
 	IFD BARFLY
 	OUTPUT	"GenericKick31.slave"
@@ -85,30 +82,20 @@ slv_keyexit	= $5D
 
 ;============================================================================
 
-	INCDIR	Sources:
 	INCLUDE	whdload/kick31.s
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Generic KickStarter 40.068",0
-slv_copy	dc.b	"19xx Any Company",0
+slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"by JOTD, Wepl",10
-		dc.b	"Version 1.4 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"Version 1.6 "
+		INCBIN	".date"
 		dc.b	0
 	EVEN
 
 ;============================================================================
 
-	INCLUDE	GenericKickHD.asm
+	INCLUDE	GenericKick.s
 

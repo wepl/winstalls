@@ -2,8 +2,6 @@
 ;  :Program.	GenericKick.asm
 ;  :Contents.	Slave for "GenericKick"
 ;  :Author.	JOTD, from Wepl sources
-;  :Original	v1 
-;  :Version.	$Id: GenericKickHD.asm 1.2 2007/11/01 20:34:25 wepl Exp wepl $
 ;  :History.	07.08.00 started
 ;		03.08.01 some steps forward ;)
 ;		30.01.02 final beta
