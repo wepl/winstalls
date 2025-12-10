@@ -39,7 +39,7 @@
 ;		02.10.22 flush cache on write if cache is completely filled
 ;		07.06.24 added ACTION_RENAME_DISK
 ;		10.06.24 avoid writing special files
-;		08.12.25 copy also fib on COPY_DIR to fix e.g. Path command
+;		08.12.25 also copy fib on ACTION_COPY_DIR to fix e.g. Path command
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -47,8 +47,7 @@
 ;  :To Do.	more dos packets (maybe)
 ;  :Notes.	it should be remembered that MODE_READWRITE on dos.Open works
 ;		different in 1.3 (opens only existing files) and 2.0 (creates
-;		files not existing), this makes no diff for kickfs, code is in
-;		dos.library
+;		files not existing)
 ;---------------------------------------------------------------------------*
 
 	INCLUDE	lvo/expansion.i
@@ -93,6 +92,7 @@ HD_NumBuffers		= 5
 
 	;file locking is not implemented! no locklist is used
 	;fl_Key is used for the filename which makes it impossible to compare two locks for equality!
+	;.a_copy_dir depends on that mfl_fib is the first in the structure
 
 	STRUCTURE MyLock,fl_SIZEOF
 		STRUCT	mfl_fib,fib_Reserved	;FileInfoBlock
