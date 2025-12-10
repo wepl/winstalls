@@ -65,7 +65,7 @@ else
 
 # normal options
 # VASM: -wfail -warncomm -databss
-ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-nmoveq -opt-pea -opt-size -opt-st -ldots
+ASMBASE=vasmm68k_mot $(VASMOPT) -ignore-mult-inc -nosym -quiet -wfail -opt-allbra -opt-clr -opt-lsl -opt-nmoveq -opt-pea -opt-size -opt-st -ldots -depend=make -depfile .depend.$@
 ASM=$(ASMBASE) -Fhunkexe
 ASMB=$(ASMBASE) -Fbin
 ASMO=$(ASMBASE) -Fhunk

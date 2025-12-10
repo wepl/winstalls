@@ -238,7 +238,7 @@ get :
 #
 
 clean :
-	$(RM) .date $(SLAVE) $(ISLAVE) $(GENFILES) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
+	$(RM) .date .depend.* $(SLAVE) $(ISLAVE) $(GENFILES) $(INSTDIR) $(INSTDIRICON) $(INSTALLARCHIVE) *.bak
 
 #
 # targets to always build
@@ -247,4 +247,9 @@ clean :
 
 # debugging: print all make variables defined between saving vars to VARS_OLD and here
 #$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))
+
+#
+# include generated dependencies
+#
+include $(wildcard .depend.*)
 

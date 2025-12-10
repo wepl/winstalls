@@ -28,7 +28,7 @@ rel :
 #
 
 clean :
-	$(RM) .date *.slave *.bak
+	$(RM) .date .depend.* *.slave *.bak
 
 #
 # targets to always build
