@@ -40,6 +40,7 @@
 ;		07.06.24 added ACTION_RENAME_DISK
 ;		10.06.24 avoid writing special files
 ;		08.12.25 also copy fib on ACTION_COPY_DIR to fix e.g. Path command
+;		10.12.25 clear fl_Task before freeing lock structure during UnLock
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1248,8 +1249,10 @@ KFSDPKT	MACRO
 	IFD DEBUG
 		cmp.l	(fl_Task,a1),a5
 		bne	_debug4
-		clr.l	(fl_Task,a1)
 	ENDC
+	;the games "Bograts" and "Valhalla3FortressOfEve" fail if fl_Task is not cleared here
+	;unclear reason, maybe systematical error of AMOS
+		clr.l	(fl_Task,a1)
 		move.l	(fl_Key,a1),-(a7)	;name
 	IFD IOCACHE
 		move.l	(mfl_iocache,a1),-(a7)
