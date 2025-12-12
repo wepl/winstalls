@@ -1200,9 +1200,11 @@ _dos_assign	movem.l	d2/a3-a6,-(a7)
 ;============================================================================
 
 	IFD PROMOTE_DISPLAY
+	IFND BOOTDOS
+	FAIL	PROMOTE_DISPLAY requires BOOTDOS
+	ENDC
 
 _promotedisplay	movem.l	d0-a6,-(a7)
-		
 		move.l	(_monitor,pc),d0
 		moveq	#10,d5				;D5 = monitor id
 		lea	(_mon_dblpal,pc),a3		;A3 = monitor name
@@ -1258,8 +1260,7 @@ _promotedisplay	movem.l	d0-a6,-(a7)
 		move.l	a6,a1
 		move.l	(4),a6
 		jsr	(_LVOSumLibrary,a6)
-.end
-		movem.l	(a7)+,d0-a6
+.end		movem.l	(a7)+,d0-a6
 		rts
 
 	ENDC
