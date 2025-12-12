@@ -5,6 +5,8 @@
 ;  :History.	24.11.2012 V1.0
 ;		30.03.2025 repo import
 ;		24.11.2025 use kickrom for random
+;		13.12.2025 uses fast memory and less chip
+;			   access faults calling ems fixed, blitwaits added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,8 +31,8 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $E0000
-FASTMEMSIZE	= $0000
+CHIPMEMSIZE	= $72000
+FASTMEMSIZE	= $e000
 NUMDRIVES	= 2
 WPDRIVES	= %0000
 
@@ -51,7 +53,7 @@ DOSASSIGN			;enable _dos_assign routine
 HDINIT				;initialize filesystem handler
 ;HRTMON				;add support for HrtMON
 IOCACHE	= 4096			;cache for the filesystem handler (per fh)
-;MEMFREE	= $200		;location to store free memory counter
+;MEMFREE	= $100		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 ;POINTERTICKS	= 1		;set mouse speed
 SEGTRACKER			;add segment tracker
@@ -89,30 +91,97 @@ _args_end	dc.b	0
 _disk1		db	"Emerald Mine",0
 	EVEN
 
-;d0 BSTR Filename
-;d1 BPTR SegList
+;============================================================================
+; callback/hook which gets executed after each successful call to dos.LoadSeg
+; D0 = BSTR name of the loaded program as BCPL string
+; D1 = BPTR segment list of the loaded program as BCPL pointer
 
-_cb_dosLoadSeg
+_cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
+		move.l	d0,a0
+		moveq	#0,d0
+		move.b	(a0)+,d0	;D0 = name length
+	;remove leading path
+		move.l	a0,a1
+		move.l	d0,d2
+.path		move.b	(a1)+,d3
+		subq.l	#1,d2
+		cmp.b	#":",d3
+		beq	.skip
+		cmp.b	#"/",d3
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
+		move.l	d2,d0		;D0 = name length
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
+		move.l	d1,a1		;D1 = segment
+		moveq	#0,d2
+.add		add.l	a1,a1
+		add.l	a1,a1
+		add.l	(-4,a1),d2	;D2 = hunks length
+		subq.l	#8,d2		;hunk header
+		move.l	(a1),a1
+		move.l	a1,d7
+		bne	.add
+	;search patch
+		lea	(_cbls_patch,pc),a1
+.next		move.l	(a1)+,d3
+		movem.w	(a1)+,d4-d5
+		beq	.end
+		cmp.l	d2,d3		;length match?
+		bne	.next
+	;compare name
+		lea	(_cbls_patch,pc,d4.w),a2
+		move.l	a0,a3
+		move.l	d0,d6
+.cmp		move.b	(a3)+,d7
+		cmp.b	#"a",d7
+		blo	.l
+		cmp.b	#"z",d7
+		bhi	.l
+		sub.b	#$20,d7
+.l		cmp.b	(a2)+,d7
+		bne	.next
+		subq.l	#1,d6
+		bne	.cmp
+		tst.b	(a2)
+		bne	.next
+	;set debug
+	IFD DEBUG
+		clr.l	-(a7)
+		move.l	d1,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_Control,a2)
+		move.l	(4,a7),d1
+		add.w	#12,a7
+	ENDC
+	;patch
+		lea	(_cbls_patch,pc,d5.w),a0
+		move.l	d1,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_PatchSeg,a2)
+	;end
+.end		rts
 
-	movem.l a0-a2/d0-d2,-(a7)
-	move.l	d0,d2
-	lsl.l	#2,d2
-	move.l	d2,a0
-	move.l	(a0),d2
-	and.l	#$ffdfdfdf,d2
-	cmp.l	#$03454d53,d2
-	bne.s	.1
-	move.l	d1,d2
-	lsl.l	#2,d2
-	addq.l	#4,d2
-	move.l	d2,a0
-	cmp.l	#$51cffffc,$f38(a0)
-	bne.s	.1
-	move.w	#$4eb9,$f36(a0)
-	pea	_loopdbf7(pc)
-	move.l	(a7)+,$f38(a0)
-.1	movem.l	(a7)+,a0-a2/d0-d2
-	rts
+LSPATCH	MACRO
+		dc.l	\1		;cumulated size of hunks (not filesize!)
+		dc.w	\2-_cbls_patch	;name
+		dc.w	\3-_cbls_patch	;patch list
+	ENDM
+
+_cbls_patch	LSPATCH	$12dc,.n_ems,_p_ems
+		dc.l	0
+
+	;all upper case!
+.n_ems		dc.b	"EMS",0
+	EVEN
+
+_p_ems		PL_START
+		PL_PS	$f36,_loopdbf7
+		PL_END
 
 ;============================================================================
 ; D0 = ULONG argument line length, including LF
@@ -209,7 +278,8 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 
 ;PL IPF1525
 _pl_program	PL_START
-		;PL_I	$1a2			;after 'pic' loaded
+	;	PL_I	$1a2			;after 'pic' loaded
+	;	PL_BKPT	$368			;calling ems
 		PL_PS	$456,_remdiskaccess
 		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$558e,_rndwrap		;let random area wrap
@@ -231,12 +301,18 @@ _pl_program	PL_START
 	;maybe now obsolete because we are using kickrom again?
 		PL_PS	$51d8,_corrstoneshift
 		PL_PS	$519e,_corrstoneshift
+
+		PL_PS	$4ab0,_bw2
+		PL_PS	$4dac,_bw3
+		PL_PS	$56ce,_bw1
+		PL_P	$6216,_callems
+		PL_W	$6228,4+6		;wrong calling ems: jsr (6,a1)
+		PL_W	$623a,4+12		;wrong calling ems: jsr (10,a1)
 		PL_END
 
 ;PL EMCD
 _pl_program_emcd
 		PL_START
-		PL_I	0
 		PL_PS	$45A,_remdiskaccess
 		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$54d0,_rndwrap		;let random area wrap
@@ -257,7 +333,32 @@ _pl_program_emcd
 	;correct stone shifting time due new random generator
 		PL_PS	$511a,_corrstoneshift
 		PL_PS	$50e0,_corrstoneshift
+
+		PL_PS	$49f2,_bw2
+		PL_PS	$4cee,_bw3
+		PL_PS	$5610,_bw1
+		PL_P	$6158,_callems
+		PL_W	$616a,4+6		;wrong calling ems: jsr (6,a1)
+		PL_W	$617c,4+12		;wrong calling ems: jsr (10,a1)
 		PL_END
+
+_callems	jsr	(4,a1)
+		movem.l	(a7)+,d0-a6
+		rts
+
+_bw1		bsr	_bw
+		move	#-1,_custom+bltafwm
+		add.l	#2,(a7)
+		rts
+
+_bw2		lsl.l	#2,d2
+		add.l	$320,d2
+
+_bw3		lsl.l	#7,d4
+		add.l	$320,d4
+
+_bw		BLITWAIT
+		rts
 
 _corrstoneshift
 	move.b	(a6),d1	;orig instructions
