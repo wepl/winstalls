@@ -7,6 +7,7 @@
 ;		24.11.2025 use kickrom for random
 ;		13.12.2025 uses fast memory and less chip
 ;			   access faults calling ems fixed, blitwaits added
+;			   removed some delays
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -280,6 +281,11 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 _pl_program	PL_START
 	;	PL_I	$1a2			;after 'pic' loaded
 	;	PL_BKPT	$368			;calling ems
+		PL_W	$36e,1			;delay 150
+		PL_W	$8a6,1			;delay 150 before game
+	;	PL_I	$b14			;delay 150
+		PL_W	$f70,1			;delay 150 player save
+		PL_W	$176a,1			;delay 200 highscore
 		PL_PS	$456,_remdiskaccess
 		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$558e,_rndwrap		;let random area wrap
@@ -313,6 +319,11 @@ _pl_program	PL_START
 ;PL EMCD
 _pl_program_emcd
 		PL_START
+		PL_W	$372,1			;delay 150
+		PL_W	$8ae,1			;delay 150 before game
+	;	PL_I	$b18			;delay 150
+		PL_W	$f6a,1			;delay 150 player save
+		PL_W	$176e,1			;delay 200 highscore
 		PL_PS	$45A,_remdiskaccess
 		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$54d0,_rndwrap		;let random area wrap
