@@ -44,6 +44,7 @@
 (set #ico_suffix_35 "colmura")
 (set #ico_suffix_36 "colbox")
 (set #ico_suffix_37 "colbox2")
+(set #ico_suffix_38 "coltorti")
 (set #ico_suffix_50 "pngbox")
 (set #ico_suffix_51 "pngbox2")
 
@@ -79,6 +80,7 @@
 (set #ico_desc_35 "OS3.5 Murakami")
 (set #ico_desc_36 "OS3.5 BoxIcon")
 (set #ico_desc_37 "OS3.5 BoxIcon 2")
+(set #ico_desc_38 "OS3.5 Torti")
 (set #ico_desc_50 "PNG BoxIcon")
 (set #ico_desc_51 "PNG BoxIcon 2")
 
@@ -1026,6 +1028,7 @@
   (set #icnt 0)
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_51)) (set #icon #ico_suffix_51 #icnt (+ 1 #icnt) #icon_51 #ico_desc_51) (set #icon_51 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_50)) (set #icon #ico_suffix_50 #icnt (+ 1 #icnt) #icon_50 #ico_desc_50) (set #icon_50 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_38)) (set #icon #ico_suffix_38 #icnt (+ 1 #icnt) #icon_38 #ico_desc_38) (set #icon_38 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_37)) (set #icon #ico_suffix_37 #icnt (+ 1 #icnt) #icon_37 #ico_desc_37) (set #icon_37 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_36)) (set #icon #ico_suffix_36 #icnt (+ 1 #icnt) #icon_36 #ico_desc_36) (set #icon_36 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_35)) (set #icon #ico_suffix_35 #icnt (+ 1 #icnt) #icon_35 #ico_desc_35) (set #icon_35 ""))
@@ -1091,6 +1094,7 @@
       (if #icon_35 ((set #icon-suf #ico_suffix_35) (set #icon-name #ico_desc_35) (P_Icon)))
       (if #icon_36 ((set #icon-suf #ico_suffix_36) (set #icon-name #ico_desc_36) (P_Icon)))
       (if #icon_37 ((set #icon-suf #ico_suffix_37) (set #icon-name #ico_desc_37) (P_Icon)))
+      (if #icon_38 ((set #icon-suf #ico_suffix_38) (set #icon-name #ico_desc_38) (P_Icon)))
       (if #icon_50 ((set #icon-suf #ico_suffix_50) (set #icon-name #ico_desc_50) (P_Icon)))
       (if #icon_51 ((set #icon-suf #ico_suffix_51) (set #icon-name #ico_desc_51) (P_Icon)))
       (openwbobject #icon-dir)
@@ -1104,7 +1108,7 @@
 	(choices #icon_00 #icon_01 #icon_02 #icon_03
 		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16
 		 #icon_20 #icon_21 #icon_22 #icon_23 #icon_24 #icon_25 #icon_26 #icon_27 #icon_28 #icon_29
-		 #icon_30 #icon_31 #icon_32 #icon_33 #icon_34 #icon_35 #icon_36 #icon_37
+		 #icon_30 #icon_31 #icon_32 #icon_33 #icon_34 #icon_35 #icon_36 #icon_37 #icon_38
 		 #icon_50 #icon_51)
         (default #icon)
         (help @askchoice-help)
@@ -1144,6 +1148,7 @@
       (set #icon #ico_suffix_35)
       (set #icon #ico_suffix_36)
       (set #icon #ico_suffix_37)
+      (set #icon #ico_suffix_38)
       (set #icon #ico_suffix_50)
       (set #icon #ico_suffix_51)
     )

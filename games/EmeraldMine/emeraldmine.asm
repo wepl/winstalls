@@ -283,7 +283,7 @@ _pl_program	PL_START
 	;	PL_BKPT	$368			;calling ems
 		PL_W	$36e,1			;delay 150
 		PL_W	$8a6,1			;delay 150 before game
-	;	PL_I	$b14			;delay 150
+		PL_I	$b14			;delay 150
 		PL_W	$f70,1			;delay 150 player save
 		PL_W	$176a,1			;delay 200 highscore
 		PL_PS	$456,_remdiskaccess
@@ -405,8 +405,20 @@ _loopdbfinner
 	rts
 
 _remdiskaccess
-	move.l	#$4e714e71,0-$7faa(a4)	;visible only at this program state
-	move.w	#$6028,0-$7fa4(a4)	;thus patch here
+	IFEQ 1
+		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	#$1f4,d0
+		lea	.cl,a0
+		lea	(-$7ffe,a4),a1
+		move.l	_resload,a2
+		jsr	(resload_SaveFile,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		bra	.1
+.cl		db	"copylock",0,0
+.1
+	ENDC
+	move.l	#$4e714e71,-$7faa(a4)	;visible only at this program state
+	move.w	#$6028,-$7fa4(a4)	;thus patch here
 	add.l	#$2422c,d3		;orig instruction
 	rts
 

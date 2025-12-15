@@ -1,0 +1,11 @@
+#version=3
+#sub-dir=data
+#P_MakeImages#3
+      (set #AD_disk "Emerald Mine")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "(devs|his|mus|pla|alles|em|ems|nam|pic|#?.sh)")
+      )

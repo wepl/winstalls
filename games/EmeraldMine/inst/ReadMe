@@ -1,7 +1,6 @@
 That patch applies to Emerald Mine (c) 1987 Kingsoft.
 
-This install has the slave-version 1.0.
-It needs WHDLoad16 or higher in the path (eg in c:).
+It needs WHDLoad 20 or higher in the path (eg in c:).
 Supported versions are IPF1525 and the version on the Emerald Mines CD
 (in _OLD_EM/1/ - to install copy the files in that dir to a disk named
 "EMERALD MINE").
@@ -16,9 +15,18 @@ Fixed:  CPU dependend loops.
 
 History: V1.0 - 2012-nov-24 Initial slave version.
 
+Version 1.1 2025-12-15 done by Wepl:
+- uses some Fast memory and less Chip memory
+- random uses kickstart image again, saving mem and time
+- some blitter waits added
+- calling ems sound player fixed
+- some delays removed
+- new install script
+- icon from Torti added
+- source available: https://github.com/wepl/winstalls
+- Cache options seems to work but is not enabled by default
+
 The install is tested on an 18 MB 68030 and on E-UAE.
-It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
-  for preload.
 
 Disclaimer: Install is Freeware and sourcecode is included. 
         You use the install wholly on your own risk.
