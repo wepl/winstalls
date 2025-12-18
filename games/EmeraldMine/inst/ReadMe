@@ -24,7 +24,11 @@ Version 1.1 2025-12-15 done by Wepl:
 - new install script
 - icon from Torti added
 - source available: https://github.com/wepl/winstalls
-- Cache options seems to work but is not enabled by default
+
+Version 1.2 2025-12-18 done by Wepl:
+- fix monster sound (issue #2822)
+- enable instruction cache
+- fix title music
 
 The install is tested on an 18 MB 68030 and on E-UAE.
 

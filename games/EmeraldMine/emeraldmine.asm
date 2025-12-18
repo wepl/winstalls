@@ -8,6 +8,10 @@
 ;		13.12.2025 uses fast memory and less chip
 ;			   access faults calling ems fixed, blitwaits added
 ;			   removed some delays
+;		16.12.2025 fix monster sound
+;			   disable copylock completely in first release
+;			   enable inst cache
+;		18.12.2025 fix title music
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -45,9 +49,9 @@ CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
-;CACHECHIP			;enable inst cache for chip/fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-DEBUG				;add more internal checks
+;DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
@@ -81,7 +85,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Emerald Mine",0
 slv_copy	dc.b	"1987 Kingsoft",0
 slv_info	dc.b	"adapted by Harry, Wepl",10
-		dc.b	"Version 1.1 "
+		dc.b	"Version 1.2 "
 		INCBIN	.date
 		dc.b	0
 slv_config	= slv_base
@@ -181,8 +185,13 @@ _cbls_patch	LSPATCH	$12dc,.n_ems,_p_ems
 	EVEN
 
 _p_ems		PL_START
+		PL_PS	$c66,.loopd5
 		PL_PS	$f36,_loopdbf7
+		PL_PS	$11f2,_loopdbf7
 		PL_END
+
+.loopd5		move	d5,d7
+		bra	_loopdbf7
 
 ;============================================================================
 ; D0 = ULONG argument line length, including LF
@@ -254,6 +263,12 @@ _bootdos	move.l  (_resload,pc),a2        ;A2 = resload
 		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
+	;init variable space to fix missings monster sound
+		lea	$200,a0
+		move	#$200/4-1,d0
+.clr		clr.l	(a0)+
+		dbf	d0,.clr
+
 	;call
 		move.l	d7,d1
 		moveq	#_args_end-_args,d0
@@ -286,7 +301,7 @@ _pl_program	PL_START
 		PL_I	$b14			;delay 150
 		PL_W	$f70,1			;delay 150 player save
 		PL_W	$176a,1			;delay 200 highscore
-		PL_PS	$456,_remdiskaccess
+	;	PL_PS	$456,_remdiskaccess
 		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$558e,_rndwrap		;let random area wrap
 
@@ -312,9 +327,15 @@ _pl_program	PL_START
 		PL_PS	$4dac,_bw3
 		PL_PS	$56ce,_bw1
 		PL_P	$6216,_callems
+		PL_P	$58c8,.cl
+		PL_R	$5946			;don't set copylock routine
 		PL_W	$6228,4+6		;wrong calling ems: jsr (6,a1)
 		PL_W	$623a,4+12		;wrong calling ems: jsr (10,a1)
 		PL_END
+
+	;copylock, make it equal to unprotected cd release
+.cl		move	#$63,$1f2
+		rts
 
 ;PL EMCD
 _pl_program_emcd
@@ -324,7 +345,7 @@ _pl_program_emcd
 	;	PL_I	$b18			;delay 150
 		PL_W	$f6a,1			;delay 150 player save
 		PL_W	$176e,1			;delay 200 highscore
-		PL_PS	$45A,_remdiskaccess
+	;	PL_PS	$45A,_remdiskaccess
 		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$54d0,_rndwrap		;let random area wrap
 
@@ -404,6 +425,7 @@ _loopdbfinner
 	dbf	d0,.2
 	rts
 
+	IFEQ 1
 _remdiskaccess
 	IFEQ 1
 		movem.l	d0-d1/a0-a2,-(a7)
@@ -421,6 +443,7 @@ _remdiskaccess
 	move.w	#$6028,-$7fa4(a4)	;thus patch here
 	add.l	#$2422c,d3		;orig instruction
 	rts
+	ENDC
 
 	;reset random address if above kickstart end
 _rndwrap	sub.l	#KICKSIZE,a2
