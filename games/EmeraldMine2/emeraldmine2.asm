@@ -96,7 +96,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Emerald Mine 2",0
 slv_copy	dc.b	"1988 Kingsoft",0
 slv_info	dc.b	"adapted by Harry",10
-		dc.b	"Version 0.9beta "
+		dc.b	"Version 0.91 "
 ;	IFD BARFLY
 ;		INCBIN	"T:date"
 ;	ENDC
@@ -335,12 +335,21 @@ _pl_program	PL_START
 .fix4
 		mulu.w	$f8.w,d0
 .fix4end
+			;correct stone shifting time due new random generator
+.corrstoneshiftleft
+		PL_PS	$55e4,_corrstoneshift
+.corrstoneshiftleftend
+.corrstoneshiftright
+		PL_PS	$55aa,_corrstoneshift
+.corrstoneshiftrightend
+
 		PL_END
 	ENDC
 
 ; < d1 seglist
 ; < d2 section #
 ; > a0 segment
+	ifeq	1
 _get_section
 	move.l	d1,a0
 	subq	#1,d2
@@ -353,6 +362,17 @@ _get_section
 .out
 	addq.l	#4,a0
 	rts
+	endc
+
+_corrstoneshift
+	move.b	(a6),d1	;orig instructions
+	;and.b	#$3,d1
+	;;beq.s	+4
+
+	cmp.b	#$80,d1
+	bhs.s	.1
+	move.b	#0,d1
+.1	rts
 
 _loopdbf
 	divu.w	#$2d,d0

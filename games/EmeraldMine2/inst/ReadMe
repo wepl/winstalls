@@ -16,10 +16,16 @@ Note:   One version is supported (IPF1520). The version of the Emerald
           will flicker during this.
         There will be a question at installation if you want to install
           your playfield disk.
+        Random generator took values from the Kickrom, replaced and stone
+          pushing probability adapted to original generator. Please file
+          a bug report if a stone pushing level is still impossible, or
+          if another random dependend behaviour is weird.
         There are still some time dependend loops in the editor, 
           but I have to look further how to fix this.
 
-History: V0.9 - 2012-jun-23 Initial slave version.
+History: V0.9  - 2012-jun-23 Initial slave version.
+         V0.91 - 2012-jul-22 Stone pushing probability adapted to new
+                               random generator.
 
 The install is tested on an 18 MB 68030 and on E-UAE.
 It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
