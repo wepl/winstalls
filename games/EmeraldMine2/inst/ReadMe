@@ -1,0 +1,36 @@
+That patch applies to Emerald Mine 2 (c) 1988 Kingsoft.
+
+This install has the slave-version 0.9.
+It needs WHDLoad16 or higher in the path (eg in c:).
+
+Fixed:  CPU dependend loops.
+        Interrupt acknowledge (fixing a hangup after title screen).
+        Due a programming fault, a few random instructions were overwritten
+          when completing a level, leading to strange effects in the game.
+
+Note:   One version is supported (IPF1520). The version of the Emerald
+          Mines CD is the same (copy it from the "_OLD_EM/2/" directory
+          to a disk named "Emerald Mine II" if you want to install it).
+        To install this you need your game disk.
+        Please be patient while creating the highscore files, the installer
+          will flicker during this.
+        There will be a question at installation if you want to install
+          your playfield disk.
+        There are still some time dependend loops in the editor, 
+          but I have to look further how to fix this.
+
+History: V0.9 - 2012-jun-23 Initial slave version.
+
+The install is tested on an 18 MB 68030 and on E-UAE.
+It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
+  for preload.
+
+Disclaimer: Install is Freeware and sourcecode is included. 
+        You use the install wholly on your own risk.
+
+Full whdload package:	aminet:dev/misc/whdload#?.lha
+Other installs:		http://www.whdload.de/
+Report bugs with the bug report form on that page.
+
+Have fun,
+Harry.
