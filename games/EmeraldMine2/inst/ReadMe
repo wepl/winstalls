@@ -1,12 +1,14 @@
 That patch applies to Emerald Mine 2 (c) 1988 Kingsoft.
 
-This install has the slave-version 0.9.
+This install has the slave-version 0.91.
 It needs WHDLoad16 or higher in the path (eg in c:).
 
 Fixed:  CPU dependend loops.
         Interrupt acknowledge (fixing a hangup after title screen).
         Due a programming fault, a few random instructions were overwritten
           when completing a level, leading to strange effects in the game.
+        Level 73 diamond count corrected, it was previously unsolvable. 
+          Either reinstall or copy the file 73 to data/pla/
 
 Note:   One version is supported (IPF1520). The version of the Emerald
           Mines CD is the same (copy it from the "_OLD_EM/2/" directory
@@ -23,9 +25,10 @@ Note:   One version is supported (IPF1520). The version of the Emerald
         There are still some time dependend loops in the editor, 
           but I have to look further how to fix this.
 
-History: V0.9  - 2012-jun-23 Initial slave version.
-         V0.91 - 2012-jul-22 Stone pushing probability adapted to new
-                               random generator.
+History: V0.9   - 2012-jun-23 Initial slave version.
+         V0.91  - 2012-jul-22 Stone pushing probability adapted to new
+                                random generator.
+         V0.91b - 2012-nov-24 Level 73 corrected.
 
 The install is tested on an 18 MB 68030 and on E-UAE.
 It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB

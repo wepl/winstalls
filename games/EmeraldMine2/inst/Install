@@ -116,6 +116,11 @@
       (set #numloop (+ #numloop 1))
     )
   )
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("73" @app-name ))
+    (dest ("%s/data/pla/" #dest))
+  )
 )
 (if
   (askbool
@@ -129,6 +134,19 @@
       (source "playfielddisk:")
       (dest ("%s/data" #dest))
       (pattern "(his|pla|nam)")
+    )
+    (if
+      (askbool
+        (prompt "Should level 73 be replaced with a corrected version? (Select NO if you have modified it.)")
+        (help "Level 73 diamond count has been corrected.")
+      )
+      (
+        (copyfiles
+          (help @copyfiles-help)
+          (source ("73" @app-name ))
+          (dest ("%s/data/pla/" #dest))
+        )
+      )
     )
   )
 )
