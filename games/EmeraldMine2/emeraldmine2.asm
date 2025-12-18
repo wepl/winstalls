@@ -6,6 +6,7 @@
 ;		18.12.2025 imported to winstalls
 ;			   add Config to start editor
 ;			   fix MANX stack check
+;			   replace random
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -149,29 +150,9 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		beq	.versionok
 		
 		cmp.w	#$2b90,d0
-		beq	.versionokgame
+		beq	.versionok
 .nover		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
-
-.illegal	illegal
-
-.versionokgame
-		;prepare random number area
-		move.l	#$41000,d0	;len
-		move.l	#$80000,a1	;place
-		move.l	a6,-(a7)
-		move.l	$4.w,a6
-		jsr	_LVOAllocAbs(a6)
-		move.l	(a7)+,a6
-		tst.l	d0
-		beq.s	.illegal
-		move.l	#$41000/4,d1
-		lea	$80000,a1
-.randinit
-		bsr	_random
-		move.l	d0,(a1)+
-		subq.l	#1,d1
-		bne.s	.randinit
 
 .versionok
 
@@ -249,47 +230,23 @@ _pl_program	PL_START
 		PL_PS	$8a8,_remdiskaccess
 		PL_P	$25a,_loopbne
 		PL_P	$7726,_patchdoscall	;patch dosopen for skip ":"
-		PL_DATA	$4db4,.loopdbfend-.loopdbfstart	;corr dbf delay
-.loopdbfstart
+		PL_DATA	$4db4,4			;corr dbf delay
 		jsr	$88.W
-.loopdbfend
-		PL_DATA	$2ee,.intcorrend-.intcorr	;correct int ack
-.intcorr
-		dc.w	$70
-.intcorrend	
-				;set init rand to $80000 instead of $fc0000
-		PL_DATA	$8be,.initrandplaceend-.initrandplace
-.initrandplace	dc.w	$0008
-.initrandplaceend
-				;let random area wrap at $c0000
-		PL_DATA	$5998,.wraprandplaceend-.wraprandplace
-.wraprandplace	BTST	#2,$361.W
-.wraprandplaceend
-			;fix weird accesses (probably wrong programmed)
-		PL_DATA	$4e16,.fix1end-.fix1
-.fix1
+		PL_W	$2ee,$70		;correct int ack
+		PL_VL	$8be,_expmem		;set init rand to _expmem instead of $fc0000
+		PL_P	$5998,_rndwrap		;let random area wrap
+	;fix weird accesses (probably wrong programmed)
+		PL_DATA	$4e16,6
 		move.w	$3c6.w,$f8.w
-.fix1end
-		PL_DATA	$4e22,.fix2end-.fix2
-.fix2
+		PL_DATA	$4e22,6
 		move.w	$3ce.w,$fa.w
-.fix2end
-		PL_DATA	$4e2c,.fix3end-.fix3
-.fix3
+		PL_DATA	$4e2c,4
 		move.w	$fa.w,d0
-.fix3end
-		PL_DATA	$4e48,.fix4end-.fix4
-.fix4
+		PL_DATA	$4e48,4
 		mulu.w	$f8.w,d0
-.fix4end
-			;correct stone shifting time due new random generator
-.corrstoneshiftleft
+	;correct stone shifting time due new random generator
 		PL_PS	$55e4,_corrstoneshift
-.corrstoneshiftleftend
-.corrstoneshiftright
 		PL_PS	$55aa,_corrstoneshift
-.corrstoneshiftrightend
-
 		PL_END
 
 ; < d1 seglist
@@ -381,24 +338,13 @@ _patchdoscall
 	move.l	-$7aec(a4),a6		;orig instructions
 	jmp	-$1e(a6)
 
-_random	lea	RANDOM1(PC),A0
-	MOVE.L	RANDOM1(PC),D0
-	ADD.L	RANDOM2(PC),D0
-	MOVE.L	D0,(A0)
-	ROR.L	#$04,D0
-	SUB.W	RANDOM2(PC),D0
-	MOVE.L	D0,-(A7)
-	MOVE.W	$DFF014,D0
-	SWAP	D0
-	MOVE.W	$DFF014,D0
-	EOR.L	D0,(A7)
-	MOVE.L	(A7)+,D0
-	EOR.L	D0,RANDOM2-RANDOM1(A0)
-	ADD.L	#$56565311,(A0)
-	RTS
-
-RANDOM1	DC.L	$3F3F751F
-RANDOM2	DC.L	$17179834
+	;reset random address if above kickstart end
+_rndwrap	sub.l	#KICKSIZE,a2
+		cmp.l	(_expmem),a2
+		bhs	.write
+		add.l	#KICKSIZE,a2
+.write		move.l	a2,$330
+		rts
 
 ;============================================================================
 
