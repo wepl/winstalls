@@ -57,7 +57,7 @@ WPDRIVES	= %1111		;write protection of floppy drives
 ;CACHE				;enable inst/data cache for fast memory with MMU
 CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-;DEBUG				;add more internal checks
+DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign routine
 ;FONTHEIGHT	= 8		;enable 80 chars per line
@@ -100,7 +100,7 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.12 "
+		dc.b	"Version 1.13 "
 		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17

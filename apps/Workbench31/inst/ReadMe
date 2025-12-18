@@ -48,6 +48,10 @@
 
  History:
  --------
+ version 1.13 (2025-12-18) done by Wepl:
+ - clear fl_Task before freeing lock structure during UnLock
+   this fixes the games Bograts and Valhalla3FortressOfEve (rb)
+
  version 1.12 (2025-12-08) done by Wepl:
  - fixed DupLock in kickfs to fix Path command display
 
