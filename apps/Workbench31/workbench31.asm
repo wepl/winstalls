@@ -87,7 +87,7 @@ WHDCTRL				;add WHDCtrl resident command
 ;============================================================================
 
 slv_Version	= 20
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_Flags	= WHDLF_NoError
 slv_keyexit	= $59	;F10
 
 ;============================================================================

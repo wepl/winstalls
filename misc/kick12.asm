@@ -66,7 +66,7 @@ SETPATCH			;enable patches from SetPatch 1.38
 ;============================================================================
 
 slv_Version	= 16
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_Flags	= WHDLF_NoError
 slv_keyexit	= $59	;F10
 
 ;============================================================================
