@@ -1,0 +1,78 @@
+#version=3
+#sub-dir=data
+#P_MakeImages#3
+      (set #AD_disk "Emerald Mine II")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "(devs|game|mus|610data|bdcol|em2|newdef)")
+      )
+      (makedir ("%s/pla" #dest))
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:part1" #AD_disk))
+        (dest ("%s/pla" #dest))
+	(all)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:part2" #AD_disk))
+        (dest ("%s/pla" #dest))
+	(all)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:namex" #AD_disk))
+        (dest #dest)
+        (newname "nam")
+      )
+      (makedir ("%s/his" #dest))
+      (set #numloop 0)
+      (while (< #numloop 162)
+        (
+          (copyfiles
+            (help @copyfiles-help)
+            (source ("%s:hisex" #AD_disk))
+            (dest ("%s/his" #dest))
+            (newname ("%ld" #numloop))
+	    (nogauge)
+          )
+          (set #numloop (+ #numloop 1))
+        )
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source "73")
+        (dest ("%s/pla" #dest))
+      )
+(if
+  (askbool
+    (prompt "Do you have created a playfielddisk, and want to install its contents?")
+    (help "A playfielddisk contains your game position.")
+  )
+  (
+    (set #AD_disk "playfielddisk")
+    (P_AskDisk)
+    (copyfiles
+      (help @copyfiles-help)
+      (source ("%s:" #AD_disk))
+      (dest #dest)
+      (pattern "(his|pla|nam)")
+    )
+    (if
+      (askbool
+        (prompt "Should level 73 be replaced with a corrected version? (Select NO if you have modified it.)")
+        (help "Level 73 diamond count has been corrected.")
+      )
+      (
+        (copyfiles
+          (help @copyfiles-help)
+          (source "73")
+          (dest ("%s/pla" #dest))
+        )
+      )
+    )
+  )
+)

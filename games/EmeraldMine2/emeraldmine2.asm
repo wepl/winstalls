@@ -12,6 +12,7 @@
 ;			   add blitwaits
 ;			   enable instruction cache
 ;			   some delays removed
+;			   use fast memory
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -32,8 +33,8 @@
 
 ;============================================================================
 
-CHIPMEMSIZE	= $E0000
-FASTMEMSIZE	= $0000
+CHIPMEMSIZE	= $6d000
+FASTMEMSIZE	= $d000
 NUMDRIVES	= 1
 WPDRIVES	= %0000
 
@@ -68,8 +69,8 @@ SEGTRACKER			;add segment tracker
 ;============================================================================
 
 slv_Version	= 20
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
-slv_keyexit	= $59	;F10
+slv_Flags	= WHDLF_NoError
+slv_keyexit	= $59		;F10
 
 ;============================================================================
 
@@ -175,6 +176,29 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 .clr		clr.l	(a0)+
 		dbf	d0,.clr
 
+	;find bug on $5036 .af1
+	IFEQ 1
+		clr.l	-(a7)
+		pea	.af
+		pea	WHDLTAG_CBAF_SET
+		jsr	(resload_Control,a2)
+		add	#12,a7
+		moveq	#2,d0
+		lea	$10f7a+4,a0
+		jsr	(resload_ProtectWrite,a2)
+		bra	.go
+.af		cmp.l	#$10f7a+4,a1
+		bne	.term
+		cmp	#2,d1
+		bne	.term
+		cmp	#$e000,$10f7a
+		bgt	.term
+		moveq	#1,d0
+		rts
+.term		moveq	#0,d0
+		rts
+.go	ENDC
+
 	;call
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
@@ -217,12 +241,19 @@ _pl_program	PL_START
 		PL_DATA	$4e48,4
 		mulu.w	$f8.w,d0
 		PL_PS	$4eda,_bw2
+		PL_PS	$5036,.af1
 		PL_PS	$51c4,_bw3
 		PL_PS	$5ad8,_bw1
 	;correct stone shifting time due new random generator
 		PL_PS	$55e4,_corrstoneshift
 		PL_PS	$55aa,_corrstoneshift
 		PL_END
+
+	;BADCOP on fastmem and Snoop
+.af1		moveq	#0,d2
+		move	$32a,d2			;original
+		lsl.l	#7,d2			;original
+		rts
 
 	;copylock result
 .cl		move	#$63,$1f2
@@ -253,8 +284,7 @@ _corrstoneshift
 .1	rts
 
 _loopdbf
-	move	#-1,d0
-	divu.w	#$2d,d0
+	move	#$10000/$2f,d0
 .2	movem.l	d0/d1,-(a7)
 	move.l	$dff004,d0
 	and.l	#$ffff00,d0
