@@ -8,6 +8,10 @@
 ;			   fix MANX stack check
 ;			   replace random
 ;			   use dos assign
+;			   better copylock fix
+;			   add blitwaits
+;			   enable instruction cache
+;			   some delays removed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -41,7 +45,7 @@ BOOTDOS				;enable _bootdos routine
 ;CBDOSREAD			;enable _cb_dosRead routine
 ;CBKEYBOARD			;enable _cb_keyboard routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
-;CACHECHIP			;enable inst cache for chip/fast memory
+CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
@@ -165,6 +169,12 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
 
+	;init variable space to fix missings monster sound
+		lea	$200,a0
+		move	#$200/4-1,d0
+.clr		clr.l	(a0)+
+		dbf	d0,.clr
+
 	;call
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
@@ -184,12 +194,19 @@ _bootdos	move.l	(_resload,pc),a2	;A2 = resload
 		jmp	(resload_Abort,a2)
 
 _pl_program	PL_START
-		PL_PS	$8a8,_remdiskaccess
+	;	PL_PS	$8a8,_remdiskaccess
 		PL_P	$25a,_loopbne
 		PL_PS	$4db0,_loopdbf
 		PL_W	$2ee,$70		;correct int ack
+		PL_W	$1c6,1			;delay 150
+		PL_W	$cf8,1			;delay 150 before game
+		PL_I	$f64			;delay 150
+		PL_W	$13d4,1			;delay 150 player save
+		PL_W	$1bd4,1			;delay 200 highscore
 		PL_VL	$8be,_expmem		;set init rand to _expmem instead of $fc0000
 		PL_P	$5998,_rndwrap		;let random area wrap
+		PL_P	$5ccc,.cl
+		PL_R	$5d4a			;don't set copylock routine
 	;fix weird accesses (probably wrong programmed)
 		PL_DATA	$4e16,6
 		move.w	$3c6.w,$f8.w
@@ -199,10 +216,31 @@ _pl_program	PL_START
 		move.w	$fa.w,d0
 		PL_DATA	$4e48,4
 		mulu.w	$f8.w,d0
+		PL_PS	$4eda,_bw2
+		PL_PS	$51c4,_bw3
+		PL_PS	$5ad8,_bw1
 	;correct stone shifting time due new random generator
 		PL_PS	$55e4,_corrstoneshift
 		PL_PS	$55aa,_corrstoneshift
 		PL_END
+
+	;copylock result
+.cl		move	#$63,$1f2
+		rts
+
+_bw1		bsr	_bw
+		move	#-1,_custom+bltafwm
+		add.l	#2,(a7)
+		rts
+
+_bw2		lsl.l	#2,d2
+		add.l	$320,d2
+
+_bw3		lsl.l	#7,d4
+		add.l	$320,d4
+
+_bw		BLITWAIT
+		rts
 
 _pl_editor	PL_START
 		PL_END
@@ -244,11 +282,13 @@ _loopbne
 	bne.s	.2
 	rts
 
+	IFEQ 1
 _remdiskaccess
 	move.l	#$4e714e71,0-$7faa(a4)	;visible only at this program state
 	move.w	#$6028,0-$7fa4(a4)	;thus patch here
 	add.l	#$2422c,d0		;orig instruction
 	rts
+	ENDC
 
 	;reset random address if above kickstart end
 _rndwrap	sub.l	#KICKSIZE,a2
