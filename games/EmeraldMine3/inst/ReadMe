@@ -1,13 +1,14 @@
 That patch applies to Emerald Mine 3 Professional (c) 1990 Kingsoft.
 
-This install has the slave-version 1.0.
-It needs WHDLoad16 or higher in the path (eg in c:).
+It needs WHDLoad version 20 or higher in the path (eg in c:).
 Supported versions are IPF2707 and the version on the Emerald Mines CD
 (in _OLD_EM/3/ - to install copy the files in that dir to a disk named
 "EMERALD MINE"). The version on IPF2185 has a corrupt disk structure and
 cannot be supported for that reason. The version which has a freezed
 executable can also not be supported because it contains many references
 into the Kickstart 1.3 ROM.
+"Emerald Mine 3 Professional" is identical to "Emerald Mine" only the
+levels are different.
 
 Fixed:  CPU dependend loops.
         Due a programming fault, a few random instructions were overwritten
@@ -19,10 +20,20 @@ Fixed:  CPU dependend loops.
 
 History: V1.0 - 2012-jul-15 Initial slave version.
          V1.1 - 2012-jul-21 Emerald Mines CD version supported.
+	 V1.2 - 2025-dec-20 done by Wepl:
+		- uses some Fast memory and less Chip memory
+		- random uses kickstart image again, saving mem and time
+		- some blitter waits added
+		- calling ems sound player fixed
+		- some delays removed
+		- fix monster sound on startup
+		- enable instruction cache
+		- fix title music replay
+		- display the message text at the beginning added
+		- new install script
+		- source available: https://github.com/wepl/winstalls
 
 The install is tested on an 18 MB 68030 and on E-UAE.
-It needs 896 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
-  for preload.
 
 Disclaimer: Install is Freeware and sourcecode is included. 
         You use the install wholly on your own risk.

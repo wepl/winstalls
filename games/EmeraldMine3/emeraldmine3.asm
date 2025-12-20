@@ -1,16 +1,18 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	emeraldmine3.asm
 ;  :Contents.	Slave for "Emerald Mine 3"
-;  :Author.	Harry
+;  :Author.	Harry, Wepl
 ;  :History.	14.07.2012 started
 ;               21.07.2012 EMCD added
+;		20.12.2025 done by Wepl
+;			source taken from Emerald Mine, disk and cd executables are equal!
+;			text display added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V1.131
 ;  :To Do.
 ;---------------------------------------------------------------------------*
-
 
 ; game exe checksum is $6efd for IPF2707 and $375f for EMCD:_OLD_EM/3/
 ;hunklist game exe IPF2707
@@ -24,122 +26,168 @@
 ;1 $7268 $470
 ;2 $76e0 0
 
-
-
-		INCDIR	"asm-one:include/"
-		INCLUDE	whdload/whdload.i
-		INCLUDE	whdload/whdmacros.i
-		INCLUDE	dos/dos_lib.i
-		INCLUDE	exec/exec.i
-		INCLUDE exec/exec_lib.i
-		INCLUDE	libraries/expansion_lib.i
-
-	IFNE	0
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
-	INCLUDE	lvo/dos.i
-
-	IFD BARFLY
-	OUTPUT	"wart:li/lordsofwar/LordsOfWar.Slave"
-	BOPT	O+				;enable optimizing
-	BOPT	OG+				;enable optimizing
-	BOPT	ODd-				;disable mul optimizing
-	BOPT	ODe-				;disable mul optimizing
-	BOPT	w4-				;disable 64k warnings
-	SUPER
-	ENDC
-	ENDC
 
 ;============================================================================
 
-CHIPMEMSIZE	= $E0000
-FASTMEMSIZE	= $0000
-NUMDRIVES	= 2
+CHIPMEMSIZE	= $72000
+FASTMEMSIZE	= $e000
+NUMDRIVES	= 1
 WPDRIVES	= %0000
 
-;BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-CBDOSLOADSEG
-;CBDOSREAD
-;CACHE
-DEBUG
-;DISKSONBOOT
-;DOSASSIGN
-;FONTHEIGHT	= 8
-HDINIT
-;HRTMON
-IOCACHE		= 1024
-;MEMFREE        = $100
-;NEEDFPU
-;POINTERTICKS	= 1
-;SETPATCH
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
-
-
-;============================================================================
-
-slv_Version	= 16
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
-slv_keyexit	= $59	;F10
-
-;============================================================================
-
-;	INCLUDE	Sources:whdload/kick13.s
-	INCLUDE	kick13.s
+;BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+;HRTMON				;add support for HrtMON
+IOCACHE	= 4096			;cache for the filesystem handler (per fh)
+;MEMFREE	= $100		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+;POINTERTICKS	= 1		;set mouse speed
+SEGTRACKER			;add segment tracker
+;SETKEYBOARD			;activate host keymap
+;SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
-	IFD BARFLY
-	DOSCMD	"WDate  >T:date"
-	ENDC
+slv_Version	= 20
+slv_Flags	= WHDLF_NoError
+slv_keyexit	= $59		;F10
+
+;============================================================================
+
+	INCLUDE	whdload/kick13.s
+
+;============================================================================
 
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Emerald Mine 3 Professional",0
 slv_copy	dc.b	"1990 Kingsoft",0
-slv_info	dc.b	"adapted by Harry",10
-		dc.b	"Version 1.1 "
-;	IFD BARFLY
-;		INCBIN	"T:date"
-;	ENDC
+slv_info	dc.b	"adapted by Harry, Wepl",10
+		dc.b	"Version 1.2 "
+		INCBIN	.date
 		dc.b	0
+slv_config	= slv_base
+slv_MemConfig	= slv_base
 _program	dc.b	"em3",0
-;_program2	dc.b	"newdef",0
 _args		dc.b	10
-_args_end
-		dc.b	0
+_args_end	dc.b	0
+_disk1		db	"Emerald Mine",0
+_text		db	"text",0
 	EVEN
 
-;d0 BSTR Filename
-;d1 BPTR SegList
+;============================================================================
+; callback/hook which gets executed after each successful call to dos.LoadSeg
+; D0 = BSTR name of the loaded program as BCPL string
+; D1 = BPTR segment list of the loaded program as BCPL pointer
 
-_cb_dosLoadSeg
-;.2	bra.s	.2
+_cb_dosLoadSeg	lsl.l	#2,d0		;-> APTR
+		beq	.end		;ignore if name is unset
+		move.l	d0,a0
+		moveq	#0,d0
+		move.b	(a0)+,d0	;D0 = name length
+	;remove leading path
+		move.l	a0,a1
+		move.l	d0,d2
+.path		move.b	(a1)+,d3
+		subq.l	#1,d2
+		cmp.b	#":",d3
+		beq	.skip
+		cmp.b	#"/",d3
+		bne	.chk
+.skip		move.l	a1,a0		;A0 = name
+		move.l	d2,d0		;D0 = name length
+.chk		tst.l	d2
+		bne	.path
+	;get hunk length sum
+		move.l	d1,a1		;D1 = segment
+		moveq	#0,d2
+.add		add.l	a1,a1
+		add.l	a1,a1
+		add.l	(-4,a1),d2	;D2 = hunks length
+		subq.l	#8,d2		;hunk header
+		move.l	(a1),a1
+		move.l	a1,d7
+		bne	.add
+	;search patch
+		lea	(_cbls_patch,pc),a1
+.next		move.l	(a1)+,d3
+		movem.w	(a1)+,d4-d5
+		beq	.end
+		cmp.l	d2,d3		;length match?
+		bne	.next
+	;compare name
+		lea	(_cbls_patch,pc,d4.w),a2
+		move.l	a0,a3
+		move.l	d0,d6
+.cmp		move.b	(a3)+,d7
+		cmp.b	#"a",d7
+		blo	.l
+		cmp.b	#"z",d7
+		bhi	.l
+		sub.b	#$20,d7
+.l		cmp.b	(a2)+,d7
+		bne	.next
+		subq.l	#1,d6
+		bne	.cmp
+		tst.b	(a2)
+		bne	.next
+	;set debug
+	IFD DEBUG
+		clr.l	-(a7)
+		move.l	d1,-(a7)
+		pea	WHDLTAG_DBGSEG_SET
+		move.l	a7,a0
+		move.l	(_resload,pc),a2
+		jsr	(resload_Control,a2)
+		move.l	(4,a7),d1
+		add.w	#12,a7
+	ENDC
+	;patch
+		lea	(_cbls_patch,pc,d5.w),a0
+		move.l	d1,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_PatchSeg,a2)
+	;end
+.end		rts
 
-	movem.l a0-a2/d0-d2,-(a7)
-	move.l	d0,d2
-	lsl.l	#2,d2
-	move.l	d2,a0
-	move.l	(a0),d2
-	and.l	#$ffdfdfdf,d2
-	cmp.l	#$03454d53,d2
-	bne.s	.1
-	move.l	d1,d2
-	lsl.l	#2,d2
-	addq.l	#4,d2
-	move.l	d2,a0
-	cmp.l	#$51cffffc,$f38(a0)
-	bne.s	.1
-	move.w	#$4eb9,$f36(a0)
-	pea	_loopdbf7(pc)
-	move.l	(a7)+,$f38(a0)
-.1	movem.l	(a7)+,a0-a2/d0-d2
-	rts
+LSPATCH	MACRO
+		dc.l	\1		;cumulated size of hunks (not filesize!)
+		dc.w	\2-_cbls_patch	;name
+		dc.w	\3-_cbls_patch	;patch list
+	ENDM
 
+_cbls_patch	LSPATCH	$12dc,.n_ems,_p_ems
+		dc.l	0
 
+	;all upper case!
+.n_ems		dc.b	"EMS",0
+	EVEN
+
+_p_ems		PL_START
+		PL_PS	$c66,.loopd5
+		PL_PS	$f36,_loopdbf7
+		PL_PS	$11f2,_loopdbf7
+		PL_END
+
+.loopd5		move	d5,d7
+		bra	_loopdbf7
 
 ;============================================================================
 ; D0 = ULONG argument line length, including LF
@@ -156,7 +204,7 @@ _cb_dosLoadSeg
 ; (8,SP)     previous stack frame -> +4 = A1,A2,A5,A6
 
 
-_bootdos        move.l  (_resload,pc),a2        ;A2 = resload
+_bootdos	move.l	(_resload,pc),a2	;A2 = resload
 
 	;open doslib
 		lea	(_dosname,pc),a1
@@ -164,62 +212,45 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		jsr	(_LVOOldOpenLibrary,a6)
 		move.l	d0,a6			;A6 = dosbase
 
+	;show text messsage
+		lea	_text,a0
+		lea	$20000,a1
+		move.l	a1,d2
+		jsr	(resload_LoadFile,a2)
+		sub.l	#1,d0			;drop line feed
+		move.l	d0,d3
+		jsr	(_LVOOutput,a6)
+		move.l	d0,d1
+		jsr	(_LVOWrite,a6)
+
+	;assigns
+		lea	(_disk1,pc),a0
+		sub.l	a1,a1
+		bsr	_dos_assign
+
 	;check version
-		lea	(_program,pc),a0
-		move.l	a0,d1
-		move.l	#MODE_OLDFILE,d2
-		jsr	(_LVOOpen,a6)
-		move.l	d0,d6
-		beq	.program_err
-		move.l	d6,d1
-		move.l	#300,d3
+		lea	(_program,pc),a0	;name
+		move.l	#300,d3			;maybe 300 byte aren't enough for version compare...
+		move.l	d3,d0			;length
+		moveq	#0,d1			;offset
 		sub.l	d3,a7
-		move.l	a7,d2
-		jsr	(_LVORead,a6)
-		move.l	d6,d1
-		jsr	(_LVOClose,a6)
+		move.l	a7,a1			;buffer
+		jsr	(resload_LoadFileOffset,a2)
 		move.l	d3,d0
 		move.l	a7,a0
 		jsr	(resload_CRC16,a2)
 		add.l	d3,a7
 
-;	illegal
+		lea	(_pl_program_emcd,pc),a3
+		cmp.w	#$375f,d0		;EMCD
+		beq	.versionok
 
-		cmp.w	#$375f,d0
-		beq	.versionokgameEMCD
-
-		cmp.w	#$6efd,d0
-		beq	.versionokgame2707
+		lea	(_pl_program,pc),a3
+		cmp.w	#$6efd,d0		;SPS #1525
+		beq	.versionok
 .nover		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
-
-.illegal	illegal
-
-.versionokgame2707
-		moveq.l	#0,d0
-		bra.s	.versionok
-
-.versionokgameEMCD
-		moveq.l	#1,d0
 .versionok
-		lea	version(pc),a0
-		move.b	d0,(a0)
-		;prepare random number area
-		move.l	#$41000,d0	;len
-		move.l	#$80000,a1	;place
-		move.l	a6,-(a7)
-		move.l	$4.w,a6
-		jsr	_LVOAllocAbs(a6)
-		move.l	(a7)+,a6
-		tst.l	d0
-		beq.s	.illegal
-		move.l	#$41000/4,d1
-		lea	$80000,a1
-.randinit
-		bsr	_random
-		move.l	d0,(a1)+
-		subq.l	#1,d1
-		bne.s	.randinit
 
 	;load exe
 		lea	(_program,pc),a0
@@ -227,44 +258,37 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		jsr	(_LVOLoadSeg,a6)
 		move.l	d0,d7			;D7 = segment
 		beq	.program_err
-		move.l	d7,d0
-		lsl.l	#2,d0
-		move.l	d0,$F0.W	;start of exe just for my debugger
-
-	;patch dos-open to allow skipping disk name ("playfielddisk:")
-	move.w	-$1e+4(a6),d0
-	ext.l	d0
-	lea	-$1e+4(a6,d0.l),a0
-	lea	_doslibmainrout(pc),a1
-	move.l	a0,(a1)
-	move.w	#$4ef9,-$1e(a6)
-	pea	_patchdosopen(pc)
-	move.l	(a7)+,-$1e+2(a6)
-
-
-;	illegal
-
+	;	move.l	d7,d0
+	;	lsl.l	#2,d0
+	;	move.l	d0,$F0.W		;start of exe just for my debugger
 
 		move.w	#$4ef9,$88.w
 		lea	_loopdbf(pc),a0
 		move.l	a0,$8a.w
 
-
 	;patch
-		move.b	version(pc),d0
-		beq.s	.111
-		lea	(_pl_program_emcd,pc),a0
-		bra.s	.112
-.111		lea	(_pl_program,pc),a0
-.112		move.l	d7,a1
+		move.l	a3,a0
+		move.l	d7,a1
 		jsr	(resload_PatchSeg,a2)
+
+	;init variable space to fix missings monster sound
+		lea	$200,a0
+		move	#$200/4-1,d0
+.clr		clr.l	(a0)+
+		dbf	d0,.clr
+
+	;wait for return key
+		jsr	(_LVOInput,a6)
+		move.l	d0,d1			;fh
+		move.l	a7,d2			;buffer, trash return address we don't need
+		move.l	#1,d3			;length
+		jsr	(_LVORead,a6)
 
 	;call
 		move.l	d7,d1
 		moveq	#_args_end-_args,d0
 		lea	(_args,pc),a0
 		bsr	.call
-;	illegal
 		pea	TDREASON_OK
 		move.l	(_resload,pc),a2
 		jmp	(resload_Abort,a2)
@@ -283,91 +307,105 @@ _bootdos        move.l  (_resload,pc),a2        ;A2 = resload
 		move.l	d1,a3
 		jmp	(4,a3)
 
-	IFEQ	0
-;PL IPF2707
+;PL IPF1525
 _pl_program	PL_START
-		PL_PS	$456,_remdiskaccess
-		PL_DATA	$498a,.loopdbfend-.loopdbfstart	;corr dbf delay
-.loopdbfstart
-		jsr	$88.W
-.loopdbfend
-				;set init rand to $80000 instead of $fc0000
-		PL_DATA	$46c,.initrandplaceend-.initrandplace
-.initrandplace	dc.w	$0008
-.initrandplaceend
-				;let random area wrap at $c0000
-		PL_DATA	$558e,.wraprandplaceend-.wraprandplace
-.wraprandplace	BTST	#2,$361.W
-.wraprandplaceend
-			;fix weird accesses (probably wrong programmed)
-		PL_DATA	$49ec,.fix1end-.fix1
-.fix1
-		move.w	$3c6.w,$f8.w
-.fix1end
-		PL_DATA	$49f8,.fix2end-.fix2
-.fix2
-		move.w	$3ce.w,$fa.w
-.fix2end
-		PL_DATA	$4a02,.fix3end-.fix3
-.fix3
-		move.w	$fa.w,d0
-.fix3end
-		PL_DATA	$4a1e,.fix4end-.fix4
-.fix4
-		mulu.w	$f8.w,d0
-.fix4end
-			;correct stone shifting time due new random generator
-.corrstoneshiftleft
-		PL_PS	$51d8,_corrstoneshift
-.corrstoneshiftleftend
-.corrstoneshiftright
-		PL_PS	$519e,_corrstoneshift
-.corrstoneshiftrightend
+	;	PL_I	$1a2			;after 'pic' loaded
+	;	PL_BKPT	$368			;calling ems
+		PL_W	$36e,1			;delay 150
+		PL_W	$8a6,1			;delay 150 before game
+		PL_I	$b14			;delay 150
+		PL_W	$f70,1			;delay 150 player save
+		PL_W	$176a,1			;delay 200 highscore
+	;	PL_PS	$456,_remdiskaccess
+		PL_VL	$46c,_expmem		;set init rand to _expmem instead of $fc0000
+		PL_P	$558e,_rndwrap		;let random area wrap
 
+		PL_DATA	$498a,4			;corr dbf delay
+		jsr	$88.W
+
+	;fix weird accesses (probably wrong programmed)
+		PL_DATA	$49ec,6
+		move.w	$3c6.w,$f8.w
+		PL_DATA	$49f8,6
+		move.w	$3ce.w,$fa.w
+		PL_DATA	$4a02,4
+		move.w	$fa.w,d0
+		PL_DATA	$4a1e,4
+		mulu.w	$f8.w,d0
+
+	;correct stone shifting time due new random generator
+	;maybe now obsolete because we are using kickrom again?
+		PL_PS	$51d8,_corrstoneshift
+		PL_PS	$519e,_corrstoneshift
+
+		PL_PS	$4ab0,_bw2
+		PL_PS	$4dac,_bw3
+		PL_PS	$56ce,_bw1
+		PL_P	$6216,_callems
+		PL_P	$58c8,.cl
+		PL_R	$5946			;don't set copylock routine
+		PL_W	$6228,4+6		;wrong calling ems: jsr (6,a1)
+		PL_W	$623a,4+12		;wrong calling ems: jsr (10,a1)
 		PL_END
+
+	;copylock, make it equal to unprotected cd release
+.cl		move	#$63,$1f2
+		rts
+
 ;PL EMCD
 _pl_program_emcd
 		PL_START
-		PL_PS	$45A,_remdiskaccess
-		PL_DATA	$48CC,.loopdbfend-.loopdbfstart	;corr dbf delay
-.loopdbfstart
-		jsr	$88.W
-.loopdbfend
-				;set init rand to $80000 instead of $fc0000
-		PL_DATA	$470,.initrandplaceend-.initrandplace
-.initrandplace	dc.w	$0008
-.initrandplaceend
-				;let random area wrap at $c0000
-		PL_DATA	$54D0,.wraprandplaceend-.wraprandplace
-.wraprandplace	BTST	#2,$361.W
-.wraprandplaceend
-			;fix weird accesses (probably wrong programmed)
-		PL_DATA	$492e,.fix1end-.fix1
-.fix1
-		move.w	$3c6.w,$f8.w
-.fix1end
-		PL_DATA	$493a,.fix2end-.fix2
-.fix2
-		move.w	$3ce.w,$fa.w
-.fix2end
-		PL_DATA	$4944,.fix3end-.fix3
-.fix3
-		move.w	$fa.w,d0
-.fix3end
-		PL_DATA	$4960,.fix4end-.fix4
-.fix4
-		mulu.w	$f8.w,d0
-.fix4end
-			;correct stone shifting time due new random generator
-.corrstoneshiftleft
-		PL_PS	$511a,_corrstoneshift
-.corrstoneshiftleftend
-.corrstoneshiftright
-		PL_PS	$50e0,_corrstoneshift
-.corrstoneshiftrightend
+		PL_W	$372,1			;delay 150
+		PL_W	$8ae,1			;delay 150 before game
+	;	PL_I	$b18			;delay 150
+		PL_W	$f6a,1			;delay 150 player save
+		PL_W	$176e,1			;delay 200 highscore
+	;	PL_PS	$45A,_remdiskaccess
+		PL_VL	$470,_expmem		;set init rand to _expmem instead of $fc0000
+		PL_P	$54d0,_rndwrap		;let random area wrap
 
+		PL_DATA	$48CC,4			;corr dbf delay
+		jsr	$88.W
+
+	;fix weird accesses (probably wrong programmed)
+		PL_DATA	$492e,6
+		move.w	$3c6.w,$f8.w
+		PL_DATA	$493a,6
+		move.w	$3ce.w,$fa.w
+		PL_DATA	$4944,4
+		move.w	$fa.w,d0
+		PL_DATA	$4960,4
+		mulu.w	$f8.w,d0
+
+	;correct stone shifting time due new random generator
+		PL_PS	$511a,_corrstoneshift
+		PL_PS	$50e0,_corrstoneshift
+
+		PL_PS	$49f2,_bw2
+		PL_PS	$4cee,_bw3
+		PL_PS	$5610,_bw1
+		PL_P	$6158,_callems
+		PL_W	$616a,4+6		;wrong calling ems: jsr (6,a1)
+		PL_W	$617c,4+12		;wrong calling ems: jsr (10,a1)
 		PL_END
-	ENDC
+
+_callems	jsr	(4,a1)
+		movem.l	(a7)+,d0-a6
+		rts
+
+_bw1		bsr	_bw
+		move	#-1,_custom+bltafwm
+		add.l	#2,(a7)
+		rts
+
+_bw2		lsl.l	#2,d2
+		add.l	$320,d2
+
+_bw3		lsl.l	#7,d4
+		add.l	$320,d4
+
+_bw		BLITWAIT
+		rts
 
 _corrstoneshift
 	move.b	(a6),d1	;orig instructions
@@ -387,7 +425,6 @@ _loopdbf7
 	move.l	(a7)+,d0
 	rts
 
-
 _loopdbf
 	divu.w	#$2d,d0
 _loopdbfinner
@@ -403,56 +440,35 @@ _loopdbfinner
 	dbf	d0,.2
 	rts
 
+	IFEQ 1
 _remdiskaccess
-	move.l	#$4e714e71,0-$7faa(a4)	;visible only at this program state
-	move.w	#$6028,0-$7fa4(a4)	;thus patch here
+	IFEQ 1
+		movem.l	d0-d1/a0-a2,-(a7)
+		move.l	#$1f4,d0
+		lea	.cl,a0
+		lea	(-$7ffe,a4),a1
+		move.l	_resload,a2
+		jsr	(resload_SaveFile,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		bra	.1
+.cl		db	"copylock",0,0
+.1
+	ENDC
+	move.l	#$4e714e71,-$7faa(a4)	;visible only at this program state
+	move.w	#$6028,-$7fa4(a4)	;thus patch here
 	add.l	#$2422c,d3		;orig instruction
 	rts
+	ENDC
 
-_patchdosopen
-	bsr	_searchforcolon
-	moveq	#-1,d0			;orig instruction
-	jmp	$00000000
-_doslibmainrout	EQU	*-4
-
-_searchforcolon				;search for colon in filename
-					;skip part before it if found 
-					;used just before dos-open
-	movem.l	d0/a0,-(a7)
-	move.l	d1,a0
-.3	move.b	(a0),d0
-	beq.s	.2
-	add.w	#1,a0
-	cmp.b	#':',d0
-	bne.s	.3
-	move.l	a0,d1
-.2	movem.l	(a7)+,d0/a0
-	rts
-
-_random	lea	RANDOM1(PC),A0
-	MOVE.L	RANDOM1(PC),D0
-	ADD.L	RANDOM2(PC),D0
-	MOVE.L	D0,(A0)
-	ROR.L	#$04,D0
-	SUB.W	RANDOM2(PC),D0
-	MOVE.L	D0,-(A7)
-	MOVE.W	$DFF014,D0
-	SWAP	D0
-	MOVE.W	$DFF014,D0
-	EOR.L	D0,(A7)
-	MOVE.L	(A7)+,D0
-	EOR.L	D0,RANDOM2-RANDOM1(A0)
-	ADD.L	#$56565311,(A0)
-	RTS
-
-RANDOM1	DC.L	$3F3F751F
-RANDOM2	DC.L	$17179834
-
+	;reset random address if above kickstart end
+_rndwrap	sub.l	#KICKSIZE,a2
+		cmp.l	(_expmem),a2
+		bhs	.write
+		add.l	#KICKSIZE,a2
+.write		move.l	a2,$330
+		rts
 
 ;============================================================================
-
-version	dc.b	0
-	EVEN
 
 	END
 
