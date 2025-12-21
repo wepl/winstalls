@@ -1,0 +1,923 @@
+;****************************
+
+(set #sub-dir "")		;sub directory containing data files
+(set #readme-file "Readme")	;name of readme file
+(set #cleanup "")		;files to delete after install
+(set #odiname "CrystalCaverns4")	;original diskname without :
+(set #ocdname "EM")		;original diskname without :
+
+;****************************
+
+;----------------------------
+; Checks if given program is reachable via the path
+; if not abort install
+; IN:  #program - to check
+; OUT: -
+
+(procedure P_chkrun
+  (if
+    (= 0 (run ("cd SYS:\nWhich %s" #program)))
+    ("")
+    (abort ("You must install \"%s\" first !\nIt must be accessible via the path.\nYou can find it in the whdload package." #program))
+  )
+)
+
+(procedure P_CopyCurrentMine
+  (makedir ("%s/data/%s" #dest #currentminedir)
+    (help @makedir-help)
+  )
+  (makedir ("%s/data/%s/his" #dest #currentminedir)
+    (help @makedir-help)
+  )
+  (makedir ("%s/data/%s/pla" #dest #currentminedir)
+    (help @makedir-help)
+  )
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("%s:_lev/%s" #ocdname #currentminedir))
+    (dest ("%s/data/%s/pla" #dest #currentminedir))
+    (pattern ("#?"))
+  )
+  (set #numloop 0)
+  (while (< #numloop 162)
+    (
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("his_empty"))
+        (dest ("%s/data/%s/his" #dest #currentminedir))
+        (newname ("%ld" #numloop))
+      )
+      (set #numloop (+ #numloop 1))
+    )
+  )
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("%s.inf" #currentmine ))
+    (newname ("%s.info" #currentmine ))
+    (dest #dest)
+  )
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("nam_def" @app-name ))
+    (newname ("nam" @app-name ))
+    (dest ("%s/data/%s" #dest #currentminedir ))
+  )
+)
+
+(set #program "WHDLoad")
+(P_chkrun)
+
+;****************************
+
+(if
+  (exists #readme-file)
+  (if 
+    (= 0 (run ("SYS:Utilities/Multiview %s" #readme-file)))
+    ("")
+    (run ("SYS:Utilities/More %s" #readme-file))
+  )
+)
+
+(set @default-dest
+  (askdir
+    (prompt ("Where should \"%s\" installed ?\nA drawer \"%s\" will automatically created." @app-name @app-name))
+    (help @askdir-help)
+    (default @default-dest)
+    (disk)
+  )
+)
+(set #dest (tackon @default-dest @app-name))
+(if
+  (exists #dest)
+  (
+    (set #choice
+      (askbool
+        (prompt ("\nDirectory \"%s\" already exists.\n Should it be deleted ?" #dest))
+        (default 1)
+        (choices "Delete" "Skip")
+        (help @askbool-help)
+      )
+    )
+    (if
+      (= #choice 1)
+      (run ("Delete \"%s\" \"%s.info\" All" #dest #dest))
+    )
+  )
+)
+(makedir #dest
+  (help @makedir-help)
+  (infos)
+)
+
+;----------------------------
+(message ("Please insert your writeprotected Crystal Caverns 4 disk and your Emerald Mines CD in any drive."))
+;(if
+;  (= (exists " Traders:" (noreq)) 2)
+;  (
+;    (set #odname " Traders")
+;    (set #paramver "traderse")
+;  )
+;)
+(working ("Please insert your %s disk in any drive." #odiname))
+(
+  (makedir ("%s/data" #dest))
+  (makedir ("%s/data/data" #dest))
+  (copyfiles
+    (help @copyfiles-help)
+    (source ("%s:" #odiname))
+    (dest ("%s/data/data" #dest))
+    (pattern "(~his|~pla|~nam|#?)")
+  )
+)
+;----------------------------
+(copyfiles
+  (help @copyfiles-help)
+  (source ("emeraldminecd.slave"))
+  (dest #dest)
+)
+(if
+  (exists #readme-file)
+  (
+    (copyfiles
+      (help @copyfiles-help)
+      (source #readme-file)
+      (dest #dest)
+    )
+    (copyfiles
+      (help @copyfiles-help)
+      (source ("%s.info" #readme-file))
+      (dest #dest)
+    )
+  )
+)
+
+(if
+  (= #sub-dir "")
+  ("")
+  (
+    (set #dest (tackon #dest #sub-dir))
+    (makedir #dest
+      (help @makedir-help)
+    )
+  )
+)
+
+(working ("Please insert your %s cd in any drive." #ocdname))
+
+(set #currentmine "AceMine1")
+(set #currentminedir "AceMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "AceMine2")
+(set #currentminedir "AceMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "AmiDasher")
+(set #currentminedir "AmiDasher")
+(P_CopyCurrentMine)
+
+(set #currentmine "BabyGhostMine")
+(set #currentminedir "BabyGhostMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "BobbyDash1")
+(set #currentminedir "BobbyDash_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "BobbyDash2")
+(set #currentminedir "BobbyDash_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine1")
+(set #currentminedir "BondMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine2")
+(set #currentminedir "BondMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine3")
+(set #currentminedir "BondMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine4")
+(set #currentminedir "BondMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine5")
+(set #currentminedir "BondMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine6")
+(set #currentminedir "BondMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine7")
+(set #currentminedir "BondMine_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine8")
+(set #currentminedir "BondMine_08")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine9")
+(set #currentminedir "BondMine_09")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine10")
+(set #currentminedir "BondMine_10")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine11")
+(set #currentminedir "BondMine_11")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine12")
+(set #currentminedir "BondMine_12")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine13")
+(set #currentminedir "BondMine_13")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine14")
+(set #currentminedir "BondMine_14")
+(P_CopyCurrentMine)
+
+(set #currentmine "BondMine15")
+(set #currentminedir "BondMine_15")
+(P_CopyCurrentMine)
+
+(set #currentmine "ColdCaves")
+(set #currentminedir "ColdCaves")
+(P_CopyCurrentMine)
+
+(set #currentmine "Cruncher1")
+(set #currentminedir "Cruncher_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "Cruncher2")
+(set #currentminedir "Cruncher_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "CryCavern1")
+(set #currentminedir "CryCavern_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "CryCavern2")
+(set #currentminedir "CryCavern_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "CryCavern3")
+(set #currentminedir "CryCavern_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "DenMine1")
+(set #currentminedir "DenMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "DenMine2")
+(set #currentminedir "DenMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "DenMine3")
+(set #currentminedir "DenMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "DenMine4")
+(set #currentminedir "DenMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "DiamondMine")
+(set #currentminedir "DiamondMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "EatMine1")
+(set #currentminedir "EatMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "EatMine2")
+(set #currentminedir "EatMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "EatMine3")
+(set #currentminedir "EatMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "EatMineUpdate")
+(set #currentminedir "EatMineUpdate")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine1")
+(set #currentminedir "EmeraldMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine2")
+(set #currentminedir "EmeraldMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine3")
+(set #currentminedir "EmeraldMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine3Pro")
+(set #currentminedir "EmeraldMine_03Pro")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine4")
+(set #currentminedir "EmeraldMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine4Adv")
+(set #currentminedir "EmeraldMine_04Adv")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine4Pro")
+(set #currentminedir "EmeraldMine_04Pro")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine5")
+(set #currentminedir "EmeraldMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine6")
+(set #currentminedir "EmeraldMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine7")
+(set #currentminedir "EmeraldMine_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine8")
+(set #currentminedir "EmeraldMine_08")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine9")
+(set #currentminedir "EmeraldMine_09")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine10")
+(set #currentminedir "EmeraldMine_10")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine11")
+(set #currentminedir "EmeraldMine_11")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine12")
+(set #currentminedir "EmeraldMine_12")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine13")
+(set #currentminedir "EmeraldMine_13")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine14")
+(set #currentminedir "EmeraldMine_14")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine15")
+(set #currentminedir "EmeraldMine_15")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine16")
+(set #currentminedir "EmeraldMine_16")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine17")
+(set #currentminedir "EmeraldMine_17")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine18")
+(set #currentminedir "EmeraldMine_18")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine19")
+(set #currentminedir "EmeraldMine_19")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine20")
+(set #currentminedir "EmeraldMine_20")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMine21")
+(set #currentminedir "EmeraldMine_21")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMineEater")
+(set #currentminedir "EmeraldMine_Eater")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMineOriginal1")
+(set #currentminedir "EmeraldMineOriginal_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMineOriginal2")
+(set #currentminedir "EmeraldMineOriginal_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "EmeraldMineOriginal3")
+(set #currentminedir "EmeraldMineOriginal_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "EnemyMine")
+(set #currentminedir "EnemyMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "ExceptionMine")
+(set #currentminedir "ExceptionMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "ExpertMine")
+(set #currentminedir "ExpertMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "FinalMine")
+(set #currentminedir "FinalMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "FireMine1")
+(set #currentminedir "FireMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "FireMine2")
+(set #currentminedir "FireMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "FreakMine")
+(set #currentminedir "FreakMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "FreakMine1")
+(set #currentminedir "FreakMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "FreakMine1Junior")
+(set #currentminedir "FreakMine_01Junior")
+(P_CopyCurrentMine)
+
+(set #currentmine "FreakMine2Easy")
+(set #currentminedir "FreakMine_02Easy")
+(P_CopyCurrentMine)
+
+(set #currentmine "FreakMine2Hard")
+(set #currentminedir "FreakMine_02Hard")
+(P_CopyCurrentMine)
+
+(set #currentmine "FunMine")
+(set #currentminedir "FunMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "GhostMine")
+(set #currentminedir "GhostMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "GrottoMine")
+(set #currentminedir "GrottoMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "HauntedMine1")
+(set #currentminedir "HauntedMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "HauntedMine2")
+(set #currentminedir "HauntedMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "HauntedMine3")
+(set #currentminedir "HauntedMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "HauntedMine4")
+(set #currentminedir "HauntedMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "HeadMine")
+(set #currentminedir "HeadMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "HighlanderMine")
+(set #currentminedir "HighlanderMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "JuniorIceMine1")
+(set #currentminedir "JuniorIceMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "JuniorIceMine2")
+(set #currentminedir "JuniorIceMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "JuniorIceMine3")
+(set #currentminedir "JuniorIceMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "JuniorIceMine4")
+(set #currentminedir "JuniorIceMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "KevinMine1")
+(set #currentminedir "KevinMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "KevinMine2")
+(set #currentminedir "KevinMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "KingsUpdate1")
+(set #currentminedir "KingsUpdate_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "KingsUpdate2")
+(set #currentminedir "KingsUpdate_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "KingsUpdate3")
+(set #currentminedir "KingsUpdate_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "LabanMine")
+(set #currentminedir "LabanMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "LadyBirdMine")
+(set #currentminedir "LadyBirdMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "LarryMine")
+(set #currentminedir "LarryMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "LaserMine1")
+(set #currentminedir "LaserMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "LaserMine2")
+(set #currentminedir "LaserMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "LostMines")
+(set #currentminedir "LostMines")
+(P_CopyCurrentMine)
+
+(set #currentmine "MarathonMine1")
+(set #currentminedir "MarathonMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "MarathonMine2")
+(set #currentminedir "MarathonMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "MarathonMine3")
+(set #currentminedir "MarathonMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "MrMine1")
+(set #currentminedir "MrMine_b1")
+(P_CopyCurrentMine)
+
+(set #currentmine "MrMine2")
+(set #currentminedir "MrMine_b2")
+(P_CopyCurrentMine)
+
+(set #currentmine "NewMines")
+(set #currentminedir "NewMines")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine1")
+(set #currentminedir "NoOneMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine2")
+(set #currentminedir "NoOneMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine3")
+(set #currentminedir "NoOneMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine4")
+(set #currentminedir "NoOneMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine5")
+(set #currentminedir "NoOneMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine6")
+(set #currentminedir "NoOneMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine7")
+(set #currentminedir "NoOneMine_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine8")
+(set #currentminedir "NoOneMine_08")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine9")
+(set #currentminedir "NoOneMine_09")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine10")
+(set #currentminedir "NoOneMine_10")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine11")
+(set #currentminedir "NoOneMine_11")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine12")
+(set #currentminedir "NoOneMine_12")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine13")
+(set #currentminedir "NoOneMine_13")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine14")
+(set #currentminedir "NoOneMine_14")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine15")
+(set #currentminedir "NoOneMine_15")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine16")
+(set #currentminedir "NoOneMine_16")
+(P_CopyCurrentMine)
+
+(set #currentmine "NoOneMine17")
+(set #currentminedir "NoOneMine_17")
+(P_CopyCurrentMine)
+
+(set #currentmine "NorthernLightMine")
+(set #currentminedir "NorthernLightMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams1")
+(set #currentminedir "OhNoMoreYams_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams2")
+(set #currentminedir "OhNoMoreYams_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams3")
+(set #currentminedir "OhNoMoreYams_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams4")
+(set #currentminedir "OhNoMoreYams_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams5")
+(set #currentminedir "OhNoMoreYams_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams6")
+(set #currentminedir "OhNoMoreYams_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams7")
+(set #currentminedir "OhNoMoreYams_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams8")
+(set #currentminedir "OhNoMoreYams_08")
+(P_CopyCurrentMine)
+
+(set #currentmine "OhNoMoreYams9")
+(set #currentminedir "OhNoMoreYams_09")
+(P_CopyCurrentMine)
+
+(set #currentmine "OzMine1")
+(set #currentminedir "OzMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "OzMine2")
+(set #currentminedir "OzMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "OzMine3")
+(set #currentminedir "OzMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "OzMine4")
+(set #currentminedir "OzMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "OzMine5")
+(set #currentminedir "OzMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "PawnMine")
+(set #currentminedir "PawnMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "PoohMine")
+(set #currentminedir "PoohMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "ProfessionalMine1")
+(set #currentminedir "ProfesionalMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "ProfessionalMine2")
+(set #currentminedir "ProfesionalMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine1")
+(set #currentminedir "RecycledMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine2")
+(set #currentminedir "RecycledMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine3")
+(set #currentminedir "RecycledMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine4")
+(set #currentminedir "RecycledMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine5")
+(set #currentminedir "RecycledMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine6")
+(set #currentminedir "RecycledMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine7")
+(set #currentminedir "RecycledMine_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine8")
+(set #currentminedir "RecycledMine_08")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine9")
+(set #currentminedir "RecycledMine_09")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine10")
+(set #currentminedir "RecycledMine_10")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine11")
+(set #currentminedir "RecycledMine_11")
+(P_CopyCurrentMine)
+
+(set #currentmine "RecycledMine12")
+(set #currentminedir "RecycledMine_12")
+(P_CopyCurrentMine)
+
+(set #currentmine "RevengeOfTheYams")
+(set #currentminedir "RevengeOfTheYams")
+(P_CopyCurrentMine)
+
+(set #currentmine "RunMine1")
+(set #currentminedir "RunMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "RunMine2")
+(set #currentminedir "RunMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "RunMine3")
+(set #currentminedir "RunMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "RunMine4")
+(set #currentminedir "RunMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "RunMine5")
+(set #currentminedir "RunMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine1")
+(set #currentminedir "RuppelMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine1Easy")
+(set #currentminedir "RuppelMine_01Easy")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine2")
+(set #currentminedir "RuppelMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine3")
+(set #currentminedir "RuppelMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine4")
+(set #currentminedir "RuppelMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine5")
+(set #currentminedir "RuppelMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "RuppelMine6")
+(set #currentminedir "RuppelMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "SnelMine1")
+(set #currentminedir "SnelMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "SnelMine2")
+(set #currentminedir "SnelMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "SolMine")
+(set #currentminedir "SolMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine1")
+(set #currentminedir "SpudMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine2")
+(set #currentminedir "SpudMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine3")
+(set #currentminedir "SpudMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine4")
+(set #currentminedir "SpudMine_04")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine5")
+(set #currentminedir "SpudMine_05")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine6")
+(set #currentminedir "SpudMine_06")
+(P_CopyCurrentMine)
+
+(set #currentmine "SpudMine7")
+(set #currentminedir "SpudMine_07")
+(P_CopyCurrentMine)
+
+(set #currentmine "SurferMine")
+(set #currentminedir "SurferMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "TeamAwayMine")
+(set #currentminedir "TeamAwayMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "TutorMine1")
+(set #currentminedir "TutorMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "TutorMine2")
+(set #currentminedir "TutorMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "TutorMine3")
+(set #currentminedir "TutorMine_03")
+(P_CopyCurrentMine)
+
+(set #currentmine "VenomMine1")
+(set #currentminedir "VenomMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "VenomMine2")
+(set #currentminedir "VenomMine_02")
+(P_CopyCurrentMine)
+
+(set #currentmine "WaterMine")
+(set #currentminedir "WaterMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "WaterMineUpdate")
+(set #currentminedir "WaterMineUpdate")
+(P_CopyCurrentMine)
+
+(set #currentmine "WonderMine")
+(set #currentminedir "WonderMine")
+(P_CopyCurrentMine)
+
+(set #currentmine "YkikakauMine1")
+(set #currentminedir "YkikakauMine_01")
+(P_CopyCurrentMine)
+
+(set #currentmine "YkikakauMine2")
+(set #currentminedir "YkikakauMine_02")
+(P_CopyCurrentMine)
+
+;----------------------------
+
+(run ("Delete %s ALL QUIET FORCE" #cleanup))
+
+(exit)

@@ -1,0 +1,33 @@
+That patch applies to the Emerald Mines CD (c) 1994 Kingsoft/Almathera.
+
+This install has the slave-version 1.0.
+It needs WHDLoad16 or higher in the path (eg in c:).
+For this install you need the Crystal Caverns 4 disk from the Emerald Web at 
+http://www.emeraldmines.net/default.asp?action=detail&p=downloads&id=54
+an ofcourse your Emerald Mines CD. Unpack the Crystal Caverns disk and
+insert the adf in a disk drive, and insert the CD into your CD drive.
+
+Note:    This install uses the engine from No One Inc. and thus allows
+           you to save your progress and highscores.
+
+Known Problem: On my UAE, it happens that the Amiga crashes when quitting
+           the game. Please file a WHDLoad bug report when that happens
+           to you too, so WEPL has some more examples for configurations
+           of this bug.
+
+History: V1.0 - 2013-mar-02 Initial slave version.
+
+The install is tested on an 18 MB 68030 and on E-UAE.
+It needs 1000 kB Chipmem, 256 kB arbitrary memory and additionally 800 kB
+  for preload. It also needs about 100 MB on your hard disk and a lot of
+  time to install!
+
+Disclaimer: Install is Freeware and sourcecode is included. 
+        You use the install wholly on your own risk.
+
+Full whdload package:	aminet:dev/misc/whdload#?.lha
+Other installs:		http://www.whdload.de/
+Report bugs with the bug report form on that page.
+
+Have fun,
+Harry.
