@@ -47,7 +47,7 @@ BOOTDOS				;enable _bootdos routine
 ;CACHE				;enable inst/data cache for fast memory with MMU
 ;CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
-DEBUG				;enable additional internal checks
+;DEBUG				;enable additional internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
 ;DOSASSIGN			;enable _dos_assign routine
 FONTHEIGHT	= 8		;enable 80 chars per line
