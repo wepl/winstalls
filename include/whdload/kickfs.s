@@ -1218,7 +1218,7 @@ KFSDPKT	MACRO
 	IFD IOCACHE
 		subq.l	#1,(mfl_cpos,a4)	;nothing cached yet
 	ENDC
-		move.l	(.volumename+1,pc),(a4)+ ;fl_Link
+		move.l	#"WLCK",(a4)+		;fl_Link
 		move.l	d4,(a4)+		;fl_Key (name)
 		move.l	d2,(a4)+		;fl_Access
 		move.l	a5,(a4)+		;fl_Task (MsgPort)
@@ -1250,8 +1250,7 @@ KFSDPKT	MACRO
 	; detect illegal locks or locks already freed
 	; Some AMOS games, e.g. Bograts, Valhalla3FortressOfEve, CyberblastX fail
 	; due to trying to unlock an already-unlocked FL (which causes bad FreeMem).
-		move.l	(.volumename+1,pc),d1
-		cmp.l	(fl_Link,a1),d1
+		cmp.l	#"WLCK",(fl_Link,a1)
 	IFD DEBUG
 		bne	_debug4
 	ELSE
