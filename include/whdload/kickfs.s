@@ -41,6 +41,7 @@
 ;		10.06.24 avoid writing special files
 ;		08.12.25 also copy fib on ACTION_COPY_DIR to fix e.g. Path command
 ;		10.12.25 clear fl_Task before freeing lock structure during UnLock
+;		14.01.26 UnLock now tests+clears fl_Access (fl_Task unsafe in 1.3)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1250,9 +1251,12 @@ KFSDPKT	MACRO
 		cmp.l	(fl_Task,a1),a5
 		bne	_debug4
 	ENDC
-	;the games "Bograts" and "Valhalla3FortressOfEve" fail if fl_Task is not cleared here
-	;unclear reason, maybe systematical error of AMOS
-		clr.l	(fl_Task,a1)
+	; Some AMOS games, e.g. Bograts, Valhalla3FortressOfEve, CyberblastX fail
+	; due to trying to unlock an already-unlocked FL (which causes bad FreeMem).
+	; Fixed by testing+clearing fl_Access, which must be non-zero in valid record.
+		tst.l	(fl_Access,a1)
+		beq	.rts
+		clr.l	(fl_Access,a1)
 		move.l	(fl_Key,a1),-(a7)	;name
 	IFD IOCACHE
 		move.l	(mfl_iocache,a1),-(a7)
