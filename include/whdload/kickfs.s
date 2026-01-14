@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Modul.	kickfs.s
 ;  :Contents.	filesystem handler for kick emulation under WHDLoad
-;  :Author.	Wepl, JOTD, Psygore
+;  :Author.	Wepl, JOTD, Psygore, DJ Mike
 ;  :History.	17.04.02 separated from kick13.s
 ;		02.05.02 _cb_dosRead added
 ;		09.05.02 symbols moved to the top for Asm-One/Pro
@@ -41,7 +41,7 @@
 ;		10.06.24 avoid writing special files
 ;		08.12.25 also copy fib on ACTION_COPY_DIR to fix e.g. Path command
 ;		10.12.25 clear fl_Task before freeing lock structure during UnLock
-;		14.01.26 UnLock now tests+clears fl_Access (fl_Task unsafe in 1.3)
+;		14.01.26 protect UnLock against double free, revert fl_Task clearing
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1218,7 +1218,7 @@ KFSDPKT	MACRO
 	IFD IOCACHE
 		subq.l	#1,(mfl_cpos,a4)	;nothing cached yet
 	ENDC
-		addq.l	#4,a4			;fl_Link
+		move.l	(.volumename+1,pc),(a4)+ ;fl_Link
 		move.l	d4,(a4)+		;fl_Key (name)
 		move.l	d2,(a4)+		;fl_Access
 		move.l	a5,(a4)+		;fl_Task (MsgPort)
@@ -1247,16 +1247,17 @@ KFSDPKT	MACRO
 .unlock		tst.l	d0
 		beq	.rts
 		move.l	d0,a1
-	IFD DEBUG
-		cmp.l	(fl_Task,a1),a5
-		bne	_debug4
-	ENDC
+	; detect illegal locks or locks already freed
 	; Some AMOS games, e.g. Bograts, Valhalla3FortressOfEve, CyberblastX fail
 	; due to trying to unlock an already-unlocked FL (which causes bad FreeMem).
-	; Fixed by testing+clearing fl_Access, which must be non-zero in valid record.
-		tst.l	(fl_Access,a1)
-		beq	.rts
-		clr.l	(fl_Access,a1)
+		move.l	(.volumename+1,pc),d1
+		cmp.l	(fl_Link,a1),d1
+	IFD DEBUG
+		bne	_debug4
+	ELSE
+		bne	.rts
+	ENDC
+		clr.l	(fl_Link,a1)		;mark freed
 		move.l	(fl_Key,a1),-(a7)	;name
 	IFD IOCACHE
 		move.l	(mfl_iocache,a1),-(a7)
