@@ -1,7 +1,7 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	emeraldmine.asm
 ;  :Contents.	Slave for "Emerald Mine"
-;  :Author.	Harry
+;  :Author.	Harry, Wepl
 ;  :History.	24.11.2012 V1.0
 ;		30.03.2025 repo import
 ;		24.11.2025 use kickrom for random
@@ -38,7 +38,7 @@
 
 CHIPMEMSIZE	= $72000
 FASTMEMSIZE	= $e000
-NUMDRIVES	= 2
+NUMDRIVES	= 1
 WPDRIVES	= %0000
 
 ;BLACKSCREEN			;set all initial colors to black
@@ -72,8 +72,8 @@ SEGTRACKER			;add segment tracker
 ;============================================================================
 
 slv_Version	= 20
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
-slv_keyexit	= $59	;F10
+slv_Flags	= WHDLF_NoError
+slv_keyexit	= $59		;F10
 
 ;============================================================================
 
