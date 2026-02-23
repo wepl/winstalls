@@ -22,6 +22,8 @@ DOSIO_I=1
 ;		05.04.20 specified index register size in _FGetS (basm/vasm)
 ;		02.05.21 fixed cursor down in _PrintMore for AmigaShell
 ;		14.02.24 _PrintMore: better support for terminals with small width
+;		13.02.26 _PrintArgs: use strings.VSNPrintF instead dos.VPrintf
+;		23.02.26 _VFPrintf added
 ;  :Requires.	-
 ;  :Copyright.  All rights reserved.
 ;  :Language.	68000 Assembler
@@ -38,6 +40,7 @@ DOSIO_I=1
 *##	_GetS		buffer(a0) buflen(d0) --> buffer(d0)
 *##	_Print		outputs a string(a0) --> bytes written(d0)
 *##	_PrintArgs	outputs formatstring(a0) expanded from argarray(a1) --> bytes written(d0)
+*##	_VFPrintf	fh(d1) outputs formatstring(a0) expanded from argarray(a1) --> bytes written(d0)
 *##	_PrintInt	outputs a longint (d0) --> bytes written(d0)
 *##	_PrintLn	outputs a linefeed
 *##	_PrintMore	outputs a string(a0) with more/less pipe
@@ -67,17 +70,61 @@ _PrintLn	lea	(.nl),a0
 ; Gibt FormatString gebuffert aus
 ; IN :	A0 = CPTR FormatString
 ;	A1 = STRUCT Array mit Argumenten
-; OUT :	D0 = LONG bytes written, -1 on error
+; OUT:	D0 = LONG Number of bytes written or -1 (EOF) for an error
 
 PrintArgs	MACRO
 	IFND	PRINTARGS
 PRINTARGS = 1
-_PrintArgs	movem.l	d2/a6,-(a7)
-		move.l	a0,d1
-		move.l	a1,d2
+	IFND	VFPRINTF
+		VFPrintf
+	ENDC
+_PrintArgs	movem.l	a0-a1/a6,-(a7)
 		move.l	(gl_dosbase,GL),a6
-		jsr	(_LVOVPrintf,a6)
-		movem.l	(a7)+,d2/a6
+		jsr	(_LVOOutput,a6)
+		move.l	d0,d1
+		movem.l	(a7)+,_MOVEMREGS
+		bra	_VFPrintf
+	ENDC
+		ENDM
+
+;----------------------------------------
+; format and print a string to a file (buffered)
+; IN:	D1 = BPTR fh
+;	A0 = CPTR format
+;	A1 = APTR arguments
+; OUT:	D0 = LONG Number of bytes written or -1 (EOF) for an error
+
+VFPrintf	MACRO
+	IFND	VFPRINTF
+VFPRINTF = 1
+	IFND	VSNPRINTF
+		VSNPrintF
+	ENDC
+_VFPrintf	movem.l	d2/d5-d7/a2-a3/a6,-(a7)
+		move.l	d1,d5			;D5 = fh
+		move.l	a0,a3			;A3 = format string
+		move.l	a1,a2			;A2 = arguments
+		moveq	#0,d0			;buffer length
+		move.l	a0,a1			;format string
+		bsr	_VSNPrintF		;calculate resulting string length
+		move.l	d0,d6			;remember string length
+		move.l	a7,d7			;remember sp
+		addq.l	#4,d0			;add 1 for terminator and align long
+		and	#-4,d0
+		sub.l	d0,a7			;reserve buffer
+		move.l	a7,a0			;buffer
+		move.l	a3,a1			;format string
+		bsr	_VSNPrintF
+		move.l	d5,d1			;fh
+		move.l	a7,d2			;buffer
+		move.l	(gl_dosbase,GL),a6
+		jsr	(_LVOFPuts,a6)
+		move.l	d7,a7			;restore sp
+		tst.l	d0
+		beq	.success
+		moveq	#-1,d6
+.success	move.l	d6,d0			;return string length
+		movem.l	(a7)+,_MOVEMREGS
 		rts
 	ENDC
 		ENDM
@@ -395,7 +442,7 @@ _PrintMore	movem.l	d2-d7/a2-a3/a6,-(a7)
 		ENDM
 
 ;----------------------------------------
-; Löschen der Ausgabepuffer
+; flush stdout
 ; IN :	-
 ; OUT :	-
 
