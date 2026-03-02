@@ -29,17 +29,22 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
+ version 1.1a (07.03.20) done by CFou!:
+ - Manual included
+ - Irek's icons included
+   (slave not changed)
+
  version 1.1 (20.02.20) done by CFou!:
  - CPU stacks relocated in fast memory
  - less CHIP memory needed
- - another access faults fixed (nantis #4363)
+ - another access faults fixed (issue #4363)
  - source code adapted for WHDLoad 17+
 
  version 1.0 (11.01.05) done by CFou!:
  - initial release
  - using RAWDIC imager
  - 2 versions supported: original release (2 disks) and budget release (1 disk)
-   (SPS 450 & 1689)
+   (SPS 450 & SPS 1689)
  - Some access faults fixed
  - Load/Save high score redirected on HD
  - Some self-modifying code fixed (caused jmp $0)
