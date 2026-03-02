@@ -1,0 +1,45 @@
+
+ THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, STATUTORY OR OTHERWISE. THE ENTIRE RISK AS TO USE, RESULTS AND
+ PERFORMANCE OF THE PACKAGE IS ASSUMED BY YOU AND IF THE PACKAGE SHOULD PROVE
+ TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR OTHER REMEDIATION.
+ UNDER NO CIRCUMSTANCES, CAN THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE
+ CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
+ PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+
+ This install applies to "Circus Attractions" © 1989 Golden Goblins.
+                                              © 1991 Top Shots.
+
+ This install requires WHDLoad, DIC, RawDIC and The Patcher to be in the path.
+ The programs can be found in the WHDLoad package.
+ To install from a different drive than DF0: select installation mode Expert.
+
+ The installed program requires 0.5 MB ChipMem and 0.5 MB OtherMem.
+ It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
+
+ If you have problems with this installation please try and get a newer
+ version of this package from the WHDLoad WWW-Page. If that doesn't help try
+ some Tooltypes like NOCACHE, NOAUTOVEC, EXPCHIP, NOMMU, PAL or NTSC. If
+ that also fails, please inform the author via the Bug-Report-Form which
+ can be accessed on the WHDLoad WWW-Page.
+
+ For the full WHDLoad package, other installs and updates refer to:
+        http://www.whdload.de/
+ or     aminet:dev/misc/whdload#?
+ and    aminet:game/patch/
+
+ version 1.0 (11.01.05) done by CFou!:
+ - initial release
+ - using rawdic imager
+ - 2 versions supported: original release (2 disks) and budget release (1 disk)
+ - Some access faults fixed
+ - Load/Save high score redirected on Hd
+ - Some self-modifying code fixed (jmp $0)
+ - Keyboard routine fixed
+ - Source code included (Islave & slave)
+ - Some icons added
+
+ Thanks to Carlo Pirri for originals (both versions)
+
+
