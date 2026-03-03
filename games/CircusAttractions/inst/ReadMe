@@ -29,6 +29,11 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
+ version 1.2 (03.03.26) done by Wepl:
+ - Manual reworked and one icon added by Hexaae
+ - one imager for both version
+ - source at https://github.com/wepl/winstalls
+
  version 1.1a (07.03.20) done by CFou!:
  - Manual included
  - Irek's icons included

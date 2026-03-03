@@ -1,5 +1,5 @@
-        OUTPUT  CircusAttractions.slave
 
+        OUTPUT  CircusAttractions.slave
 
    INCDIR   Include:
    INCLUDE  whdload.i
@@ -15,7 +15,6 @@
 		SUPER				;disable supervisor warnings
  		MC68000
 		ENDC
-
 
 CHIPMEMSIZE = $80000
 FASTMEMSIZE = $1000	; for stack
@@ -45,25 +44,16 @@ _expmem		dc.l  EXPMEM         ;ws_ExpMem
 
 ;============================================================================
 
-   IFD BARFLY
-   DOSCMD   "WDate  >T:date"
-   ENDC
-
 _data    dc.b  0
 _name    dc.b  "Circus Attractions",0
 _copy    dc.b  "1989-91 Golden Goblins/Top Shots ",0
 _info    dc.b  "Install done by CFou!",10
-      	 dc.b  "Version 1.1 "
-   IFD BARFLY
-      INCBIN   "T:date"
-   ENDC
+      	 dc.b  "Version 1.2 "
+		INCBIN	".date"
       	dc.b  0
-_config
-      	dc.b  0
+_config = _base
+	EVEN
 
-;====================================================================== 
- 	even
- 
 ;====================================================================== 
 _start   ;       A0 = resident loader
 ;====================================================================== 
@@ -479,7 +469,7 @@ _load_1D
         move.l 	#1,d0
         lea 	$6fbe0,a0
         jsr 	$6f0f6 ; load high score
-        st $	6ee06
+        st	$6ee06
         movem.l (a7)+,d0-a6
       	rts
 
@@ -537,4 +527,3 @@ _CRC16
  
  end
 
-      
