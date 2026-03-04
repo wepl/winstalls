@@ -26,6 +26,7 @@
 (set #ico_suffix_14 "newcfou")
 (set #ico_suffix_15 "newirek")
 (set #ico_suffix_16 "newirek2")
+(set #ico_suffix_17 "newirek3")
 (set #ico_suffix_20 "colicon")
 (set #ico_suffix_21 "colicon2")
 (set #ico_suffix_22 "colicon3")
@@ -45,6 +46,7 @@
 (set #ico_suffix_36 "colbox")
 (set #ico_suffix_37 "colbox2")
 (set #ico_suffix_38 "coltorti")
+(set #ico_suffix_39 "colhexaae")
 (set #ico_suffix_50 "pngbox")
 (set #ico_suffix_51 "pngbox2")
 
@@ -62,6 +64,7 @@
 (set #ico_desc_14 "NewIcon CFou!")
 (set #ico_desc_15 "NewIcon Irek")
 (set #ico_desc_16 "NewIcon Irek 2")
+(set #ico_desc_17 "NewIcon Irek 3")
 (set #ico_desc_20 "OS3.5 Icon")
 (set #ico_desc_21 "OS3.5 Icon 2")
 (set #ico_desc_22 "OS3.5 Icon 3")
@@ -81,6 +84,7 @@
 (set #ico_desc_36 "OS3.5 BoxIcon")
 (set #ico_desc_37 "OS3.5 BoxIcon 2")
 (set #ico_desc_38 "OS3.5 Torti")
+(set #ico_desc_39 "OS3.5 Hexaae")
 (set #ico_desc_50 "PNG BoxIcon")
 (set #ico_desc_51 "PNG BoxIcon 2")
 
@@ -1028,6 +1032,7 @@
   (set #icnt 0)
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_51)) (set #icon #ico_suffix_51 #icnt (+ 1 #icnt) #icon_51 #ico_desc_51) (set #icon_51 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_50)) (set #icon #ico_suffix_50 #icnt (+ 1 #icnt) #icon_50 #ico_desc_50) (set #icon_50 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_39)) (set #icon #ico_suffix_39 #icnt (+ 1 #icnt) #icon_39 #ico_desc_39) (set #icon_39 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_38)) (set #icon #ico_suffix_38 #icnt (+ 1 #icnt) #icon_38 #ico_desc_38) (set #icon_38 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_37)) (set #icon #ico_suffix_37 #icnt (+ 1 #icnt) #icon_37 #ico_desc_37) (set #icon_37 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_36)) (set #icon #ico_suffix_36 #icnt (+ 1 #icnt) #icon_36 #ico_desc_36) (set #icon_36 ""))
@@ -1047,6 +1052,7 @@
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_22)) (set #icon #ico_suffix_22 #icnt (+ 1 #icnt) #icon_22 #ico_desc_22) (set #icon_22 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_21)) (set #icon #ico_suffix_21 #icnt (+ 1 #icnt) #icon_21 #ico_desc_21) (set #icon_21 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_20)) (set #icon #ico_suffix_20 #icnt (+ 1 #icnt) #icon_20 #ico_desc_20) (set #icon_20 ""))
+  (if (exists ("%s.%s" #icon_prefix #ico_suffix_17)) (set #icon #ico_suffix_17 #icnt (+ 1 #icnt) #icon_17 #ico_desc_17) (set #icon_17 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_16)) (set #icon #ico_suffix_16 #icnt (+ 1 #icnt) #icon_16 #ico_desc_16) (set #icon_16 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_15)) (set #icon #ico_suffix_15 #icnt (+ 1 #icnt) #icon_15 #ico_desc_15) (set #icon_15 ""))
   (if (exists ("%s.%s" #icon_prefix #ico_suffix_14)) (set #icon #ico_suffix_14 #icnt (+ 1 #icnt) #icon_14 #ico_desc_14) (set #icon_14 ""))
@@ -1076,6 +1082,7 @@
       (if #icon_14 ((set #icon-suf #ico_suffix_14) (set #icon-name #ico_desc_14) (P_Icon)))
       (if #icon_15 ((set #icon-suf #ico_suffix_15) (set #icon-name #ico_desc_15) (P_Icon)))
       (if #icon_16 ((set #icon-suf #ico_suffix_16) (set #icon-name #ico_desc_16) (P_Icon)))
+      (if #icon_17 ((set #icon-suf #ico_suffix_17) (set #icon-name #ico_desc_17) (P_Icon)))
       (if #icon_20 ((set #icon-suf #ico_suffix_20) (set #icon-name #ico_desc_20) (P_Icon)))
       (if #icon_21 ((set #icon-suf #ico_suffix_21) (set #icon-name #ico_desc_21) (P_Icon)))
       (if #icon_22 ((set #icon-suf #ico_suffix_22) (set #icon-name #ico_desc_22) (P_Icon)))
@@ -1095,6 +1102,7 @@
       (if #icon_36 ((set #icon-suf #ico_suffix_36) (set #icon-name #ico_desc_36) (P_Icon)))
       (if #icon_37 ((set #icon-suf #ico_suffix_37) (set #icon-name #ico_desc_37) (P_Icon)))
       (if #icon_38 ((set #icon-suf #ico_suffix_38) (set #icon-name #ico_desc_38) (P_Icon)))
+      (if #icon_39 ((set #icon-suf #ico_suffix_39) (set #icon-name #ico_desc_39) (P_Icon)))
       (if #icon_50 ((set #icon-suf #ico_suffix_50) (set #icon-name #ico_desc_50) (P_Icon)))
       (if #icon_51 ((set #icon-suf #ico_suffix_51) (set #icon-name #ico_desc_51) (P_Icon)))
       (openwbobject #icon-dir)
@@ -1106,9 +1114,9 @@
       (askchoice
         (prompt ("\nWhich %s icon would you like to install?\n" #icon_desc))
 	(choices #icon_00 #icon_01 #icon_02 #icon_03
-		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16
+		 #icon_10 #icon_11 #icon_12 #icon_13 #icon_14 #icon_15 #icon_16 #icon_17
 		 #icon_20 #icon_21 #icon_22 #icon_23 #icon_24 #icon_25 #icon_26 #icon_27 #icon_28 #icon_29
-		 #icon_30 #icon_31 #icon_32 #icon_33 #icon_34 #icon_35 #icon_36 #icon_37 #icon_38
+		 #icon_30 #icon_31 #icon_32 #icon_33 #icon_34 #icon_35 #icon_36 #icon_37 #icon_38 #icon_39
 		 #icon_50 #icon_51)
         (default #icon)
         (help @askchoice-help)
@@ -1130,6 +1138,7 @@
       (set #icon #ico_suffix_14)
       (set #icon #ico_suffix_15)
       (set #icon #ico_suffix_16)
+      (set #icon #ico_suffix_17)
       (set #icon #ico_suffix_20)
       (set #icon #ico_suffix_21)
       (set #icon #ico_suffix_22)
@@ -1149,6 +1158,7 @@
       (set #icon #ico_suffix_36)
       (set #icon #ico_suffix_37)
       (set #icon #ico_suffix_38)
+      (set #icon #ico_suffix_39)
       (set #icon #ico_suffix_50)
       (set #icon #ico_suffix_51)
     )

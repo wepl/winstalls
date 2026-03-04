@@ -19,13 +19,6 @@
 
         ; Similar formats: Vroom, et autre lankhor game
 
-;_1Disk  ; set it for assemble islave for 1 disk version
-;_2Disks ; set it for assemble islave for 2 disks version (not need)
-       IFD _1Disk
-       output "CircusAttractions1D.islave"
-       else
-       output "CircusAttractions2D.islave"
-       ENDC
                 incdir  Includes:
                 include RawDIC.i
 
@@ -36,59 +29,59 @@
                 dc.l    Text    ; Pointer to the text displayed in the imager window
 
                 dc.b    "$VER:"
-Text:
-   IFD _1Disk
-   dc.b    "Circus Attractions (1 disk) V1.0",10,"by CFou! on 11.01.2005",0
-   else
-   dc.b    "Circus Attractions (2 disks) V1.0",10,"by CFou! on 11.01.2005",0
-   ENDC
-                cnop    0,4
+Text		dc.b	"Circus Attractions V1.1",10,"by CFou! & Wepl on "
+		INCBIN	.date
+		dc.b	0
+		EVEN
 
-DSK_1:         IFD _1Disk
-                dc.l    0               ; Pointer to next disk structure
-               else
-                dc.l DSK_2
-               ENDC
+; one disk rerelease
+
+DSK_1		dc.l    0               ; Pointer to next disk structure
                 dc.w    1               ; Disk structure version
-                dc.w    DFLG_NORESTRICTIONS               ; Disk flags
-                dc.l    TL_1           ; List of tracks which contain data
+		dc.w	0		; Disk flags
+		dc.l	TL_1		; List of tracks which contain data
                 dc.l    0               ; UNUSED, ALWAYS SET TO 0!
                 dc.l    FL_DISKIMAGE    ; List of files to be saved
-                dc.l    0               ; Table of certain tracks with CRC values
-                dc.l    0               ; Alternative disk structure, if CRC failed
-                dc.l    0            ; Called before a disk is read
+		dc.l	CRC_1		; Table of certain tracks with CRC values
+		dc.l	DSK_1_2D	; Alternative disk structure, if CRC failed
+		dc.l	0		; Called before a disk is read
                 dc.l    0               ; Called after a disk has been read
-  IFD _1Disk
-   ; nothing
-   else
-DSK_2:          dc.l    0;DSK_3               ; Pointer to next disk structure
+
+CRC_1		CRCENTRY 000,$6a6a
+		CRCEND
+
+; two disk original release
+
+DSK_1_2D	dc.l	DSK_2		; Pointer to next disk structure
                 dc.w    1               ; Disk structure version
-                dc.w    DFLG_NORESTRICTIONS               ; Disk flags
-                dc.l    TL_2           ; List of tracks which contain data
+		dc.w	0		; Disk flags
+		dc.l	TL_1		; List of tracks which contain data
+                dc.l    0               ; UNUSED, ALWAYS SET TO 0!
+                dc.l    FL_DISKIMAGE    ; List of files to be saved
+		dc.l	0		; Table of certain tracks with CRC values
+                dc.l    0               ; Alternative disk structure, if CRC failed
+		dc.l	0		; Called before a disk is read
+                dc.l    0               ; Called after a disk has been read
+
+DSK_2:          dc.l    0		; Pointer to next disk structure
+                dc.w    1               ; Disk structure version
+		dc.w	0		; Disk flags
+		dc.l	TL_2		; List of tracks which contain data
                 dc.l    0               ; UNUSED, ALWAYS SET TO 0!
                 dc.l    FL_DISKIMAGE    ; List of files to be saved
                 dc.l    0               ; Table of certain tracks with CRC values
                 dc.l    0               ; Alternative disk structure, if CRC failed
-                dc.l    0            ; Called before a disk is read
+		dc.l	0		; Called before a disk is read
                 dc.l    0
-   ENDC
 
-
-TL_1:
-                TLENTRY 0,0,$1600,SYNC_STD,DMFM_STD
-                TLENTRY 1,159,$1600,SYNC_STD,DMFM_Circus
-                TLEND
-TL_2
-
-                TLENTRY 0,0,$1600,SYNC_STD,DMFM_NULL
+TL_1		TLENTRY 0,0,$1600,SYNC_STD,DMFM_STD
                 TLENTRY 1,159,$1600,SYNC_STD,DMFM_Circus
                 TLEND
 
-DMFM_Circus_nochk:
-         bsr _decode
-         clr.l d0
-         rts
- 
+TL_2		TLENTRY 0,0,$1600,SYNC_STD,DMFM_NULL
+                TLENTRY 1,159,$1600,SYNC_STD,DMFM_Circus
+                TLEND
+
 DMFM_Circus:
 
         bsr _decode
@@ -108,10 +101,6 @@ DMFM_Circus:
         ADD.L   (A1),D1
         BEQ.B   .ok
 .error
-;.t
-; move.w #$ff,$dff180
-; btst #6,$bfe001
-; bne .t
 
         move.l #-1,d0
         rts
@@ -148,6 +137,4 @@ _decode_W
           or.w d1,d2
           move.w d2,(a1)+
        rts
- end
 
-      
