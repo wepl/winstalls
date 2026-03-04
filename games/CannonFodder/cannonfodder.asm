@@ -1,644 +1,480 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	CF.Asm
-;  :Contents.	Slave for "Cannon Fodder" from Sensible Software
-;  :Author.	Galahad of Fairlight
-;  :History.	25.01.01
+;  :Program.	cannonfodder.asm
+;  :Contents.	Slave for "Cannon Fodder"
+;  :Author.	Wepl
+;  :Version.	$Id: cannonfodder.asm 1.7 2018/06/13 00:21:30 wepl Exp wepl $
+;  :History.	25.03.18 derrived from cannonfoddercd.asm
+;		17.05.18 access fault fix improved
+;			 support for en2/de added
+;		12.06.18 support for fr added
+;		17.06.18 support for it added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	PhxAs
-;  :To Do.
+;  :Translator.	Barfly V2.9
+;  :To Do.	made working with full caches (loading ice level)
 ;---------------------------------------------------------------------------*
 
-	INCDIR	sys:include/
+	INCDIR	Includes:
 	INCLUDE	whdload.i
+	INCLUDE	whdmacros.i
 
-	OUTPUT	sys:cannonfodder/cf.slave
-	
+	IFD	BARFLY
+	OUTPUT	"wart:c/cannonfodder/CannonFodder.Slave"
+	BOPT	O+				;enable optimizing
+	BOPT	OG+				;enable optimizing
+	BOPT	ODd-				;disable mul optimizing
+	BOPT	ODe-				;disable mul optimizing
+	BOPT	w4-				;disable 64k warnings
+	SUPER
+	ENDC
 
-;======================================================================
+	STRUCTURE	globals,$100
+		LONG	_resload
 
-base
-		SLAVE_HEADER		;ws_Security + ws_ID
-		dc.w	15		;ws_Version
-		dc.w	WHDLF_Disk|WHDLF_NoError|WHDLF_EmulTrap	;ws_flags
-		dc.l	$110000		;ws_BaseMemSize
-		dc.l	0		;ws_ExecInstall
-		dc.w	Start-base	;ws_GameLoader
-		dc.w	_data-base	;ws_CurrentDir
-		dc.w	0		;ws_DontCache
-_keydebug	dc.b	0		;ws_keydebug = none
-_keyexit	dc.b	$59		;ws_keyexit = Del
-		dc.l	0		;ws_ExpMem
-		dc.w	_name-base	;ws_name
-		dc.w	_copy-base	;ws_copy
-		dc.w	_info-base	;ws_info
+EXPMEMLEN = $b000
 
-_name	dc.b	'--<> Cannon Fodder <>--',0
-_copy	dc.b	'1993 Sensible Software / Virgin',0
-_info	dc.b	'-------------------------------',10
-	dc.b	'Installed & Fixed by',10
-	dc.b	'Galahad of FAiRLiGHT',10
-	dc.b	'v1.2 (05.06.03)',10
-	dc.b	'-------------------------------',10
-	dc.b	0
-	dc.b	-1
-	CNOP 0,2
-_data:
-	dc.b	'DATA',0
-bootname:
-	dc.b	'fload',0
-name:
-	dc.b	'cfdisk',0
-CFSDISK:
-	dc.b	'CFSDISK',0
-saveroot:
-	dc.b	'GALAHAD.ROOT',0
-save_name:
-	dc.b	'SAVE.'
-param:	dcb.b	9
-	even
+;============================================================================
 
-	even
+_base		SLAVE_HEADER			;ws_Security + ws_ID
+		dc.w	13			;ws_Version
+		dc.w	WHDLF_NoError		;ws_flags
+		dc.l	$100000			;ws_BaseMemSize
+		dc.l	0			;ws_ExecInstall
+		dc.w	_start-_base		;ws_GameLoader
+		dc.w	_data-_base		;ws_CurrentDir
+		dc.w	0			;ws_DontCache
+_keydebug	dc.b	0			;ws_keydebug
+_keyexit	dc.b	$46			;ws_keyexit = Del
+_expmem		dc.l	EXPMEMLEN		;ws_ExpMem
+		dc.w	_name-_base		;ws_name
+		dc.w	_copy-_base		;ws_copy
+		dc.w	_info-_base		;ws_info
 
+;============================================================================
 
-;======================================================================
-Start	;	A0 = resident loader
-;======================================================================
+	IFD BARFLY
+	DOSCMD	"WDate  >T:date"
+	ENDC
 
-offset1:	=	$8a000
-offset2:	=	$a4000
+_name		dc.b	"Cannon Fodder",0
+_copy		dc.b	"1993 Sensible Software",0
+_info		dc.b	"installed and fixed by Wepl",10
+		dc.b	"Version 2.0 "
+	IFD BARFLY
+		INCBIN	"T:date"
+	ENDC
+		dc.b	0
+_data		dc.b	"data",0
+_game		dc.b	"fodderc",0
+_d1		dc.b	"DISK1",0
+_d2		dc.b	"disk2",0
+_d3		dc.b	"DISK3",0
+_savepath	dc.b	"save",0
+	EVEN
 
-		lea	_resload(pc),a1
-		move.l	a0,(a1)			;save for later use
-		lea	CFSDISK(pc),a0
-		bsr.s	_checkfile
-		tst.l	d0
-		bne.s	fileok
-		move.l	rank+2(pc),a1
-		clr.b	(a1)
-		moveq	#1,d0
-		bsr	_SaveFile		;Creates CFSDISK file
-						;if it is not present!
+;============================================================================
+_start	;	A0 = resident loader
+;============================================================================
+
+		move.l	a0,(_resload)			;save for later using
+		move.l	a0,a2				;A2 = resload
+
+	;enable cache
+	;currently only exp/slave
+		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
+		move.l	#WCPUF_All,d1
+		jsr	(resload_SetCPU,a2)
 		
-fileok:		
-		lea	saveroot(pc),a0
-		bsr.s	_checkfile
-		tst.l	d0
-		bne.s	fileok2
-		move.l	rank+2(pc),a1
-		move.l	a1,a2
-		move.l	#(6144/4)-1,d0		;Clear by Longword
-		moveq	#0,d1
-make_save:
-		move.l	d1,(a1)+
-		dbra	d0,make_save					
-		move.l	a2,a1
-		lea	name(pc),a0
-copy_name:
-		move.b	(a0)+,(a1)+
-		bne.s	copy_name
-		lea	32(a2),a2		;Offset
-		lea	CFSDISK(pc),a0
-copy_rooter:
-		move.b	(a0)+,(a2)+
-		bne.s	copy_rooter
-		lea	saveroot(pc),a0
-		move.l	rank+2(pc),a1
+	;set stack
+		move.l	#EXPMEMLEN-8,a7
+		add.l	(_expmem),a7			;stack in fastmem
+
+	;load main
+		lea	_game,a0
+		lea	$80000,a1
+		move.l	a1,a3				;A3 = main
+		jsr	(resload_LoadFileDecrunch,a2)
+
+	;check version
+		move.l	#$2000,d0
+		move.l	a3,a0
+		jsr	(resload_CRC16,a2)
+		lea	_plen1,a0
+		cmp.w	#$b157,d0
+		beq	.patch
+		lea	_plen2,a0
+		cmp.w	#$a1c0,d0
+		beq	.patch
+		lea	_plde,a0
+		cmp.w	#$7b22,d0
+		beq	.patch
+		lea	_plfr,a0
+		cmp.w	#$c3ce,d0
+		beq	.patch
+		lea	_plit,a0
+		cmp.w	#$5723,d0
+		beq	.patch
+		pea	TDREASON_WRONGVER
+		jmp	(resload_Abort,a2)
+
+.patch		move.l	a3,a1
+		jsr	(resload_Patch,a2)
+
+		lea	(_custom),a6
+		jmp	(a3)
+
+		move.l	(_expmem),$89cf2	;buffer for iff conversion
+		
+_plen1		PL_START
+		PL_W	$2c64,$4200		;bplcon0
+		PL_S	$5d92,$5dc2-$5d92	;skip init stuff
+		PL_P	$a2f8,_keyboard		;keyboard int umleiten
+		PL_R	$a6a8			;copylock
+		PL_P	$b3e8,_loader
+		PL_P	$bd2e,_gettmp
+		PL_W	$cc52,$1e		;htotal
+		PL_W	$cf96,$200		;bplcon0
+		PL_PS	$16d7c,_af0
+		PL_W	$1ccf2,$4200		;bplcon0
+		PL_W	$1cd92,$4200		;bplcon0
+		PL_W	$1cda6,$5200		;bplcon0
+		PL_R	$1d370			;skip disk2 check
+		PL_W	$1d3a2,$5200		;bplcon0
+		PL_W	$1d462,$4200		;bplcon0
+		PL_PS	$1eb36,_af1
+		PL_B	$24304,$6f		;beq -> ble
+		PL_PS	$243ee,_s1
+		PL_W	$276a8,$6600		;bplcon0
+		PL_W	$2785e,$4200		;bplcon0
+		PL_W	$28b52,$5200		;bplcon0
+		PL_W	$28df8,$4200		;bplcon0
+		PL_W	$29e7c,$2a4d4-$29e7c	;load/save game
+		PL_S	$29e8a,6		;skip check "CFSDISK"
+		PL_S	$29ea4,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$29ffe,_loadgame
+		PL_S	$2a130,4		;load/save game
+		PL_W	$2a13c,$23a-$13c	;load/save game
+		PL_S	$2a29e,10		;load/save game
+		PL_PS	$2a2c8,_savegame
+		PL_R	$2acfe			;"insert disk 3"
+		PL_END
+
+_plcommon	PL_START
+		PL_W	$2c68,$4200		;bplcon0
+		PL_S	$5d96,$5dc2-$5d92	;skip init stuff
+		PL_P	$a32a,_keyboard		;keyboard int umleiten
+		PL_R	$a6da			;copylock
+		PL_P	$b41a,_loader
+		PL_P	$bd62,_gettmp
+		PL_W	$cc86,$1e		;htotal
+		PL_W	$cfca,$200		;bplcon0
+		PL_END
+
+_plen2		PL_START
+		PL_PS	$16e52,_af0
+		PL_W	$1cdc8,$4200		;bplcon0
+		PL_W	$1ce68,$4200		;bplcon0
+		PL_W	$1ce7c,$5200		;bplcon0
+		PL_R	$1d44a			;skip disk2 check
+		PL_W	$1d47c,$5200		;bplcon0
+		PL_W	$1d53c,$4200		;bplcon0
+		PL_PS	$1ec10,_af1
+		PL_B	$243de,$6f		;beq -> ble
+		PL_PS	$244c8,_s1
+		PL_W	$277da,$6600		;bplcon0
+		PL_W	$27998,$4200		;bplcon0
+		PL_W	$28c8c,$5200		;bplcon0
+		PL_W	$28f32,$4200		;bplcon0
+		PL_W	$2a04e,$2a4d4-$29e7c	;load/save game
+		PL_S	$2a05c,6		;skip check "CFSDISK"
+		PL_S	$2a076,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a1d0,_loadgame
+		PL_S	$2a302,4		;load/save game
+		PL_W	$2a30e,$23a-$13c	;load/save game
+		PL_S	$2a470,10		;load/save game
+		PL_PS	$2a49a,_savegame
+		PL_R	$2aec0			;"insert disk 3"
+		PL_NEXT	_plcommon
+
+_plde		PL_START
+		PL_PS	$16f30,_af0
+		PL_W	$1cea6,$4200		;bplcon0
+		PL_W	$1cf46,$4200		;bplcon0
+		PL_W	$1cf5a,$5200		;bplcon0
+		PL_R	$1d554			;skip disk2 check
+		PL_W	$1d586,$5200		;bplcon0
+		PL_W	$1d646,$4200		;bplcon0
+		PL_PS	$1ed1a,_af1
+		PL_B	$244e8,$6f		;beq -> ble
+		PL_PS	$245d2,_s1
+		PL_W	$27baa,$6600		;bplcon0
+		PL_W	$27d92,$4200		;bplcon0
+		PL_PA	$284ea,.mit
+		PL_PA	$28510,.soldaten
+		PL_PA	$2851e,.soldat
+		PL_PA	$28598,.rekrut
+		PL_STR	$28627,<EI>
+		PL_STR	$2863c,<EI>
+		PL_W	$290fa,$5200		;bplcon0
+		PL_W	$293a0,$4200		;bplcon0
+		PL_W	$2a5bc,$2ac4a-$2a5bc	;load/save game
+		PL_S	$2a5ca,6		;skip check "CFSDISK"
+		PL_S	$2a5e4,$e2-$a4		;skip file "CFSDISK"
+		PL_PA	$2a63c,.datei
+		PL_PS	$2a73e,_loadgame
+		PL_STR	$2a765,< SPIEL>
+		PL_S	$2a87c,4		;load/save game
+		PL_W	$2a888,$98a-$888	;load/save game
+		PL_S	$2a9ee,10		;load/save game
+		PL_PS	$2aa18,_savegame
+		PL_STR	$2aad0,<IB EINEN DATEI>
+		PL_R	$2b37a			;"insert disk 3"
+		PL_NEXT	_plcommon
+
+.mit		dc.b	"MIT ",-1
+.soldaten	dc.b	" SOLDATEN MUSST DU",-1
+.soldat		dc.b	" SOLDAT MUSST DU",-1
+.rekrut		dc.b	" REKRUT VERBLEIBT",-1
+.datei		dc.b	"W",$84,"HLE EINE DATEI",-1
+	EVEN
+
+_plfrit		PL_START
+		PL_PS	$16f32,_af0
+		PL_W	$1cea8,$4200		;bplcon0
+		PL_W	$1cf48,$4200		;bplcon0
+		PL_W	$1cf5c,$5200		;bplcon0
+		PL_NEXT	_plcommon
+
+_plfr		PL_START
+		PL_R	$1d59a			;skip disk2 check
+		PL_W	$1d5cc,$5200		;bplcon0
+		PL_W	$1d68c,$4200		;bplcon0
+		PL_PS	$1ed60,_af1
+		PL_B	$2452e,$6f		;beq -> ble
+		PL_PS	$24618,_s1
+		PL_W	$27bd0,$6600		;bplcon0
+		PL_W	$27db8,$4200		;bplcon0
+		PL_W	$290ca,$5200		;bplcon0
+		PL_W	$29370,$4200		;bplcon0
+		PL_W	$2a58c,$2ac0e-$2a58c	;load/save game
+		PL_S	$2a59a,6		;skip check "CFSDISK"
+		PL_S	$2a5b4,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a70e,_loadgame
+		PL_S	$2a84a,4		;load/save game
+		PL_W	$2a856,$960-$856	;load/save game
+		PL_S	$2a9c4,10		;load/save game
+		PL_PS	$2a9ee,_savegame
+		PL_R	$2b452			;"insert disk 3"
+		PL_NEXT	_plfrit
+
+_plit		PL_START
+		PL_R	$1d54c			;skip disk2 check
+		PL_W	$1d57e,$5200		;bplcon0
+		PL_W	$1d63e,$4200		;bplcon0
+		PL_PS	$1ed12,_af1
+		PL_B	$244e0,$6f		;beq -> ble
+		PL_PS	$245ca,_s1
+		PL_W	$27b88,$6600		;bplcon0
+		PL_W	$27d70,$4200		;bplcon0
+		PL_W	$290d8,$5200		;bplcon0
+		PL_W	$2937e,$4200		;bplcon0
+		PL_W	$2a59a,$2ac2a-$2a59a	;load/save game
+		PL_S	$2a5a8,6		;skip check "CFSDISK"
+		PL_S	$2a5c2,$e2-$a4		;skip file "CFSDISK"
+		PL_PS	$2a71c,_loadgame
+		PL_S	$2a854,4		;load/save game
+		PL_W	$2a860,$96a-$860	;load/save game
+		PL_S	$2a9ce,10		;load/save game
+		PL_PS	$2a9f8,_savegame
+		PL_R	$2b472			;"insert disk 3"
+		PL_NEXT	_plfrit
+
+_loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
+		pea	.ret
+		tst.w	d0
+		beq	.rts
+		cmp.w	#8,d0
+		beq	_loadname
+		cmp.w	#$10,d0
+		beq	_listfiles
+		cmp.w	#$18,d0
+		beq	_loadscatter
+		cmp.w	#$20,d0
+		beq	.rts
+		illegal
+.ret		movem.l	(a7)+,_MOVEMREGS
+.rts		rts
+
+; a0=name a1=dest
+_loadname
+		lea	_d1,a2		;"DISK1"
+		bsr	.cmp
+		beq	.ok
+		lea	_d2,a2		;"DISK2"
+		bsr	.cmp
+		beq	.ok
+		lea	_d3,a2		;"DISK3"
+		bsr	.cmp
+		beq	.ok
+
+		move.l	_resload,a2
+		jsr	(resload_LoadFileDecrunch,a2)
+		exg	d0,d1				;size/success=0
+		rts
+
+.ok		moveq	#0,d0
+		rts
+
+.cmp		move.l	a0,a3
+.lp		move.b	(a2)+,d0
+		beq	.cmpok
+		cmp.b	(a3)+,d0
+		beq	.lp
+		moveq	#-1,d0
+.cmpok		rts
+
+; in:  a0=name
+; out: Z=1=success d7=data-in-buffer a4=data
+_loadscatter	move.l	(_expmem),a1
+		move.l	_resload,a2
+		jsr	(resload_LoadFileDecrunch,a2)
+		move.l	(_expmem),a4
+		move.l	d0,d7				;length
+		moveq	#0,d0				;success
+		rts
+
+_gettmp		move.l	(_expmem),a4
+		move.l	(a4)+,d7
+		cmp.w	d0,d0				;set Z flag
+		rts
+
+_listfiles	lea	(_savepath),a0
+		move.l	(_expmem),a1
+		move.l	a1,a3				;A3 = buffer in
+		move.l	#$2000,d0			;buffer length
+		lea	(a3,d0.l),a4			;A4 = buffer out
+		move.l	(_resload),a2
+		jsr	(resload_ListFiles,a2)
+		move.l	d0,d7				;d7 = how many entries
+
+		move.l	a4,a0
+		bra	.next
+
+.loop		move.l	a0,a1
+.copy		move.b	(a3)+,(a1)+
+		bne	.copy
+		
+.next		add.w	#$20,a0
+		subq.l	#1,d7
+		bcc	.loop
+		clr.b	(a0)				;end of table
+		clr.b	($20,a0)			;end of table
+		clr.b	($40,a0)			;end of table
+		clr.b	($60,a0)			;end of table
+		clr.b	($80,a0)			;end of table
+
+		move.l	a4,a0
+		rts
+
+; a0=name a1=dest
+_loadgame	move.l	_expmem,a2
+		lea	_savepath,a3
+.copypath	move.b	(a3)+,(a2)+
+		bne	.copypath
+		move.b	#"/",(-1,a2)
+.copyname	move.b	(a0)+,(a2)+
+		bne	.copyname
+		move.l	_expmem,a0
+		moveq	#8,d0
+		bra	_loader
+
+; a0=name a1=src d1=length
+_savegame	move.l	_expmem,a2
+		lea	_savepath,a3
+.copypath	move.b	(a3)+,(a2)+
+		bne	.copypath
+		move.b	#"/",(-1,a2)
+.copyname	move.b	(a0)+,(a2)+
+		bne	.copyname
+		move.l	_expmem,a0
+		move.l	d1,d0				;length
+		move.l	_resload,a2
+		jsr	(resload_SaveFile,a2)
 		moveq	#0,d0
-		move.w	#6144,d0		;Size of root file
-		bsr.s	_SaveFile
-
-fileok2:
-		lea	bootname(pc),a0
-rank:		lea	$70000,a1
-		bsr	_LoadFile
-		move.l	#$4e714e71,d0		;NOP x 2
-		move.w	#$4ef9,d1		;JMP
-		move.l	d0,$20(a1)		;Remove Divide by 0
-		move.l	#$6100cfd4,$3c82(a1)	;change bsr to loader
-		lea	gamepatch(pc),a0
-		move.w	d1,$3c82+4(a1)
-		move.l	a0,$3c82+4+2(a1)	;Boot Loader patched!
-		move.l	#$6000008a,$3bdc(a1)	;Memory routine patched!
-		move.w	#$4e75,$180(a1)		;Remove disk check 1
-		move.l	#$70004e75,$b90(a1)	;Remove disk check 2
-		lea	loader(pc),a0
-		move.w	d1,$c58(a1)		;Patch game file loader
-		move.l	a0,$c58+2(a1)
-		move.l	rank+2(pc),a0
-		lea	$1d70(a0),a0		;Get RNC depack
-		lea	RNC(pc),a2
-		move.w	#$20c-1,d0
-copy_rnc:
-		move.b	(a0)+,(a2)+		;Copy it to slave
-		dbra	d0,copy_rnc		
-		jmp	(a1)			;Execute boot loader
-gamepatch:
-		movem.l	d0-d4/a0-a3,-(a7)
-		move.l	#$4eb94ef9,d4		;JSR/JMP
-		move.l	#$70004e75,d0		;MOVEQ #0,D0 /RTS
-		move.l	a1,a2
-		move.w	#$6018,$5d92(a1)	;Patch CACR / Illegal
-		add.l	#$bd94,a2
-		lea	loader2(pc),a0
-		move.w	d4,(a2)+
-		move.l	a0,(a2)
-		move.l	a1,a2
-		add.l	#$b12a,a2		;$8bcbc
-		lea	loader3(pc),a0
-		move.w	d4,(a2)+
-		move.l	a0,(a2)
-		move.l	a1,a2
-		add.l	#$bcbc,a2
-		move.w	d4,(a2)+
-		move.l	a0,(a2)			
-		lea	offset1,a3
-		move.w	d0,$8b5c0-offset1(a3)		;Remove disk stop code!
-		move.w	d0,$8b972-offset1(a3)
-		move.w	d0,$8bd26-offset1(a3)
-		move.w	d0,$8c5aa-offset1(a3)
-		move.w	d0,$8b43a-offset1(a3)
-		move.w	d0,$8b49e-offset1(a3)
-		move.w	d0,$8b50c-offset1(a3)
-		lea	offset2,a3
-		move.w	d0,$aa1ce-offset2(a3)		;Remove "insert save disk"	
-		move.w	d0,$aacfe-offset2(a3)		;Remove "insert disk 3"
-		move.w	#$64,$aaaa2-offset2(a3)		;Alter position of text box!
-		move.w	#$6016,$aaa82-offset2(a3)	;Remove more save shit!
-		move.w	#$6008,$aa29e-offset2(a3)	;Bypass stupid load whilst
-							;Saving!
-		
-		lea	savepatch(pc),a0
-		move.l	a0,$a9e96-offset2(a3)		
-		lea	savepatch2(pc),a0
-		move.l	a0,$aa162-offset2(a3)
-		lea	save(pc),a0
-		lea	$8b5f6,a1
-		move.w	d4,(a1)+
-		move.l	a0,(a1)				;SAVING IS DONE HERE!!!
-		swap	d4	
-		lea	$9eb48,a0
-		move.w	d4,(a0)+
-		lea	access1(pc),a1
-		move.l	a1,(a0)
-		lea	$96d92,a0
-		move.w	d4,(a0)+
-		lea	access2(pc),a1
-		move.l	a1,(a0)
-
-		lea	$8a74e,a0			;Copylock 1
-		lea	$87a14,a1
-		lea	$9fcf6,a2
-		lea	$ac0a8,a3
-		move.l	#$203c3d74,d0
-		move.l	#$2cf121c0,d1
-		move.l	#$00604e75,d2
-		move.l	d0,(a0)+
-		move.l	d0,(a1)+
-		move.l	d0,(a1)+
-		move.l	d0,(a3)+
-		move.l	d1,(a0)+
-		move.l	d1,(a1)+
-		move.l	d1,(a1)+
-		move.l	d1,(a3)+
-		move.l	d2,(a0)+
-		move.l	d2,(a1)+
-		move.l	d2,(a1)+
-		move.l	d2,(a3)+		
-		;move.w	#$4e71,$85eee		;End game enable!
-		movem.l	(a7)+,d0-d4/a0-a3
-		jmp	(a1)		
-
-
-
-access1:
-		move.l	d0,-(a7)
-		move.l	(a1),a1
-		move.l	a1,d0
-		and.l	#$000fffff,d0
-		move.l	d0,a1
-		move.l	(a7)+,d0
-		tst.b	$6e(a1)
-		rts
-access2:
-		move.l	d0,-(a7)
-		move.l	(a1),a1
-		move.l	a1,d0
-		and.l	#$000fffff,d0
-		move.l	d0,a1
-		move.l	(a7)+,d0
-		move.l	$46(a1),a1
 		rts
 
-;-------------------------------------
-;Load save game loads root track
-;with filename data
-;-------------------------------------
-savepatch:
-	movem.l	d0-d7/a2-a6,-(a7)
-	lea	saveroot(pc),a0
-	lea	$3d48.w,a1
-	bra.s	no_point
-	
-;Save game loads root track
-savepatch2:
-	movem.l	d0-d7/a2-a6,-(a7)
-	lea	saveroot(pc),a0
-saver:	lea	$aff3a,a1
-no_point:
-	bsr.s	_LoadFile
-	exg	a0,a1
-	movem.l	(a7)+,d0-d7/a2-a6
-	moveq	#0,d0
-	rts
-;--------------------------------------
+_af0		move.w	$81556,d0			;actual player/team (0-5)
+		bpl	.ok
+		add.l	#$16dde-$16d82,(a7)
+.ok		rts
 
-;on entry: a0 = Filename
-;          a1 = Data to save
-;          d1 = Size of data to save
-save:
-	movem.l	d0-d7/a0-a6,-(a7)
-	movem.l	d1/a0-a1,-(a7)
-	move.l	saver+2(pc),a2		;Root track location
-	moveq	#0,d0
-	move.l	a2,a3
-	move.l	a0,a4
-get_slot:
-	move.l	a2,a3
-	move.l	a0,a4
-	tst.l	(a2)
-	beq.s	_emptyslot
-check_next_char:
-	move.b	(a4)+,d2
-	cmp.b	(a3)+,d2
-	bne.s	_not_same_filename	
-	tst.b	d2
-	bne.s	check_next_char	
-	bra.s	_samename
-_not_same_filename:
-	lea	$20(a2),a2		;Get next slot!
-	addq.w	#1,d0
-	cmp.w	#180,d0
-	beq.s	_emptyslot
-	bra.s	get_slot
-_emptyslot:
-	move.b	(a0)+,(a2)+		;Copy filename to roottrack!
-	bne.s	_emptyslot
-	clr.b	(a2)			;Make sure the filename is null!
-_samename:
-	movem.l	(a7)+,d1/a0-a1
-	lea	param(pc),a2
-	move.l	a0,-(a7)
-copy_param:
-	move.b	(a0)+,(a2)+
-	bne.s	copy_param
-	clr.b	(a2)
-	move.l	(a7)+,a0		;SAVE.NAME done!
-	lea	save_name(pc),a0	;Change save filename with prefix!
-	moveq	#0,d0
-	exg	d0,d1
-	bsr.s	_SaveFile
-	move.l	saver+2(pc),a1
-	lea	saveroot(pc),a0
-	moveq	#0,d0
-	move.w	#6144,d0		;Size of save file!
-	bsr.s	_SaveFile
-	movem.l	(a7)+,d0-d7/a0-a6
-	moveq	#0,d0
-	rts
+_af1		move.w	$81556,d0			;actual player/team (0-5)
+		bpl	.ok
+		add.l	#$1eb52-$1eb3c,(a7)
+.ok		rts
 
-loader:
-	movem.l	d0-d7/a0-a6,-(a7)
-	bsr.s	_LoadFile
-	move.l	a1,a0
-	bsr	RNC
-	movem.l	(a7)+,d0-d7/a0-a6
-	moveq	#0,d0
-	tst.w	d0
-	rts
-loader2:
-	movem.l	d0-d7/a0-a6,-(a7)
-	cmp.l	#-1,a0			;Fake call to loader if -1
-	beq.s	skip_out
-	cmp.w	#8,d0			;Fake call to loader if 8
-	bne.s	skip_out
-	cmp.l	#$80626,a1		;Not a save file if $80626
-	bne.s	_not_save_file
-	movem.l	a0-a1,-(a7)
-	lea	param(pc),a1
-copy_sav:
-	move.b	(a0)+,(a1)+
-	bne.s	copy_sav
-	clr.b	(a1)
-	movem.l	(a7)+,a0-a1
-	lea	save_name(pc),a0	;Change format to prefix!
-_not_save_file:
-	bsr.s	_LoadFile
-	move.l	a1,a0
-	bsr.s	RNC			;Depack
-skip_out:
-	movem.l	(a7)+,d0-d7/a0-a6
-	move.l	si(pc),d1		;Put filesize in d1 for game!
-	moveq	#0,d0			;No errors
-	tst.w	d0			;Test for errors
-	rts
-;--------------------------------------------
-; IFF Decoder for ALL Sensible Software games
-;--------------------------------------------
-;a0 = filename
-;a1 = rawdata	(Where to depack to)
-;a2 = cmap	(Where to put CMAP to)
-loader3:
-	movem.l	d0-d7/a0-a6,-(a7)
-	lea	preserver(pc),a3
-	move.l	a1,(a3)+
-	move.l	a2,(a3)
-	movem.l	a0-a2,-(a7)
-pos:	lea	$100000,a1		;Area to load IFF file to
-	bsr	_LoadFile
-	movem.l	(a7)+,a0-a2
-	bsr.s	Decode_iff
-	movem.l	(a7)+,d0-d7/a0-a6
-	move.l	preserver(pc),a0
-	add.l	si(pc),a0
-	move.l	preserver+4(pc),a1
-	add.l	cmap_size(pc),a1
-	ori.b	#$80,$8c801
-	moveq	#0,d0
-	rts
-preserver:
-	dc.l	0
-	dc.l	0
-cmap_size:
-	dc.l	0
-_cmap:
-	dc.l	0
-;-----------------------------------------
-; Routine to decode ALL IFF files!!
-;-----------------------------------------
-Decode_iff:
-	MoveM.L	D0-D7/A0-A6,-(Sp)
-	lea	_cmap(pc),a3
-	move.l	a2,(a3)
-	move.l	pos+2(pc),a0
-	Lea	DisplayIff_Variables(Pc),A6
-	Moveq	#0,D0
-	Moveq	#0,D1
-	Moveq	#0,D2
-	Moveq	#0,D3
-	moveq	#8-1,d4			;8 Variables used, must be clear!
-	move.l	a6,-(a7)
-clear_vars:
-	move.l	d0,(a6)+
-	dbra	d4,clear_vars
-	move.l	(A7)+,a6	
-	
-	
-	Cmp.L	#"FORM",(A0)		;FORM Header?
-	Bne	DisplayIFF_End
-
-	Addq.L	#8,A0	
-	Cmp.L	#"ILBM",(A0)+		;Interleaved Bitmap file?
-	Bne	DisplayIFF_End
-
-
-
-get_it:		Cmp.L	#"BMHD",(A0)		
-		beq.s	go_it
-		addq.l	#2,a0
-		bra.s	get_it
-
-go_it:		Move.W	8(A0),D0	;Width of screen
-		LsR.W	#3,D0		;Convert width to bytes
-		Move.W	10(A0),D1	;Height of screen
-		Move.B	16(A0),D2	;No. of bitplanes
-		Move.B  18(A0),D3	;Compression byte - 0=No compression
-				;			   1=Compressed		
-		Move.L	D0,VAR_IffWidth(A6)
-		Move.L	D1,VAR_IffHeight(A6)
-		Move.L	D2,VAR_IffNoPlanes(A6)
-	
-DisplayIFF_Find_CMAP:
-	Cmp.L	#"CMAP",(A0)		;Test if colour map chunk
-	Beq.S	DisplayIFF_CMAP_Found	;If yes.. process chunk
-	Addq.L	#2,A0			;If not.. keep on looking
-	Bra.S	DisplayIFF_Find_CMAP
-
-DisplayIFF_CMAP_Found:
-	bsr	_8bit
-	
-	
-
-
-fucker
-; -----------------------------------------------------------------------------
-; ----- Process bitplane data chunk -------------------------------------------
-; -----------------------------------------------------------------------------
-
-DisplayIff_Find_BODY:
-	Cmp.L	#"BODY",(A0)		;Test if body chunk
-	Beq.S	DisplayIff_BODY_Found	;If yes.. process chunk
-	Addq.L	#2,A0			;If not.. keep on looking
-	Bra.S	DisplayIff_Find_BODY
-DisplayIff_BODY_Found:
-	Addq.L	#8,A0			;Point to start of bitplane data
-	tst.l	D3			;Test compression flag
-	Beq	DisplayIFF_NoCompression ; If 0, no compression... copy data...
-	
-					;If 1, compression used
-					;so decompress..
-
-
-
-; -----	Decompress bitplane data to screen ------------------------------------
-
-	Move.L	VAR_IffWidth(A6),D0	;Get width of screen
-	Move.L	VAR_IffHeight(A6),D1	;Get height of screen
-	Subq.L	#1,D1
-	Mulu.W	D0,D1
-	Move.L	D1,D3		;D3=Width*(Height-1)
-	
-	Move.L	A1,A4		;Store address of screen (Destination)
-
-DisplayIff_ByteLoop:
-	Move.L	VAR_IffWidth(A6),D0	;Get width of screen
-	Move.L	VAR_IffByteCount(A6),D1	;Get current byte across screen
-	Cmp.L	D0,D1		;Test if at end of current line
-	Bne.S	DisplayIff_NotEndLine	;If not.. carry on with line..
-
-
-; ----- Reset line position -----
-
-		clr.l	VAR_IffByteCount(A6)	;Clear byte count
-		Addq.L	#1,VAR_IffPlaneCount(A6)	;Update bitplane count
-		Add.L	D3,A1		;Point to next screen bitplane (Dest)
-
-		Move.L	VAR_IffNoPlanes(A6),D0	;Get number of bitplanes
-		Move.L	VAR_IffPlaneCount(A6),D1	;Get bitplane counter
-		Cmp.L	D0,D1		;Test if last bitplane
-		Bne.S	DisplayIff_NotLastPlane	;If not.. carry on..
-
-
-; ----- Reset bitplane position -----
-
-			clr.l	VAR_IffPlaneCount(A6)	;Clear bitplane count
-			Move.L	VAR_IffWidth(A6),D0
-			Add.L	D0,VAR_IffLineCount(A6)	;Update line count
-			Addq.L	#1,VAR_IffHeightCount(A6)	;Update height count
-			Move.L	VAR_IffHeight(A6),D0	;Get height of screen
-			Move.L	VAR_IffHeightCount(A6),D1	;Get current height count
-			Cmp.L	D0,D1		;Test if last line of screen
-			Beq	DisplayIFF_End	;If so.. exit routine..
-			
-			Move.L	A4,A1			;Address of screen
-			Add.L	VAR_IffLineCount(A6),A1	;Add current screen offset
-; -----
-
-DisplayIff_NotLastPlane:	
-DisplayIff_NotEndLine:	
-	moveq	#0,d0
-	Move.B	(A0),D0			;Get byte code
-	Bpl.s	DisplayIff_BytePlus	;Process uncompressed data
-	Bmi.s	DisplayIff_ByteMinus	;Process compressed data
-
-; ----- Process uncompressed scan line data -----
-
-DisplayIff_BytePlus:
-	Addq.L	#1,A0			;Point past byte code address
-
-	Moveq	#0,D1			;Get value to add to byte count
-	Move.B	D0,D1		
-	Addq.B	#1,D1		
-DisplayIff_PlusLoop:
-	Move.B	(A0)+,(A1)+		;Copy byte of data
-	Dbf	D0,DisplayIff_PlusLoop	;If D0 not 0.. keep on copying..
-
-	Add.L	D1,VAR_IffByteCount(A6)	;Update byte count
-	Bra	DisplayIff_ByteLoop
-
-
-; ----- Process compressed scan line data -----
-
-DisplayIff_ByteMinus:
-	Addq.L	#1,A0			;Point past byte code address
-	Neg.B	D0			;Convert byte code to positive
-
-	Moveq	#0,D2			;Get value to add to byte count
-	Move.B	D0,D2
-	Addq.B	#1,D2
-
-	Move.B	(A0)+,D1		;Get byte of data
-DisplayIff_MinusLoop:
-	Move.B	D1,(A1)+		;Copy byte of data	
-	Dbf	D0,DisplayIff_MinusLoop	;If D0 not 0.. keep on copying
-
-	Add.L	D2,VAR_IffByteCount(A6)	;Update byte count
-	Bra	DisplayIff_ByteLoop
-
-; -----
-
-DisplayIFF_NoCompression:	
-DisplayIFF_End:	
-
-fucker2
-	MoveM.L	(Sp)+,D0-D7/A0-A6
-	Rts
-
-;----------------------------------------------------
-; This cmap converter is SPECIFIC to all Sensible
-; Software games.  Might not work correctly with other
-; games
-;----------------------------------------------------
-
-_8bit:
-	movem.l	d0-d7/a0-a6,-(a7)
-	addq.l	#4,a0
-	move.l	(a0)+,d0
-	lea	cmap_size(pc),a2
-	move.l	d0,(a2)			;Cmap Size!
-	divs	#$3,d0
-	subq.l	#1,d0
-	
-	move.l	_cmap(pc),a1
-Col_Loop:
-	clr.w	(a1)
-	move.b	(a0)+,d1
-	lsr.b	#4,d1
-	ext.w	d1
-	lsl.w	#8,d1
-	add.w	d1,(a1)
-	move.b	(a0)+,d1
-	lsr.b	#4,d1
-	ext.w	d1
-	lsl.w	#4,d1
-	add.w	d1,(a1)	
-	move.b	(a0)+,d1
-	lsr.b	#4,d1
-	ext.w	d1
-	add.w	d1,(a1)+
-	dbf	d0,Col_Loop
-	movem.l	(a7)+,d0-d7/a0-a6
-	rts
-			RsReset
-VAR_IffByteCount:	Rs.L	1
-VAR_IffPlaneCount:	Rs.L	1
-VAR_IffLineCount:	Rs.L	1
-VAR_IffHeightCount:	Rs.L	1
-VAR_IffNoPlanes:	Rs.L	1
-VAR_IffWidth:		Rs.L	1
-VAR_IffHeight:		Rs.L	1
-VAR_IffLastVar:		Rs.L	1
-
-DisplayIff_Variables:
-	DcB.L	VAR_IffLastVar
-
-	
-	
-
-;--------------------------------
-
-_resload	dc.l	0		;address of resident loader
-
-;--------------------------------
-; IN:	d0=offset d1=size d2=disk a0=dest
-; OUT:	d0=success
-
-_LoadDisk	movem.l	d0-d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_DiskLoad(a2)
-		bra.b	au
-_LoadFile:
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_LoadFile(a2)
-		lea	si(pc),a0
-		move.l	d0,(a0)
-		movem.l	(a7)+,d0-d1/a0-a2
+_s1		cmp.l	#$100000,d0
+		bhs	.ret
+		move.l	d0,a1				;original
+		move.l	($20,a0),d0			;original
 		rts
-_checkfile:
-		movem.l	d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_GetFileSize(a2)
-		movem.l	(a7)+,d1/a0-a2
-		rts
-_SaveFile:
-		movem.l	d0-d1/a0-a2,-(a7)
-		move.l	_resload(pc),a2
-		jsr	resload_SaveFile(a2)
-au:		movem.l	(a7)+,d0-d1/a0-a2
+.ret		addq.l	#4,a7
 		rts
 
-si:
-	dc.l	0
+;============================================================================
 
+_keyboard	movem.l	d0-d1/a0-a2,-(a7)
+		lea	_ciaa,a0
+		lea	_custom,a2
+		btst	#CIAICRB_SP,(ciaicr,a0)
+		beq	.end
+		lea	$814e5,a1		;lastkeycode
+		move.b	(ciasdr,a0),d0
+		or.b	#CIACRAF_SPMODE,(ciacra,a0)
+		ror.b	#1,d0
+		not.b	d0
+		bpl	.down
+		move.b	(a1),d1
+		eor.b	d0,d1
+		and.b	#$7f,d1
+		bne	.down
+		moveq	#0,d0
+.down		move.b	d0,(a1)
 
-RNC:
-	dcb.b	$20c
+		cmp.b	(_keyexit),d0
+		beq	.exit
+		cmp.b	#$5f,d0			;HELP ?
+		bne	.wait
+		move.w	$81556,d0		;aktuelles team
+		lea	$821c0,a1
+		st	(a1,d0.w)
+		lea	$821c6,a1
+		st	(a1,d0.w)
+		lea	$81f4c,a1
+		add.w	d0,a1
+		add.w	d0,a1
+		move.w	#42,(a1)		;grenades
+		move.w	#42,(6,a1)		;bazookas
 
-;----------------------------------
+.wait		moveq	#3-1,d1
+.wait1		move.b	(vhposr,a2),d0
+.wait2		cmp.b	(vhposr,a2),d0
+		beq	.wait2
+		dbf	d1,.wait1
 
-	
-;======================================================================
+.end		and.b	#~(CIACRAF_SPMODE),(ciacra,a0)
+		move.w	#INTF_PORTS,(intreq,a2)
+		tst.w	(intreqr,a2)
+		movem.l	(a7)+,_MOVEMREGS
+		rte
+
+.exit		pea	TDREASON_OK
+		move.l	(_resload),-(a7)
+		add.l	#resload_Abort,(a7)
+		rts
+
+;============================================================================
 
 	END
+
