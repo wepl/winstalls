@@ -233,6 +233,9 @@ get :
 %.o : %.c
 	$(CC) -o $@ -c $<
 
+.date :
+	$(DATE)
+
 #
 # generic targets
 #
