@@ -1,0 +1,89 @@
+Title......: HD-Installer for Cannon Fodder (disk version)
+Type.......: Hard drive patch (WHDLoad)
+Author.....: Galahad of Fairlight, Wepl
+
+This patch applies to Cannon Fodder, ©1993 Sensible Software
+3 Disk version, supported are 2 english, french, german and italian versions.
+
+Slave requires WHDLOAD V17+.
+Game requires 1 MB Chip memory and 0.5 MB other memory.
+
+Version 2.0 (17.6.2018) done by Wepl:
+- Slave rewritten to support other versions and misc other features
+- new RawDIC imager provided, checks for correct disks
+- french, german and italian versions supported
+- game must be reinstalled because some obsolete files have been removed, the
+  data directory name has been renamed and the save game handling has changed
+  and requires a new directory, to migrate old savegames copy the save files
+  manually (without the file 'GALAHAD.ROOT')
+- stack moved to fast memory
+- bplcon0.color bits fixed
+- some access faults fixed
+- all files can be compressed by WHDLoad supported packer (e.g. RNC)
+- several translation bugs in the german version fixed (einige Sachen sind
+  allerdings Grafiken und lassen sich nicht ohne weiteres ändern (Heldon),
+  falls Bedarf besteht, kann ich auch die weichgespülten Sachen noch anpassen,
+  z.B. ausschalten -> töten)
+- manual, hints and new icons added
+- new install script
+
+FEATURES: v1.3
+- Memory requirements for chip memory reduced and moved to extra ram
+
+FEATURES: v1.2
+- Full load from Hard drive (Installed as REAL files)
+- Lame-o-Protect removed (SOS MFM) (SOS = Sensible Operating System)
+- Load/Save games to Hard drive (180 seperate saves allowed!)
+- IFF decode routine rewritten and relocated to fast ram
+- RNC Data depack routine relocated to fast ram
+- 2x Bus errors removed
+- All CACR code removed
+- Some files removed that are not needed to save disk space
+- Quit option is 'Del'
+
+Thanks to Slinka & YoYo for disk images.
+
+EXTRA NOTES:
+Took a little while to complete as I wanted to be sure there were no more
+bugs in the game.
+
+Tested on A4ooo o3o and A12oo o6o Tower.
+
+All the Copylock files were fakes.  There are four in memory, but they all
+force the serial key regardless of what disk is in the drive.  I only ever
+detected 1 Copylock ever being accessed, but better to be safe, I have
+removed them all, just in case using the load/save bypasses one of them.
+
+The MFM protection was the usual Sensible Software disk system, very
+similar to some Millenium games, and very very similar to the disk system
+employed by SFX (Robocop 2, Navy Seals, Hudson Hawk etc, etc)
+
+I believe I have found all the access faults, if anyone has any problems,
+just get in contact and I will have a look.
+
+EXTRA EXTRA NOTES:
+For the nosey only.  
+
+If you want to, you can also edit all of the ingame graphics, anything with
+a .lbm extension is an IFF file.  Note that any file that uses 16 colours
+will reload some of the graphics using the copper chip, so whilst you can
+change the colours of some graphics, the Cannon Fodder program will still
+force some colours to stay the same.
+
+Unpack the VIRGPRES.RAW file (RNC), and load it through an iffconverter
+that can handle raw images.
+
+Width     = 320
+Height    = 256
+Bitplanes = 5     To reveal some secret messages!!!
+
+Also, when you complete the game and you are presented with the end screen,
+take the FIRST letter of each word, and it spells out a rather well known
+phrase :)
+
+Enjoy this great game, which is so much improved off Hard Drive.
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de
+
+
