@@ -2,11 +2,11 @@
 ;  :Program.	cannonfodder.islave.asm
 ;  :Contents.	Imager for Cannon Fodder
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.islave.asm 1.4 2018/05/23 02:04:10 wepl Exp wepl $
 ;  :History.	19.06.2017 created
 ;		22.03.2018 updated to v5 RawDIC
 ;		23.05.2018 finished
 ;		17.06 2018 italian version added
+;		06.03.2026 winstall integration
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -35,7 +35,7 @@ MAXFILE	= 196729
 ;============================================================================
 
 	INCDIR	Includes:
-	INCLUDE	RawDic.i
+	INCLUDE	RawDIC.i
 	IFD DEBUG
 	INCLUDE	lvo/exec.i
 	INCLUDE	lvo/dos.i
@@ -62,9 +62,8 @@ MAXFILE	= 196729
 
 		dc.b	"$VER: "
 _text		dc.b	"Cannon Fodder Imager",10
-		dc.b	"Done by Wepl, Version 1.0 "
-	DOSCMD	"WDate >T:date"
-	INCBIN	"T:date"
+		dc.b	"Done by Wepl, Version 1.1 "
+	INCBIN	".date"
 		dc.b	".",0
 _skipfiles	dc.b	"fload",0
 		dc.b	"FODDERF",0
