@@ -2,12 +2,12 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "Cannon Fodder"
 ;  :Author.	Wepl
-;  :Version.	$Id: cannonfodder.asm 1.7 2018/06/13 00:21:30 wepl Exp wepl $
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;		17.05.18 access fault fix improved
 ;			 support for en2/de added
 ;		12.06.18 support for fr added
 ;		17.06.18 support for it added
+;		02.03.26 Trainer added by Arise from Decay
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -20,12 +20,13 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	"wart:c/cannonfodder/CannonFodder.Slave"
+	OUTPUT	"HD2:WHDLoad/CannonFodder/CannonFodder.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-
 	SUPER
 	ENDC
 
@@ -37,7 +38,7 @@ EXPMEMLEN = $b000
 ;============================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	13			;ws_Version
+		dc.w	17			;ws_Version
 		dc.w	WHDLF_NoError		;ws_flags
 		dc.l	$100000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -50,6 +51,10 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
+		dc.w	0			;ws_kickname
+		dc.l	0			;ws_kicksize
+		dc.w	0			;ws_crc
+		dc.w	_config-_base		;ws_config
 
 ;============================================================================
 
@@ -60,11 +65,19 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 _name		dc.b	"Cannon Fodder",0
 _copy		dc.b	"1993 Sensible Software",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 2.0 "
+		dc.b	"Version 2.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
+		dc.b	10
+		dc.b	"Trainer added by Arise from Decay",10
+		dc.b	"Press `N` to skip level",0
+_config		dc.b	"C1:X:Infinite Recruits:0;"
+		dc.b	"C1:X:Infinite Grenades:1;"
+		dc.b	"C1:X:Infinite Bazookas:2;"
+		dc.b	"C1:X:Troops Invulnerable:3;"
 		dc.b	0
+
 _data		dc.b	"data",0
 _game		dc.b	"fodderc",0
 _d1		dc.b	"DISK1",0
@@ -121,6 +134,10 @@ _start	;	A0 = resident loader
 .patch		move.l	a3,a1
 		jsr	(resload_Patch,a2)
 
+;		move.w	#$4e71,$9e208
+;		move.w	#$4e71,$9e20a
+;		move.w	#$4e71,$9e20c
+
 		lea	(_custom),a6
 		jmp	(a3)
 
@@ -158,6 +175,18 @@ _plen1		PL_START
 		PL_S	$2a29e,10		;load/save game
 		PL_PS	$2a2c8,_savegame
 		PL_R	$2acfe			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS	$1e208,3		;Trainer Soldiers
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS	$17e14,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS	$1b584,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS	$1dc8a,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_END
 
 _plcommon	PL_START
@@ -230,6 +259,18 @@ _plde		PL_START
 		PL_PS	$2aa18,_savegame
 		PL_STR	$2aad0,<IB EINEN DATEI>
 		PL_R	$2b37a			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS	$1e3ec,3		;Trainer Soldiers
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS	$17fc8,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS	$1b738,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS	$1de6e,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_plcommon
 
 .mit		dc.b	"MIT ",-1
@@ -266,6 +307,18 @@ _plfr		PL_START
 		PL_S	$2a9c4,10		;load/save game
 		PL_PS	$2a9ee,_savegame
 		PL_R	$2b452			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS	$1e432,3		;Trainer Soldiers
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS	$17fca,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS	$1b73a,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS	$1deb4,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_plfrit
 
 _plit		PL_START
@@ -288,6 +341,18 @@ _plit		PL_START
 		PL_S	$2a9ce,10		;load/save game
 		PL_PS	$2a9f8,_savegame
 		PL_R	$2b472			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS	$1e3e4,3		;Trainer Soldiers
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS	$17fca,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS	$1b73a,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS	$1de66,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_plfrit
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
@@ -444,8 +509,13 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 
 		cmp.b	(_keyexit),d0
 		beq	.exit
-		cmp.b	#$5f,d0			;HELP ?
-		bne	.wait
+		cmp.b	#$36,d0			;`N` ?
+		beq	.skiplv
+		cmp.b	#$5f,d0			;HELP?
+		beq	.help
+		bra	.wait
+
+.help
 		move.w	$81556,d0		;aktuelles team
 		lea	$821c0,a1
 		st	(a1,d0.w)
@@ -456,6 +526,10 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 		add.w	d0,a1
 		move.w	#42,(a1)		;grenades
 		move.w	#42,(6,a1)		;bazookas
+		bra	.wait
+
+.skiplv		move.w	#$ffff,$81dcc	 	;win phase/mission
+		bra	.wait
 
 .wait		moveq	#3-1,d1
 .wait1		move.b	(vhposr,a2),d0
