@@ -172,9 +172,13 @@ $(INSTALLSRCDIR) :
 	$(MKDIR) '$@'
 $(INSTALLSRCSLAVE) : $(SLAVESRC)
 	$(CP) $< '$@'
-INSTALLFILES = $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) \
+INSTALLFILES = updutime $(INSTDIR) $(INSTDIRICON) $(INSTALL) $(INSTALLICON) $(INSTALLREADME) $(INSTALLREADMEICON) $(INSTALLICONS) \
 	$(INSTALLSLAVE) $(INSTALLISLAVE) $(INSTALLFILESMORE) $(INSTALLGENFILES) $(INSTALLSRCDIR) $(INSTALLSRCSLAVE)
 inst : $(INSTALLFILES)
+
+# set timestamp of files to last commit time
+updutime :
+	$(UPDUTIME)
 
 #
 # target: build install package archive
@@ -246,7 +250,7 @@ clean :
 #
 # targets to always build
 #
-.PHONY : dest get img inst arc rel wepl clean
+.PHONY : dest get img inst arc rel wepl clean updutime
 
 # debugging: print all make variables defined between saving vars to VARS_OLD and here
 #$(foreach v,$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))),$(info $(v) = $($(v))))

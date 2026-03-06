@@ -1,0 +1,18 @@
+#!/bin/sh
+# set timestamp of files to last commit time
+set -e
+
+# make sure git repo is not shallow
+git rev-parse --is-shallow-repository | grep -q false
+
+# restore timestamps
+git log --pretty=%at --name-status --relative -- . | perl -ane '
+	BEGIN { %m = map { chomp; $_ => 1 } `git diff --name-only --relative HEAD -- .` }	# locally modified files
+	($x,$f)=@F;
+	$x or next;			# empty lines
+	$t=$x, next if !$f;		# timestamp lines
+	$s{$f}++, next if $x eq "D";	# deleted files, remember done
+	next if $s{$f} || $m{$f} || $x!~/[AM]/;	# skip not added/modified files (moved ones) or locally modified
+	$s{$f}++; utime($t,$t,$f)	# remember files done and do update
+'
+
