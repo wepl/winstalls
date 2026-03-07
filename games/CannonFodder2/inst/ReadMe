@@ -1,0 +1,67 @@
+
+ THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, STATUTORY OR OTHERWISE. THE ENTIRE RISK AS TO USE, RESULTS AND
+ PERFORMANCE OF THE PACKAGE IS ASSUMED BY YOU AND IF THE PACKAGE SHOULD PROVE
+ TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR OTHER REMEDIATION.
+ UNDER NO CIRCUMSTANCES, CAN THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE
+ CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
+ PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+
+ This install applies to "Cannonfodder 2" © 1994 Sensible Software.
+ The english, french and the german version is supported.
+ 
+ This install requires WHDLoad to be in the path. It can be found in the
+ WHDLoad package.
+ To install from a different drive than DF0: select Expert Mode during
+ installation.
+
+ The installed program requires 1 MB ChipMem and 0.5 MB OtherMem.
+ It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
+
+ If you have problems with this installation please try and get a newer
+ version of this package from the WHDLoad WWW-Page. If that doesn't help try
+ some Tooltypes like NOCACHE, NOAUTOVEC, NOVBRMOVE, NOMMU, PAL or NTSC. If
+ that also fails, please inform the author via the Bug-Report-Form which
+ can be accessed on the WHDLoad WWW-Page.
+
+ For the full WHDLoad package, other installs and updates refer to:
+	http://www.whdload.de/
+ or	aminet:dev/misc/whdload#?
+ and	aminet:game/patch/
+
+ previous versions created by Wepl in May 1996, January and September 1998.
+
+ version 1.5 (03.06.00) done by Wepl:
+ - reworked and cleanup
+
+ version 1.6 (10.01.01) done by Wepl:
+ - accesses to AGA registers removed
+ - bplcon0.color fixed
+
+ version 1.7 (20.02.01) done by Wepl:
+ - two access faults removed
+
+ version 1.8 (20.07.03) done by Wepl:
+ - keyboard handling fixed (thx to Seppo Seppala for report)
+
+ version 1.9 (12.08.05) done by Wepl:
+ - support for french version added (thanks to Denis Lechevalier)
+ - two exotica icons added
+
+ version 1.10 (08.09.05) done by Wepl:
+ - load/save fixed for french version
+
+ version 1.11 (19.05.09) done by Wepl:
+ - fixed for WHDLoad version 16.9 (illegal chars in directory name)
+ - to migrate from a previous version you need to move the 'save'
+   directory into the 'data' directory
+ - save buffer moved to fastmem, because of this now requires at least
+   WHDLoad version 16.9
+ - new install script
+
+ version 1.12 (17.05.11) done by Wepl:
+ - keyboard handling problems on some machines (68040) fixed, issue #2422
+ - access fault on loading a savegame after playing and less than 4 savegames
+   exist fixed, issue #2438
+
