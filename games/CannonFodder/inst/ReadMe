@@ -8,8 +8,9 @@ This patch applies to Cannon Fodder, ©1993 Sensible Software
 Slave requires WHDLOAD V17+.
 Game requires 1 MB Chip memory and 0.5 MB other memory.
 
-Version 2.1 (06.03.2026) done by Arise from Decay:
-- Trainer for all versions added
+Version 2.1 (07.03.2026) done by Arise from Decay:
+- Trainer for all versions added (except 2nd english version)
+- source at https://github.com/wepl/winstalls
 
 Version 2.0 (17.6.2018) done by Wepl:
 - Slave rewritten to support other versions and misc other features
