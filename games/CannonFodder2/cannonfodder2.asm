@@ -47,6 +47,7 @@ crc_v5	= $aa9f		;italian
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
+	IFD	BARFLY
 	OUTPUT	HD2:whdload/cannonfodder2/CannonFodder2.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
@@ -55,6 +56,7 @@ crc_v5	= $aa9f		;italian
 	BOPT	w4-				;disable 64k warnings
 	BOPT	wo-
 	SUPER
+	ENDC
 
 BUFLEN = $1000
 
@@ -84,16 +86,11 @@ _expmem		dc.l	BUFLEN			;ws_ExpMem
 
 ;============================================================================
 
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
 		dc.b	"Version 1.13 "
-		INCBIN	"T:date"
+		INCBIN	".date"
 		dc.b	10,"Trainer addded by Arise from Decay",10
 		dc.b	"Press `N` to skip level",0
 _config		dc.b	"C1:X:Infinite Recruits:0;"

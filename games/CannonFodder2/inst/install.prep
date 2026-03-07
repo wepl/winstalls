@@ -1,0 +1,35 @@
+#version=3
+#sub-dir=data
+#man-file=Manual
+#P_MakeImages#3
+      (set #AD_diskname "Disk 1")
+      (set #AD_filereq "disk1")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_dev))
+        (dest #dest)
+	(pattern "~(disk1|mapm#?|s|cf2.rel|ssboot)")
+      )
+      (set #AD_diskname "Disk 2")
+      (set #AD_disk "cf2-2")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_dev))
+        (dest #dest)
+	(pattern "~(disk2)")
+      )
+      (set #AD_diskname "Disk 3")
+      (set #AD_disk "cf2-3")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_dev))
+        (dest #dest)
+	(pattern "~(disk3|hi#?|ic#?|mapm1.spt|morp#?|ps#?|ra#?)")
+      )
+      (makedir 
+	(tackon #dest "save")
+	(help @makedir-help)
+      )
