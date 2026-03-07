@@ -29,6 +29,7 @@
 ;		11.05.11 keyboard routine modified, issue #2422
 ;		15.05.11 access fault on loading savegame fixed, issue #2438
 ;		24.11.18 support for italian version added
+;		02.03.26 trainer for english version added by Arise from Decay
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -46,12 +47,13 @@ crc_v5	= $aa9f		;italian
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 
-	OUTPUT	wart:c/cannonfodder2/CannonFodder2.Slave
+	OUTPUT	HD2:whdload/cannonfodder2/CannonFodder2.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
 	BOPT	ODe-				;disable mul optimizing
 	BOPT	w4-				;disable 64k warnings
+	BOPT	wo-
 	SUPER
 
 BUFLEN = $1000
@@ -62,7 +64,7 @@ BUFLEN = $1000
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
-		dc.w	16			;ws_Version
+		dc.w	17			;ws_Version
 		dc.w	WHDLF_NoError		;ws_flags
 		dc.l	$100000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
@@ -78,6 +80,7 @@ _expmem		dc.l	BUFLEN			;ws_ExpMem
 		dc.w	0			;ws_kickname
 		dc.l	0			;ws_kicksize
 		dc.w	0			;ws_kickcrc
+		dc.w	_config-_base		;ws_Config
 
 ;============================================================================
 
@@ -91,7 +94,12 @@ _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
 		dc.b	"Version 1.13 "
 		INCBIN	"T:date"
-		dc.b	0
+		dc.b	10,"Trainer addded by Arise from Decay",10
+		dc.b	"Press `N` to skip level",0
+_config		dc.b	"C1:X:Infinite Recruits:0;"
+		dc.b	"C1:X:Infinite Grenades:1;"
+		dc.b	"C1:X:Infinite Bazookas:2;"
+		dc.b	"C1:X:Troops Invulnerable:3",0
 _dir		dc.b	"data",0
 _main		dc.b	"cf2",0
 _d1		dc.b	"DISK1",0
@@ -157,19 +165,20 @@ _pl		PL_START
 		PL_W	$2dbc,$4200		;bplcon0
 		PL_S	$5fc2,8+8		;bplcon3,4
 		PL_S	$5fd2,4			;move #$2000,sr
-		PL_L	$762c,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
-		PL_L	$7724,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
-		PL_L	$777a,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
-		PL_L	$77d0,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$762c,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_L	$7724,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_L	$777a,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_L	$77d0,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_P	$98a6,_keyboard		;keyboard int umleiten
 		PL_R	$9ec8			;copylock
-		PL_L	$9ee2,0			;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$9ee2,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_W	$ac98,$1e		;htotal
 		PL_P	$afd6,_Loader
 		PL_W	$c0c2,$200		;bplcon0
 		PL_END
-		
+
 ;======================================================================
+
 
 _pl1		PL_START
 	;	PL_L	$9ff6,$203c3d74		;differences between cracked and original version
@@ -192,17 +201,29 @@ _pl1		PL_START
 		PL_S	$289a6,$e4-$a6		;skips file "CFSDISK"
 		PL_S	$28c2c,4		;load/save game
 		PL_W	$28c38,$98a-$890	;load/save game
-		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$28d94,10		;load/save game
-		PL_L	$29496,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$29496,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$297c6			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS $1d4d0,3		;Trainer recruits
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS $170fe,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS $1aaf4,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS $1cefe,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_pl
 
-_af		move.w	$8155a,d0			;actual player/team (0-5)
+_af		move.w	$8155a,d0		;actual player/team (0-5)
 		bpl	.ok
 		clr.w	d0
 .ok		rts
-		
+
 ;======================================================================
 
 _pl24		PL_START
@@ -214,7 +235,21 @@ _pl24		PL_START
 		PL_PS	$1ded8,_af
 		PL_B	$22c70,$6f		;beq -> ble
 		PL_PS	$22d5a,_s1
+		PL_IFC1X 0
+		PL_NOPS $1d5ae,3		;Trainer recruits
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS $171dc,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS $1abd2,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS $1cfdc,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_pl
+
+;======================================================================
 
 _pl2		PL_START
 		PL_W	$26420,$6600
@@ -225,9 +260,9 @@ _pl2		PL_START
 		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$2910e,4		;load/save game
 		PL_W	$2911a,$8cc-$7ce	;load/save game (bsr $299e6 -> $29218)
-		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$2927a,10		;load/save game
-		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$29bea			;"insert disk 3"
 		PL_NEXT	_pl24
 
@@ -250,9 +285,9 @@ _pl4		PL_START
 		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$290f2,4		;load/save game
 		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
-		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$29266,10		;load/save game
-		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$29b94			;"insert disk 3"
 		PL_NEXT	_pl24
 
@@ -267,9 +302,9 @@ _pl5		PL_START
 		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$290f2,4		;load/save game
 		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
-		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$29266,10		;load/save game
-		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source für stringcopy)
+		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$29b94			;"insert disk 3"
 		PL_NEXT	_pl24
 
@@ -295,6 +330,8 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 
 		cmp.b	(_keyexit),d0
 		beq	.exit
+		cmp.b   #$36,d0			;`N` ?
+		beq	.skiplv
 		cmp.b	#$5f,d0			;HELP ?
 		bne	.wait
 	;	move.w	#$4a79,$a2a2e		;enable sound (version 2)
@@ -308,6 +345,9 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 		add.w	d0,a1
 		move.w	#42,(a1)		;grenades
 		move.w	#42,(6,a1)		;bazookas
+		bra	.wait
+
+.skiplv		move.w	#$ffff,$81dd0		;win phase/mission
 
 .wait		moveq	#3-1,d1
 .wait1		move.b	(vhposr,a2),d0

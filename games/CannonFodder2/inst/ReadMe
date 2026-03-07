@@ -65,3 +65,5 @@
  - access fault on loading a savegame after playing and less than 4 savegames
    exist fixed, issue #2438
 
+ version 1.13 (06.03.26) done by Arise from Decay
+ - trainer for all versions added
