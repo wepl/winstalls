@@ -1,12 +1,12 @@
 ;*---------------------------------------------------------------------------
-;  :Program.	cf2.asm
+;  :Program.	cannonfodder2.asm
 ;  :Contents.	Slave for "Cannonfodder 2"
 ;  :Author.	Wepl
 ;  :Original.	v1 crack
 ;		v2 german	Bert Jahn
 ;		v3 english
 ;		v4 french	Denis Lechevalier <dlfrsilver@hotmail.fr>
-;  :Version.	$Id: cf2.asm 1.13 2011/05/17 22:43:26 wepl Exp wepl $
+;		v5 italian
 ;  :History.	20.05.96
 ;		17.05.97 improved for version 3
 ;			 adapded for german version
@@ -30,6 +30,7 @@
 ;		15.05.11 access fault on loading savegame fixed, issue #2438
 ;		24.11.18 support for italian version added
 ;		02.03.26 trainer for english version added by Arise from Decay
+;		07.03.26 italian support completed
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -41,7 +42,7 @@ crc_v1	= $e95e		;english cracked ?
 crc_v2	= $b9c6		;german
 crc_v3	= $389d		;english
 crc_v4	= $aa9f		;french
-crc_v5	= $aa9f		;italian
+crc_v5	= $e80b		;italian
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -157,25 +158,26 @@ _start	;	A0 = resident loader
 		JMP	$5f46(a5)
 
 ;======================================================================
+; equal part for all versions
 
 _pl		PL_START
 		PL_W	$2dbc,$4200		;bplcon0
 		PL_S	$5fc2,8+8		;bplcon3,4
 		PL_S	$5fd2,4			;move #$2000,sr
-		PL_L	$762c,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
-		PL_L	$7724,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
-		PL_L	$777a,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
-		PL_L	$77d0,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$762c			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$7724			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$777a			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$77d0			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_P	$98a6,_keyboard		;keyboard int umleiten
 		PL_R	$9ec8			;copylock
-		PL_L	$9ee2,0			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$9ee2			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_W	$ac98,$1e		;htotal
 		PL_P	$afd6,_Loader
 		PL_W	$c0c2,$200		;bplcon0
 		PL_END
 
 ;======================================================================
-
+; english
 
 _pl1		PL_START
 	;	PL_L	$9ff6,$203c3d74		;differences between cracked and original version
@@ -198,9 +200,9 @@ _pl1		PL_START
 		PL_S	$289a6,$e4-$a6		;skips file "CFSDISK"
 		PL_S	$28c2c,4		;load/save game
 		PL_W	$28c38,$98a-$890	;load/save game
-		PL_L	$28C52,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$28C52			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$28d94,10		;load/save game
-		PL_L	$29496,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$29496			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$297c6			;"insert disk 3"
 		PL_IFC1X 0
 		PL_NOPS $1d4d0,3		;Trainer recruits
@@ -222,6 +224,7 @@ _af		move.w	$8155a,d0		;actual player/team (0-5)
 .ok		rts
 
 ;======================================================================
+; equal part for german/french versions
 
 _pl24		PL_START
 		PL_W	$1C356,$4200
@@ -247,6 +250,7 @@ _pl24		PL_START
 		PL_NEXT	_pl
 
 ;======================================================================
+; german
 
 _pl2		PL_START
 		PL_W	$26420,$6600
@@ -257,9 +261,9 @@ _pl2		PL_START
 		PL_S	$28e7a,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$2910e,4		;load/save game
 		PL_W	$2911a,$8cc-$7ce	;load/save game (bsr $299e6 -> $29218)
-		PL_L	$29134,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$29134			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$2927a,10		;load/save game
-		PL_L	$298ae,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$298ae			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$29bea			;"insert disk 3"
 		PL_NEXT	_pl24
 
@@ -272,6 +276,7 @@ _s1		cmp.l	#$100000,d0
 		rts
 
 ;======================================================================
+; french
 
 _pl4		PL_START
 		PL_W	$2640e,$6600
@@ -282,28 +287,49 @@ _pl4		PL_START
 		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
 		PL_S	$290f2,4		;load/save game
 		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
-		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$29118			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_S	$29266,10		;load/save game
-		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_CL	$2985c			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_R	$29b94			;"insert disk 3"
 		PL_NEXT	_pl24
 
 ;======================================================================
+; italian
 
 _pl5		PL_START
+		PL_W	$1C352,$4200
+		PL_W	$1C3F2,$4200
+		PL_W	$1C406,$5200
+		PL_W	$1C6Ea,$5200
+		PL_W	$1C7A8,$4200
+		PL_PS	$1ded4,_af
+		PL_B	$22c6c,$6f		;beq -> ble
+		PL_PS	$22d56,_s1
+		PL_IFC1X 0
+		PL_NOPS $1d5aa,3		;Trainer recruits
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS $171d8,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS $1abce,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS $1cfd8,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_W	$2640e,$6600
 		PL_W	$26626,$4200
-		PL_W	$2799a,$5200
-		PL_W	$27C26,$4200
-		PL_W	$28e2e,$35e+$324	;load/save game (bsr $294b0)
-		PL_S	$28e60,$b8-$7a		;skips file "CFSDISK"
-		PL_S	$290f2,4		;load/save game
-		PL_W	$290fe,$892-$78c	;load/save game (bsr $29990 -> $29204)
-		PL_L	$29118,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
-		PL_S	$29266,10		;load/save game
-		PL_L	$2985c,0		;move.l #xxxxxxxx,a0 (source for stringcopy)
-		PL_R	$29b94			;"insert disk 3"
-		PL_NEXT	_pl24
+		PL_W	$27998,$5200
+		PL_W	$27C24,$4200
+		PL_W	$28e2c,$94bc-$8e2c	;load/save game (bsr $294bc)
+		PL_S	$28e5e,$b8-$7a		;skips file "CFSDISK"
+		PL_S	$290ec,4		;load/save game
+		PL_W	$290f8,$1fe-$0f8	;load/save game (bsr $299a0 -> $291fe)
+		PL_CL	$29112			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_S	$29260,10		;load/save game
+		PL_CL	$2986a			;move.l #xxxxxxxx,a0 (source for stringcopy)
+		PL_R	$29ba4			;"insert disk 3"
+		PL_NEXT	_pl
 
 ;======================================================================
 

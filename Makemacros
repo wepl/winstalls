@@ -224,6 +224,9 @@ get :
 # generic rules
 #
 
+% : %.asm
+	$(ASM) $(ASMOUT)$@ $<
+
 %.Slave : %.asm
 	$(DATE)
 	$(ASM) $(ASMOUT)$@ $<

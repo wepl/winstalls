@@ -65,7 +65,8 @@
  - access fault on loading a savegame after playing and less than 4 savegames
    exist fixed, issue #2438
 
- version 1.13 (07.03.26) done by Arise from Decay
+ version 1.13 (07.03.26) done by Wepl / Arise from Decay
  - trainer for all versions added
+ - support for italian version added (issue #3896)
  - source at https://github.com/wepl/winstalls
 
