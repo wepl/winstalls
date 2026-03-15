@@ -97,7 +97,7 @@ slv_keyexit	= $59	;F10
 ;============================================================================
 
 slv_CurrentDir	dc.b	"data",0
-slv_name	dc.b	"Workbech 3.1 Kickstart 40.063/068",0
+slv_name	dc.b	"Workbench 3.1 Kickstart 40.063/068",0
 slv_copy	dc.b	"1985-93 Commodore-Amiga Inc.",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
 		dc.b	"Version 1.13 "
