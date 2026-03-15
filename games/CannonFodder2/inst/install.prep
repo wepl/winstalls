@@ -9,7 +9,7 @@
         (help @copyfiles-help)
         (source ("%s:" #AD_dev))
         (dest #dest)
-	(pattern "~(disk1|mapm#?|s|cf2.rel|ssboot)")
+	(pattern "~(disk1|mapm#?|s|ssboot)")
       )
       (set #AD_diskname "Disk 2")
       (set #AD_disk "cf2-2")

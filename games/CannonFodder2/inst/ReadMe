@@ -70,3 +70,8 @@
  - support for italian version added (issue #3896)
  - source at https://github.com/wepl/winstalls
 
+ version 1.14 (16.03.26) done by Wepl / Arise from Decay
+ - uses expansion memory now, chip ram requirement reduced to 512K,
+   now requires additionally the file CF2.REL, either reinstall or copy
+   this file manually from disk #1 (issue #4469)
+

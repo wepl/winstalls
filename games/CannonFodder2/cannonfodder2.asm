@@ -31,6 +31,7 @@
 ;		24.11.18 support for italian version added
 ;		02.03.26 trainer for english version added by Arise from Decay
 ;		07.03.26 italian support completed
+;		16.03.26 fastmem support added, WHDLF_ClearMem, fix another af
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -68,15 +69,15 @@ BUFLEN = $1000
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	17			;ws_Version
-		dc.w	WHDLF_NoError		;ws_flags
-		dc.l	$100000			;ws_BaseMemSize
+		dc.w	WHDLF_NoError|WHDLF_ClearMem	;ws_flags
+		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
 		dc.w	_dir-_base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
-_expmem		dc.l	BUFLEN			;ws_ExpMem
+_expmem		dc.l	$80000+BUFLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
@@ -90,9 +91,9 @@ _expmem		dc.l	BUFLEN			;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.13 "
+		dc.b	"Version 1.14 "
 		INCBIN	".date"
-		dc.b	10,"Trainer addded by Arise from Decay",10
+		dc.b	10,"Trainer added by Arise from Decay",10
 		dc.b	"Press `N` to skip level",0
 _config		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
@@ -100,6 +101,7 @@ _config		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Troops Invulnerable:3",0
 _dir		dc.b	"data",0
 _main		dc.b	"cf2",0
+_rel		dc.b	"cf2.rel",0
 _d1		dc.b	"DISK1",0
 _d2		dc.b	"DISK2",0
 _d3		dc.b	"DISK3",0
@@ -114,36 +116,88 @@ _start	;	A0 = resident loader
 		move.l	a0,(_resload)
 		move.l	a0,a2			;A2 = resload
 
+		move.l	(_expmem),a7
+		add.l	#$80000,a7		;SSP
+
 		move.l	#CACRF_EnableI,d0
 		move.l	d0,d1
 		jsr	(resload_SetCACR,a2)
 
 		lea	(_main),a0
-		lea	($80000),a1
+		move.l	(_expmem),a1
 		move.l	a1,a5			;A5 = main address
 		jsr	(resload_LoadFileDecrunch,a2)
 		move.l	a5,a0
 		jsr	(resload_CRC16,a2)
-		lea	(_pl1),a0
+		lea	(_pl1),a4		;A4 = patch list
 		cmp.w	#crc_v1,d0
 		beq	.ok
 		cmp.w	#crc_v3,d0
 		beq	.ok
-		lea	(_pl2),a0
+		lea	(_pl2),a4
 		cmp.w	#crc_v2,d0
 		beq	.ok
-		lea	(_pl4),a0
+		lea	(_pl4),a4
 		cmp.w	#crc_v4,d0
 		beq	.ok
-		lea	(_pl5),a0
+		lea	(_pl5),a4
 		cmp.w	#crc_v5,d0
 		beq	.ok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
+.ok
+	;relocate executable
+		lea	(_rel),a0
+		lea	$1000,a1
+		jsr	(resload_LoadFileDecrunch,a2)
+		lea	$1000,a0
+	;skip broken part
+		move.l	#$598,d1		;size broken block
+		sub.l	d1,d0
+		lea	(4,a0),a1		;start block
+		lea	(a1,d1.l),a3		;end block
+		move.l	d0,d1
+.copy		move.l	(a3)+,(a1)+
+		sub	#4,d1
+		bne	.copy
+	;relocate
+	;the original routine only adds a byte to the offset from cf2.rel
+	;we must add a real long offset (alignment $1000)
+	;there are bad entries in cf2.rel where subsequent offsets are contained
+	;example: area at 4 size $598
+	;	  3 entries: 1cba1..1cba3 (random generator)
+	;we skip entries with distance less 3 to the last one
+		move.l	a5,d1
+		sub.l	#$80000,d1		;exe is "org $80000"
+		moveq	#0,d3
+.loop		move.l	(a0)+,d2
+		cmp.l	d3,d2
+		bls	.skip
+		move.l	d2,d3
+		add.l	#2,d3
+		lea	(-1,a5,d2.l),a1
+		add.l	d1,(a1)
+.skip		sub	#4,d0
+		bne	.loop
 
-.ok		move.l	a5,a1
+	;patch
+		move.l	a4,a0			;patch list
+		move.l	a5,a1			;destination
 		jsr	(resload_Patch,a2)
 
+	IFEQ 1
+		moveq	#4,d0
+		lea	($a12,a5),a0
+		jsr	(resload_ProtectWrite,a2)
+		clr.l	-(a7)			;TAG_DONE
+		pea	(_af_a12,pc)		;function
+		pea	WHDLTAG_CBAF_SET	;tag
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+	ENDC
+
+	;obsoleted by WHDLF_ClearMem
+	IFEQ 1
 		LEA	$3D50.W,A0		;clr diskbuffer for root-block
 		MOVEQ	#$007F,D0		;filenamen generierung
 .c2		CLR.L	(A0)+
@@ -153,9 +207,32 @@ _start	;	A0 = resident loader
 		moveq	#5*32/4,d0		;must cleared because couples of bugs
 .c3		clr.l	(a0)+
 		dbf	d0,.c3
+	ENDC
 
 		move	#0,sr			;to usermode
 		JMP	$5f46(a5)
+
+	IFEQ 1
+_af_a12		move.l	a1,-(a7)
+		move.l	_expmem,a1
+		add.l	#$6056,a1
+		cmp.l	a0,a1
+		beq	.ok
+		move.l	_expmem,a1
+		add.l	#$71e2,a1
+		cmp.l	a0,a1
+		beq	.ok
+		move.l	_expmem,a1
+		add.l	#$160a6,a1
+		cmp.l	a0,a1
+		beq	.ok
+		move.l	(a7)+,a1
+		moveq	#0,d0			;fail
+		rts
+.ok		move.l	(a7)+,a1
+		moveq	#1,d0			;continue
+		rts
+	ENDC
 
 ;======================================================================
 ; equal part for all versions
@@ -164,6 +241,7 @@ _pl		PL_START
 		PL_W	$2dbc,$4200		;bplcon0
 		PL_S	$5fc2,8+8		;bplcon3,4
 		PL_S	$5fd2,4			;move #$2000,sr
+		PL_S	$738e,10		;skip and.l #$fffff,($a12)
 		PL_CL	$762c			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_CL	$7724			;move.l #xxxxxxxx,a0 (source for stringcopy)
 		PL_CL	$777a			;move.l #xxxxxxxx,a0 (source for stringcopy)
@@ -182,6 +260,7 @@ _pl		PL_START
 _pl1		PL_START
 	;	PL_L	$9ff6,$203c3d74		;differences between cracked and original version
 	;	PL_L	$9ffa,$2cf14e75		;differences between cracked and original version
+		PL_S	$15fae,10		;skip and.l #$fffff,($a12)
 		PL_W	$1C278,$4200
 		PL_W	$1C318,$4200
 		PL_W	$1C32c,$5200
@@ -218,15 +297,28 @@ _pl1		PL_START
 		PL_ENDIF
 		PL_NEXT	_pl
 
-_af		move.w	$8155a,d0		;actual player/team (0-5)
+_af		move.l	_expmem,a0
+		move.w	($155a,a0),d0		;actual player/team (0-5)
 		bpl	.ok
 		clr.w	d0
-.ok		rts
+.ok		add	d0,d0
+		add	d0,d0
+		lea	($5c6a,a0),a1		;team table
+		move.l	(a1,d0.w),a1
+		move.l	(a1),d0
+		bmi	.error
+		move.l	d0,a1
+		add.l	#$1deec-$1ded8-6,(a7)
+		rts
+
+.error		addq.l	#4,a7			;quit subroutine
+		rts
 
 ;======================================================================
 ; equal part for german/french versions
 
 _pl24		PL_START
+		PL_S	$1608c,10		;skip and.l #$fffff,($a12)
 		PL_W	$1C356,$4200
 		PL_W	$1C3F6,$4200
 		PL_W	$1C40a,$5200
@@ -267,8 +359,8 @@ _pl2		PL_START
 		PL_R	$29bea			;"insert disk 3"
 		PL_NEXT	_pl24
 
-_s1		cmp.l	#$100000,d0
-		bhs	.ret
+_s1		cmp.l	#$4040fe40,d0
+		beq	.ret
 		move.l	d0,a1			;original
 		move.l	($20,a0),d0		;original
 		rts
@@ -297,6 +389,7 @@ _pl4		PL_START
 ; italian
 
 _pl5		PL_START
+		PL_S	$16088,10		;skip and.l #$fffff,($a12)
 		PL_W	$1C352,$4200
 		PL_W	$1C3F2,$4200
 		PL_W	$1C406,$5200
@@ -333,12 +426,13 @@ _pl5		PL_START
 
 ;======================================================================
 
-_keyboard	movem.l	d0-d1/a0-a2,-(a7)
-		lea	_ciaa,a0
-		lea	_custom,a2
+_keyboard	movem.l	d0-d1/a0-a3,-(a7)
+		lea	_ciaa,a0		;A0 = ciaa
+		lea	_custom,a2		;A2 = custom
+		move.l	_expmem,a3		;A3 = expmem
 		btst	#CIAICRB_SP,(ciaicr,a0)
 		beq	.end
-		lea	$814e9,a1
+		lea	($14e9,a3),a1
 		move.b	(ciasdr,a0),d0
 		or.b	#CIACRAF_SPMODE,(ciacra,a0)
 		ror.b	#1,d0
@@ -358,19 +452,19 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 		cmp.b	#$5f,d0			;HELP ?
 		bne	.wait
 	;	move.w	#$4a79,$a2a2e		;enable sound (version 2)
-		move.w	$8155a,d0		;aktuelles team
-		lea	$821c4,a1
+		move.w	($155a,a3),d0		;aktuelles team
+		lea	($21c4,a3),a1
 		st	(a1,d0.w)
-		lea	$821ca,a1
+		lea	($21ca,a3),a1
 		st	(a1,d0.w)
-		lea	$81f50,a1
+		lea	($1f50,a3),a1
 		add.w	d0,a1
 		add.w	d0,a1
 		move.w	#42,(a1)		;grenades
 		move.w	#42,(6,a1)		;bazookas
 		bra	.wait
 
-.skiplv		move.w	#$ffff,$81dd0		;win phase/mission
+.skiplv		move.w	#$ffff,($1dd0,a3)	;win phase/mission
 
 .wait		moveq	#3-1,d1
 .wait1		move.b	(vhposr,a2),d0
@@ -391,7 +485,13 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 
 ;--------------------------------
 
-_Loader		cmp.w	#3,d0		;list
+_Loader		movem.l	d2-a6,-(a7)
+		move.l	(_resload),a2	;A2 = resload
+		move.l	_expmem,a3	;A3 = expmem
+		move.l	a0,a4		;A4 = name
+		move.l	a1,a5		;A5 = ptr
+
+		cmp.w	#3,d0		;list
 		beq	.cmd3
 		cmp.w	#1,d0		;save
 		beq	.cmd1
@@ -400,11 +500,7 @@ _Loader		cmp.w	#3,d0		;list
 		illegal
 
 	;load file
-.cmd0		movem.l	d2-a6,-(a7)
-		move.l	a0,a4		;A4 = name
-		move.l	a1,a5		;A5 = ptr
-		
-		addq.l	#4,a4		; == "DF0:"
+.cmd0		addq.l	#4,a4		; == "DF0:"
 		tst.b	(a4)
 		beq	.ok
 		lea	_d1,a0		;"DISK1"
@@ -420,28 +516,27 @@ _Loader		cmp.w	#3,d0		;list
 		bsr	.cmp
 		beq	.ok
 
-		cmp.l	#$8062a,a5		;only if savefile
+	;check for loading savegame
+		lea	($62a,a3),a0
+		cmp.l	a0,a5
+		seq	d7		;d7 = loading savegame
 		bne	.load
-		move.l	(_expmem),a0
-		lea	(_savepath),a1
-.l1		move.b	(a1)+,(a0)+
-		bne	.l1
-		move.b	#"/",(-1,a0)
-.l2		move.b	(a4)+,(a0)+
-		bne	.l2
-		move.l	(_expmem),a4
+		bsr	.buildsavename
+		move.l	a0,a4
 
 .load		move.l	a4,a0
 		move.l	a5,a1
-		move.l	(_resload),a2
 		jsr	(resload_LoadFileDecrunch,a2)
 		move.l	d0,d1
-		
-		cmp.l	#$8062a,a5
-		bne	.ok
-	;fix problem with savegames from a floppy game
-	;containing absolute address of relocated program
-		move.l	#$80a1a,$80cec
+
+		tst.b	d7
+		beq	.ok
+	;fix problem with savegames containing absolute addresses of relocated program
+		lea	($a1a,a3),a0
+		move.l	a0,($cec,a3)	;savegame offset $6c2
+		lea	($748,a3),a0
+		move.l	a0,($62a+$3e8,a3)
+		move.l	a0,($62a+$3ec,a3)
 		
 .ok		movem.l	(a7)+,d2-a6
 		moveq	#0,d0
@@ -455,23 +550,25 @@ _Loader		cmp.w	#3,d0		;list
 		moveq	#-1,d0
 .cmpok		rts
 
+.buildsavename	bsr	.getbuffer
+		lea	(_savepath),a1
+.l1		move.b	(a1)+,(a0)+
+		bne	.l1
+		move.b	#"/",(-1,a0)
+.l2		move.b	(a4)+,(a0)+
+		bne	.l2
+
+.getbuffer	lea	$80000,a0
+		add.l	a3,a0		;expmem
+		rts
+
 	;save file
-.cmd1		MOVEM.L	D2-A6,-(A7)
-		ADDQ.L	#4,A0
-		move.l	(_expmem),A2
-		LEA	(_savepath),A3
-.l11		MOVE.B	(A3)+,(A2)+
-		BNE.B	.l11
-		MOVE.B	#"/",(-1,A2)
-.l12		MOVE.B	(A0)+,(A2)+
-		BNE.B	.l12
-		move.l	(_expmem),A0
+.cmd1		addq.l	#4,a4		; == "DF0:"
+		bsr	.buildsavename
+		move.l	a5,a1
 		MOVE.L	D1,D0
-		move.l	(_resload),a2
 		jsr	(resload_SaveFile,a2)
-		MOVEM.L	(A7)+,D2-A6
-		moveq	#0,D0
-		RTS	
+		bra	.ok
 
 	;list directory
 	;in:	a0 = source path
@@ -479,31 +576,29 @@ _Loader		cmp.w	#3,d0		;list
 	;	a2 = mfm buffer
 	;out:	d0 = success=0
 	;	d1 = amount of entries
-.cmd3		movem.l	d2-a6,-(a7)
+.cmd3		move.l	a1,a6			;a6 = array
+		bsr	.getbuffer
+		move.l	a0,a1
 		lea	(_savepath),a0
-		move.l	a1,a6			;a6 = array
-		move.l	(_expmem),a1
 		move.l	#BUFLEN,d0
-		move.l	(_resload),a2
 		jsr	(resload_ListFiles,a2)
 		move.l	d0,d7			;d7 = how many entries
 
-		move.l	a6,a0
-		move.l	(_expmem),a1
+		bsr	.getbuffer
 		move.w	d7,d0
 		beq	.cmd3_skip
 		
-.cmd3_lp	move.b	#-3,(a0)+		;FILE
-		addq.l	#1,a0
+.cmd3_lp	move.b	#-3,(a6)+		;FILE
+		addq.l	#1,a6
 		moveq	#-1,d1
 
 .cmd3_n		addq.l	#1,d1
-		move.b	(a1)+,(a0)+
+		move.b	(a0)+,(a6)+
 		bne	.cmd3_n
-		sub.l	d1,a0
-		subq.l	#2,a0
-		move.b	d1,(a0)
-		add.w	#31,a0
+		sub.l	d1,a6
+		subq.l	#2,a6
+		move.b	d1,(a6)
+		add.w	#31,a6
 		subq.l	#1,d0
 		bne	.cmd3_lp
 .cmd3_skip
@@ -511,15 +606,14 @@ _Loader		cmp.w	#3,d0		;list
 		moveq	#4,d1
 		sub.w	d7,d1
 		bcs	.cmd3_end
-.cmd3_clr	clr.b	(2,a0)
-		add.w	#32,a0
+.cmd3_clr	clr.b	(2,a6)
+		add.w	#32,a6
 		dbf	d1,.cmd3_clr
 
 .cmd3_end	move.l	d7,d1
-		movem.l	(a7)+,d2-a6
-		moveq	#0,d0
-		rts
+		bra	.ok
 
 ;======================================================================
 
 	END
+
