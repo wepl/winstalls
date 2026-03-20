@@ -65,7 +65,7 @@
  - access fault on loading a savegame after playing and less than 4 savegames
    exist fixed, issue #2438
 
- version 1.13 (07.03.26) done by Wepl / Arise from Decay
+ version 1.13 (07.03.26) done by Wepl / Arise from Decay:
  - trainer for all versions added
  - support for italian version added (issue #3896)
  - source at https://github.com/wepl/winstalls
@@ -74,4 +74,8 @@
  - uses expansion memory now, chip ram requirement reduced to 512K,
    now requires additionally the file CF2.REL, either reinstall or copy
    this file manually from disk #1 (issue #4469)
+
+ version 1.15 (22.03.26) done by Wepl:
+ - fix 68000 compatibility
+ - add Paradox Cracktro (just copy 'john' to upgrade)
 

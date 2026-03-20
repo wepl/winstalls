@@ -33,3 +33,9 @@
 	(tackon #dest "save")
 	(help @makedir-help)
       )
+      (copyfiles
+        (help @copyfiles-help)
+        (source "john")
+        (dest #dest)
+      )
+

@@ -32,6 +32,7 @@
 ;		02.03.26 trainer for english version added by Arise from Decay
 ;		07.03.26 italian support completed
 ;		16.03.26 fastmem support added, WHDLF_ClearMem, fix another af
+;		17.03.26 fix odd access, add paradox cracktro
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -91,11 +92,12 @@ _expmem		dc.l	$80000+BUFLEN		;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.14 "
+		dc.b	"Version 1.15 "
 		INCBIN	".date"
 		dc.b	10,"Trainer added by Arise from Decay",10
 		dc.b	"Press `N` to skip level",0
-_config		dc.b	"C1:X:Infinite Recruits:0;"
+_config		db	"C5:L:Cracktro:None,Paradox;"
+		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
 		dc.b	"C1:X:Infinite Bazookas:2;"
 		dc.b	"C1:X:Troops Invulnerable:3",0
@@ -107,6 +109,7 @@ _d2		dc.b	"DISK2",0
 _d3		dc.b	"DISK3",0
 _ds		dc.b	"CFSDISK",0
 _savepath	dc.b	"save",0
+_paradox	dc.b	"john",0
 	EVEN
 
 ;======================================================================
@@ -115,6 +118,7 @@ _start	;	A0 = resident loader
 
 		move.l	a0,(_resload)
 		move.l	a0,a2			;A2 = resload
+		lea	_custom,a6		;A6 = custom
 
 		move.l	(_expmem),a7
 		add.l	#$80000,a7		;SSP
@@ -123,6 +127,37 @@ _start	;	A0 = resident loader
 		move.l	d0,d1
 		jsr	(resload_SetCACR,a2)
 
+	;cracktro
+		clr.l	-(a7)
+		clr.l	-(a7)
+		pea	WHDLTAG_CUSTOM5_GET
+		move.l	a7,a0
+		jsr	(resload_Control,a2)
+		tst.l	(4,a7)
+		beq	.noctro
+		lea	_paradox,a0
+		lea	$1000,a1
+		move.l	a1,a5			;A5 = main address
+		jsr	(resload_LoadFileDecrunch,a2)
+		move.l	a5,a0
+		sub.l	a1,a1
+		jsr	(resload_Relocate,a2)
+		lea	_pl_paradox,a0
+		move.l	a5,a1
+		jsr	(resload_Patch,a2)
+		move.l	a2,-(a7)
+		waitvb	a6
+		jsr	(a5)
+		move.l	(a7)+,a2
+	;cracktro uses aga features
+	;	moveq	#0,d0
+	;	move	d0,(fmode,a6)
+	;	move	d0,(bplcon3,a6)
+		move	#$c00,(bplcon3,a6)
+	;	move	#$11,(bplcon4,a6)
+	;	move	d0,(color,a6)
+.noctro
+	;main
 		lea	(_main),a0
 		move.l	(_expmem),a1
 		move.l	a1,a5			;A5 = main address
@@ -166,12 +201,14 @@ _start	;	A0 = resident loader
 	;there are bad entries in cf2.rel where subsequent offsets are contained
 	;example: area at 4 size $598
 	;	  3 entries: 1cba1..1cba3 (random generator)
-	;we skip entries with distance less 3 to the last one
+	;we skip entries with distance less 3 to the last one and odd ones
 		move.l	a5,d1
 		sub.l	#$80000,d1		;exe is "org $80000"
 		moveq	#0,d3
 .loop		move.l	(a0)+,d2
-		cmp.l	d3,d2
+		btst	#0,d2			;must result in even address
+		beq	.skip
+		cmp.l	d3,d2			;at least 3 bytes different than previous
 		bls	.skip
 		move.l	d2,d3
 		add.l	#2,d3
@@ -233,6 +270,27 @@ _af_a12		move.l	a1,-(a7)
 		moveq	#1,d0			;continue
 		rts
 	ENDC
+
+;======================================================================
+
+_pl_paradox	PL_START
+		PL_P	$e72,.ack6c
+		PL_P	$ec4,.ack68
+		PL_P	$1434,.ack78
+		PL_P	$148c,.ack78
+		PL_END
+
+.ack68		move	#8,_custom+intreq
+		tst	_custom+intreqr
+		rte
+
+.ack6c		move	#$20,_custom+intreq
+		tst	_custom+intreqr
+		rte
+
+.ack78		move	#$2000,_custom+intreq
+		tst	_custom+intreqr
+		rte
 
 ;======================================================================
 ; equal part for all versions
