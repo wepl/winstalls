@@ -7,6 +7,7 @@
 ;		23.05.2018 finished
 ;		17.06 2018 italian version added
 ;		06.03.2026 winstall integration
+;		18.04.2026 save relocation file additionally
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -29,8 +30,9 @@
 ;
 ;---------------------------------------------------------------------------*
 
-;DEBUG
+;DEBUG = 1
 MAXFILE	= 196729
+MAXFODDER = 184738
 
 ;============================================================================
 
@@ -43,7 +45,7 @@ MAXFILE	= 196729
 	ENDC
 
 	IFD BARFLY
-	OUTPUT	"Develop:Installs/CannonFodder Install/CannonFodder.ISlave"
+	OUTPUT	"CannonFodder.ISlave"
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
 	BOPT	ODd-			;disable mul optimizing
@@ -65,8 +67,8 @@ _text		dc.b	"Cannon Fodder Imager",10
 		dc.b	"Done by Wepl, Version 1.1 "
 	INCBIN	".date"
 		dc.b	".",0
+_rel		dc.b	"fodder.rel",0
 _skipfiles	dc.b	"fload",0
-		dc.b	"FODDERF",0
 		dc.b	"FODDERS",0
 		dc.b	"disk1",0
 		dc.b	"disk2",0
@@ -76,14 +78,14 @@ _skipfiles	dc.b	"fload",0
 		dc.b	0
 	IFD DEBUG
 _dosname	dc.b	"dos.library",0
-_dbgtxt		dc.b	"%3ld %2ld %6ld %s",10,0
+_dbgtxt		dc.b	"track=%3ld block=%2ld size=%6ld %s",10,0
 _dbgexists	dc.b	"%s exists already",10,0
 _endtxt		dc.b	"used tracks ",0
 _ld1		dc.b	"%ld-",0
 _ld2		dc.b	"%ld,",0
 _lf		dc.b	10,0
 _dir		dc.b	"disk.x.dir",0
-_used		dsb	160
+_used		ds.b	160
 	ENDC
 	EVEN
 
@@ -111,7 +113,7 @@ _disk1v1de	dc.l	_disk2v1de	; Pointer to next disk structure
 .tl	;	TLENTRY	1,1,$1600,SYNC_STD,DMFM_STD
 		TLENTRY 2,80,$1800,$4489,_decode
 		TLENTRY 82,82,$1800,$4489,_decode
-		TLENTRY 108,123,$1800,$4489,_decode
+		TLENTRY 97,123,$1800,$4489,_decode
 		TLENTRY 141,146,$1800,$4489,_decode
 		TLEND
 
@@ -178,8 +180,7 @@ _disk1v1en	dc.l	_disk2v1en	; Pointer to next disk structure
 
 .tl		TLENTRY 2,80,$1800,$4489,_decode
 		TLENTRY 82,93,$1800,$4489,_decode
-		TLENTRY 108,109,$1800,$4489,_decode
-		TLENTRY 122,123,$1800,$4489,_decode
+		TLENTRY 107,123,$1800,$4489,_decode
 		TLEND
 
 .crc		CRCENTRY 2,$6979
@@ -222,6 +223,7 @@ _disk3v1en	dc.l	0		; Pointer to next disk structure
 		CRCEND
 
 ; english unknown
+; not adapted for fodder.rel, struct seems to be unused
 
 _disk1v2en	dc.l	_disk2v1en	; Pointer to next disk structure
 		dc.w	1		; Disk structure version
@@ -266,8 +268,7 @@ _disk1v1fr	dc.l	_disk2v1fr	; Pointer to next disk structure
 
 .tl		TLENTRY 2,80,$1800,$4489,_decode
 		TLENTRY 82,93,$1800,$4489,_decode
-		TLENTRY 108,109,$1800,$4489,_decode
-		TLENTRY 122,129,$1800,$4489,_decode
+		TLENTRY 107,129,$1800,$4489,_decode
 		TLEND
 
 .crc		CRCENTRY 2,$716b
@@ -328,8 +329,7 @@ _disk1v1it	dc.l	_disk2v1it	; Pointer to next disk structure
 
 .tl		TLENTRY 2,80,$1800,$4489,_decode
 		TLENTRY 82,93,$1800,$4489,_decode
-		TLENTRY 108,109,$1800,$4489,_decode
-		TLENTRY 122,129,$1800,$4489,_decode
+		TLENTRY 107,129,$1800,$4489,_decode
 		TLEND
 
 .crc		CRCENTRY 2,$4f60
@@ -527,10 +527,53 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 
 		sub.l	#$1fe,d2
 		bhi	.nextblock
-		
-		move.l	($1c,a2),d0		;length
+
+	;save uncompressed FODDERF
+		cmp.l	#"FODD",(a2)
+		bne	.save
+		cmp.l	#"ERF"<<8,(4,a2)
+		bne	.save
+		lea	_file,a0
+		move.l	(4,a0),d0		;decompressed length
+		cmp.l	#MAXFODDER,d0
+		bhi	_outofmem
+		lea	_fodderf,a1
+		bsr	_rnc1
+		bra	.skipfile
+	;save file
+.save		move.l	($1c,a2),d0		;length
 		move.l	a2,a0			;name
 		lea	_file,a1		;data
+		jsr	(rawdic_SaveFile,a5)
+	;calculate relocation file
+	;FODDERC = $80000
+	;FODDERF = $200000
+		cmp.l	#"FODD",(a2)
+		bne	.skipfile
+		cmp.l	#"ERC"<<8,(4,a2)
+		bne	.skipfile
+		lea	_file,a0
+		move.l	(4,a0),d2		;d2 = decompressed length
+		cmp.l	#MAXFILE,d2
+		bhi	_outofmem
+		move.l	a0,a1
+		bsr	_rnc1
+		lea	_file,a0		;a0 = fodderc
+		move.l	a0,d1
+		addq.l	#2,d1			;d1 = _file+2, offset = a0_after_cmp - d1 = n
+		lea	_fodderf,a1		;a1 = fodderf
+		move.l	a0,a3			;a3 = rel
+.cmp		cmp	(a0)+,(a1)+
+		beq	.eq
+		move.l	a0,d0
+		sub.l	d1,d0
+		move.l	d0,(a3)+
+.eq		subq.l	#2,d2
+		bne	.cmp
+		lea	_rel,a0			;relocation name
+		lea	_file,a1		;data
+		move.l	a3,d0
+		sub.l	a1,d0			;relocation length
 		jsr	(rawdic_SaveFile,a5)
 .skipfile
 		add.w	#32,a2
@@ -584,9 +627,15 @@ _outofmem	moveq	#IERR_OUTOFMEM,d0
 
 ;============================================================================
 
+	INCLUDE	rnc1.s
+
+;============================================================================
+
 	SECTION b,BSS
 
 _file		ds.b	MAXFILE+512
+	CNOP 0,4
+_fodderf	ds.b	MAXFODDER
 
 ;============================================================================
 
