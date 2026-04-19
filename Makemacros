@@ -25,6 +25,13 @@ SOURCES=../../sources
 
 include ../../Maketools
 
+ifdef DEBUG
+ASM += $(ASMDEF)DEBUG=$(DEBUG)
+ASMB += $(ASMDEF)DEBUG=$(DEBUG)
+ASMO += $(ASMDEF)DEBUG=$(DEBUG)
+CC += -DDEBUG=$(DEBUG)
+endif
+
 # general programs
 RELOC=$(VAMOS) Reloc
 LN=vlink -bamigahunk -Bstatic -Cvbcc -nostdlib -s -Rstd -sc -o
