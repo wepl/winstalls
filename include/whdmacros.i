@@ -14,6 +14,7 @@
 ;			 _MOVEMREGS/_MOVEMBYTES 
 ;		21.12.20 macro LOG added
 ;		22.03.25 macros patch2 and patchs2 added
+;		27.04.26 fix patchs2 macro
 ;  :Language.	68000 Assembler
 ;---------------------------------------------------------------------------*
 
@@ -152,7 +153,7 @@ patchs2	MACRO
 	IFNE	NARG-2
 		FAIL	"patchs2: wrong amount of arguments"
 	ENDC
-		move.w	#$4e714eb9,\1
+		move.l	#$4e714eb9,\1
 		pea	(\2,pc)
 		move.l	(a7)+,4+\1
 	ENDM
