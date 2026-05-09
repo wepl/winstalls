@@ -1,14 +1,13 @@
-_AGA
 ;_Flash
 	INCDIR	Includes:
 	INCLUDE whdload.i
-	INCLUDE libraries/lowlevel.i
 	INCLUDE whdmacros.i
+	INCLUDE	libraries/lowlevel.i
 	INCLUDE lvo/dos.i
 
 
 	IFD BARFLY
-	IFD _AGA
+	IFNE AGA
 	OUTPUT	"DeluxeGalagaAga.Slave"
 	else
 	OUTPUT	"DeluxeGalagaEcs.Slave"
@@ -23,72 +22,85 @@ _AGA
 	ENDC
 
 ;============================================================================
-;CHIPDEBUG
-
  
 	IFD CHIPDEBUG
- ; debug mode
-	IFD _AGA
+	; debug mode
+		IFNE AGA
 CHIPMEMSIZE	= $80000*4
 FASTMEMSIZE	= $0
-	else
+		ELSE
 CHIPMEMSIZE	= $80000*2
 FASTMEMSIZE	= $0000
-	ENDC
+		ENDC
 	ELSE
-	IFD _AGA
+		IFNE AGA
 CHIPMEMSIZE	= $80000*4
 FASTMEMSIZE	= $10000*3
- else
+ 		ELSE
 CHIPMEMSIZE	= $80000+$10000*4
 FASTMEMSIZE	= $10000*3
- ENDC
- ENDC
+ 		ENDC
+ 	ENDC
 
-NUMDRIVES	= 1
-WPDRIVES	= 	0000
+NUMDRIVES	= 1		;amount of floppy drives to be configured
+WPDRIVES	= %1111		;write protection of floppy drives
 
-BLACKSCREEN
-;BOOTBLOCK
-BOOTDOS
-;BOOTEARLY
-;CBDOSREAD
-;CACHE
-
-;DISKSONBOOT
-DOSASSIGN
-FONTHEIGHT	= 8
-HDINIT
-HRTMON
-IOCACHE	= 1024
-;MEMFREE	= $200
-;NEEDFPU
-POINTERTICKS	= 1
-SETPATCH
-	IFD _AGA
-INITAGA
+BLACKSCREEN			;set all initial colors to black
+;BOOTBLOCK			;enable _bootblock routine
+BOOTDOS				;enable _bootdos routine
+;BOOTEARLY			;enable _bootearly routine
+;CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
+;CBDOSREAD			;enable _cb_dosRead routine
+;CBKEYBOARD			;enable _cb_keyboard routine
+;CACHE				;enable inst/data cache for fast memory with MMU
+CACHECHIP			;enable inst cache for chip/fast memory
+;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
+;DEBUG				;add more internal checks
+;DISKSONBOOT			;insert disks in floppy drives
+DOSASSIGN			;enable _dos_assign routine
+FONTHEIGHT	= 8		;enable 80 chars per line
+HDINIT				;initialize filesystem handler
+HRTMON				;add support for HrtMON
+	IFNE AGA
+INITAGA				;enable AGA features
 	ENDC
-;STACKSIZE	= 6000
-;TRDCHANGEDISK
+;INIT_AUDIO			;enable audio.device
+;INIT_GADTOOLS			;enable gadtools.library
+INIT_LOWLEVEL			;init lowlevel.library
+;INIT_MATHFFP			;enable mathffp.library
+;INIT_NONVOLATILE		;init nonvolatile.library
+;INIT_RESOURCE			;init whdload.resource
+IOCACHE		= 1024		;cache for the filesystem handler (per fh)
+;JOYPADEMU			;use keyboard for joypad buttons
+;MEMFREE	= $200		;location to store free memory counter
+;NEEDFPU			;set requirement for a fpu
+NO68020				;remain 68000 compatible
+POINTERTICKS	= 1		;set mouse speed
+;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
+;SEGTRACKER			;add segment tracker
+SETKEYBOARD			;activate host keymap
+SETPATCH			;enable patches from SetPatch 1.38
+;SNOOPFS			;trace filesystem handler
+;STACKSIZE	= 6000		;increase default stack
+;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
+
 QUIT_AFTER_PROGRAM_EXIT
 ; affects lowlevel.s: if button combination pressed, quits to wb
 QUIT_JOYPAD_MASK = JPF_BUTTON_FORWARD|JPF_BUTTON_REVERSE|JPF_BUTTON_PLAY
-USE_DISK_NONVOLATILE_LIB
-IGNORE_OPENLIB_FAILURE	; for xpkmaster
 
 ;============================================================================
 
-slv_Version	= 17
-slv_Flags	= WHDLF_NoError|WHDLF_Examine
+slv_Version	= 19
+slv_Flags	= WHDLF_NoError
 slv_keyexit	= $59	;F10
-;============================================================================
-        INCDIR	Sources:whdload/
-        INCDIR	Sources:whdload/jotd/
 
-	IFD _AGA
-		INCLUDE	kick31cd32.s
+;============================================================================
+
+	IFNE AGA
+		INCLUDE	whdload/kick31.s
 	else
-		INCLUDE kick13.s
+		INCLUDE whdload/kick13.s
 	ENDC
 
 ;============================================================================
@@ -101,7 +113,7 @@ slv_keyexit	= $59	;F10
 	ENDC
 
 DECL_VERSION:MACRO
-	dc.b	"1.3"
+	dc.b	"1.4"
 	IFD BARFLY
 		dc.b	" "
 		INCBIN	"T:date"
@@ -116,7 +128,7 @@ DECL_VERSION:MACRO
 	dc.b	0
 	
 slv_CurrentDir	dc.b	"data",0
- IFD _AGA
+ IFNE AGA
 slv_name	dc.b	"Deluxe Galaga (AGA)"
  else
 slv_name	dc.b	"Deluxe Galaga (ECS)"
@@ -132,7 +144,7 @@ slv_info	dc.b	"Patch coded by CFou! & JOTD",10
 	DECL_VERSION
 	dc.b	0
 slv_config
-		DC.B	"C1:X:enter in config menu:0;"
+		DC.B	"C1:X:Enter config menu:0"
 		dc.b	0
 	EVEN
 
@@ -159,17 +171,6 @@ _bootdos
       	move.l 	_resload(pc),a2
       	jsr   	(resload_Control,a2)
 
-	
-	IFD _AGA
-	; force pads for both players (don't worry, joysticks work too with that setup)
-	lea	port_0_attribute(pc),a0
-	move.l	#SJA_TYPE_GAMECTLR,(a0)
-	lea	port_1_attribute(pc),a0
-	move.l	#SJA_TYPE_GAMECTLR,(a0)
-	
-	bsr	_patch_cd32_libs
-	ENDC
-	
 	;open doslib
 	lea	(_dosname,pc),a1
 	move.l	(4),a6
@@ -265,7 +266,7 @@ check_version:
 	move.l	_resload(pc),a2
 	jsr	resload_GetFileSize(a2)
 	
-	IFD _AGA
+	IFNE AGA
 	cmp.l	#409940,D0
 	beq.b	.ok  ; aga_unpacked
 	cmp.l	#246892,D0
@@ -368,23 +369,18 @@ _pl_main
 	;PL_S	$16222,$16298-$16222
 	PL_END
 
-_disk1	dc.b	"df0",0	;for Assign
+_disk1		dc.b	"df0",0	;for Assign
 _program	dc.b	"GALAGA",0
-_args	dc.b	10
+_args		dc.b	10
 _args_end	dc.b	0
 	EVEN
 
 _saveregs	ds.l	11
 _saverts	dc.l	0
 dosbase		dc.l	0
-_tag
-               dc.l  WHDLTAG_CUSTOM1_GET
-_custom1       dc.l  0
-;              dc.l  WHDLTAG_CUSTOM2_GET
-;_custom2       dc.l  0
-;               dc.l  WHDLTAG_CUSTOM3_GET
-;_custom3       dc.l  0
-               dc.l  0       ; End
+_tag		dc.l	WHDLTAG_CUSTOM1_GET
+_custom1	dc.l	0
+		dc.l	0       ; End
 
 	ENDC
 

@@ -1,0 +1,7 @@
+		IFND LIBRARIES_INPUT_LVO_I
+LIBRARIES_INPUT_LVO_I	SET	1
+
+
+_LVOPeekQualifier           	EQU	-42
+
+		ENDC
