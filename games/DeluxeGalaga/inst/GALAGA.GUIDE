@@ -1,0 +1,1261 @@
+@database Galaga.guide
+@$VER 1.0 (07-22-1994)
+
+
+@node MAIN "Galaga v2.6"
+
+  «---------------------------------------------------------------»
+
+    D E L U X E
+
+    *********      ***** ***          *****  *********      *****
+    ***           ****** ***         ******  ***           ******
+    ***          **  *** ***        **  ***  ***          **  ***
+    ***   ***   ******** ***       ********  ***   ***   ********
+    ***    **  **    *** ***      **    ***  ***    **  **    ***
+    ********* **     *** ******* **     ***  ********* **     ***
+
+     v2.6  Made by Edgar M. Vigdal                      ©EMW94/95
+                                       eMail: edgar@norconnect.no
+
+  «---------------------------------------------------------------»
+
+
+Table of Contents:
+
+  @{"  " link "1"}  What is Shareware ?
+  @{"  " link "2"}  If you like this piece of software !
+  @{"  " link "3"}  About Deluxe Galaga
+  @{"  " link "4"}  Your Mission
+  @{"  " link "5"}  The Game Screen ..
+  @{"  " link "6"}  Installing the game
+  @{"  " link "7"}  Game options and Preferences
+  @{"  " link "8"}  How to control the game
+  @{"  " link "9"}  Extra functions
+  @{"  " link "10"}  The next Deluxe game
+  @{"  " link "11"}  History of Deluxe Galaga
+  @{"  " link "12"}  Technical info
+
+@endnode
+@node 1 "What is Shareware ?"
+
+    Shareware  is  a way of getting good software in a cheap way.
+    You get hold of the software for almost nothing, and can test
+    it  for  a  while  before  deciding  if  you  want to pay the
+    programmer  for  his/her hard work.  And remember that if you
+    don't  pay  and nobody else do pay than it's pretty sure that
+    the  programmer  will  NOT  make any more shareware software.
+    And  that  will  in  the  end  lead  to  no software for your
+    machine!!!!  So, please pay the author of the software.
+
+    NOTE!  This program is in fact shareware!
+
+@endnode
+@node 2 "If you like this piece of software !"
+
+    If  you  use  this software and you like it, than I (Edgar M.
+    Vigdal)  would  be eternal grateful to you, if you send me 15
+    US  Dollar,  £5,  20DM,  50  NOK  or  any amount you like, as
+    payment  for  the  game.   If  you  would like 1 year of free
+    update  (at  least  2  update  (If  I get any bug rapport, or
+    suggestions for improvement)), than send me $25, £15, 40DM or
+    150 NOK or more if like to.... ;-)
+
+    If  you  also  want the latest version of Deluxe PacMan, than
+    add $10, £5 or 50 NOK and an extra disk.
+
+    If  you  become  a registered user and send me a disk, I will
+    send  you  a  super  version  with  more  levels,  more sound
+    effects,  speech  and  other  improvements.   (maybe  an  AGA
+    version?!)
+
+    **********
+    * PLEASE *
+    **********
+    Send me a disk for the reply, as I can not afford the disks!
+    Please  add an extra disk for Deluxe PacMan, if you want that
+    one  too,  or  if  you  want the next game.  The game has now
+    grown too big and I can no longer fit both games on one disk!
+
+    ********
+    * NOTE *
+    ********
+    If  you  only  pay  the  shareware fee ($15,£5) AND you get a
+    later  version  from  a PD-dealer/BBS or some where else, you
+    should  think  of that version as an update from me!  (If you
+    send a disk then you should get a new version from me!  (When
+    I have made a new version!!))
+
+    ************
+    * INTERNET *
+    ************
+    If  you have internet access and an email address and you are
+    able to receive messages that are some 500 kilobytes big, you
+    can get updates through the internet!!  This is the very best
+    and  fastest  method  to  get  the  new  updates and extended
+    versions  and  extra files!  So get yourself a good email-box
+    and you will receive the version in a couple of hours after I
+    have your shareware fee!!!!
+
+
+
+    @{"  " link "2.1"}  My address and bank/giro account
+    @{"  " link "2.2"}  Methods of payment
+    @{"  " link "2.3"}  Important notes
+    @{"  " link "2.4"}  To Magazines!
+
+@endnode
+@node 2.1 "My address and bank/giro account"
+
+        This is my address...
+
+                Edgar M. Vigdal
+                583O LUSTER
+                NORWAY                  (I do NOT like whale hunting!)
+                                        (But than again, I don't like
+                                         bull fights either!)
+
+        Yes!   this  is  really  my  address, it's very short for
+        people  in  the U.K.  Canada and Australia, but it's long
+        enough for me.  ;)  Please remember that Norway is a very
+        sparsely  populated  country!!!  And we really don't need
+        that long addresses!!  8^)
+
+
+        EMAIL:  edgar@norconnect.no
+
+
+        Or you may use my bank account....
+
+                3785.10.05774            Luster SpareBank
+                                         5830 Luster
+                                         NORWAY
+
+        Or you may use my PostGiro account...
+
+                0826.0658124
+
+
+@endnode
+@node 2.2 "Methods of payment"
+
+    -  Cash:   Preferably  by registered mail.  Please do NOT use
+    any  'strange'  currencies!   Here are some currencies that I
+    can NOT get exchanged:
+
+        * Fuji dollar
+        * Australian dollars!
+        * Scottish pounds!
+        * Any east european currencies!
+        * NO coins!!!!!!
+
+
+    -  EuroCheques:   Send  a EuroCheque written out in Norwegian
+    kroner,  NOK.  (other currencies are NOT accepted).  Make the
+    cheque  payable  to  Edgar M.  Vigdal.  This is without doubt
+    the best method of payment to use!!! (for me!!)
+
+
+    -   PostGiro:    Transfer   NOK   to   the  PostGiro  account
+    0826.0658124.   Please send me a message either via E-Mail or
+    snail-mail  and  give  me  your  address  and your setup.  My
+    receipt is very small and difficult to keep track off...  ;-/
+
+
+    *************************************************************
+    Please do NOT use any strange postal order notes, if you want
+    to  use  any  form of postal order, then use an International
+    Postal  Order.   Check  with your local post office!!!!  Some
+    postal orders are totally rubbish here in Norway. Eg. British
+    Postal Orders. DO NOT USE THIS TO PAY ME!!!!
+
+    Please  do  not use cheques if you can, because I have to pay
+    SO MUCH in exchange fee!!!  (30-50%)(It's sick!!) :(((
+
+    Please  make  sure that your full name, address, postal code,
+    city  and country is included.  If you have an Internet email
+    address,  please  include  that  one too, so I can notify you
+    that  I  have got your fee!.  Please include a description of
+    your hardware and OS versions too!
+
+    To those that support my hard work, I send my warmest regards
+    to!!
+    *************************************************************
+
+
+@endnode
+@node 2.3 "Important notes"
+
+    Please check that the address listed above is the same as the
+    one in the game !
+
+    If  you  send  a  disk  you may put some stuff on it.  Demos,
+    games, utilities or music modules.
+
+    To  all  of  those  that send my the fee for Deluxe PacMan, I
+    _WILL_ send you the update!!!  As soon as I have a version of
+    PacMan  that  works  on  all Amigas I will send it to all who
+    have paid for it!!!
+
+    If you have bought this game from any public-domain firms you
+    have  NOT  paid  me  anything,  you  have only supported some
+    'thieves' who are earning lots of money on other peoples hard
+    work!!    If  you  want  to  support  the  programmers,  then
+    subscribe  for the Fred Fish disks and send the shareware fee
+    to  the  peoples  that  should have had it in the first place
+    (The programmers!!).
+
+    It  is  illegal  to  copy  this  piece of software onto games
+    collections  and sell it for profit!!  Permission to copy and
+    distribute  this  program is only granted to Fred Fish and if
+    the charge for the disk/copying don't exceed 2 US dollar!!!!!
+
+    All  the  files MUST be included!!!!  (If you need some extra
+    space on a coverdisk, then you may delete the music files and
+    the 'GALAGA.SFX' file. All text/doc files MUST be included !!
+
+
+    ********
+    * NOTE *
+    *************************************************************
+    If  there  are any registration sites that want to distribute
+    the game, please contact me!  E-Mail or Snail-Mail.
+    *************************************************************
+
+
+@endnode
+@node 2.4 "To Magazines!"
+
+    If  you  want  to  use this game on your coverdisk or you are
+    reviewing  the  game,  then  please  send  me  a  copy of the
+    magazine/review.  If you want to pay me, I will not say no to
+    that.
+
+    If  you  want  to  use this game on a CD32 coverdisk, I would
+    really  like  a  copy  of  the  disk!   And  make  use of the
+    GALAGA.MUSIC  file!   This file could be filled with names of
+    modules  on  the  CD  and the player could then select/switch
+    music with the green shuffle button on the joypad!
+
+
+@endnode
+@node 3 "About Deluxe Galaga"
+
+    Deluxe  Galaga  is  based  on  the game StarBattle on the old
+    VIC20.   That was one excellent game, that I had a lot of fun
+    with.   It's  also  some  features  from the games Galaga and
+    Galaxions.   I played Galaga on an arcade machine, but it was
+    so  long  ago  that  I have forgotten how it looked like.  My
+    version of Galaga (or StarBattle) is a simple (?) shoot'em up
+    game  with  good  game  play, but not so much fancy graphics.
+    Many  of todays game have lots and lots of graphics, but when
+    it  comes  to game play they really sucks.  They have manuals
+    covering  hundreds  of  pages, and you need hours and days to
+    get  into  the  game.   What  I  want  from  a  game  is some
+    relaxation  for a couple of minutes, and then be able to quit
+    the game and do some more work.  And not to mark the calender
+    for when I want to play the 60MB hi-tech game!
+
+@endnode
+@node 4 "Your Mission"
+
+    You  are  in control of a small starfighter, and your mission
+    is  to  protect  the  earth  from  alien attackers.  When you
+    start,  your  ship  have  limited  supply  of bullets and are
+    moving  a  bit  to  slow,  but by shooting the aliens you can
+    collect  the  falling  bonuses  and get all sorts of weapons,
+    extra speed and a lot of other goodies!
+
+    When  you  are hit, some of the weapon power is lost and also
+    speed  and  any  bonus  time you have collected.  This los is
+    bigger on the hard level.
+
+    There  are  double  shoot,  triple shoot, super weapon, extra
+    life,  smart bombs, money, warps, secret bonus level and much
+    more to be collected and added to the starfighter.
+
+    Look  out for mother ships, rockets, warp malfunctions, super
+    guardians and Super Cash Ship!
+
+    There is also a lot of secrets in the game, you can find this
+    secrets  yourself,  or  you  can buy them in space-shop.  The
+    space-shop  will appear every fourth level, but you must have
+    more  than 50 credits to enter the shop.  There are more than
+    10 secrets hidden in the game and some that are not listed in
+    the game!!
+
+
+    The Sub Games:
+    --------------
+    Meteor  Storm:  You must navigate you ship through a field of
+    big  rocks  floating  in space.  Some of the rocks have bonus
+    point  on  surface and can be collected.  There are also some
+    money containers floating around.  Collect these and get some
+    extra  shopping  money.   You  will  get a super bonus if you
+    compleat the meteor storm.
+
+
+    The  Memory  Station:   Try  and find a pair (Two blocks that
+    look the same) in a matrix of blocks.  If you find a pair you
+    will  get  the  bonus that are one the blocks.  You only have
+    limited  time to find as many pairs as possible.  If you find
+    all the pairs you will get a bonus.
+
+
+    The Warp Malfunction:  Shoot and try to survive the attack of
+    the warped beast from outer hyperspace.
+
+
+@endnode
+@node 5 "The Game Screen .."
+
+               Player1 Cash   Hiscore  Player2 Cash
+               .----------------------------------.
+Music/Sfx/Clock|m 00000 00   00000000   00000 00 c| Game credits
+               |                                  |
+Multiply Score |x5                              x2| This side is
+    Lives left |Ships                        Ships| for player 2
+               |                                  |
+ When EXTRA is |E                                E|
+  spelled, you |X                                X|
+   will get an |T                                T|
+   extra ship! |R                                R|
+               |A                                A|
+               |                                  |
+If you have six|Rank                          Rank|
+marks,you will |marks                        marks|
+be promoted to |                                  |
+a new rank.    |                                  |
+               |                                  |
+   Ship armour |»»»                             ««| Armour for player 2
+               |             --------             |
+               |              ------ «------------| Alien Scope: Use it
+               |               ----               | to catch aliens!
+               |                --                |
+               |               |/\| «-------------| Your ship!
+               |               ====               | If it's flashing
+               |__________________________________| you have the shield.
+
+    Player 1 has a grey ship and player 2 has a green ship!
+
+@endnode
+@node 6 "Installing the game"
+
+ o  DISK
+
+    Start  your  machine  with  workbench, than insert the Deluxe
+    Galaga  game  disk  in one of the diskdrives, and open up the
+    disk  by  double clicking on the disk icon.  Than open up the
+    Deluxe  Galaga  directory by double clicking on the directory
+    icon.   You than start the game by double clicking the Galaga
+    game icon.
+
+    If  you  want  to  make  a bootable game disk than format and
+    install a disk.  Than make a 's' directory on the disk...
+
+               Makedir DF0:s   [RETURN]
+
+    Copy  all of the Deluxe Galaga files on to the disk.  Or just
+    copy the Deluxe_Galaga directory over to the empty disk.
+
+        Copy the following commands on to the disk...
+
+        CD
+        SetPatch21           ;If you are using OS2.1
+        SetPatch30           ;If you are using OS3.0 and AGA
+        LoadWB
+
+    Make a startup-sequence in the 's' directory like this...
+
+    -8<----------------------------------------------------------------
+        SetPatch21           ;If you are using OS2.1
+        SetPatch30           ;If you are using OS3.0 and AGA
+        CD Deluxe_Galaga     ;If Deluxe_Galaga is the games directory!.
+                             ;If you don't use a Deluxe_Galaga directory
+                             ;you must use a 'CD DF0:' to get the game
+                             ;to start!!.)
+        LoadWb               ;To get interrupts correctly....
+        Galaga               ;Load and start the game
+    -8<----------------------------------------------------------------
+
+    Reboot with the disk and test if it works!!
+
+
+    If you want to use packed data files you should also create a
+    directory   call   'libs'   on   the   disk   and   copy  the
+    xpkmaster.library  file  and all the files in the compressors
+    directory.
+
+    If you want to use a joypad to control the game you must also
+    copy  the  file 'lowlevel.library' to the 'libs' directory on
+    your game disk.
+
+
+
+ o  HARDDISK
+
+    Copy  the Deluxe Galaga directory to the desired directory on
+    your harddisk, by dragging the directory icon from the Deluxe
+    Galaga game disk to the selected harddisk directory.
+
+    To start the game just double click on the Galaga game icon.
+
+    You  should  select  the  'SAVE  ON  EXIT' option for hiscore
+    saveing, if you are playing the game from a harddisk, and end
+    the  game  by  pressing  the  'ESC' key.  Read more about the
+    options below.
+
+    If you want to use packed data files you should also copy the
+    xpkmaster.library  file  and all the files in the compressors
+    directory to your 'sys:libs' directory.
+
+    If you want to use a joypad to control the game you must also
+    copy  the file 'lowlevel.library' to the 'sys:libs' directory
+    on your boot disk.
+
+
+@endnode
+@node 7 "Game options and Preferences"
+
+    When  you  start  the  game for the first time, a preferences
+    screen will appear.  On this screen you can select what chips
+    your Amiga have, the video system, how to save the hiscore
+    list and other settings.
+
+    _____________________________________________________________
+
+    ************************************************************
+	         D E L U X E   G A L A G A   O P T I O N S
+    ************************************************************
+    PAL (256 Lines) or NTSC (200 Lines)______[PAL              ]
+    Type of main processor___________________[AUTO CONFIGURE   ]
+    Hiscore saving___________________________[SAVE ON EXIT     ]
+    Lowlevel.library_________________________[USE, IF PRESENT  ]
+    Channel indicator / Clock________________[CHANNEL INDICATOR]
+    Money bonus in meteorstorm_______________[YES              ]
+    Money limit______________________________[UNLIMITED        ]
+    Level limit______________________________[UNLIMITED        ]
+    Ship Armour______________________________[YES, PLEASE!     ]
+    Sampled speech___________________________[ACTIVE           ]
+    Play area borders________________________[OFF              ]
+    Use Mouse as controller__________________[NO               ]
+                                             [SAVE PREFERENCES ]
+    ____________________________________________________________
+
+    This are the options that you could select/toggle.
+
+
+    ============================================================
+    PAL (256 Lines) or NTSC (200 Lines)______[PAL              ]
+                                             [NTSC             ]
+    ============================================================
+    This  gadget  will  switch  between  PAL and NTSC mode of the
+    game.  PAL will use a 270 line high display and NTSC will use
+    a 210 line high display.  If you are living in a country that
+    uses  the  NTSC video system then select the NTSC mode.  This
+    will  adjust the game to use a smaller screen and the players
+    ship should appear on the screen.
+        If  you  want a bit more arcade feeling added to the game
+    AND  you have a fat Agnus installed in your machine, then try
+    the  NTSC mode and hit the TAB key when on the menu screen in
+    the game.  This will speed up the game even more...  (Not for
+    those who must use the NTSC mode!  (USA & JAPAN (I think!?)))
+
+
+
+    ============================================================
+    Type of main processor___________________[AUTO CONFIGURE   ]
+                                             [MC68000          ]
+                                             [MC68020          ]
+                                             [MC68030, MC68040 ]
+    ============================================================
+    Use  this  option to select or force the game into one of the
+    processor  modes.   The  game  will start flickering and slow
+    down  if  you have a MC68000 and forces the game into MC68030
+    mode!
+
+    MC68000  If you got a standard Amiga (A500,A600,A1000 or A2000)
+    MC68020  If you got a A1200 or any 68020 accelerator.
+    MC68030
+    MC68040  If you got a A3000, A4000/30, A4000/40 or any 68030/
+             68040 accelerator.
+
+    If  you  have  a  faster  processor,  the game will have more
+    objects  on the screen, bigger explosions, more bullets, more
+    bonuses, more background stars and........
+
+
+
+    ============================================================
+    Hiscore saving___________________________[SAVE ON EXIT     ]
+                                             [SAVE IN GAME     ]
+    ============================================================
+    This  gadget  will switch between 'SAVE ON EXIT' and 'SAVE IN
+    GAME'  for  the hiscore saving option.  Use 'SAVE ON EXIT' if
+    you  are  playing  the  game from a harddisk.
+        If  you  use  the  'SAVE ON EXIT' option you must use the
+    'ESC'  key  to  save  the  hiscore,  if you reset the machine
+    (CTRL,AMIGA,AMIGA)  the  hiscore  will be lost!  The 'SAVE IN
+    GAME'  will  save  the  hiscore each time the hiscore list is
+    updated with a new hiscore entry.
+
+
+
+    ============================================================
+    Lowlevel.library_________________________[USE, IF PRESENT  ]
+                                             [DO NOT USE IT!   ]
+    ============================================================
+    Use   this   option   to   switch   of  the  loading  of  the
+    'lowlevel.library'.   This  library is used to read a joypad.
+    You  can  use a joypad and control most of the game from it.
+    Adjust  music  volume, pause the game, switch music and toggle
+    between  music  and sound effects.  If you have problems with
+    the  this  library (The game pauses at random) you can switch
+    of  the  loading of it.  This option will also be switched of
+    if you select to use the 'mouse control' option!
+
+
+
+    ============================================================
+    Channel indicator / Clock________________[CHANNEL INDICATOR]
+                                             [CLOCK            ]
+    ============================================================
+    Use  this  option  to  switch on a clock display in the upper
+    left  corner  of  the game screen.  For those that get really
+    lost  in  the game and want a little reminder of how much the
+    clock is...  8-)
+
+
+
+    ============================================================
+    Money bonus in meteorstorm_______________[YES              ]
+                                             [NO BONUS!        ]
+    ============================================================
+    This  option  will  switch  on/off  the  cash  bonus  in  the
+    meteorstorm.   For  those  that  are tough enough to play the
+    game without toooooo much cash!
+
+
+
+    ============================================================
+    Money limit______________________________[UNLIMITED        ]
+                                             [3000 !!!         ]
+                                             [5000             ]
+                                             [10000            ]
+    ============================================================
+    This  will  limit  the amount of cash that you can collect in
+    the  game.   If you are really tough you should play with the
+    3000 limit!!! (chicken....)
+
+
+
+    ============================================================
+    Level limit______________________________[UNLIMITED        ]
+                                             [25               ]
+                                             [50               ]
+                                             [75               ]
+    ============================================================
+    This option will set the level limit for the game.
+
+
+
+    ============================================================
+    Ship Armour______________________________[YES, PLEASE!     ]
+                                             [NO ARMOUR!!!!    ]
+    ============================================================
+    This  option  will  switch  on/off  the  ability  to use ship
+    armour!   If  you  like  the game a bit harder you should try
+    without the armour.
+
+
+
+    ============================================================
+    Sampled speech___________________________[ACTIVE           ]
+                                             [NO SPEECH PLEASE!]
+    ============================================================
+    If  you  are  sick  of the synthetic speech that keeps saying
+    those  same  lines  over  end  over again, use this option to
+    switch the speech on or off
+
+
+
+    ============================================================
+    Play area borders________________________[OFF              ]
+                                             [ON               ]
+    ============================================================
+    This option will toggle on or off a thin border on each side
+    of the play area.  The program uses a little bit time to draw
+    these  borders,  so  if your machine is a bit slow, don't use
+    this option!
+
+
+
+    ============================================================
+    Use Mouse as controller__________________[NO               ]
+                                             [YES! Use Mouse   ]
+    ============================================================
+    If  you  play  the  game  at  work  and don't want some 'toy'
+    joysticks  laying around, use this option to select the mouse
+    as  the  controller.   Move  the mouse left/right to move the
+    ship  and  back/forth  for  down/up  movements.  Use the left
+    mouse  button  to  fire bullets and the right button to pause
+    the game.
+
+
+
+    *CD³²*  Use  the  up/down buttons to select an option and use
+            the  left/right  buttons  to  switch the option.  The
+            preferences   you   select   will  be  saved  in  the
+            nonvolatile ram on the CD32.
+
+
+    *NOTE*  As  some of the options changes the difficulty of the
+            game,  the  hiscores  is no longer compatible and can
+            not be joined if they was made under different option
+            selections!!   A  code  will  be added to the hiscore
+            filename.   Only hiscore files with the same code can
+            be joined together.
+
+
+
+
+    MORE ON THE PAL / NTSC MODES
+    ============================
+
+    PAL Video System:
+    -----------------
+        Game  in  normal  mode:  Select PAL and switch off the Hz
+        mode inside the game (TAB).
+
+        Game  in  Arcade feeling mode:  Select NTSC and switch on
+        the Hz mode inside the game (TAB).  This is the mode that
+        I personally like the best!!
+
+
+    NTSC Video System:
+    ------------------
+        Game  in  normal mode:  Select NTSC and switch off the Hz
+        mode  inside the game (TAB).  This is actually the arcade
+        mode  and  the  game  will  be  a bit faster then for PAL
+        players!
+
+        Game  in PAL mode:  Select PAL and switch the Hz mode off
+        inside  the  game  (TAB).   The  game  will  now be a bit
+        slower.
+
+
+
+    The  preferences  that  you  have  selected will be saved for
+    later  use.   If  you want to change the preferences you most
+    hold  down  the  fire button on the joystick (Port 2)(NO auto
+    fire)  or the left mouse button when the game is loading.  Or
+    you  can  delete  the  GALAGA.PREFERENCES  file  in the games
+    directory.
+
+
+    NOTE!
+    -----
+    This  game  will  NOT  work  on  any 24bit graphics card.  If
+    Commodore  had made a machine with a fast enough processor to
+    use  system  functions  in  games,  it would have worked, but
+    they didn't and they never will!  Sorry !!!
+
+    Amiga  is  the  best home computer in the world, it's just to
+    bad that Commodore got hold of it !!!! And that Medhi Ali was
+    ever born!!
+
+
+@endnode
+@node 8 "How to control the game"
+
+        ESC     Stops the game in play, and quits the game if you
+                are on any of the menu pages.
+
+                *CD³²*  To  quit  a  game in progress:  pause the
+                        game and press the blue button.
+
+        F1      Selects 1 player mode.
+        F2      Selects 2 players mode.
+
+        1       Selects beginner mode.    (5 bullets)
+        2       Selects normal mode.      (4 bullets)
+        3       Selects hard mode.        (3 bullets)
+
+        P       Pauses  the game, and starts the game again.  You
+                may  also  start the game again by using the fire
+                button.
+
+                *CD³²*  Use the pause/play button on the joypad.
+
+        E       Selects sound effects or music.
+
+                *CD³²*  Use  the  yellow button to switch between
+                        music and sfx's.
+
+        TAB     Toggle between NTSC/PAL (50/60Hz) mode.  You must
+                have the fat Agnus chip for this to work!
+
+        F5      Print  out  the hiscore-list.  The boot-disk must
+                contain  the  printer driver, parallel.device and
+                the port-handler.
+
+                ** This is disabled if the nonvolatile library is
+                present. (CD³²)
+
+
+        F6-F9   Toggle the 4 sound channels between music and SFX.
+
+        F10     Selects the next music module.
+
+                *CD³²*  Use  the shuffle (green) button to switch
+                        to  the  next  module.  (If there are any
+                        modules!)
+
+        *       Mute. Toggles volume between max(64) and min (0).
+
+        +, -    Adjusts the music volume.
+
+                *CD³²* Use the rewind and forward buttons to
+                       adjust the music volume.
+
+        J       Joins two hiscore lists together.  If a friend of
+                you  have  the  game you can use this function to
+                make  a  new  hiscore list with the best hiscores
+                on.   The new hiscore lists will contain only the
+                best hiscores.
+
+                **  This is disabled if the nonvolatile library is
+                    present.  (CD³²)
+
+        HELP    When  this  key is hit, the game will now iconize
+                and  the  workbench  will  appear again.  A small
+                window  with  some  gadgets  will be opened.  The
+                first  gadget is to return to the game.  The game
+                will  be  paused  until  you hit the firebuttons.
+                The  second gadget is for freeing all the modules
+                from  the  memory.   You  can  also  free up some
+                chipmem  by selecting the third gadget.  The last
+                on  is  for  quitting  the  game  and freeing all
+                memory.
+
+
+        *CD³²*  Use  the  up  and  down  buttons to move a cursor
+                (checkmark)  up and down on the menu screen.  Use
+                the red button to select/toggle an option.
+
+
+        You  control the game with a joystick in port #2.  If you
+        are playing in the two-player-at-once mode, player 2 must
+        use a joystick in port #1.
+
+
+                BUTTON  = Shoots at the aliens.
+
+                LEFT    = Moves the ship to the left.
+
+                RIGHT   = moves the ship to the right.
+
+@endnode
+@node 9 "Extra functions"
+
+o   MUSIC & SFX
+
+    If  you  get sick and tired of the music you can change it to
+    one  of your own favorite protracker modules.  You do this by
+    changing the name of the original music or delete it.
+
+                Example:
+
+                rename GALAGA.MUSIC as GALAGA.MUSIC.reserve
+
+    And  then  you  copy  your  module  over to the Deluxe Galaga
+    directory and rename it as 'GALAGA.MUSIC'
+
+                Example:
+
+                rename MOD.MYSUPERTUNE as GALAGA.MUSIC
+
+
+    You  may  also  change the jingles (this are small tunes that
+    are played at special occasions), as they are also protracker
+    modules.
+
+    NOTE!   The  modules  that you want to use must be compatible
+            with  ProTracker  1.1b.   If  you  test your selected
+            module  and it's not played back correctly, then it's
+            most probably not compatible.
+
+    *NOTE*  Some  noisetracker (and maybe other module types too)
+            uses  some  strange commands and my module player may
+            crash  if  you use this kind of modules.  If the game
+            crashes/guru's  for  no apparent reason it may be one
+            of the loaded modules that causes the failure!
+
+
+
+    NEW FOR  VERSION 1.3
+    ~~~~~~~~~~~~~~~~~~~~
+    You  may  now have many different music modules, and have one
+    random module selected and loaded.
+
+    First  copy  all  of  your favorite ProTracker modules to the
+    Deluxe Galaga directory.  Then you must rename them to...
+
+             GALAGA.MUSIC0   (The number at the end of the name -
+             GALAGA.MUSIC1    starts on 0 and goes up to as -
+             GALAGA.MUSIC2    many modules you have copied.)
+             .                (Max is 9!! (0..9))
+             .
+             .
+             GALAGA.MUSICN   (n is the number of modules)
+
+
+    NEW FOR VERSION 1.7B
+    ~~~~~~~~~~~~~~~~~~~~
+    You  may  now  have a file containing a list of your favorite
+    ProTracker modules.  The file must be named 'GALAGA.MODULES'!
+
+    Example file.....
+
+                Music:PT/Modules/mod.HideawayBlues
+                Music:PT/Modules/mod.DontYouWantMe
+                Music:PT/Modules/mod.FeelTheBase2
+                Music:PT/Modules/mod.Guitarslinger
+                *Add a dummy line with the EOF mark here>#
+
+    Please look at the GALAGA.MODULES_res that should be included
+    in the Deluxe Galaga package/directory.
+
+
+    NEW FOR VERSION 2.4
+    ~~~~~~~~~~~~~~~~~~~
+    When  the  game starts it will load as many of modules as the
+    memory allows.  It will select any of the modules in the list
+    randomly.   (Max  50  modules!)  If  you  have  a  MC68020 or
+    better   (faster)  modules  will  also  be  loaded  into  any
+    available fast memory.  When switching to a new module inside
+    the  game  the  game action may pause for a very small period
+    while  the  new  module  is  copied  from fast memory to chip
+    memory.  On a fast MC680x0 this will barely be noticeable.
+
+
+o   SFX
+
+    If  you have more than 512K of memory and you get sick of the
+    sound effects, then you may try the small sound effects.
+
+                Example
+
+                rename GALAGA.SFX as GALAGA.SFX_reserve
+
+    The  game  will  now  use  the  'GALAGA.SFX_SMALL'  as  sound
+    effects.
+
+
+
+o   512K MEMORY
+
+    Sorry, but the game has now grown out of the 512K memory of a
+    standard A500!!!  But as extra memory are now very cheap this
+    a very good excuse for investing in a bit more memory!!
+
+
+o   HISCORE PRINTING        (New for version 1.9)
+
+    When  you  press  F5  on  the menu screen, you will enter the
+    print  hiscore  function.   For  this  function  to work, the
+    boot-disk  (DH?   or  diskette)  must  contain  the following
+    files...
+
+              DEVS:   Parallel.device
+                      printers/<printer driver for your printer>
+              L:      port-handler
+
+    The printed hiscore-list will list the following info...
+
+           #, Name, Score, Rank, Shoots, Hits, %, Game Time
+
+    ..and will print for easy, normal, hard and meteor-storm.
+
+    This  option  is  disabled  if  the  nonvolatile  library  is
+    loaded or available.
+
+
+o   CD³² CONTROL
+
+    The  game can now be controlled completely by a joypad.  Move
+    the  joypad  up/down  to make a cursor appear on the 'control
+    screen'.  Use the firebutton to make a selection or switch an
+    option.   Move  the  cursor  down  to the line 'PRESS FIRE TO
+    PLAY'  to play the game. Press left on the joypad to show the
+    different menu/info screens in the game.
+
+    The  game  preferences  and  hiscore  will  be  saved  on the
+    nonvolatile RAM disk on the CD³². Only 10 names will be saved
+    and only 3 characters for each name. So use your initials...
+
+
+NEW FOR VERSION 2.4
+~~~~~~~~~~~~~~~~~~~
+o   XPK LIBRARY SUPPORT
+
+    The game will now use the xpk (A data compressor/decompressor
+    library) to load compressed data files or modules.
+
+
+o   Use  of  the  lowlevel library.  You can now control the game
+    with  a joypad in both port 1 and 2.  Only the joypad in port
+    2 (player 1) can control the music selection, volume control,
+    etc.
+
+    Buttons     Action
+    -------------------------------------------------------------
+    RED         Start the game and fire bullets.
+    GREEN       Shuffle between music modules.
+    YELLOW      Switch between sound effects and music.
+    PLAY        Pauses the game.
+    BLUE        Quits the current game when game is paused.
+    REWIND      Less volume on the music.
+    FORWARD     More volume on the music.
+
+
+o   Use  of  the nonvolatile library.  If found the game will now
+    save  preferences  and  hiscores in the NV device (RAM on the
+    CD³²  and floppydisk or harddisks on other Amiga's.  If there
+    is  enough  space on the NV device, regular hiscore list will
+    be saved!
+
+    If  you  have  a  disk based amiga you can add a NV device by
+    doing this:
+
+    o   Format a disk in drive n with the name 'NV', n being DF0:
+        or any other drive.
+
+        Format DRIVE n NAME NV FFS NOICON               (RETURN)
+
+    o   Then  make a directory named 'nonvolatile' and one called
+        'prefs' on the disk.
+
+        Makedir NV:nonvolatile                          (RETURN)
+        Makedir NV:prefs                                (RETURN)
+
+    o   Then  make a directory named 'env-archive' in the 'prefs'
+        directory.
+
+        Makedir NV:prefs/env-archive                    (RETURN)
+
+    o   Then  make  a  directory named 'sys' in the 'env-archive'
+        directory.
+
+        Makedir NV:prefs/env-archive/sys                (RETURN)
+
+        Then  create  a  file  in  the 'NV:prefs/env-archive/sys'
+        directory that contains the following:
+
+        NV:nonvolatile
+
+        Name  the  file  'nv_location'.   Use  Ed or another text
+        editor to make this file.
+
+
+NEW FOR VERSION 2.5
+~~~~~~~~~~~~~~~~~~~
+        You  can now iconize the game from almost anywhere in the
+        game.   Just  hit the 'HELP' key and the game will return
+        to the workbench screen. A small window with some gadgets
+        will  be  opened  on the workbench, use this to return to
+        the  game.   You can also free up some memory if you need
+        some more memory to start some other programs.
+        If  you free up only chipmem, you should also try to free
+        up  modules  memory, if there is very little chipmem left
+        when  you  have  freed  up the chipmem only.  If the game
+        fails to allocate the chipmem when you select to continue
+        the  game, the game will exit!!!  (A possible new hiscore
+        will then be lost!!!)
+
+
+@endnode
+@node 10 "The next Deluxe game"
+
+    The  next  game in the Deluxe series, will probably be Deluxe
+    Donkey  Kong.   I  actually  started on this game after I had
+    finished Deluxe PacMan.  But then I got another public-domain
+    version  of  Donkey Kong, that looked almost like the version
+    that I had on my old C64, and that look almost like the one I
+    had  in  mind.   After  I  released  Deluxe  PacMan many have
+    written  to me and asked my to make a version of Donkey Kong,
+    so  now  I am going do that.  A super duper version of Donkey
+    Kong.   If you have any tips for Deluxe Donkey Kong then send
+    them  to  me.   (Video  recordings, graphics, maps, sounds or
+    ideas) But when I am finished with Donkey Kong I would really
+    want  to  make  a  version  of  JumpMan,  one  of my all time
+    favorites!
+
+    A version of Radar Rat Race is also coming !!!!
+
+
+
+    If  you  have any suggestions for improvements or if you have
+    found any bugs then please let my know.
+
+    Good luck and have a lot of fun !!!!  PEACE !!!!
+
+
+    Life sucks !!                 - Al Bundy
+
+    Where's that damn hamburger   - Kelly Bundy
+
+    Mmmmmmmmm, commercials!       - Homer Simpson
+
+    Remember: Man is the dream of the dolphins....
+
+    Sorry for all the spelling errors and bad syntax!!
+
+    Have fun!!!!
+
+
+@endnode
+@node 11 "History of Deluxe Galaga"
+
+       VERSION  SPECIFICATIONS                            D A T E
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         v1.0                                             20/10/93
+        ----------------------------------------------------------
+               -First version of Deluxe Galaga
+
+         v1.2                                             27/12/93
+        ----------------------------------------------------------
+               -Added  'Hurry Up!!', and fixed a possible trouble
+                spot.
+               -Fixed some routines in 2-player mode.
+               -Added exploding rubbish to small aliens
+
+         v1.3                                             14/01/94
+        ----------------------------------------------------------
+               -Speeded up some routines.
+               -Added the Warp Malfunction routine.
+               -Changed  the  music  routine  with  the prorunner
+                routine (very fast!)
+               -Fixed the ProRunner routine, so it would not GURU
+                on  machines  with the interrupt vectors moved to
+                fast RAM.
+               -Added the volume adjust routine.
+               -Added the random music loader routine.
+
+         v1.4                                             17/02/94
+        ----------------------------------------------------------
+               -Speeded up even more routines.
+               -Channel shearing between music and sfx.
+               -Faster vector, Random and BOB routines.
+               -Test for HIRES SPRITE and DBLPAL screen.
+
+         v1.5                                             25/02/94
+        ----------------------------------------------------------
+               -Fixed the BOOM when the rocket dies.
+               -Set the interrupt handler priority a bit higher.
+               -Same random in the meteor-storm mode.
+               -Fixed  a  bug  in  the  'save  hiscore  in  game'
+                routine.
+               -Shows the rank mark, when new rank.
+
+         v1.6                                             27/02/94
+        ----------------------------------------------------------
+               -Removed  the AGA/ECS gadget as it had no function
+                any more.
+
+         v1.7B                                            20/03/94
+        ----------------------------------------------------------
+               -Switched from AsmOne to DevPac 3.04.  (The DevPac
+                is  a  bit  slower,  but  the  sources gets a bit
+                cleaner?!)
+               -Speeded up the movements of the players ship.
+               -Now uses TCPA (Time Coded Pointer Array) to check
+                for  alien hits (No big loops, and no clearing of
+                a hash array each frame!)
+               -Speeded  up the program even more, using a global
+                variable pointer.
+               -The switching of HiRes sprites to LoRes is tested
+                and it is now working
+
+         v1.8                                             04/04/94
+        ----------------------------------------------------------
+               -Found  one  nasty bug.  After the bug was removed
+                my  machine  has not guru'ed once!!  (It's stayed
+                on for almost a month)
+               -Added a credit meter and some other info.
+               -Fixed some other small 'faults'.
+
+         v1.9                                             25/04/94
+        ----------------------------------------------------------
+               -Fixed a bug in the show-secret function.
+               -Added two new weapons and the Cash-Ship.
+               -Added the print hiscore function.
+               -Made the game work on only 512Kb memory.
+               -Changed the PAL-NTSC switch to bit 5 in $DFF1DC.w
+
+         v2.0                                             24/05/94
+        ----------------------------------------------------------
+               -Added the 'Quit game?  Yes or No' function.
+               -Toggle NTSC/PAL with TAB key.
+
+         v2.1                                             ??/??/??
+        ----------------------------------------------------------
+               -?????????????????
+
+         v2.2                                             15/07/94
+        ----------------------------------------------------------
+               -Added the two player at once mode. puh!!
+               -Added a real NTSC mode for american users.
+               -The  game  can  now be completely controlled with
+                joystick/joypad (CD³²).
+               -Added some secrets.... 8^)
+               -Fixed some minor flaws.
+
+         v2.3                                             21/07/94
+        ----------------------------------------------------------
+               -Argggg..  There was one nasty bug in v2.2, killed
+                that bug and improved some other stuff.
+
+         v2.4                                             13/11/94
+        ----------------------------------------------------------
+               -Argggg..   (Again..) There was still some bugs in
+                v2.3...  :( Killed the bugs I found!!
+               -The game now has 75 levels. puh..!!!
+               -Added a new sub game. The memory station.
+               -Moved the PREFERENCES file from S:  to the game's
+                directory.
+               -Added functions that uses the nonvolatile library
+                and the lowlevel library.  Control the whole game
+                with an joypad.
+               -Added money, money bonuses and progress indicator
+                in the meteor-storm.
+               -Added support for the XPK libraries.
+               -Can now load music modules into fast RAM.
+               -Color  of  the  bonus text is now the same as the
+                player  who  got  the  bonus.  Two player at once
+                mode only.
+               -Made the game a bit easier.
+               -More  alien  types  on  one level.  Easy 1 alien.
+                Normal mode 2 aliens.  Hard 3 aliens.
+               -Added joypad control on the preferences screen.
+               -Added some extra game secrets!
+               -Improved and added some other stuff.
+
+         v2.5                                             23/12/94
+        ----------------------------------------------------------
+               -Arggggggggg!   I was a bit quick with the release
+                of  the  2.4 version.  There was still a few bugs
+                left.
+               -I  got the 'lowlevel.library' documents, so now I
+                have  fixed  the  joypad routines and I hope that
+                they now is working on all Amigas.
+               -Found  a  bug  in  the  load modules routine that
+                would crash the game if there was not enough chip
+                memory for the biggest module.
+               -Made  falling  aliens a bit more easy to kill and
+                follow.
+               -Added some more secrets.
+               -Added  two  players  at-once  in the meteor-storm
+                game.
+               -Added ship armour bonus.
+               -Added  game  iconizing.   Iconize  the  game from
+                anywhere in the game.
+               -Switched to A1200/030/33MHZ/MMU/FPU/6MB/355MB HD!!!
+
+
+         v2.53                                            18/02/95
+        ----------------------------------------------------------
+               -Still some bugs to remove.... :-/
+               -Adjusted the warp-malfunction rnd.
+               -Added 'Free chip memory' to the iconize menu.
+               -Added  a  cash  stealing  alien  and  some  'bad'
+                bonuses!
+               -Fixed  the  module player to CIA timing.  Can now
+                play almost any ProTracker module correctly.
+               -Removed  the 'Have you registered...' message for
+                registered users.
+               -Added some gravity to the explosions.
+               -The hiscore line can now show some 1000 billion
+                points!!
+               -Added a new mirror bonus!
+               -Added a drunken mode.
+               -The AGA version is now ready and working.
+
+
+         v2.6                                             09/03/95
+        ----------------------------------------------------------
+               -Still a few bugs removed.
+               -Remade the whole preference screen.
+               -Added mouse control.
+               -Added bonus and money limit.
+               -Added screen borders.
+               -Speed up some routines a little bit.
+               -Adjusted some features.
+               -Added a little bit more color to the explosions.
+
+
+
+
+
+I  have tested the game on a A2000B/68000 with 3MB memory and 1MB
+chip memory with and with out harddisk.  And on a A1200 with both
+a  68020  and  a  33MHz  68030/MMU  and  6MB RAM.  And I have not
+discovered any ugly bugs on my setup.
+
+Thanks  to  everyone  that sent me bug reports, messages and have
+helped  me  with  this  game!!!!  Special thanks to the very kind
+person  that  converted the doc file into this Amiga Guide file!!
+
+A  Special  thanks  to  Odd  Rune  Olsen  for  play  testing  and
+suggestions!
+
+Please  do NOT hack this game and PLEASE do NOT make any trainers
+for  the  game!!!!!!!!!!!!   This will kill both the game and any
+future projects that I had in mind!!!!!!!
+
+
+@endnode
+@node 12 "Technical info"
+
+--------------------------------------------------------------------------
+GenAm Macro Assembler Copyright © HiSoft 1985-93
+All Rights Reserved - version 3.04
+
+Assembling galaga2.6.S
+Pass 1
+Pass 2
+
+0 errors found
+47865 lines assembled into 256106 bytes, Amiga executable relocatable code
+297 optimisations saving 720 bytes
+1016694 bytes used
+--------------------------------------------------------------------------
+
+    47865   lines  of  Devpac  v3.04  assembler  code.   A  great
+    assembler  package!!!!  Assembling time :  32.44 seconds on a
+    A1200/030/33MHz with 6MB RAM.
+
+    437KB+ bytes of raw graphics. (ECS)
+    623KB+ bytes of raw graphics. (AGA)
+
+    Over 1082 frames of animations.
+    Over 90 sprites on screen at once (68030)
+    Over 185 BOB'S on screen at once (68030)
+    114 sound effects, 4 jingles, 50 max music modules.
+
+    If  you  are interested in making your own games or assembler
+    programming  then  you  can  buy  the  whole  source code and
+    development tools for only $75, £50 or 500 NOK
+
+    You will then receive the following...
+
+    Source code     (assembler, with comments)
+    Data files      (graphics, animations, sound effects)
+    Level Creator   (make new levels for Deluxe Galaga)
+    SFX Creator     (Synthetic and sample sound effects creator)
+    Converter 5.0   (Graphics converter and cruncher)
+
+    You will also receive all the source code for all the tools!
+
+
+@endnode
