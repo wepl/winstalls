@@ -1,0 +1,29 @@
+#multiple-versions=y
+#version=3
+#sub-dir=data
+#P_SelectVersion-Name-0=ECS
+#P_SelectVersion-Name-1=AGA
+#P_SelectVersion-Code#0
+          (set #prefix-slave (cat #prefix "ECS"))
+	  (set #archive-default "DeluxeGalaga_E.lha")
+#P_SelectVersion-Code#1
+          (set #prefix-slave (cat #prefix "AGA"))
+	  (set #archive-default "DeluxeGalaga_A.lha")
+#P_MakeImages#99
+      (set #archive
+      	(askfile
+	  (prompt (cat "Where is the \"" @app-name "\" archive file located ?"))
+       	  (help @askfile-help)
+	  (default #archive-default)
+      	)
+      )
+      (set #files "~(Tet#?|READ#?|#?.library|Pack|#?[6AL].info|SMore#?)")
+      (set #xadoptions "NOTREE")
+      (P_XADUnfile)
+      (rename (tackon #dest "GALAGA.GUIDE") (tackon #dest-org "GALAGA.GUIDE"))
+      (rename (tackon #dest "GALAGA.GUIDE.info") (tackon #dest-org "GALAGA.GUIDE.info"))
+      (tooltype
+        (dest (tackon #dest-org "GALAGA.GUIDE"))
+        (setdefaulttool "Multiview")
+      )
+

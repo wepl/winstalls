@@ -1,10 +1,11 @@
+
 ;_Flash
+
 	INCDIR	Includes:
 	INCLUDE whdload.i
 	INCLUDE whdmacros.i
 	INCLUDE	libraries/lowlevel.i
 	INCLUDE lvo/dos.i
-
 
 	IFD BARFLY
 	IFNE AGA
@@ -86,8 +87,6 @@ SETPATCH			;enable patches from SetPatch 1.38
 ;WHDCTRL			;add WHDCtrl resident command
 
 QUIT_AFTER_PROGRAM_EXIT
-; affects lowlevel.s: if button combination pressed, quits to wb
-QUIT_JOYPAD_MASK = JPF_BUTTON_FORWARD|JPF_BUTTON_REVERSE|JPF_BUTTON_PLAY
 
 ;============================================================================
 
@@ -105,46 +104,23 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate	>T:date"
-.passchk
-	ENDC
-	ENDC
-
-DECL_VERSION:MACRO
-	dc.b	"1.4"
-	IFD BARFLY
-		dc.b	" "
-		INCBIN	"T:date"
-	ENDC
-	IFD	DATETIME
-		dc.b	" "
-		incbin	datetime
-	ENDC
-	ENDM
-	dc.b	"$","VER: slave "
-	DECL_VERSION
-	dc.b	0
-	
 slv_CurrentDir	dc.b	"data",0
- IFNE AGA
-slv_name	dc.b	"Deluxe Galaga (AGA)"
- else
-slv_name	dc.b	"Deluxe Galaga (ECS)"
- ENDC
- IFD CHIPDEBUG
-	dc.b	" (DEBUG MODE)"
- ENDC
- dc.b " V2.6",0
- 
+slv_name	dc.b	"Deluxe Galaga "
+	IFNE AGA
+		dc.b	"(AGA)"
+	ELSE
+		dc.b	"(ECS)"
+	ENDC
+	IFD CHIPDEBUG
+		dc.b	" (DEBUG MODE)"
+	ENDC
+		dc.b	" V2.6",0
 slv_copy	dc.b	"1995 Edgar M.Vigdal.",0
-slv_info	dc.b	"Patch coded by CFou! & JOTD",10
-	dc.b	"Version "
-	DECL_VERSION
-	dc.b	0
-slv_config
-		DC.B	"C1:X:Enter config menu:0"
+slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10
+		dc.b	"Version 1.4 "
+	INCBIN	".date"
+		dc.b	0
+slv_config	dc.b	"C1:X:Enter config menu:0"
 		dc.b	0
 	EVEN
 
@@ -211,7 +187,6 @@ _bootdos
 	cmp.l	#$487a0178,4(a1)
 	bne	.not_crunched
 
-
 	pea	_AfterDecunch(pc)
 	move.w  #$4ef9,$17a(a1)
 	move.l	(a7)+,$17a+2(a1)
@@ -238,9 +213,7 @@ _bootdos
 	move.l	a1,$100.W
 	ENDC
 
-
 	jsr	(a1)
-_fin
 
 	IFD QUIT_AFTER_PROGRAM_EXIT
 	pea	TDREASON_OK
@@ -257,7 +230,6 @@ _fin
 	move.l	(_saverts,pc),-(a7)
 	rts
 
-
 	ENDC
 check_version:
 	; only check executable sizes
@@ -268,7 +240,7 @@ check_version:
 	
 	IFNE AGA
 	cmp.l	#409940,D0
-	beq.b	.ok  ; aga_unpacked
+	beq.b	.ok	; aga_unpacked
 	cmp.l	#246892,D0
 	beq.b	.ok	;  aga_packed
 	ELSE
@@ -354,7 +326,6 @@ _removeHelpECSAGA
 .noAGA	movem.l	(a7)+,d0
 	rts
 
-
 _HelpPressed
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
@@ -375,12 +346,11 @@ _args		dc.b	10
 _args_end	dc.b	0
 	EVEN
 
-_saveregs	ds.l	11
-_saverts	dc.l	0
-dosbase		dc.l	0
 _tag		dc.l	WHDLTAG_CUSTOM1_GET
-_custom1	dc.l	0
-		dc.l	0       ; End
+_custom1	dx.l	2
+_saveregs	dx.l	11
+_saverts	dx.l	1
+dosbase		dx.l	1
 
 	ENDC
 
