@@ -1,4 +1,4 @@
-
+AGA=0
 ;_Flash
 
 	INCDIR	Includes:
@@ -9,9 +9,9 @@
 
 	IFD BARFLY
 	IFNE AGA
-	OUTPUT	"DeluxeGalagaAga.Slave"
+	OUTPUT	"HD2:util/dev/whdload/deluxegalagaAGA/DeluxeGalagaAga.Slave"
 	else
-	OUTPUT	"DeluxeGalagaEcs.Slave"
+	OUTPUT	"HD2:util/dev/whdload/deluxegalaga/DeluxeGalagaEcs.Slave"
 	ENDC
 	BOPT	O+	;enable optimizing
 	BOPT	OG+	;enable optimizing
@@ -117,10 +117,15 @@ slv_name	dc.b	"Deluxe Galaga "
 		dc.b	" V2.6",0
 slv_copy	dc.b	"1995 Edgar M.Vigdal.",0
 slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10
-		dc.b	"Version 1.4 "
-	INCBIN	".date"
+			dc.b	"Trainer by Arise from Decay",10,10
+			dc.b	"Press `HELP` to get 5000 Money P1+P2",10
+		dc.b	"Version 1.5 "
+	INCBIN  ".date"
 		dc.b	0
-slv_config	dc.b	"C1:X:Enter config menu:0"
+slv_config	dc.b	"C1:X:Enter config menu:0;"
+		dc.b	"C2:X:Unlimited Lives P1+P2:0;"
+		dc.b	"C2:X:Unlimited Armor P1+P2:1;"
+		dc.b	"C2:X:Start with 5000 money P1+P2:2"
 		dc.b	0
 	EVEN
 
@@ -143,9 +148,9 @@ _bootdos
 	move.l	(_resload,pc),a2	;A2 = resload
 
    ;get tags
-      	lea   	(_tag,pc),a0
-      	move.l 	_resload(pc),a2
-      	jsr   	(resload_Control,a2)
+	  	lea   	(_tag,pc),a0
+	  	move.l 	_resload(pc),a2
+	  	jsr   	(resload_Control,a2)
 
 	;open doslib
 	lea	(_dosname,pc),a1
@@ -288,6 +293,12 @@ Patch
 	bne	.aga
 	; ECS version
 	move.l	#$01fc0000,$2d28(a0) ; debug ecs version (gfx bug)
+	
+	lea _pl_trainerECS(pc),a0
+	move.l	_resload(pc),a2
+	move.l	#$50000,a1
+	jsr	resload_Patch(a2)
+
 	bra.b	.end
 .aga
 	lea	_pl_main(pc),a0
@@ -295,6 +306,11 @@ Patch
 	IFD	CHIPDEBUG
 	move.l	A1,$100.W
 	ENDC
+	jsr	resload_Patch(a2)
+
+	lea _pl_trainer(pc),a0
+	move.l	_resload(pc),a2
+	move.l	#$60000,a1
 	jsr	resload_Patch(a2)
 .end
 	movem.l	(a7)+,d0-d1/a0-a2
@@ -309,7 +325,7 @@ _removeHelpECSAGA
 	bne 	.noECS
 	cmp.w	#$23f9,$1ec6+10(a0)
 	bne 	.noECS
-	patch	$1ec6(a0),_HelpPressed		; remove workbench menu if help pressed
+	patch	$1ec6(a0),_HelpPressedECS	   ; remove workbench menu if help pressed
 	tst.l 	d0	
 	beq 	.noECS
 	move.w 	#$6000,$5c2(a0)			; force config menu
@@ -319,14 +335,23 @@ _removeHelpECSAGA
 	bne 	.noAGA
 	cmp.w	#$23f9,$1f3a+10(a0)
 	bne 	.noAGA
-	patch	$1f3a(a0),_HelpPressed		; remove workbench menu if help pressed
+	patch	$1f3a(a0),_HelpPressedAGA	   ; remove workbench menu if help pressed
 	tst.l 	d0	
 	beq 	.noAGA
 	move.w 	#$6000,$622(a0)			; force config menu
 .noAGA	movem.l	(a7)+,d0
 	rts
 
-_HelpPressed
+_HelpPressedAGA
+	move.w	#$1388,$852c0		; add 5k money p1
+	move.w	#$1388,$853e4		; add 5k money p2
+	move.w	#$f0,$dff180		; just for test
+	move.w	#$f00,$dff180		; just for test
+	move.w	#$f0,$dff180		; just for test
+	rts
+_HelpPressedECS
+	move.w	#$1388,$77732		; add 5k money p1
+	move.w	#$1388,$77856		; add 5k money p2
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
@@ -339,6 +364,54 @@ _pl_main
 	; force joypad flag
 	;PL_S	$16222,$16298-$16222
 	PL_END
+_pl_trainer
+	PL_START
+	PL_IFC2X 0
+	PL_NOPS $2b58c,2
+	PL_ENDIF
+	PL_IFC2X 1
+	PL_NOPS	$2b534,2
+	PL_PSS	 $e570,_patchclrarmorAGA,2
+	PL_ENDIF
+	PL_IFC2X 2
+	PL_PSS	$e4fa,_patchclrmoneyAGA,2
+	PL_ENDIF
+	PL_END
+
+_patchclrarmorAGA
+	clr.w	($3c,a3)
+	move.b	#$4,$85327		; add max armor p1
+	move.b	#$4,$8544b		; add max armor p2
+	rts
+_patchclrmoneyAGA
+	clr.w	($4a,a3)
+	move.w	#$1388,$852c0		; add 5k money p1
+	move.w	#$1388,$853e4		; add 5k money p2
+	rts
+
+_pl_trainerECS
+	PL_START
+	PL_IFC2X 0
+	PL_NOPS $2d7b0,2
+	PL_ENDIF
+	PL_IFC2X 1
+	PL_NOPS	$2d758,2
+	PL_PSS	$b566,_patchclrarmorECS,2
+	PL_ENDIF
+	PL_IFC2X 2
+	PL_PSS	$b4f0,_patchclrmoneyECS,2
+	PL_ENDIF
+	PL_END
+_patchclrarmorECS
+	clr.w	($3c,a3)
+	move.b	#$4,$77799		; add max armor p1
+	move.b	#$4,$778bd		; add max armor p2
+	rts
+_patchclrmoneyECS
+	clr.w	($4a,a3)
+	move.w	#$1388,$77732		; add 5k money p1
+	move.w	#$1388,$77856		; add 5k money p2
+	rts
 
 _disk1		dc.b	"df0",0	;for Assign
 _program	dc.b	"GALAGA",0
