@@ -1,4 +1,3 @@
-AGA=0
 ;_Flash
 
 	INCDIR	Includes:
@@ -345,6 +344,7 @@ _removeHelpECSAGA
 _HelpPressedAGA
 	move.w	#$1388,$852c0		; add 5k money p1
 	move.w	#$1388,$853e4		; add 5k money p2
+	move.l	#$60000088,$6c9e6	; skip save scores
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
@@ -352,6 +352,7 @@ _HelpPressedAGA
 _HelpPressedECS
 	move.w	#$1388,$77732		; add 5k money p1
 	move.w	#$1388,$77856		; add 5k money p2
+	move.l	#$60000088,$59a10	; skip save scores
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
@@ -367,14 +368,17 @@ _pl_main
 _pl_trainer
 	PL_START
 	PL_IFC2X 0
-	PL_NOPS $2b58c,2
+	PL_NOPS $2b58c,2                    ; trainer unlimited lives
+	PL_S $c9e6,$8a						; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 1
-	PL_NOPS	$2b534,2
-	PL_PSS	 $e570,_patchclrarmorAGA,2
+	PL_NOPS	$2b534,2                    ; trainer unlimited armor
+	PL_PSS	 $e570,_patchclrarmorAGA,2  ; patch clear routine (armor) at gamestart
+	PL_S $c9e6,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 2
-	PL_PSS	$e4fa,_patchclrmoneyAGA,2
+	PL_PSS	$e4fa,_patchclrmoneyAGA,2   ; patch clear routine (money) at gamestart
+	PL_S $c9e6,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_END
 
@@ -392,14 +396,17 @@ _patchclrmoneyAGA
 _pl_trainerECS
 	PL_START
 	PL_IFC2X 0
-	PL_NOPS $2d7b0,2
+	PL_NOPS $2d7b0,2					; trainer unlimited lives
+	PL_S $9a10,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 1
-	PL_NOPS	$2d758,2
-	PL_PSS	$b566,_patchclrarmorECS,2
+	PL_NOPS	$2d758,2					; trainer unlimited armor
+	PL_PSS	$b566,_patchclrarmorECS,2	; patch clear routine (armor) at gamestart
+	PL_S $9a10,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 2
-	PL_PSS	$b4f0,_patchclrmoneyECS,2
+	PL_PSS	$b4f0,_patchclrmoneyECS,2	; patch clear routine (money) at gamestart
+	PL_S $9a10,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_END
 _patchclrarmorECS
