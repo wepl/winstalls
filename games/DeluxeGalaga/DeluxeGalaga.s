@@ -116,10 +116,10 @@ slv_name	dc.b	"Deluxe Galaga "
 		dc.b	" V2.6",0
 slv_copy	dc.b	"1995 Edgar M.Vigdal.",0
 slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10
-			dc.b	"Trainer by Arise from Decay",10,10
-			dc.b	"Press `HELP` to get 5000 Money P1+P2",10
+		dc.b	"Trainer by Arise from Decay",10,10
+		dc.b	"Press `HELP` to get 5000 Money P1+P2",10
 		dc.b	"Version 1.5 "
-	INCBIN  ".date"
+	INCBIN	".date"
 		dc.b	0
 slv_config	dc.b	"C1:X:Enter config menu:0;"
 		dc.b	"C2:X:Unlimited Lives P1+P2:0;"
@@ -147,9 +147,9 @@ _bootdos
 	move.l	(_resload,pc),a2	;A2 = resload
 
    ;get tags
-	  	lea   	(_tag,pc),a0
-	  	move.l 	_resload(pc),a2
-	  	jsr   	(resload_Control,a2)
+	lea	(_tag,pc),a0
+	move.l	_resload(pc),a2
+	jsr	(resload_Control,a2)
 
 	;open doslib
 	lea	(_dosname,pc),a1
@@ -292,7 +292,7 @@ Patch
 	bne	.aga
 	; ECS version
 	move.l	#$01fc0000,$2d28(a0) ; debug ecs version (gfx bug)
-	
+
 	lea _pl_trainerECS(pc),a0
 	move.l	_resload(pc),a2
 	move.l	#$50000,a1
@@ -324,7 +324,7 @@ _removeHelpECSAGA
 	bne 	.noECS
 	cmp.w	#$23f9,$1ec6+10(a0)
 	bne 	.noECS
-	patch	$1ec6(a0),_HelpPressedECS	   ; remove workbench menu if help pressed
+	patch	$1ec6(a0),_HelpPressedECS	; remove workbench menu if help pressed
 	tst.l 	d0	
 	beq 	.noECS
 	move.w 	#$6000,$5c2(a0)			; force config menu
@@ -334,7 +334,7 @@ _removeHelpECSAGA
 	bne 	.noAGA
 	cmp.w	#$23f9,$1f3a+10(a0)
 	bne 	.noAGA
-	patch	$1f3a(a0),_HelpPressedAGA	   ; remove workbench menu if help pressed
+	patch	$1f3a(a0),_HelpPressedAGA	; remove workbench menu if help pressed
 	tst.l 	d0	
 	beq 	.noAGA
 	move.w 	#$6000,$622(a0)			; force config menu

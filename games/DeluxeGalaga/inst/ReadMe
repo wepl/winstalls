@@ -8,7 +8,7 @@
  CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
  PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
 
- This install applies to "Deluxe Galaga" ï¿½ 1995 Edgar M.Vigdal
+ This install applies to "Deluxe Galaga" © 1995 Edgar M.Vigdal
 
  This install requires WHDLoad, DIC, RawDIC and The Patcher to be in the path.
  The programs can be found in the WHDLoad package.
@@ -54,7 +54,6 @@
    for the moneysucker enemy rises) 
  - If trainer is used, no hiscores will be saved
 
- 
  version 1.4 (10.05.2026) done by Wepl:
  - uses builtin lowlevel.library and WHDLoad ReadJoyport to fix issue #3141
    requires WHDLoad version 19 because of this now
