@@ -279,7 +279,14 @@ Patch
 		bne 	.t
 	ENDC
 
-	movem.l	d0-d1/a0-a2,-(a7)
+	movem.l	d0-d2/a0-a2,-(a7)		; added d2 
+	move.l	d0,d2					; save d0 for patchlist start
+
+;	 lea _pl_trainerECS(pc),a0		; skipped ecs for now, found no entry point
+;	 move.l	 _resload(pc),a2		; patchlist destination for ecs should be around $50000
+;	 move.l	 d2,a1					; what is the best way to find a good pointer?
+;	 jsr resload_Patch(a2)
+
 	move.l	d0,a0
 	bsr	_removeHelpECSAGA
 	move.l	-4(a0),d0
@@ -291,13 +298,8 @@ Patch
 	cmp.l	#$01fc0003,$2d28(a0)
 	bne	.aga
 	; ECS version
+
 	move.l	#$01fc0000,$2d28(a0) ; debug ecs version (gfx bug)
-
-	lea _pl_trainerECS(pc),a0
-	move.l	_resload(pc),a2
-	move.l	#$50000,a1
-	jsr	resload_Patch(a2)
-
 	bra.b	.end
 .aga
 	lea	_pl_main(pc),a0
@@ -309,10 +311,10 @@ Patch
 
 	lea _pl_trainer(pc),a0
 	move.l	_resload(pc),a2
-	move.l	#$60000,a1
+	move.l	d2,a1			; AGA version can use saved d0 for patchlist destination
 	jsr	resload_Patch(a2)
 .end
-	movem.l	(a7)+,d0-d1/a0-a2
+	movem.l	(a7)+,d0-d2/a0-a2
 
 	rts
 
@@ -342,17 +344,18 @@ _removeHelpECSAGA
 	rts
 
 _HelpPressedAGA
-	move.w	#$1388,$852c0		; add 5k money p1
-	move.w	#$1388,$853e4		; add 5k money p2
-	move.l	#$60000088,$6c9e6	; skip save scores
+;	 move.w	 #$1388,$76(a0)	   ; add 5k money p1		; no help key at the moment AGA
+;	 move.w	 #$1388,$853e4		 ; add 5k money p2
+;	 sub.l	 #$20000,a0
+;	 move.l	 #$60000088,$779c(a0)	 ; skip save scores
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
 	rts
 _HelpPressedECS
-	move.w	#$1388,$77732		; add 5k money p1
-	move.w	#$1388,$77856		; add 5k money p2
-	move.l	#$60000088,$59a10	; skip save scores
+;	 move.w	 #$1388,$77732		 ; add 5k money p1		; no help key at the moment ECS
+;	 move.w	 #$1388,$77856		 ; add 5k money p2
+;	 move.l	 #$60000088,$59a10	 ; skip save scores
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
@@ -365,35 +368,35 @@ _pl_main
 	; force joypad flag
 	;PL_S	$16222,$16298-$16222
 	PL_END
-_pl_trainer
+_pl_trainer								; AGA version patchlist with new offsets
 	PL_START
 	PL_IFC2X 0
-	PL_NOPS $2b58c,2                    ; trainer unlimited lives
-	PL_S $c9e6,$8a						; skip hiscore save routine
+	PL_NOPS $21e54,2                    ; trainer unlimited lives
+	PL_S $32ae,$8a						; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 1
-	PL_NOPS	$2b534,2                    ; trainer unlimited armor
-	PL_PSS	 $e570,_patchclrarmorAGA,2  ; patch clear routine (armor) at gamestart
-	PL_S $c9e6,$8a                      ; skip hiscore save routine
+	PL_NOPS	$21dfc,2                    ; trainer unlimited armor
+	PL_PSS	$4e38,_patchclrarmorAGA,2	; patch clear routine (armor) at gamestart
+	PL_S $32ae,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_IFC2X 2
-	PL_PSS	$e4fa,_patchclrmoneyAGA,2   ; patch clear routine (money) at gamestart
-	PL_S $c9e6,$8a                      ; skip hiscore save routine
+	PL_PSS	$4dbe,_patchclrmoneyAGA,2   ; patch clear routine (money) at gamestart
+	PL_S $32ae,$8a                      ; skip hiscore save routine
 	PL_ENDIF
 	PL_END
 
-_patchclrarmorAGA
+_patchclrarmorAGA						; patch for clear routine, now uses a3 as base
 	clr.w	($3c,a3)
-	move.b	#$4,$85327		; add max armor p1
-	move.b	#$4,$8544b		; add max armor p2
+	move.b	#$4,$ad(a3)					; add max armor p1
+	move.b	#$4,$161(a3)				; add max armor p2
 	rts
 _patchclrmoneyAGA
-	clr.w	($4a,a3)
-	move.w	#$1388,$852c0		; add 5k money p1
-	move.w	#$1388,$853e4		; add 5k money p2
+	clr.l	($44,a3)
+	clr.w	($48,a3)
+	move.w	#$1388,$46(a3)				; add 5k money
 	rts
 
-_pl_trainerECS
+_pl_trainerECS							; unchanged ECS patchlist, not applied for now
 	PL_START
 	PL_IFC2X 0
 	PL_NOPS $2d7b0,2					; trainer unlimited lives
