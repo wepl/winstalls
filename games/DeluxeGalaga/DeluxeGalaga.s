@@ -1,4 +1,3 @@
-;_Flash
 
 	INCDIR	Includes:
 	INCLUDE whdload.i
@@ -57,8 +56,8 @@ CACHECHIP			;enable inst cache for chip/fast memory
 ;CACHECHIPDATA			;enable inst/data cache for chip/fast memory
 ;DEBUG				;add more internal checks
 ;DISKSONBOOT			;insert disks in floppy drives
-DOSASSIGN			;enable _dos_assign routine
-FONTHEIGHT	= 8		;enable 80 chars per line
+;DOSASSIGN			;enable _dos_assign routine
+;FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
 	IFNE AGA
@@ -75,7 +74,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 NO68020				;remain 68000 compatible
-POINTERTICKS	= 1		;set mouse speed
+;POINTERTICKS	= 1		;set mouse speed
 ;PROMOTE_DISPLAY		;allow DblPAL/NTSC promotion
 ;SEGTRACKER			;add segment tracker
 SETKEYBOARD			;activate host keymap
@@ -146,11 +145,6 @@ _bootdos
 	move.l	(a7)+,(44,a0)
 	move.l	(_resload,pc),a2	;A2 = resload
 
-   ;get tags
-	lea	(_tag,pc),a0
-	move.l	_resload(pc),a2
-	jsr	(resload_Control,a2)
-
 	;open doslib
 	lea	(_dosname,pc),a1
 	move.l	(4),a6
@@ -159,31 +153,31 @@ _bootdos
 	move.l	d0,(a0)
 	move.l	d0,a6	;A6 = dosbase
 
-	;assigns
-	lea	(_disk1,pc),a0
-	sub.l	a1,a1
-	bsr	_dos_assign
+	; only check executable sizes
+	lea	_program(pc),A0
+	jsr	resload_GetFileSize(a2)
 
-	;check version
-	bsr	check_version
+	IFNE AGA
+	cmp.l	#409940,D0		; aga_unpacked
+	beq.b	.ok
+	cmp.l	#246892,D0		; aga_packed
+	beq.b	.ok
+	ELSE
+	cmp.l	#287256,d0		; ecs_unpacked
+	beq.b	.ok
+	cmp.l	#125096,d0		; ecs_packed
+	beq.b	.ok
+	ENDC
 
+	pea	TDREASON_WRONGVER
+	jmp	(resload_Abort,a2)
+.ok
 	;load exe
 	lea	(_program,pc),a0
 	move.l	a0,d1
 	jsr	(_LVOLoadSeg,a6)
-	move.l	d0,d7	;D7 = segment
+	move.l	d0,d7			;D7 = segment
 	beq	_program_err
-
-
-	IFD DEBUG
-	;set debug
-	clr.l	-(a7)
-	move.l	d7,-(a7)
-	pea	WHDLTAG_DBGSEG_SET
-	move.l	a7,a0
-	jsr	(resload_Control,a2)
-	add.w	#12,a7
-	ENDC
 
 	move.l	d7,a1
 	add.l	a1,a1
@@ -191,24 +185,24 @@ _bootdos
 	cmp.l	#$487a0178,4(a1)
 	bne	.not_crunched
 
-	pea	_AfterDecunch(pc)
-	move.w  #$4ef9,$17a(a1)
-	move.l	(a7)+,$17a+2(a1)
+	patch	4+$176(a1),.after
 	bsr	_flushcache
-	bra.b	.launch
+	jmp	(4,a1)
+
+.after	movem.l	(a7)+,d0-a6		;original
+	move.l	(a7)+,d7
+	lsr.l	#2,d7
+	sub.l	#1,d7
+
 .not_crunched
+	lea	_pl_main,a0
+	move.l	d7,a1
+	jsr	(resload_PatchSeg,a2)
+
 	;call
 	move.l	d7,a1
 	add.l	a1,a1
 	add.l	a1,a1
-
-	add.l	#4,a1
-	move.l	a1,d0
-	bsr	Patch
-	move.l	d7,a1
-	add.l	a1,a1
-	add.l	a1,a1
-.launch
 	moveq	#_args_end-_args,d0
 	lea	(_args,pc),a0
 	movem.l	(_saveregs,pc),d1-d6/a2-a6
@@ -226,7 +220,7 @@ _bootdos
 	ELSE
 	;remove exe
 	move.l	d7,d1
-	move.l	(dosbase,pc),a6
+	move.l	(_dosbase,pc),a6
 	jsr	(_LVOUnLoadSeg,a6)
 
 	;return to CLI
@@ -235,114 +229,14 @@ _bootdos
 	rts
 
 	ENDC
-check_version:
-	; only check executable sizes
-	movem.l	d0-d1/a1,-(a7)
-	lea	_program(pc),A0
-	move.l	_resload(pc),a2
-	jsr	resload_GetFileSize(a2)
-	
-	IFNE AGA
-	cmp.l	#409940,D0
-	beq.b	.ok	; aga_unpacked
-	cmp.l	#246892,D0
-	beq.b	.ok	;  aga_packed
-	ELSE
-	cmp.l	#287256,d0
-	beq.b	.ok	;  ecs_unpacked
-	cmp.l	#125096,d0
-	beq.b	.ok	;  ecs_packed
-	ENDC
 
-	pea	TDREASON_WRONGVER
-	move.l	_resload(pc),-(a7)
-	addq.l	#resload_Abort,(a7)
-	rts
-.ok
-	movem.l	(a7)+,d0-d1/a1
-	rts
 _program_err	jsr	(_LVOIoErr,a6)
 	pea	(_program,pc)
 	move.l	d0,-(a7)
 	pea	TDREASON_DOSREAD
 	jmp	(resload_Abort,a2)
 
-_AfterDecunch
-	movem.l	(a7)+,d0-a6
-	move.l	(a7),d0
-	move.l	a0,a5
-
-Patch
-	IFD	_Flash
-.t 		move.w	#$f0,$dff180		; just for test
-		btst	#$6,$bfe001
-		bne 	.t
-	ENDC
-
-	movem.l	d0-d2/a0-a2,-(a7)		; added d2 
-	move.l	d0,d2					; save d0 for patchlist start
-
-;	 lea _pl_trainerECS(pc),a0		; skipped ecs for now, found no entry point
-;	 move.l	 _resload(pc),a2		; patchlist destination for ecs should be around $50000
-;	 move.l	 d2,a1					; what is the best way to find a good pointer?
-;	 jsr resload_Patch(a2)
-
-	move.l	d0,a0
-	bsr	_removeHelpECSAGA
-	move.l	-4(a0),d0
-	lsl.l	#2,d0
-	move.l	d0,a0
-	move.l	(a0),d0
-	lsl.l	#2,d0
-	move.l	d0,a0
-	cmp.l	#$01fc0003,$2d28(a0)
-	bne	.aga
-	; ECS version
-
-	move.l	#$01fc0000,$2d28(a0) ; debug ecs version (gfx bug)
-	bra.b	.end
-.aga
-	lea	_pl_main(pc),a0
-	move.l	_resload(pc),a2
-	IFD	CHIPDEBUG
-	move.l	A1,$100.W
-	ENDC
-	jsr	resload_Patch(a2)
-
-	lea _pl_trainer(pc),a0
-	move.l	_resload(pc),a2
-	move.l	d2,a1			; AGA version can use saved d0 for patchlist destination
-	jsr	resload_Patch(a2)
-.end
-	movem.l	(a7)+,d0-d2/a0-a2
-
-	rts
-
-_removeHelpECSAGA
-	movem.l	d0,-(a7)
-	move.l	_custom1(pc),d0
-; ECS
-	cmp.w	#$23f9,$1ec6(a0)
-	bne 	.noECS
-	cmp.w	#$23f9,$1ec6+10(a0)
-	bne 	.noECS
-	patch	$1ec6(a0),_HelpPressedECS	; remove workbench menu if help pressed
-	tst.l 	d0	
-	beq 	.noECS
-	move.w 	#$6000,$5c2(a0)			; force config menu
-.noECS
-; AGA
-	cmp.w	#$23f9,$1f3a(a0)
-	bne 	.noAGA
-	cmp.w	#$23f9,$1f3a+10(a0)
-	bne 	.noAGA
-	patch	$1f3a(a0),_HelpPressedAGA	; remove workbench menu if help pressed
-	tst.l 	d0	
-	beq 	.noAGA
-	move.w 	#$6000,$622(a0)			; force config menu
-.noAGA	movem.l	(a7)+,d0
-	rts
-
+_HelpPressed
 _HelpPressedAGA
 ;	 move.w	 #$1388,$76(a0)	   ; add 5k money p1		; no help key at the moment AGA
 ;	 move.w	 #$1388,$853e4		 ; add 5k money p2
@@ -356,81 +250,69 @@ _HelpPressedECS
 ;	 move.w	 #$1388,$77732		 ; add 5k money p1		; no help key at the moment ECS
 ;	 move.w	 #$1388,$77856		 ; add 5k money p2
 ;	 move.l	 #$60000088,$59a10	 ; skip save scores
-	move.w	#$f0,$dff180		; just for test
-	move.w	#$f00,$dff180		; just for test
-	move.w	#$f0,$dff180		; just for test
-	rts
+
 _pl_main
 	PL_START
-	; skip loop which reads the controllers 500 times for what??
-	; and configures the ports to nonsense/nonworking
-	PL_S	$036e4,$373e-$36e4
-	; force joypad flag
-	;PL_S	$16222,$16298-$16222
-	PL_END
-_pl_trainer								; AGA version patchlist with new offsets
-	PL_START
-	PL_IFC2X 0
-	PL_NOPS $21e54,2                    ; trainer unlimited lives
-	PL_S $32ae,$8a						; skip hiscore save routine
-	PL_ENDIF
-	PL_IFC2X 1
-	PL_NOPS	$21dfc,2                    ; trainer unlimited armor
-	PL_PSS	$4e38,_patchclrarmorAGA,2	; patch clear routine (armor) at gamestart
-	PL_S $32ae,$8a                      ; skip hiscore save routine
-	PL_ENDIF
-	PL_IFC2X 2
-	PL_PSS	$4dbe,_patchclrmoneyAGA,2   ; patch clear routine (money) at gamestart
-	PL_S $32ae,$8a                      ; skip hiscore save routine
-	PL_ENDIF
+	IFEQ AGA
+		PL_IFC1
+			PL_W	$5c2,$6000	; beq->bra force config menu
+		PL_ENDIF
+		PL_P	$1ebc,_HelpPressed	; remove workbench menu if help pressed
+		PL_IFC2X 0
+			PL_B	$3230,$60	; beq->bra skip hiscore save routine
+			PL_NOPS $26fd0,2	; trainer unlimited lives
+		PL_ENDIF
+		PL_IFC2X 1
+			PL_B	$3230,$60	; beq->bra skip hiscore save routine
+			PL_PSS	$4d86,.armor,2	; patch clear routine (armor) at gamestart
+			PL_NOPS	$26f78,2	; trainer unlimited armor
+		PL_ENDIF
+		PL_IFC2X 2
+			PL_B	$3230,$60	; beq->bra skip hiscore save routine
+			PL_PSS	$4d0c,.money,2	; patch clear routine (money) at gamestart
+		PL_ENDIF
+		PL_CW	$3d4c6			; debug ecs version (gfx bug)
+	ELSE
+		PL_IFC1
+			PL_W	$622,$6000	; beq->bra force config menu
+		PL_ENDIF
+		PL_P	$1f3a,_HelpPressed	; remove workbench menu if help pressed
+		; skip loop which reads the controllers 500 times for what??
+		; and configures the ports to nonsense/nonworking
+		PL_S	$36e4,$373e-$36e4
+		; force joypad flag
+		;PL_S	$16222,$16298-$16222
+		PL_IFC2X 0
+			PL_B	$32ae,$60	; beq->bra skip hiscore save routine
+			PL_NOPS $21e54,2	; trainer unlimited lives
+		PL_ENDIF
+		PL_IFC2X 1
+			PL_B	$32ae,$60	; beq->bra skip hiscore save routine
+			PL_PSS	$4e38,.armor,2	; patch clear routine (armor) at gamestart
+			PL_NOPS	$21dfc,2	; trainer unlimited armor
+		PL_ENDIF
+		PL_IFC2X 2
+			PL_B	$32ae,$60	; beq->bra skip hiscore save routine
+			PL_PSS	$4dbe,.money,2	; patch clear routine (money) at gamestart
+		PL_ENDIF
+	ENDC
 	PL_END
 
-_patchclrarmorAGA						; patch for clear routine, now uses a3 as base
-	clr.w	($3c,a3)
-	move.b	#$4,$ad(a3)					; add max armor p1
-	move.b	#$4,$161(a3)				; add max armor p2
+.armor	clr.w	($3c,a3)
+	move.b	#4,$ad(a3)			; add max armor p1
+	move.b	#4,$161(a3)			; add max armor p2
 	rts
-_patchclrmoneyAGA
-	clr.l	($44,a3)
+
+.money	clr.l	($44,a3)
 	clr.w	($48,a3)
-	move.w	#$1388,$46(a3)				; add 5k money
+	move.w	#5000,$46(a3)			; add 5k money
 	rts
 
-_pl_trainerECS							; unchanged ECS patchlist, not applied for now
-	PL_START
-	PL_IFC2X 0
-	PL_NOPS $2d7b0,2					; trainer unlimited lives
-	PL_S $9a10,$8a                      ; skip hiscore save routine
-	PL_ENDIF
-	PL_IFC2X 1
-	PL_NOPS	$2d758,2					; trainer unlimited armor
-	PL_PSS	$b566,_patchclrarmorECS,2	; patch clear routine (armor) at gamestart
-	PL_S $9a10,$8a                      ; skip hiscore save routine
-	PL_ENDIF
-	PL_IFC2X 2
-	PL_PSS	$b4f0,_patchclrmoneyECS,2	; patch clear routine (money) at gamestart
-	PL_S $9a10,$8a                      ; skip hiscore save routine
-	PL_ENDIF
-	PL_END
-_patchclrarmorECS
-	clr.w	($3c,a3)
-	move.b	#$4,$77799		; add max armor p1
-	move.b	#$4,$778bd		; add max armor p2
-	rts
-_patchclrmoneyECS
-	clr.w	($4a,a3)
-	move.w	#$1388,$77732		; add 5k money p1
-	move.w	#$1388,$77856		; add 5k money p2
-	rts
-
-_disk1		dc.b	"df0",0	;for Assign
 _program	dc.b	"GALAGA",0
 _args		dc.b	10
 _args_end	dc.b	0
 	EVEN
 
-_tag		dc.l	WHDLTAG_CUSTOM1_GET
-_custom1	dx.l	2
 _saveregs	dx.l	11
 _saverts	dx.l	1
 dosbase		dx.l	1
