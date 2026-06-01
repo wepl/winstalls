@@ -49,6 +49,11 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
+ version 1.5 (19.05.2026) done by Arise from decay
+ - trainer added (could have added more than 5000 money, but then the probability
+   for the moneysucker enemy rises) 
+ - If trainer is used, no hiscores will be saved
+
  version 1.4 (10.05.2026) done by Wepl:
  - uses builtin lowlevel.library and WHDLoad ReadJoyport to fix issue #3141
    requires WHDLoad version 19 because of this now
