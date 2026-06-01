@@ -49,7 +49,7 @@
  or     aminet:dev/misc/whdload#?
  and    aminet:game/patch/
 
- version 1.5 (19.05.2026) done by Arise from decay
+ version 1.5 (01.06.2026) done by Arise from decay
  - trainer added (could have added more than 5000 money, but then the probability
    for the moneysucker enemy rises) 
  - If trainer is used, no hiscores will be saved

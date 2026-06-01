@@ -114,8 +114,8 @@ slv_name	dc.b	"Deluxe Galaga "
 	ENDC
 		dc.b	" V2.6",0
 slv_copy	dc.b	"1995 Edgar M.Vigdal.",0
-slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10,10
-		dc.b	"Trainer by Arise from Decay",10,10
+slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",-1
+		dc.b	"Trainer by Arise from Decay",-1
 		dc.b	"Version 1.5 "
 	INCBIN	".date"
 		dc.b	0
@@ -235,19 +235,13 @@ _program_err	jsr	(_LVOIoErr,a6)
 	pea	TDREASON_DOSREAD
 	jmp	(resload_Abort,a2)
 
-_HelpPressed
-	move.w	#$f0,$dff180		; just for test
-	move.w	#$f00,$dff180		; just for test
-	move.w	#$f0,$dff180		; just for test
-	rts
-
 _pl_main
 	PL_START
 	IFEQ AGA
 		PL_IFC1
 			PL_W	$5c2,$6000	; beq->bra force config menu
 		PL_ENDIF
-		PL_P	$1ebc,_HelpPressed	; remove workbench menu if help pressed
+		PL_R	$1ebc			; remove workbench menu if help pressed
 		PL_IFC2X 0
 			PL_B	$3230,$60	; beq->bra skip hiscore save routine
 			PL_NOPS $26fd0,2	; trainer unlimited lives
@@ -266,7 +260,7 @@ _pl_main
 		PL_IFC1
 			PL_W	$622,$6000	; beq->bra force config menu
 		PL_ENDIF
-		PL_P	$1f3a,_HelpPressed	; remove workbench menu if help pressed
+		PL_R	$1f3a			; remove workbench menu if help pressed
 		; skip loop which reads the controllers 500 times for what??
 		; and configures the ports to nonsense/nonworking
 		PL_S	$36e4,$373e-$36e4
@@ -285,6 +279,10 @@ _pl_main
 			PL_B	$32ae,$60	; beq->bra skip hiscore save routine
 			PL_PSS	$4dbe,.money,2	; patch clear routine (money) at gamestart
 		PL_ENDIF
+	; clock is queried only between games via battclock.resource
+	; so this doesn't work  under WHDLoad, would require to advance the clock
+	; from the ingame interrupts
+	;	PL_P	$258a4,.gettime
 	ENDC
 	PL_END
 
