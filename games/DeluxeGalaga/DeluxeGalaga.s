@@ -114,9 +114,8 @@ slv_name	dc.b	"Deluxe Galaga "
 	ENDC
 		dc.b	" V2.6",0
 slv_copy	dc.b	"1995 Edgar M.Vigdal.",0
-slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10
+slv_info	dc.b	"Patch coded by CFou!, JOTD, Wepl",10,10
 		dc.b	"Trainer by Arise from Decay",10,10
-		dc.b	"Press `HELP` to get 5000 Money P1+P2",10
 		dc.b	"Version 1.5 "
 	INCBIN	".date"
 		dc.b	0
@@ -237,19 +236,10 @@ _program_err	jsr	(_LVOIoErr,a6)
 	jmp	(resload_Abort,a2)
 
 _HelpPressed
-_HelpPressedAGA
-;	 move.w	 #$1388,$76(a0)	   ; add 5k money p1		; no help key at the moment AGA
-;	 move.w	 #$1388,$853e4		 ; add 5k money p2
-;	 sub.l	 #$20000,a0
-;	 move.l	 #$60000088,$779c(a0)	 ; skip save scores
 	move.w	#$f0,$dff180		; just for test
 	move.w	#$f00,$dff180		; just for test
 	move.w	#$f0,$dff180		; just for test
 	rts
-_HelpPressedECS
-;	 move.w	 #$1388,$77732		 ; add 5k money p1		; no help key at the moment ECS
-;	 move.w	 #$1388,$77856		 ; add 5k money p2
-;	 move.l	 #$60000088,$59a10	 ; skip save scores
 
 _pl_main
 	PL_START
