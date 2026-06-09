@@ -1,5 +1,5 @@
 
-DEST := wart:ca/CannonFodder
+DEST := wart:c/CannonFodder
 
 include ../../Makemacros
 

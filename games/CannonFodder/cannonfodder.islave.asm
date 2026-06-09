@@ -86,6 +86,7 @@ _ld2		dc.b	"%ld,",0
 _lf		dc.b	10,0
 _dir		dc.b	"disk.x.dir",0
 _used		ds.b	160
+_badadr		dc.b	"bad reloc offset=$%lx cdata=%08lx fdata=%08lx",10,0
 	ENDC
 	EVEN
 
@@ -420,6 +421,8 @@ _decode		move.l	d0,d6			;D6 = track number
 
 _files		move.l	($18,a1),d7		;D7 = amount entries
 		lea	(32,a1),a2		;A2 = directory
+		clr.l	_fodderc		;don't write relocation unless FODDERC was saved
+		clr.l	_fodderf		;don't write relocation unless FODDERF was saved
 
 	IFD DEBUG
 		movem.l	d0/a1,-(a7)
@@ -451,7 +454,6 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 	IFD DEBUG
 	;print message
 		lea	_dbgtxt,a0
-		move.l	a0,d1
 		pea	(a2)			;name
 		move.l	d2,-(a7)		;length
 		moveq	#0,d0
@@ -459,8 +461,8 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		move.l	d0,-(a7)
 		move.b	($1a,a2),d0		;track
 		move.l	d0,-(a7)
-		move.l	a7,d2
-		jsr	(_LVOVPrintf,a6)
+		move.l	a7,a1
+		jsr	(rawdic_Print,a5)
 		add.w	#16,a7
 	;check if file already exists
 		move.l	a2,d1
@@ -470,10 +472,9 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		beq	.notexists
 		jsr	(_LVOUnLock,a6)
 		lea	_dbgexists,a0
-		move.l	a0,d1
 		pea	(a2)			;name
-		move.l	a7,d2
-		jsr	(_LVOVPrintf,a6)
+		move.l	a7,a1
+		jsr	(rawdic_Print,a5)
 		add.w	#4,a7
 	;append ".2"
 		move.l	a2,a0
@@ -528,95 +529,115 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		sub.l	#$1fe,d2
 		bhi	.nextblock
 
-	;save uncompressed FODDERF
+	;store uncompressed FODDERC/F
+	;the order of the files is different on some language versions
+	;therefore we store both and calc the rel at the end of the disk
 		cmp.l	#"FODD",(a2)
 		bne	.save
+		lea	_fodderc,a1
+		cmp.l	#"ERC"<<8,(4,a2)
+		beq	.decrunch
+		lea	_fodderf,a1
 		cmp.l	#"ERF"<<8,(4,a2)
 		bne	.save
-		lea	_file,a0
-		move.l	(4,a0),d0		;decompressed length
-		cmp.l	#MAXFODDER,d0
+.decrunch	lea	_file,a0
+		move.l	(4,a0),d4		;D4 = decompressed length
+		cmp.l	#MAXFODDER,d4
 		bhi	_outofmem
-		lea	_fodderf,a1
 		bsr	_rnc1
-		bra	.skipfile
+		cmp.l	#"ERF"<<8,(4,a2)	;don't save FODDERF
+		beq	.skipfile
 	;save file
 .save		move.l	($1c,a2),d0		;length
 		move.l	a2,a0			;name
 		lea	_file,a1		;data
 		jsr	(rawdic_SaveFile,a5)
-	;calculate relocation file
-	;FODDERC = $80000
-	;FODDERF = $200000
-		cmp.l	#"FODD",(a2)
-		bne	.skipfile
-		cmp.l	#"ERC"<<8,(4,a2)
-		bne	.skipfile
-		lea	_file,a0
-		move.l	(4,a0),d2		;d2 = decompressed length
-		cmp.l	#MAXFILE,d2
-		bhi	_outofmem
-		move.l	a0,a1
-		bsr	_rnc1
-		lea	_file,a0		;a0 = fodderc
-		move.l	a0,d1
-		addq.l	#2,d1			;d1 = _file+2, offset = a0_after_cmp - d1 = n
-		lea	_fodderf,a1		;a1 = fodderf
-		move.l	a0,a3			;a3 = rel
-.cmp		cmp	(a0)+,(a1)+
-		beq	.eq
-		move.l	a0,d0
-		sub.l	d1,d0
-		move.l	d0,(a3)+
-.eq		subq.l	#2,d2
-		bne	.cmp
-		lea	_rel,a0			;relocation name
-		lea	_file,a1		;data
-		move.l	a3,d0
-		sub.l	a1,d0			;relocation length
-		jsr	(rawdic_SaveFile,a5)
 .skipfile
 		add.w	#32,a2
 		subq.l	#1,d7
 		bne	.nextfile
-		
+
+	;calculate relocation file
+	;FODDERC = $80000
+	;FODDERF = $200000
+		lea	_fodderc,a0		;a0 = fodderc
+		lea	_fodderf,a1		;a1 = fodderf
+		tst.l	(a0)
+		beq	.norel
+		tst.l	(a1)
+		beq	.norel
+		lea	_file,a2		;a2 = file relocations
+		move.l	a0,d1
+		addq.l	#2,d1			;d1 = _file+2, offset = a0_after_cmp - d1 = n
+.cmp		cmp	(a0)+,(a1)+
+		beq	.eq
+	;check for a valid address
+		move	(-2,a0),d0
+		and	#$fff8,d0
+		cmp	#8,d0
 	IFD DEBUG
+	;is not printed if file already exists because appended ".2"
+		beq	.addressok
+		movem.l	d1/a0/a1,-(a7)
+		move.l	(-2,a1),-(a7)
+		move.l	(-2,a0),-(a7)
+		move.l	a0,-(a7)
+		sub.l	d1,(a7)
+		move.l	a7,a1
+		lea	_badadr,a0
+		jsr	(rawdic_Print,a5)
+		add	#12,a7
+		movem.l	(a7)+,_MOVEMREGS
+		bra	.eq
+.addressok
+	ELSE
+		bne	.eq
+	ENDC
+		move.l	a0,d0
+		sub.l	d1,d0
+		move.l	d0,(a2)+
+.eq		subq.l	#2,d4
+		bcc	.cmp
+		lea	_rel,a0			;relocation name
+		lea	_file,a1		;data
+		move.l	a2,d0
+		sub.l	a1,d0			;relocation length
+		jsr	(rawdic_SaveFile,a5)
+.norel
+	IFD DEBUG
+	;print used tracks
 		moveq	#0,d5			;used mode
 		moveq	#0,d6			;actual track
 		move	#160-1,d7		;loop counter
 		lea	_endtxt,a0
-		move.l	a0,d1
-		moveq	#0,d2
-		jsr	(_LVOVPrintf,a6)
+		suba.l	a1,a1
+		jsr	(rawdic_Print,a5)
 
 .loop		tst.b	(a4)+
 		beq	.no
 .yes		tst.b	d5
 		bne	.nxt
 		lea	_ld1,a0
-		move.l	a0,d1
 		move.l	d6,-(a7)
-		move.l	a7,d2
-		jsr	(_LVOVPrintf,a6)
+		move.l	a7,a1
+		jsr	(rawdic_Print,a5)
 		add.w	#4,a7
 		st	d5
 		bra	.nxt
 .no		tst.b	d5
 		beq	.nxt
 		lea	_ld2,a0
-		move.l	a0,d1
 		move.l	d6,-(a7)
 		subq.l	#1,(a7)
-		move.l	a7,d2
-		jsr	(_LVOVPrintf,a6)
+		move.l	a7,a1
+		jsr	(rawdic_Print,a5)
 		add.w	#4,a7
 		sf	d5
 .nxt		add.l	#1,d6
 		dbf	d7,.loop
 		lea	_lf,a0
-		move.l	a0,d1
-		moveq	#0,d2
-		jsr	(_LVOVPrintf,a6)
+		suba.l	a1,a1
+		jsr	(rawdic_Print,a5)
 	ENDC
 
 		moveq	#IERR_OK,d0
@@ -634,6 +655,8 @@ _outofmem	moveq	#IERR_OUTOFMEM,d0
 	SECTION b,BSS
 
 _file		ds.b	MAXFILE+512
+	CNOP 0,4
+_fodderc	ds.b	MAXFODDER
 	CNOP 0,4
 _fodderf	ds.b	MAXFODDER
 

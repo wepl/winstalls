@@ -8,6 +8,7 @@
 ;		12.06.18 support for fr added
 ;		17.06.18 support for it added
 ;		02.03.26 Trainer added by Arise from Decay
+;		19.04.26 move exe to expmem
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -32,22 +33,25 @@
 
 	STRUCTURE	globals,$100
 		LONG	_resload
+		LONG	_picmem
+		LONG	_team
 
-EXPMEMLEN = $b000
+EXELEN = $80000		;relocated executable
+PICLEN = $b000		;relocate/picture/savegame buffer
 
 ;============================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	17			;ws_Version
-		dc.w	WHDLF_NoError		;ws_flags
-		dc.l	$100000			;ws_BaseMemSize
+		dc.w	WHDLF_NoError|WHDLF_ClearMem	;ws_flags
+		dc.l	$80000			;ws_BaseMemSize
 		dc.l	0			;ws_ExecInstall
 		dc.w	_start-_base		;ws_GameLoader
 		dc.w	_data-_base		;ws_CurrentDir
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$46			;ws_keyexit = Del
-_expmem		dc.l	EXPMEMLEN		;ws_ExpMem
+_expmem		dc.l	EXELEN+PICLEN		;ws_ExpMem
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
@@ -65,7 +69,7 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 _name		dc.b	"Cannon Fodder",0
 _copy		dc.b	"1993 Sensible Software",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 2.1 "
+		dc.b	"Version 3.0 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -80,6 +84,7 @@ _config		dc.b	"C1:X:Infinite Recruits:0;"
 
 _data		dc.b	"data",0
 _game		dc.b	"fodderc",0
+_rel		dc.b	"fodder.rel",0
 _d1		dc.b	"DISK1",0
 _d2		dc.b	"disk2",0
 _d3		dc.b	"DISK3",0
@@ -99,39 +104,58 @@ _start	;	A0 = resident loader
 		move.l	#WCPUF_All,d1
 		jsr	(resload_SetCPU,a2)
 		
-	;set stack
-		move.l	#EXPMEMLEN-8,a7
-		add.l	(_expmem),a7			;stack in fastmem
+	;set stack and variables
+		move.l	#EXELEN+PICLEN-8,a7
+		move.l	(_expmem),a3			;A3 = main
+		add.l	a3,a7				;stack in fastmem
+		move.l	a3,a4
+		add.l	#EXELEN,a4			;A4 = picmem
+		move.l	a4,(_picmem)
+		lea	($1556,a3),a0
+		move.l	a0,(_team)
 
 	;load main
 		lea	_game,a0
-		lea	$80000,a1
-		move.l	a1,a3				;A3 = main
+		move.l	a3,a1
 		jsr	(resload_LoadFileDecrunch,a2)
 
 	;check version
 		move.l	#$2000,d0
 		move.l	a3,a0
 		jsr	(resload_CRC16,a2)
-		lea	_plen1,a0
+		lea	_plen1,a5
 		cmp.w	#$b157,d0
-		beq	.patch
-		lea	_plen2,a0
+		beq	.versionok
+		lea	_plen2,a5
 		cmp.w	#$a1c0,d0
-		beq	.patch
-		lea	_plde,a0
+		beq	.versionok
+		lea	_plde,a5
 		cmp.w	#$7b22,d0
-		beq	.patch
-		lea	_plfr,a0
+		beq	.versionok
+		lea	_plfr,a5
 		cmp.w	#$c3ce,d0
-		beq	.patch
-		lea	_plit,a0
+		beq	.versionok
+		lea	_plit,a5
 		cmp.w	#$5723,d0
-		beq	.patch
+		beq	.versionok
 		pea	TDREASON_WRONGVER
 		jmp	(resload_Abort,a2)
+.versionok
 
-.patch		move.l	a3,a1
+	;relocate
+		lea	_rel,a0
+		move.l	a4,a1				;picmem
+		jsr	(resload_LoadFileDecrunch,a2)
+		move.l	a3,d1
+		sub.l	#$80000,d1			;exe is "org $80000"
+.loop		move.l	(a4)+,d2
+		add.l	d1,(a3,d2.l)
+		sub.l	#4,d0
+		bne	.loop
+
+	;patch
+		move.l	a5,a0
+		move.l	a3,a1
 		jsr	(resload_Patch,a2)
 
 ;		move.w	#$4e71,$9e208
@@ -141,8 +165,6 @@ _start	;	A0 = resident loader
 		lea	(_custom),a6
 		jmp	(a3)
 
-		move.l	(_expmem),$89cf2	;buffer for iff conversion
-		
 _plen1		PL_START
 		PL_W	$2c64,$4200		;bplcon0
 		PL_S	$5d92,$5dc2-$5d92	;skip init stuff
@@ -401,21 +423,21 @@ _loadname
 
 ; in:  a0=name
 ; out: Z=1=success d7=data-in-buffer a4=data
-_loadscatter	move.l	(_expmem),a1
+_loadscatter	move.l	(_picmem),a1
 		move.l	_resload,a2
 		jsr	(resload_LoadFileDecrunch,a2)
-		move.l	(_expmem),a4
+		move.l	(_picmem),a4
 		move.l	d0,d7				;length
 		moveq	#0,d0				;success
 		rts
 
-_gettmp		move.l	(_expmem),a4
+_gettmp		move.l	(_picmem),a4
 		move.l	(a4)+,d7
 		cmp.w	d0,d0				;set Z flag
 		rts
 
 _listfiles	lea	(_savepath),a0
-		move.l	(_expmem),a1
+		move.l	(_picmem),a1
 		move.l	a1,a3				;A3 = buffer in
 		move.l	#$2000,d0			;buffer length
 		lea	(a3,d0.l),a4			;A4 = buffer out
@@ -443,43 +465,57 @@ _listfiles	lea	(_savepath),a0
 		rts
 
 ; a0=name a1=dest
-_loadgame	move.l	_expmem,a2
+_loadgame	move.l	_picmem,a2
 		lea	_savepath,a3
 .copypath	move.b	(a3)+,(a2)+
 		bne	.copypath
 		move.b	#"/",(-1,a2)
 .copyname	move.b	(a0)+,(a2)+
 		bne	.copyname
-		move.l	_expmem,a0
+		move.l	_picmem,a0
 		moveq	#8,d0
-		bra	_loader
+		move.l	a1,-(a7)
+		bsr	_loader
+		move.l	(a7)+,a1
+	;fix problem with savegames containing absolute addresses of relocated program
+		move.l	_expmem,a2
+		lea	($73c,a2),a0
+		move.l	a0,($3e8,a1)
+		move.l	a0,($3ec,a1)
+		lea	($a16,a2),a0
+		move.l	a0,($6c2,a1)
+		rts
 
 ; a0=name a1=src d1=length
-_savegame	move.l	_expmem,a2
+_savegame	move.l	_picmem,a2
 		lea	_savepath,a3
 .copypath	move.b	(a3)+,(a2)+
 		bne	.copypath
 		move.b	#"/",(-1,a2)
 .copyname	move.b	(a0)+,(a2)+
 		bne	.copyname
-		move.l	_expmem,a0
+		move.l	_picmem,a0
 		move.l	d1,d0				;length
 		move.l	_resload,a2
 		jsr	(resload_SaveFile,a2)
 		moveq	#0,d0
 		rts
 
-_af0		move.w	$81556,d0			;actual player/team (0-5)
+_af0		move.l	(_team),a0
+		move.w	(a0),d0				;actual player/team (0-5)
 		bpl	.ok
 		add.l	#$16dde-$16d82,(a7)
 .ok		rts
 
-_af1		move.w	$81556,d0			;actual player/team (0-5)
+_af1		move.l	(_team),a0
+		move.w	(a0),d0				;actual player/team (0-5)
 		bpl	.ok
 		add.l	#$1eb52-$1eb3c,(a7)
 .ok		rts
 
-_s1		cmp.l	#$100000,d0
+_s1		cmp.l	_expmem,d0
+		bls	.ret
+		cmp.l	_picmem,d0
 		bhs	.ret
 		move.l	d0,a1				;original
 		move.l	($20,a0),d0			;original
@@ -489,12 +525,13 @@ _s1		cmp.l	#$100000,d0
 
 ;============================================================================
 
-_keyboard	movem.l	d0-d1/a0-a2,-(a7)
+_keyboard	movem.l	d0-d1/a0-a3,-(a7)
 		lea	_ciaa,a0
 		lea	_custom,a2
+		move.l	(_expmem),a3		;A3 = exe
 		btst	#CIAICRB_SP,(ciaicr,a0)
 		beq	.end
-		lea	$814e5,a1		;lastkeycode
+		lea	($14e5,a3),a1		;lastkeycode
 		move.b	(ciasdr,a0),d0
 		or.b	#CIACRAF_SPMODE,(ciacra,a0)
 		ror.b	#1,d0
@@ -516,19 +553,19 @@ _keyboard	movem.l	d0-d1/a0-a2,-(a7)
 		bra	.wait
 
 .help
-		move.w	$81556,d0		;aktuelles team
-		lea	$821c0,a1
+		move.w	($1556,a3),d0		;aktuelles team
+		lea	($21c0,a3),a1
 		st	(a1,d0.w)
-		lea	$821c6,a1
+		lea	($21c6,a3),a1
 		st	(a1,d0.w)
-		lea	$81f4c,a1
+		lea	($1f4c,a3),a1
 		add.w	d0,a1
 		add.w	d0,a1
 		move.w	#42,(a1)		;grenades
 		move.w	#42,(6,a1)		;bazookas
 		bra	.wait
 
-.skiplv		move.w	#$ffff,$81dcc	 	;win phase/mission
+.skiplv		move.w	#$ffff,($1dcc,a3) 	;win phase/mission
 		bra	.wait
 
 .wait		moveq	#3-1,d1
