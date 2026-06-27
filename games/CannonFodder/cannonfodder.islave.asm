@@ -8,6 +8,8 @@
 ;		17.06 2018 italian version added
 ;		06.03.2026 winstall integration
 ;		18.04.2026 save relocation file additionally
+;		23.06.2026 reloc detection: also require high word delta $18
+;			   to avoid relocating build-dependent data words
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -571,13 +573,24 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		addq.l	#2,d1			;d1 = _file+2, offset = a0_after_cmp - d1 = n
 .cmp		cmp	(a0)+,(a1)+
 		beq	.eq
-	;check for a valid address
+	;check for a valid address:
+	;  fodderc high word must be $0008..$000f and
+	;  high words must differ by exactly $18 (= high word of base delta $180000)
 		move	(-2,a0),d0
 		and	#$fff8,d0
 		cmp	#8,d0
+		bne	.notaddr
+		move	(-2,a1),d0
+		sub	(-2,a0),d0
+		cmp	#$18,d0
+		bne	.notaddr
+		move.l	a0,d0
+		sub.l	d1,d0
+		move.l	d0,(a2)+
+		bra	.eq
+.notaddr
 	IFD DEBUG
 	;is not printed if file already exists because appended ".2"
-		beq	.addressok
 		movem.l	d1/a0/a1,-(a7)
 		move.l	(-2,a1),-(a7)
 		move.l	(-2,a0),-(a7)
@@ -588,14 +601,7 @@ _files		move.l	($18,a1),d7		;D7 = amount entries
 		jsr	(rawdic_Print,a5)
 		add	#12,a7
 		movem.l	(a7)+,_MOVEMREGS
-		bra	.eq
-.addressok
-	ELSE
-		bne	.eq
 	ENDC
-		move.l	a0,d0
-		sub.l	d1,d0
-		move.l	d0,(a2)+
 .eq		subq.l	#2,d4
 		bcc	.cmp
 		lea	_rel,a0			;relocation name

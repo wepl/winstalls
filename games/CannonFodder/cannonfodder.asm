@@ -9,6 +9,9 @@
 ;		17.06.18 support for it added
 ;		02.03.26 Trainer added by Arise from Decay
 ;		19.04.26 move exe to expmem
+;		23.06.26 removed redundant _random2 patch (bound now in fodder.rel)
+;		27.06.26 added _diag patch to find handler trashing A0 in lbC0153B4
+;			 fixed _af0/_af1 clobbering A0 (object pointer); use A1 instead
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -168,20 +171,29 @@ _start	;	A0 = resident loader
 _plen1		PL_START
 		PL_W	$2c64,$4200		;bplcon0
 		PL_S	$5d92,$5dc2-$5d92	;skip init stuff
+		PL_I	$7a14			;copylock
+		PL_I	$7aaa			;copylock
 		PL_P	$a2f8,_keyboard		;keyboard int umleiten
 		PL_R	$a6a8			;copylock
 		PL_P	$b3e8,_loader
 		PL_P	$bd2e,_gettmp
+		PL_I	$c3c6			;smc
 		PL_W	$cc52,$1e		;htotal
 		PL_W	$cf96,$200		;bplcon0
+	;	PL_PS	$153d2,_diag		;DIAG: catch handler trashing A0
+	;	PL_PS	$163c2,_af3
 		PL_PS	$16d7c,_af0
+	;	PL_PS	$1a83a,_af4
+		PL_B	$1a882,$6f		;beq -> ble
 		PL_W	$1ccf2,$4200		;bplcon0
 		PL_W	$1cd92,$4200		;bplcon0
 		PL_W	$1cda6,$5200		;bplcon0
 		PL_R	$1d370			;skip disk2 check
 		PL_W	$1d3a2,$5200		;bplcon0
 		PL_W	$1d462,$4200		;bplcon0
+		PL_I	$1d810			;random
 		PL_PS	$1eb36,_af1
+		PL_I	$1fc92			;copylock
 		PL_B	$24304,$6f		;beq -> ble
 		PL_PS	$243ee,_s1
 		PL_W	$276a8,$6600		;bplcon0
@@ -197,6 +209,7 @@ _plen1		PL_START
 		PL_S	$2a29e,10		;load/save game
 		PL_PS	$2a2c8,_savegame
 		PL_R	$2acfe			;"insert disk 3"
+		PL_I	$2c044			;copylock
 		PL_IFC1X 0
 		PL_NOPS	$1e208,3		;Trainer Soldiers
 		PL_ENDIF
@@ -210,6 +223,54 @@ _plen1		PL_START
 		PL_NOPS	$1dc8a,1		;Trainer Invulnerability
 		PL_ENDIF
 		PL_END
+
+	IFEQ 1
+_af3		move	($22,a0),d0
+		cmp	#1,d0			;possible values 0..1
+		bhi	.fail
+		asl	#2,d0
+		rts
+.fail		moveq	#0,d0			;forcing 0
+		rts
+
+_af4		move.l	($6a,a0),a1		;faulted values: c0000, 50ffff
+		cmp.l	_expmem,a1
+		blo	.fail
+		cmp.l	_picmem,a1
+		bhi	.fail
+		tst	(a1)
+		rts
+.fail		add	#4,a7
+		rts
+	ENDC
+
+;----------------------------------------------------------------------------
+; Diagnostic: the object dispatcher lbC0153B4 walks the object array (stride
+; $76) and calls a handler per object via the jumptable lbL014608, requiring
+; each handler to preserve A0 (the object pointer). The relocation crash is an
+; A0 that has wandered out of the array; this wrapper traps the first handler
+; that returns without preserving A0.
+;
+; replaces at $153d2:	movea.l	(a1,d1.w),a1	;fetch handler from jumptable
+;			jsr	(a1)		;call handler
+; returns to $153d8:	lea	($76,a0),a0
+;
+; On trap (illegal) the registers tell the culprit:
+;	D1 = handler offset (= address in FODDERC.asm)
+;	D0 = original (correct) object pointer
+;	A0 = trashed object pointer the handler left behind
+;	A1 = handler address (absolute)
+;_diag		movea.l	(a1,d1.w),a1		;original: get handler
+;		move.l	a0,-(a7)		;save object pointer
+;		move.l	a1,-(a7)		;save handler address
+;		jsr	(a1)			;call object handler
+;		move.l	(a7)+,d1		;D1 = handler address (abs)
+;		move.l	(a7)+,d0		;D0 = original object pointer
+;		cmp.l	a0,d0			;handler preserved A0?
+;		beq	.ok
+;		sub.l	(_expmem),d1		;D1 = handler offset (FODDERC addr)
+;		illegal				;-> register dump, read D1
+;.ok		rts				;-> $153d8 lea ($76,a0),a0
 
 _plcommon	PL_START
 		PL_W	$2c68,$4200		;bplcon0
@@ -501,14 +562,16 @@ _savegame	move.l	_picmem,a2
 		moveq	#0,d0
 		rts
 
-_af0		move.l	(_team),a0
-		move.w	(a0),d0				;actual player/team (0-5)
+; use A1 as scratch (not A0): A0 is the object pointer and must survive;
+; the original code overwrites A1 next (lea team_table,a1), so no save needed
+_af0		move.l	(_team),a1
+		move.w	(a1),d0				;actual player/team (0-5)
 		bpl	.ok
 		add.l	#$16dde-$16d82,(a7)
 .ok		rts
 
-_af1		move.l	(_team),a0
-		move.w	(a0),d0				;actual player/team (0-5)
+_af1		move.l	(_team),a1
+		move.w	(a1),d0				;actual player/team (0-5)
 		bpl	.ok
 		add.l	#$1eb52-$1eb3c,(a7)
 .ok		rts
