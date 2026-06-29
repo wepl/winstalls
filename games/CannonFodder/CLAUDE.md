@@ -93,6 +93,13 @@ WHDLoad writes three files on a fault (and appends per fault):
     not clobber A0** (it is the object pointer when reached from the dispatcher) — they
     use **A1**, which the following original instruction (`lea team_table,a1`)
     overwrites anyway.
+  - `_af2` (en1 `$1eb44`): guards the team-order-list deref in the `lbC01EB36`-family
+    routine (see the fr reference case below). Patched over the two `movea.l` derefs
+    (`_af1`-offset `+ $e`, same instruction in every version); redoes them and **sign-tests**
+    the object pointer — an empty list's first long is the `$ffff` terminator (negative),
+    a real pointer is in ExpMem (low memory, positive). On negative it skips `tst.b`/`bne.w`
+    to the same fall-through `_af1` uses. Per-version offsets: en1 `$1eb44`, en2 `$1ec1e`,
+    de `$1ed28`, fr `$1ed6e`, it `$1ed20`. Keeps A0 (object pointer); reuses dead D0 as scratch.
   - `_af3` (`$163c2`) / `_af4` (`$1a83a`): index/pointer bounds guards (currently
     commented out by Wepl).
   - `_s1` (`$243ee`): savegame pointer range fix.
@@ -112,3 +119,149 @@ Diagnostic technique that found it: wrap the dispatcher's `jsr (a1)` (patch at
 `$153D2`, returns to `$153D8`) to save A0, call the handler, and `illegal` if A0
 changed — leaving the culprit handler's offset in D1. (Kept commented out in the
 slave as `_diag` for reuse.)
+
+## Soldier name pool & recruit hill
+
+- **Soldier name table** `lbL0117E0` (offset `$117E0`): static data **inside the exe**
+  (`< $2CA14`), 360 records × 9 bytes = `$CA8` bytes (`$117E0..$12488`). Each record =
+  6-char name (space-padded to 6, e.g. `"JOOLS "`, `"GARY  "`) + 3 meta bytes
+  (`rank`,`$FF`,`xx`). Read-only from the game's view; recruits reference it by **index**
+  (`lbL000664[k].word0 = name index`), names are not copied back in.
+- **Recruit-hill display** `lbC025DC4`: draws `lbW000638` recruits (the reinforcement
+  pool, `+15`/mission, `−survivors`) as little soldiers into the buffer `lbL012FC8`
+  (`$12FC8`), writing **downward** (`d1` from `$660`, `−$18`/recruit) via the slot write
+  at `$25E08` (`move.w (a3,d2.w),(4,a1,d1.w)`). The name table sits **directly below**
+  this buffer, so the hill grows toward the names; only ~117 recruits fit before
+  `d1` reaches the name table.
+
+## Fixed bug (28.06.2026) — reference case
+
+Symptom: access fault in the font glyph blitter (`lbC00A1D0`, reads 4 bitplanes `$2800`
+apart) reading off the end of ExpMem, on the end screen after mission 23. Cause chain:
+a survivor name like `"GARY  "` had been corrupted to `"GARY\0\n"`; the name renderer
+computes glyph index `char−$41+$29`, so `$00` → negative index → garbage glyph
+descriptor with width `$43F9` → runaway blit. Root cause: the **recruit-hill display
+`lbC025DC4` overran its buffer** `lbL012FC8` into the read-only name pool below it
+(`lbW000638` = 270 recruits at mission 23, no lower bound on the write offset `d1`).
+Pre-existing game fragility (gameplay state + static layout), surfaced once the recruit
+pool grew large enough. **Not** a `fodder.rel` error. Fix `_hill` (`PL_PS $25e08`):
+skip the slot write once `d1 < -$b44` (i.e. dest would reach the name table top
+`$12488`); the loop otherwise runs unchanged so post-loop register state is preserved.
+
+Diagnostic technique that found it: `resload_ProtectWrite` over the name table
+(`expmem+$117E0`, len `$CA8`) at the end of `_start` (en1-gated via `a5==_plen1`) — the
+first write trapped with the culprit PC (`$25E08`) in `.whdl_register`. (Removed after
+the fix.)
+
+## Team order lists (`lbL005B16`)
+
+- `lbL005B16` (offset `$5B16`) = **5-entry** table of pointers (`dl lbW005B2A,
+  lbW005B4E, lbW005B72, lbW005B96, lbW005BBA`) to each team's **order list**, stride
+  `$24`. Each list is a sequence of **long object pointers**, `$FFFF`-word-terminated
+  (an empty list starts with the `$FFFF` terminator). (en1/other versions: same shape,
+  the family label is `lbL005B26`/`lbL005B16` per build.)
+- The `lbC01EB36`-family routine reads `lbL005B16[team]`, then `movea.l (a1),a1` to get
+  the **first** order object and `tst.b ($6e,a1)`. It assumes the list is non-empty; an
+  **empty** list makes the first long `$FFFFxxxx` → garbage pointer → access fault.
+
+## Fixed bug (28.06.2026, fr) — reference case
+
+Symptom: access fault (byte read from `$FFFFBC10`) in the **fr** version at `lbC01ED60`
+(`$1ED60`), `PC=$1ED74` = `tst.b ($6e,a1)`. `actual_player_team` (`$1556`) = **1** (a
+**valid** team), but team-1's order list (`lbL005B16[1]` = `$5B4E`) was **empty**:
+first word the `$FFFF` terminator, so `movea.l (a1),a1` loaded `$FFFFBBA2` and the
+`tst.b ($6e,a1)` faulted (`$FFFFBBA2+$6e`). (team0's list = `$0FADBB2C …` = a real
+object at `$7DB2C`, so it worked.) The existing `_af1` only guards a **negative** team,
+so it did not catch a valid team with an empty list. **Not** a `fodder.rel` error — the
+relocation-altered RNG steered the active player's team into the empty-order-list state
+(same meta-pattern as the 27/28.06 bugs). Fix `_af2` (`PL_PS $1ed6e` fr, `_af1`-offset
+`+ $e` in every version): redo the two derefs and **sign-test** the first long — the
+empty-list `$ffff` terminator makes it negative, a real ExpMem pointer is positive — and
+on negative `add #8` to the return → skip `tst.b`/`bne.w` to the "no order" fall-through
+(the same target `_af1` skips to for a negative team). Matches the game's own `$ffff`
+list sentinel; simpler and tighter than a full `[expmem,picmem)` range check.
+
+Diagnostic technique: the WHDLoad register dump annotates memory EAs with **fault-time**
+registers, so the annotations on instructions *before* the faulting one are meaningless
+(here cd6e/cd72 showed `$ffffbba6/$ffffbba2` = derived from the final `a1`, not the real
+intermediate values). Trust the disassembly + dumped memory, not those annotations. Read
+`lbL005B16` and the per-team lists directly from `.whdl_expmem` (file offset = exe offset).
+
+## Savegame format & casualty lists
+
+- The game saves a flat **`$728`-byte snapshot** starting at `savegamedata` = offset
+  **`$626`** (so savegame offset `X` ↔ exe offset `$626+X`), covering `$626..$D4E`. The
+  slave only emulates the file I/O (`_savegame`/`_loadgame`); the **game** decides the
+  layout. The snapshot embeds three **absolute pointers** into the (relocated) exe, fixed
+  up in `_loadgame` at savegame offsets `$3e8`/`$3ec`/`$6c2` (= exe `$a0e`/`$a12`/`$ce8`).
+- Two `$FFFF`-terminated, **2-byte-entry** casualty lists feed the recruit hill:
+  - **`$73c` list** (`lbW00073C`), cursor **`lbL000A0E`** (append) / **`lbL000A12`**
+    (read). **Persistent across missions** (reset only on new game, `$7458`). Its length =
+    total dead → the **graves**: `lbC025CC4` redraws the hill by walking `$73c` to `$FFFF`.
+    Each death appends a `rank,0` word via `A0E` (`lbC016CAA` `$16cb0`).
+  - **`$a16` list** (`lbW000A16`), cursor **`lbL000CE8`**. **Per-mission**: reset to the
+    start and cleared at each mission setup (`$8668`). Holds the dead **name indices**.
+- The hill display **buffer** `lbL012FC8` (`$12FC8`, see above) is **not** in the
+  savegame and is rebuilt from these lists — so the graves are list-driven, not buffer-saved.
+
+## Fixed bug (28.06.2026, savegame) — reference case
+
+Symptom: after **loading** a savegame the graves on the recruit hill are correct, and stay
+correct through a mission with no deaths; but the **first death** after loading collapses
+the hill to only the **in-mission** casualties. Root cause: `_loadgame`'s pointer fixup
+**hard-reset all three cursors (`A0E`/`A12`/`CE8`) to their list STARTs** (`$73c`/`$a16`).
+The list *data* loads intact (so the initial walk-based grave redraw is correct), but `A0E`
+now points at the list start, so the next `lbC016CAA` append writes a `rank,0` word at the
+**start** and re-terminates → the persistent `$73c` list is **truncated** to the new entry.
+**Not** a `fodder.rel` error and **not** a missing-buffer issue (my first guess was wrong —
+the graves *are* preserved, via the saved `$73c` list). Fix `_loadgame`: walk each loaded
+list to its `$FFFF` terminator and set the cursor to the **end** (relocated exe address),
+so appends continue after the saved entries. `A12`/`CE8` are re-initialised at the next
+mission setup anyway, so end-positioning them is harmless and consistent. Robust to a
+different ExpMem base between save and load (the position is derived from the list data).
+
+## Pre-mission helicopter (en1/en2 only) — localizers removed it from de/fr/it
+
+The pre-mission parallax screen flies a **helicopter** (4 attached hardware-sprite pairs)
+over the parallax layers. It's positioned each frame by the cursor-sprite routine
+`lbC01C67E` (en1) / `lbC01C834` (fr): X from `lbW00CABA`, Y from `lbW00CABC` (→ HW sprite
+`vstart = Y + $2C` written to `$304`). During this screen the heli **reuses the cursor
+sprite**; `lbW00CABA/CABC` (en1) / `CAEE/CAF0` (fr) carry the heli position.
+
+**de/fr/it difference (original game, not the slave):** the localized exe's pre-mission
+loop wraps the two sprite-build calls in a **park**: it saves `CAF0`/`BEA`, forces them to
+**`$100` (256)**, builds the sprite (→ `vstart` 300, **off the bottom** of the 312-line
+display), then restores them. So the heli is computed/animated but rendered off-screen →
+never visible. en1/en2 have **no** such park (heli at `vstart` 152, mid-screen, visible).
+
+Proven from dumps (snoopocs custom regs at the end of `.whdl_register`): fr HW spr0 `$304`
+vstart byte `$2c` with `$307` bit2 set ⇒ vstart 300; `lbW001788` (sprite-Y) = 256 while the
+real heli-Y `CAF0` = 85/94 (the restored value) — consistent across two frames. en1 spr0
+vstart `$98` (152), `lbW001788` = 108 = real heli-Y. Sprite/bitplane pointers, bplcon,
+sprite DMA all identical between versions — so it's purely the deliberate park.
+
+**Why it cannot be re-enabled (29.06.2026 — final):** un-parking it (`PL_S $27d16` to skip
+the `move.w #$100` forces) only puts the sprite back on screen — the **graphic is garbage**,
+because the localizers *removed the heli itself*, not just hid it. Three layers:
+1. **Park** the cursor-sprite Y off-screen (the `$100` forces above) — cosmetic hide.
+2. The heli is actually drawn by the **glyph renderer** `lbC0095BC(d0)` / loop `move.w
+   #$CD,d0; add (lbW0026E6); jsr lbC0095EE` (animated rotor, 3 frames `$CD/$CE/$CF`) plus a
+   static body. It indexes the **shared glyph-descriptor table `lbL009658`** (8-byte entries
+   `x,y,w,h` into the pstuff bitmap). en1 `$CB=(0,175,48,23)` body, `$CD/$CE/$CF=(64,175/178/
+   181,48,2)` rotor. In **fr those slots `$CB-$CF` are now FONT glyphs** `(19,208…,93,16)`;
+   the heli descriptors are **gone from the whole table** — so `#$CD` renders a font.
+3. The hardware-**sprite buffer** (`$398…$1694`, filled by `lbC01C60A`/`lbC01C7C0` from glyph
+   `$C7FDA` = exe `$47FDA`) is reused/overwritten by the bigger fonts each frame.
+
+The heli **pixels still exist** in `pstuff.lbm` (the heli region of the sheet is byte-identical
+across versions — proven by decoding both ILBMs; only the fonts at x≥144 / y≥200 differ), but
+nothing references them and the indices now point to fonts. Re-adding glyph descriptors at free
+slots + re-pointing `#$CD` + restoring the body draw + resolving the sprite-buffer/glyph-slot
+conflict with the fonts is multi-part and fragile (risks the localized text) — exactly why the
+localizers abandoned it. **Decision: leave the heli disabled in de/fr/it (as shipped).** en1/en2
+keep it. All heli patches reverted; slave back to 2648 bytes.
+
+Diagnostic value: render the ILBM (`pstuff.lbm`) and the reconstructed HW sprite from the dump
+(8 attached sprites, pairs `(0,1)(2,3)(4,5)(6,7)`, even=planes0/1 odd=planes2/3) as PNG — en1
+showed a clean helicopter, fr pure noise, which is what pinned "the sprite buffer holds the
+wrong glyph". The glyph table `lbL009658` is at exe `$9658`; entry = index×8.

@@ -12,6 +12,13 @@
 ;		23.06.26 removed redundant _random2 patch (bound now in fodder.rel)
 ;		27.06.26 added _diag patch to find handler trashing A0 in lbC0153B4
 ;			 fixed _af0/_af1 clobbering A0 (object pointer); use A1 instead
+;		28.06.26 fixed _hill: recruit-hill display overflowed name table
+;			 added _af2: guard empty/invalid team order list deref
+;			 fixed _loadgame: restore casualty-list cursors to list end
+;			 (graves were lost on the first death after loading)
+;		29.06.26 investigated the missing pre-mission heli in de/fr/it: the
+;			 localizers reused its glyph-table slots + sprite buffer for the
+;			 bigger fonts, so it cannot be re-enabled cleanly (left disabled)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -24,7 +31,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	"HD2:WHDLoad/CannonFodder/CannonFodder.Slave"
+	OUTPUT	"wart:c/CannonFodder/CannonFodder.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -41,6 +48,7 @@
 
 EXELEN = $80000		;relocated executable
 PICLEN = $b000		;relocate/picture/savegame buffer
+SAVEBASE = $626		;exe offset the savegame snapshot ('savegamedata') starts at
 
 ;============================================================================
 
@@ -193,9 +201,11 @@ _plen1		PL_START
 		PL_W	$1d462,$4200		;bplcon0
 		PL_I	$1d810			;random
 		PL_PS	$1eb36,_af1
+		PL_PS	$1eb44,_af2		;guard empty/invalid team order list
 		PL_I	$1fc92			;copylock
 		PL_B	$24304,$6f		;beq -> ble
 		PL_PS	$243ee,_s1
+		PL_PS	$25e08,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$276a8,$6600		;bplcon0
 		PL_W	$2785e,$4200		;bplcon0
 		PL_W	$28b52,$5200		;bplcon0
@@ -292,8 +302,10 @@ _plen2		PL_START
 		PL_W	$1d47c,$5200		;bplcon0
 		PL_W	$1d53c,$4200		;bplcon0
 		PL_PS	$1ec10,_af1
+		PL_PS	$1ec1e,_af2		;guard empty/invalid team order list
 		PL_B	$243de,$6f		;beq -> ble
 		PL_PS	$244c8,_s1
+		PL_PS	$25eea,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$277da,$6600		;bplcon0
 		PL_W	$27998,$4200		;bplcon0
 		PL_W	$28c8c,$5200		;bplcon0
@@ -318,8 +330,10 @@ _plde		PL_START
 		PL_W	$1d586,$5200		;bplcon0
 		PL_W	$1d646,$4200		;bplcon0
 		PL_PS	$1ed1a,_af1
+		PL_PS	$1ed28,_af2		;guard empty/invalid team order list
 		PL_B	$244e8,$6f		;beq -> ble
 		PL_PS	$245d2,_s1
+		PL_PS	$26036,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27baa,$6600		;bplcon0
 		PL_W	$27d92,$4200		;bplcon0
 		PL_PA	$284ea,.mit
@@ -375,10 +389,15 @@ _plfr		PL_START
 		PL_W	$1d5cc,$5200		;bplcon0
 		PL_W	$1d68c,$4200		;bplcon0
 		PL_PS	$1ed60,_af1
+		PL_PS	$1ed6e,_af2		;guard empty/invalid team order list
 		PL_B	$2452e,$6f		;beq -> ble
 		PL_PS	$24618,_s1
+		PL_PS	$26064,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27bd0,$6600		;bplcon0
 		PL_W	$27db8,$4200		;bplcon0
+	;heli stays disabled in fr/de/it: the localizers reused its glyph-table
+	;slots ($CB-$CF) and sprite buffer for the bigger fonts, so re-enabling it
+	;cleanly is not feasible without breaking the localized text (see CLAUDE.md)
 		PL_W	$290ca,$5200		;bplcon0
 		PL_W	$29370,$4200		;bplcon0
 		PL_W	$2a58c,$2ac0e-$2a58c	;load/save game
@@ -409,8 +428,10 @@ _plit		PL_START
 		PL_W	$1d57e,$5200		;bplcon0
 		PL_W	$1d63e,$4200		;bplcon0
 		PL_PS	$1ed12,_af1
+		PL_PS	$1ed20,_af2		;guard empty/invalid team order list
 		PL_B	$244e0,$6f		;beq -> ble
 		PL_PS	$245ca,_s1
+		PL_PS	$2601c,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27b88,$6600		;bplcon0
 		PL_W	$27d70,$4200		;bplcon0
 		PL_W	$290d8,$5200		;bplcon0
@@ -538,13 +559,34 @@ _loadgame	move.l	_picmem,a2
 		move.l	a1,-(a7)
 		bsr	_loader
 		move.l	(a7)+,a1
-	;fix problem with savegames containing absolute addresses of relocated program
+	;Savegames embed absolute pointers into the relocated exe: A0E/A12 ($3e8/$3ec)
+	; = the write+read cursors of the persistent $73c casualty list (-> the graves
+	; on the recruit hill, which lbC025CC4 rebuilds by walking that list), CE8
+	; ($6c2) = the cursor of the per-mission $a16 list. Both lists hold 2-byte
+	; entries and end with a $FFFF word. The old fix reset all three to the list
+	; START; that loaded the list DATA fine (graves looked correct after loading)
+	; but the next death appended at the start and truncated the list to just the
+	; in-mission casualties. Instead point each cursor at the END of its loaded
+	; list (walk to the $FFFF terminator) so appends continue after the saved
+	; entries. (a1 = loaded savegame buffer, layout based at SAVEBASE.)
 		move.l	_expmem,a2
-		lea	($73c,a2),a0
-		move.l	a0,($3e8,a1)
-		move.l	a0,($3ec,a1)
-		lea	($a16,a2),a0
-		move.l	a0,($6c2,a1)
+		lea	($73c-SAVEBASE,a1),a0		;$73c list inside the loaded buffer
+		bsr	.findend
+		move.l	a0,($3e8,a1)			;A0E = end of casualty list
+		move.l	a0,($3ec,a1)			;A12 (game re-sets A12:=A0E each mission)
+		lea	($a16-SAVEBASE,a1),a0		;$a16 list inside the loaded buffer
+		bsr	.findend
+		move.l	a0,($6c2,a1)			;CE8 = end of per-mission list
+		rts
+; in:  a0 = $FFFF-terminated 2-byte-entry list inside the buffer, a1 = buffer base,
+;      a2 = expmem.  out: a0 = relocated exe address of the terminator
+.findend	cmp.w	#$FFFF,(a0)
+		beq	.fe1
+		addq.l	#2,a0
+		bra	.findend
+.fe1		sub.l	a1,a0				;buffer offset of terminator
+		add.l	#SAVEBASE,a0			;-> exe-image offset
+		add.l	a2,a0				;-> relocated exe address
 		rts
 
 ; a0=name a1=src d1=length
@@ -576,6 +618,28 @@ _af1		move.l	(_team),a1
 		add.l	#$1eb52-$1eb3c,(a7)
 .ok		rts
 
+; lbC01EB36-family: reads the current team's order list and derefs its first
+; entry as an object pointer (movea.l (a1),a1 ; tst.b ($6e,a1)). With the
+; relocation-altered RNG the active player's team can reach a state where its
+; order list is empty (first word = the $ffff terminator) -> first long is a
+; garbage pointer ($ffffxxxx) -> access fault at the tst.b. _af1 only guards a
+; negative team (a different state); this guards the empty list.
+; Patched over the two derefs (movea.l (a1,d0.w),a1 ; movea.l (a1),a1); on entry
+; a1 = order table base (from the preceding lea), d0 = team*4 (from the asl).
+; The empty-list terminator is $ffff -> first long $ffffxxxx is negative, while a
+; real object pointer is in ExpMem (low memory) and always positive. So a sign
+; test distinguishes them: if negative, skip the tst.b/bne.w (return+8) to the
+; same "no order" fall-through _af1 uses. A0 (object pointer) must survive; d0 is
+; dead after the index deref, so it is reused as scratch for the sign test.
+
+_af2		movea.l	(a1,d0.w),a1			;a1 = team's order list
+		movea.l	(a1),a1				;a1 = first entry (object pointer)
+		move.l	a1,d0				;d0 dead here; sets N from pointer sign
+		bmi	.bad				;empty list -> $ffffxxxx terminator
+		rts					;valid -> original tst.b ($6e,a1) runs
+.bad		add.l	#$1eb52-$1eb4a,(a7)		;skip tst.b+bne.w -> fall-through
+		rts
+
 _s1		cmp.l	_expmem,d0
 		bls	.ret
 		cmp.l	_picmem,d0
@@ -585,6 +649,21 @@ _s1		cmp.l	_expmem,d0
 		rts
 .ret		addq.l	#4,a7
 		rts
+
+; The recruit-hill display lbC025DC4 draws (lbW000638) recruits into the buffer
+; lbL012FC8 ($12fc8), writing downward (d1 from $660, -$18 per recruit) with no
+; lower bound. The read-only soldier name table sits right below it ($117e0..
+; $12488). With many recruits (270 at mission 23) the loop overruns the buffer
+; and corrupts the names -> later crash in the name renderer.
+; Guard the per-slot write at $25e08: skip drawing once the destination would
+; reach the name table. A1=lbL012FC8 (fixed), dest = A1+4+d1; name table top =
+; $12488 -> stop when d1 < $12488-($12fc8+4) = -$b44. Loop runs on unchanged
+; (just no write), so post-loop register state stays as the game expects.
+
+_hill		cmp	#-$b44,d1
+		blt	.skip
+		move	(a3,d2.w),(4,a1,d1.w)		;original draw
+.skip		rts
 
 ;============================================================================
 

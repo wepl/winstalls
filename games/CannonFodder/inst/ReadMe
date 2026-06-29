@@ -3,24 +3,29 @@ Type.......: Hard drive patch (WHDLoad)
 Author.....: Galahad of Fairlight, Wepl, Arise from Decay
 
 This patch applies to Cannon Fodder, ©1993 Sensible Software
-3 Disk version, supported are 2 english, french, german and italian versions.
+3 disk version. Supported are two English, French, German and Italian versions.
 
 Slave requires WHDLOAD V17+.
 Game requires 1 MB Chip memory and 0.5 MB other memory.
 
-Version 3.0 (28.06.2026) done by Wepl:
-- executable relocated to ExpMem, for that the imager creates a new file
-  called 'fodder.rel', to upgrade either reinstall or copy the new file
+Version 3.0 (29.06.2026) done by Wepl:
+- executable relocated to ExpMem; for this the imager creates a new file
+  called 'fodder.rel'. To upgrade, either reinstall or copy the new file
   manually after processing the first disk with "RawDIC CannonFodder.ISlave"
+  (issues #4082, #4468, #5844, #6568)
+- fixed a crash: with many recruits the recruit hill display could overrun the
+  soldier name table (issue #4311)
+- fixed an access fault on an empty team order list (could occur in all
+  versions after the relocation)
 
 Version 2.1 (07.03.2026) done by Arise from Decay:
-- Trainer for all versions added (except 2nd english version)
+- Trainer for all versions added (except 2nd English version)
 - source at https://github.com/wepl/winstalls
 
 Version 2.0 (17.6.2018) done by Wepl:
 - Slave rewritten to support other versions and misc other features
 - new RawDIC imager provided, checks for correct disks
-- french, german and italian versions supported
+- French, German and Italian versions supported
 - game must be reinstalled because some obsolete files have been removed, the
   data directory name has been renamed and the save game handling has changed
   and requires a new directory, to migrate old savegames copy the save files
@@ -42,7 +47,7 @@ FEATURES: v1.3
 FEATURES: v1.2
 - Full load from Hard drive (Installed as REAL files)
 - Lame-o-Protect removed (SOS MFM) (SOS = Sensible Operating System)
-- Load/Save games to Hard drive (180 seperate saves allowed!)
+- Load/Save games to Hard drive (180 separate saves allowed!)
 - IFF decode routine rewritten and relocated to fast ram
 - RNC Data depack routine relocated to fast ram
 - 2x Bus errors removed
@@ -64,7 +69,7 @@ detected 1 Copylock ever being accessed, but better to be safe, I have
 removed them all, just in case using the load/save bypasses one of them.
 
 The MFM protection was the usual Sensible Software disk system, very
-similar to some Millenium games, and very very similar to the disk system
+similar to some Millennium games, and very very similar to the disk system
 employed by SFX (Robocop 2, Navy Seals, Hudson Hawk etc, etc)
 
 I believe I have found all the access faults, if anyone has any problems,
