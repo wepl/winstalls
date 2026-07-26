@@ -19,6 +19,7 @@
 ;		29.06.26 investigated the missing pre-mission heli in de/fr/it: the
 ;			 localizers reused its glyph-table slots + sprite buffer for the
 ;			 bigger fonts, so it cannot be re-enabled cleanly (left disabled)
+;		21.07.26 added trainer for en2 version
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -31,7 +32,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	"wart:c/CannonFodder/CannonFodder.Slave"
+	OUTPUT	"HD2:util/dev/whdload/CannonFodder_/CannonFodder.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -319,6 +320,18 @@ _plen2		PL_START
 		PL_S	$2a470,10		;load/save game
 		PL_PS	$2a49a,_savegame
 		PL_R	$2aec0			;"insert disk 3"
+		PL_IFC1X 0
+		PL_NOPS	$1e2e2,3		;Trainer Soldiers
+		PL_ENDIF
+		PL_IFC1X 1
+		PL_NOPS	$17eea,2		;Trainer Grenades
+		PL_ENDIF
+		PL_IFC1X 2
+		PL_NOPS	$1b65a,2		;Trainer Bazookas
+		PL_ENDIF
+		PL_IFC1X 3
+		PL_NOPS	$1dd64,1		;Trainer Invulnerability
+		PL_ENDIF
 		PL_NEXT	_plcommon
 
 _plde		PL_START
