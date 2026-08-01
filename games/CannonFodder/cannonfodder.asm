@@ -20,6 +20,8 @@
 ;			 localizers reused its glyph-table slots + sprite buffer for the
 ;			 bigger fonts, so it cannot be re-enabled cleanly (left disabled)
 ;		21.07.26 added trainer for en2 version
+;		31.07.26 added start mission selector, skip first screen on en versions,
+;			 disabled timer on final phase
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -32,7 +34,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	"HD2:util/dev/whdload/CannonFodder_/CannonFodder.Slave"
+	OUTPUT	"HD2:util/dev/whdload/CannonFodder/CannonFodder.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -81,7 +83,7 @@ _expmem		dc.l	EXELEN+PICLEN		;ws_ExpMem
 _name		dc.b	"Cannon Fodder",0
 _copy		dc.b	"1993 Sensible Software",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 3.0 "
+		dc.b	"Version 3.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -92,6 +94,12 @@ _config		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
 		dc.b	"C1:X:Infinite Bazookas:2;"
 		dc.b	"C1:X:Troops Invulnerable:3;"
+		dc.b	"C1:X:No timer on final phase:4;"
+		dc.b	"C2:B:Skip `endorsed` screen on english versions;"
+		dc.b	"C3:L:Startmission:Mission 1,Mission 2,Mission 3,Mission 4,Mission 5,Mission 6,"
+		dc.b	"Mission 7,Mission 8,Mission 9,Mission 10,Mission 11,Mission 12,Mission 13,"
+		dc.b	"Mission 14,Mission 15,Mission 16,Mission 17,Mission 18,Mission 19,Mission 20,"
+		dc.b	"Mission 21,Mission 22,Mission 23,Mission 24;"
 		dc.b	0
 
 _data		dc.b	"data",0
@@ -109,7 +117,10 @@ _start	;	A0 = resident loader
 
 		move.l	a0,(_resload)			;save for later using
 		move.l	a0,a2				;A2 = resload
-
+		
+		lea tags(pc),a0             ;get tags
+		jsr	resload_Control(a2)		;for mission select
+	
 	;enable cache
 	;currently only exp/slave
 		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
@@ -233,6 +244,15 @@ _plen1		PL_START
 		PL_IFC1X 3
 		PL_NOPS	$1dc8a,1		;Trainer Invulnerability
 		PL_ENDIF
+		PL_IFC1X 4
+		PL_B	$84e6,$60		;Trainer stop timer
+		PL_ENDIF
+		PL_IFC2
+		PL_R	$1ce08			;Skip `This game is not in any way...` screen
+		PL_ENDIF
+		PL_IFC3
+		PL_PS $5eb0,_missionselect
+		PL_ENDIF
 		PL_END
 
 	IFEQ 1
@@ -292,6 +312,12 @@ _plcommon	PL_START
 		PL_P	$bd62,_gettmp
 		PL_W	$cc86,$1e		;htotal
 		PL_W	$cfca,$200		;bplcon0
+		PL_IFC3
+		PL_PS $5eb4,_missionselect
+		PL_ENDIF
+		PL_IFC1X 4
+		PL_B	$8518,$60		;Trainer stop timer
+		PL_ENDIF
 		PL_END
 
 _plen2		PL_START
@@ -331,6 +357,9 @@ _plen2		PL_START
 		PL_ENDIF
 		PL_IFC1X 3
 		PL_NOPS	$1dd64,1		;Trainer Invulnerability
+		PL_ENDIF
+		PL_IFC2
+		PL_R	$1cede			;Skip `This game is not in any way...` screen
 		PL_ENDIF
 		PL_NEXT	_plcommon
 
@@ -471,6 +500,23 @@ _plit		PL_START
 		PL_NOPS	$1de66,1		;Trainer Invulnerability
 		PL_ENDIF
 		PL_NEXT	_plfrit
+
+_missionselect
+		movem.l	d0-d2/a0-a1,-(a7)
+		move.l	startmiss,d0 		;selected mission from splash
+		subq.w	#1,d0
+		move.l	d0,d2
+		lsl.w	#1,d0
+		lea 	phasecnt(pc),a1		;table
+		move.w	(a1,d0.w),d1
+		move.l	_expmem,a0
+		adda.w	#SAVEBASE,a0
+		move.w	d1,(a0)
+		addq.w	#1,d2
+		adda.w	#$c,a0 				;offset $632
+		move.w	d2,(a0)
+		movem.l (a7)+,d0-d2/a0-a1
+		rts
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
@@ -739,6 +785,12 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
+
+tags:		dc.l	WHDLTAG_CUSTOM3_GET
+startmiss:	dc.l	0
+			dc.l	0
+phasecnt   dc.w $01,$03,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1e,$24
+			dc.w $25,$28,$2b,$2d,$2e,$33,$34,$38,$39,$3d,$42
 
 ;============================================================================
 
