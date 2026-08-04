@@ -8,12 +8,6 @@ This patch applies to Cannon Fodder, ©1993 Sensible Software
 Slave requires WHDLOAD V17+.
 Game requires 1 MB Chip memory and 0.5 MB other memory.
 
-Version	3.1	(31.07.2026) done by Arise from Decay:
-- Trainer for 2nd English version added
-- added option to skip the "This game is not in any way..." screen on the English versions
-- extended trainer: now you can select your startmission from splash,
-  disable the timer on last phase
-
 Version 3.0 (29.06.2026) done by Wepl:
 - executable relocated to ExpMem; for this the imager creates a new file
   called 'fodder.rel'. To upgrade, either reinstall or copy the new file
@@ -103,7 +97,7 @@ phrase :)
 
 Enjoy this great game, which is so much improved off Hard Drive.
 
-		 Bug report form, full WHDLoad package and other installs:
-						  http://www.whdload.de
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de
 
 
