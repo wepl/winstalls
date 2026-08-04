@@ -99,7 +99,7 @@ _config		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C3:L:Startmission:Mission 1,Mission 2,Mission 3,Mission 4,Mission 5,Mission 6,"
 		dc.b	"Mission 7,Mission 8,Mission 9,Mission 10,Mission 11,Mission 12,Mission 13,"
 		dc.b	"Mission 14,Mission 15,Mission 16,Mission 17,Mission 18,Mission 19,Mission 20,"
-		dc.b	"Mission 21,Mission 22,Mission 23,Mission 24;"
+		dc.b	"Mission 21,Mission 22,Mission 23,Mission 24"
 		dc.b	0
 
 _data		dc.b	"data",0
@@ -502,21 +502,19 @@ _plit		PL_START
 		PL_NEXT	_plfrit
 
 _missionselect
-		movem.l	d0-d2/a0-a1,-(a7)
+		movem.l	d0-d1/a0,-(a7)
 		move.l	startmiss,d0 		;selected mission from splash
-		subq.w	#1,d0
-		move.l	d0,d2
-		lsl.w	#1,d0
-		lea 	phasecnt(pc),a1		;table
-		move.w	(a1,d0.w),d1
+		beq		.cont
+		cmp		#24,d0				;boundary check, 23 is max so 24 is invalid
+		beq		.cont
+		lea 	phasecnt(pc),a0		;table (game has its phase table at $24c1e)
+		move.b	-1(a0,d0.w),d1
 		move.l	_expmem,a0
 		adda.w	#SAVEBASE,a0
-		move.w	d1,(a0)
-		addq.w	#1,d2
-		adda.w	#$c,a0 				;offset $632
-		move.w	d2,(a0)
-		movem.l (a7)+,d0-d2/a0-a1
-		rts
+		move.b	d1,(a0)				;offset $626, phase counter
+		move.w	d0,($c,a0)  		;offset $632, next mission
+		movem.l (a7)+,d0-d1/a0
+.cont	rts
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
@@ -789,8 +787,8 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 tags:		dc.l	WHDLTAG_CUSTOM3_GET
 startmiss:	dc.l	0
 			dc.l	0
-phasecnt   dc.w $01,$03,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1e,$24
-			dc.w $25,$28,$2b,$2d,$2e,$33,$34,$38,$39,$3d,$42
+phasecnt   dc.b $01,$03,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1e,$24
+			dc.b $25,$28,$2b,$2d,$2e,$33,$34,$38,$39,$3d,$42
 
 ;============================================================================
 
