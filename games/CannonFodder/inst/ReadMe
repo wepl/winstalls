@@ -2,11 +2,17 @@ Title......: HD-Installer for Cannon Fodder (disk version)
 Type.......: Hard drive patch (WHDLoad)
 Author.....: Galahad of Fairlight, Wepl, Arise from Decay
 
-This patch applies to Cannon Fodder, ©1993 Sensible Software
+This patch applies to Cannon Fodder, Â©1993 Sensible Software
 3 disk version. Supported are two English, French, German and Italian versions.
 
 Slave requires WHDLOAD V17+.
 Game requires 1 MB Chip memory and 0.5 MB other memory.
+
+Version	3.1	(31.07.2026) done by Arise from Decay:
+- Trainer for 2nd English version added
+- added option to skip the "This game is not in any way..." screen on the English versions
+- extended trainer: now you can select your startmission from splash,
+  disable the timer on last phase
 
 Version 3.0 (29.06.2026) done by Wepl:
 - executable relocated to ExpMem; for this the imager creates a new file
@@ -35,9 +41,9 @@ Version 2.0 (17.6.2018) done by Wepl:
 - some access faults fixed
 - all files can be compressed by WHDLoad supported packer (e.g. RNC)
 - several translation bugs in the german version fixed (einige Sachen sind
-  allerdings Grafiken und lassen sich nicht ohne weiteres ändern (Heldon),
-  falls Bedarf besteht, kann ich auch die weichgespülten Sachen noch anpassen,
-  z.B. ausschalten -> töten)
+  allerdings Grafiken und lassen sich nicht ohne weiteres Ã¤ndern (Heldon),
+  falls Bedarf besteht, kann ich auch die weichgespÃ¼lten Sachen noch anpassen,
+  z.B. ausschalten -> tÃ¶ten)
 - manual, hints and new icons added
 - new install script
 
