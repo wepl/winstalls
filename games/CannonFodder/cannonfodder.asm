@@ -117,10 +117,10 @@ _start	;	A0 = resident loader
 
 		move.l	a0,(_resload)			;save for later using
 		move.l	a0,a2				;A2 = resload
-		
-		lea tags(pc),a0             ;get tags
-		jsr	resload_Control(a2)		;for mission select
-	
+
+		lea	tags(pc),a0			;query start mission (Custom3)
+		jsr	(resload_Control,a2)
+
 	;enable cache
 	;currently only exp/slave
 		move.l	#WCPUF_Base_NC|WCPUF_Exp_CB|WCPUF_Slave_CB|WCPUF_IC|WCPUF_DC|WCPUF_BC|WCPUF_SS|WCPUF_SB,d0
@@ -191,6 +191,7 @@ _start	;	A0 = resident loader
 _plen1		PL_START
 		PL_W	$2c64,$4200		;bplcon0
 		PL_S	$5d92,$5dc2-$5d92	;skip init stuff
+		PL_PS	$5eb0,_missionselect
 		PL_I	$7a14			;copylock
 		PL_I	$7aaa			;copylock
 		PL_P	$a2f8,_keyboard		;keyboard int umleiten
@@ -250,9 +251,6 @@ _plen1		PL_START
 		PL_IFC2
 		PL_R	$1ce08			;Skip `This game is not in any way...` screen
 		PL_ENDIF
-		PL_IFC3
-		PL_PS $5eb0,_missionselect
-		PL_ENDIF
 		PL_END
 
 	IFEQ 1
@@ -306,15 +304,13 @@ _af4		move.l	($6a,a0),a1		;faulted values: c0000, 50ffff
 _plcommon	PL_START
 		PL_W	$2c68,$4200		;bplcon0
 		PL_S	$5d96,$5dc2-$5d92	;skip init stuff
+		PL_PS	$5eb4,_missionselect
 		PL_P	$a32a,_keyboard		;keyboard int umleiten
 		PL_R	$a6da			;copylock
 		PL_P	$b41a,_loader
 		PL_P	$bd62,_gettmp
 		PL_W	$cc86,$1e		;htotal
 		PL_W	$cfca,$200		;bplcon0
-		PL_IFC3
-		PL_PS $5eb4,_missionselect
-		PL_ENDIF
 		PL_IFC1X 4
 		PL_B	$8518,$60		;Trainer stop timer
 		PL_ENDIF
@@ -501,20 +497,21 @@ _plit		PL_START
 		PL_ENDIF
 		PL_NEXT	_plfrit
 
-_missionselect
-		movem.l	d0-d1/a0,-(a7)
-		move.l	startmiss,d0 		;selected mission from splash
-		beq		.cont
-		cmp		#24,d0				;boundary check, 23 is max so 24 is invalid
-		beq		.cont
-		lea 	phasecnt(pc),a0		;table (game has its phase table at $24c1e)
-		move.b	-1(a0,d0.w),d1
-		move.l	_expmem,a0
-		adda.w	#SAVEBASE,a0
-		move.b	d1,(a0)				;offset $626, phase counter
-		move.w	d0,($c,a0)  		;offset $632, next mission
-		movem.l (a7)+,d0-d1/a0
-.cont	rts
+_missionselect	move.l	_expmem,a0
+		add	#SAVEBASE,a0		;offset $632, next mission
+		clr	(a0)			;original
+		move.l	startmiss,d0		;selected mission
+		beq	.done			;0 = Mission 1 (default) -> leave untouched
+		cmp	#24,d0			;boundary check, 23 is max so 24 is invalid
+		bhs	.done
+		move	d0,($c,a0)		;offset $632, next mission
+		move.b	(_phasecnt-1,pc,d0.w),(1,a0)	;offset $626, phase counter
+.done		rts
+
+	;table (game has its phase table at $24c1e for en1)
+_phasecnt	dc.b	$01,$03,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1e,$24
+		dc.b	$25,$28,$2b,$2d,$2e,$33,$34,$38,$39,$3d,$42
+	EVEN
 
 _loader		movem.l	d2-d6/a1-a3/a5-a6,-(a7)
 		pea	.ret
@@ -784,11 +781,8 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
-tags:		dc.l	WHDLTAG_CUSTOM3_GET
-startmiss:	dc.l	0
-			dc.l	0
-phasecnt   dc.b $01,$03,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1e,$24
-			dc.b $25,$28,$2b,$2d,$2e,$33,$34,$38,$39,$3d,$42
+tags		dc.l	WHDLTAG_CUSTOM3_GET
+startmiss	dx.l	2
 
 ;============================================================================
 
