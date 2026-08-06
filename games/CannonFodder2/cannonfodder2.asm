@@ -33,6 +33,7 @@
 ;		07.03.26 italian support completed
 ;		16.03.26 fastmem support added, WHDLF_ClearMem, fix another af
 ;		17.03.26 fix odd access, add paradox cracktro
+;		05.08.26 added mission select
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -51,7 +52,7 @@ crc_v5	= $e80b		;italian
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	HD2:whdload/cannonfodder2/CannonFodder2.Slave
+	OUTPUT	hd2:util/dev/whdload/cannonfodder2/CannonFodder2.Slave
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -92,7 +93,7 @@ _expmem		dc.l	$80000+BUFLEN		;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.15 "
+		dc.b	"Version 1.16 "
 		INCBIN	".date"
 		dc.b	10,"Trainer added by Arise from Decay",10
 		dc.b	"Press `N` to skip level",0
@@ -100,7 +101,12 @@ _config		db	"C5:L:Cracktro:None,Paradox;"
 		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
 		dc.b	"C1:X:Infinite Bazookas:2;"
-		dc.b	"C1:X:Troops Invulnerable:3",0
+		dc.b	"C1:X:Troops Invulnerable:3;"
+		dc.b	"C3:L:Startmission:Mission 1,Mission 2,Mission 3,Mission 4,Mission 5,Mission 6,"
+		dc.b	"Mission 7,Mission 8,Mission 9,Mission 10,Mission 11,Mission 12,Mission 13,"
+		dc.b	"Mission 14,Mission 15,Mission 16,Mission 17,Mission 18,Mission 19,Mission 20,"
+		dc.b	"Mission 21,Mission 22,Mission 23,Mission 24"
+		dc.b	0
 _dir		dc.b	"data",0
 _main		dc.b	"cf2",0
 _rel		dc.b	"cf2.rel",0
@@ -119,6 +125,9 @@ _start	;	A0 = resident loader
 		move.l	a0,(_resload)
 		move.l	a0,a2			;A2 = resload
 		lea	_custom,a6		;A6 = custom
+
+		lea tags(pc),a0			;query mission select (Custom3)
+		jsr	resload_Control(a2)		
 
 		move.l	(_expmem),a7
 		add.l	#$80000,a7		;SSP
@@ -310,6 +319,7 @@ _pl		PL_START
 		PL_W	$ac98,$1e		;htotal
 		PL_P	$afd6,_Loader
 		PL_W	$c0c2,$200		;bplcon0
+		PL_PS	$6070,_missionselect
 		PL_END
 
 ;======================================================================
@@ -483,6 +493,24 @@ _pl5		PL_START
 		PL_NEXT	_pl
 
 ;======================================================================
+
+_missionselect	move.l	_expmem,a0
+		add	#$62a,a0		;offset $62a, next mission
+		clr	(a0)			;original
+		move.l	startmiss,d0		;selected mission
+		beq	.done			;0 = Mission 1 (default) -> leave untouched
+		cmp	#24,d0			;boundary check, 23 is max so 24 is invalid
+		bhs	.done
+		move	d0,($c,a0)		;offset $636, next mission
+		move.b	(_phasecnt-1,pc,d0.w),(1,a0)	;offset $62a, phase counter
+.done		rts
+
+		;table (game has its phase table at $2355a for english version)
+_phasecnt	dc.b $01,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1d,$1e,$24
+			dc.b $26,$2a,$2c,$2f,$30,$32,$36,$37,$3b,$40,$42
+	EVEN
+
+;--------------------------------
 
 _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 		lea	_ciaa,a0		;A0 = ciaa
@@ -670,6 +698,10 @@ _Loader		movem.l	d2-a6,-(a7)
 
 .cmd3_end	move.l	d7,d1
 		bra	.ok
+
+tags:		dc.l	WHDLTAG_CUSTOM3_GET
+startmiss:	dc.l	0
+			dc.l	0
 
 ;======================================================================
 
