@@ -22,6 +22,8 @@
 ;		21.07.26 added trainer for en2 version
 ;		31.07.26 added start mission selector, skip first screen on en versions,
 ;			 disabled timer on final phase
+;		15.08.26 made ingame keys selectable from splash, trainer for timer on last
+;			 phase changed so that the map is accessible
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -34,7 +36,7 @@
 	INCLUDE	whdmacros.i
 
 	IFD	BARFLY
-	OUTPUT	"wart:c/CannonFodder/CannonFodder.Slave"
+	OUTPUT	"Hd2:util/dev/whdload/CannonFodder/CannonFodder.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -83,19 +85,20 @@ _expmem		dc.l	EXELEN+PICLEN		;ws_ExpMem
 _name		dc.b	"Cannon Fodder",0
 _copy		dc.b	"1993 Sensible Software",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 3.1 "
+		dc.b	"Version 3.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
 		dc.b	10
-		dc.b	"Trainer added by Arise from Decay",10
-		dc.b	"Press `N` to skip level",0
+		dc.b	"Trainer added by Arise from Decay"
+		dc.b	0
 _config		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
 		dc.b	"C1:X:Infinite Bazookas:2;"
 		dc.b	"C1:X:Troops Invulnerable:3;"
-		dc.b	"C1:X:No timer on final phase:4;"
+		dc.b	"C1:X:No timer but map on final phase:4;"
 		dc.b	"C2:B:Skip `endorsed` screen on english versions;"
+		dc.b	"C4:B:Key `N` to skip phase;"
 		dc.b	"C3:L:Startmission:Mission 1,Mission 2,Mission 3,Mission 4,Mission 5,Mission 6,"
 		dc.b	"Mission 7,Mission 8,Mission 9,Mission 10,Mission 11,Mission 12,Mission 13,"
 		dc.b	"Mission 14,Mission 15,Mission 16,Mission 17,Mission 18,Mission 19,Mission 20,"
@@ -246,6 +249,7 @@ _plen1		PL_START
 		PL_NOPS	$1dc8a,1		;Trainer Invulnerability
 		PL_ENDIF
 		PL_IFC1X 4
+		PL_NOP	$845c,2			;Enable map on last mission
 		PL_B	$84e6,$60		;Trainer stop timer
 		PL_ENDIF
 		PL_IFC2
@@ -312,6 +316,7 @@ _plcommon	PL_START
 		PL_W	$cc86,$1e		;htotal
 		PL_W	$cfca,$200		;bplcon0
 		PL_IFC1X 4
+		PL_NOP	$848e,2			;Enable map on final phase
 		PL_B	$8518,$60		;Trainer stop timer
 		PL_ENDIF
 		PL_END
@@ -721,7 +726,7 @@ _hill		cmp	#-$b44,d1
 
 ;============================================================================
 
-_keyboard	movem.l	d0-d1/a0-a3,-(a7)
+_keyboard	movem.l	d0-d2/a0-a3,-(a7)
 		lea	_ciaa,a0
 		lea	_custom,a2
 		move.l	(_expmem),a3		;A3 = exe
@@ -742,6 +747,8 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 
 		cmp.b	(_keyexit),d0
 		beq	.exit
+		move.l	keys(pc),d2
+		beq	.wait
 		cmp.b	#$36,d0			;`N` ?
 		beq	.skiplv
 		cmp.b	#$5f,d0			;HELP?
@@ -781,8 +788,13 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
+
 tags		dc.l	WHDLTAG_CUSTOM3_GET
-startmiss	dx.l	2
+startmiss	dc.l	0
+			dc.l	WHDLTAG_CUSTOM4_GET
+keys		dc.l	0
+			dc.l	0
+
 
 ;============================================================================
 
