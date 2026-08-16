@@ -80,5 +80,8 @@
  - add Paradox Cracktro (just copy 'john' to upgrade)
  
  version 1.16 (05.08.26) done by Arise from Decay:
- - added mission select No newline at end of file
-
+ - added mission select
+ 
+ version 1.17 (15.08.26) done by Arise from Decay:
+ - skip phase is now optional
+ 

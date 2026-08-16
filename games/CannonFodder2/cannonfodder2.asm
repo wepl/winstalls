@@ -34,6 +34,7 @@
 ;		16.03.26 fastmem support added, WHDLF_ClearMem, fix another af
 ;		17.03.26 fix odd access, add paradox cracktro
 ;		05.08.26 added mission select
+;		15.08.26 ingame keys now selectable from splash
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -93,15 +94,16 @@ _expmem		dc.l	$80000+BUFLEN		;ws_ExpMem
 _name		dc.b	"Cannonfodder 2",0
 _copy		dc.b	"1994 Sensible Software",0
 _info		dc.b	"Installed and fixed by Wepl",10
-		dc.b	"Version 1.16 "
+		dc.b	"Version 1.17 "
 		INCBIN	".date"
-		dc.b	10,"Trainer added by Arise from Decay",10
-		dc.b	"Press `N` to skip level",0
+		dc.b	10,"Trainer added by Arise from Decay"
+		dc.b	0
 _config		db	"C5:L:Cracktro:None,Paradox;"
 		dc.b	"C1:X:Infinite Recruits:0;"
 		dc.b	"C1:X:Infinite Grenades:1;"
 		dc.b	"C1:X:Infinite Bazookas:2;"
 		dc.b	"C1:X:Troops Invulnerable:3;"
+		dc.b	"C4:B:Key `N` to skip phase;"
 		dc.b	"C3:L:Startmission:Mission 1,Mission 2,Mission 3,Mission 4,Mission 5,Mission 6,"
 		dc.b	"Mission 7,Mission 8,Mission 9,Mission 10,Mission 11,Mission 12,Mission 13,"
 		dc.b	"Mission 14,Mission 15,Mission 16,Mission 17,Mission 18,Mission 19,Mission 20,"
@@ -512,7 +514,7 @@ _phasecnt	dc.b $01,$04,$08,$0b,$0d,$10,$14,$16,$1b,$1d,$1e,$24
 
 ;--------------------------------
 
-_keyboard	movem.l	d0-d1/a0-a3,-(a7)
+_keyboard	movem.l	d0-d2/a0-a3,-(a7)
 		lea	_ciaa,a0		;A0 = ciaa
 		lea	_custom,a2		;A2 = custom
 		move.l	_expmem,a3		;A3 = expmem
@@ -533,6 +535,8 @@ _keyboard	movem.l	d0-d1/a0-a3,-(a7)
 
 		cmp.b	(_keyexit),d0
 		beq	.exit
+		move.l	keys(pc),d2
+		beq	.wait
 		cmp.b   #$36,d0			;`N` ?
 		beq	.skiplv
 		cmp.b	#$5f,d0			;HELP ?
@@ -699,8 +703,10 @@ _Loader		movem.l	d2-a6,-(a7)
 .cmd3_end	move.l	d7,d1
 		bra	.ok
 
-tags:		dc.l	WHDLTAG_CUSTOM3_GET
-startmiss:	dc.l	0
+tags		dc.l	WHDLTAG_CUSTOM3_GET
+startmiss	dc.l	0
+			dc.l	WHDLTAG_CUSTOM4_GET
+keys		dc.l	0
 			dc.l	0
 
 ;======================================================================
