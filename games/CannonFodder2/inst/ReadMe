@@ -8,7 +8,7 @@
  CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
  PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
 
- This install applies to "Cannonfodder 2" Â© 1994 Sensible Software.
+ This install applies to "Cannonfodder 2" © 1994 Sensible Software.
  The english, french and the german version is supported.
  
  This install requires WHDLoad to be in the path. It can be found in the
@@ -80,7 +80,5 @@
  - add Paradox Cracktro (just copy 'john' to upgrade)
  
  version 1.16 (05.08.26) done by Arise from Decay:
- - added mission select 
- 
- version 1.17 (15.08.26) done by Arise from Decay:
- - skip phase is now optional
+ - added mission select No newline at end of file
+
