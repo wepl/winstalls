@@ -4,6 +4,8 @@
 ;  :Author.	Wepl
 ;  :History.	2024-05-18 started
 ;		2025-11-09 imported to winstalls
+;		2026-08-11 Octodapter support added, screen enlarged to 256
+;			   lines (PAL) to fit the additional 8 ports
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -42,13 +44,13 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 		dc.w	0			;ws_kickname
 		dc.l	0			;ws_kicksize
 		dc.w	0			;ws_kickcrc
-		dc.w	_config-_base		;ws_config
+		dc.w	0			;ws_config
 
 _name		dc.b	"Test ReadJoyPort Slave",0
-_copy		dc.b	"2024 Wepl",0
+_copy		dc.b	"2024,2026 Wepl",0
 _info		dc.b	"done by Wepl "
 	INCBIN	".date"
-_config		dc.b	0
+_keycode	db	0			;rawkey code (must be located before include)
 	EVEN
 
 ;======================================================================
@@ -64,7 +66,7 @@ _start	;	A0 = resident loader
 		bsr	_SetupKeyboard
 
 SCREENWIDTH	= 320
-SCREENHEIGHT	= 200
+SCREENHEIGHT	= 256
 CHARHEIGHT	= 5
 CHARWIDTH	= 5
 
@@ -159,17 +161,38 @@ _mouse = $100
 		bsr	_check
 		bsr	_check
 		add	#CHARHEIGHT,d1
+		move.l	d1,d4			;D4 = main loop base y
 
 	;main loop
-.again		waitvb	a6
+.again		move.l	d4,d1
+		waitvb	a6
 		bsr	_check
 		bsr	_check
 		add	#CHARHEIGHT,d1
 		st	_mouse
 		bsr	_check
 		sf	_mouse
-		sub.l	#CHARHEIGHT+12*(CHARHEIGHT+1),d1
+	;the octodapter is queried only while 'o' is held down, because its
+	;queries set the parallel port select lines to output which disturbs
+	;reading a 4-player-adapter on port #2/#3, only one of both adapters
+	;can be connected at a time
+		add	#CHARHEIGHT,d1
 		move.b	_keycode,d0
+		cmp.b	#$18,d0			;o
+		bne	.noocto
+		bsr	_checko
+		bra	.octoend
+.noocto		moveq	#0,d0
+		add.l	#CHARHEIGHT+1,d1
+		lea	_octohint,a0
+		bsr	_ps
+		moveq	#7-1,d3
+.blankrow	moveq	#0,d0
+		add.l	#CHARHEIGHT+1,d1
+		lea	_octoblank,a0
+		bsr	_ps
+		dbf	d3,.blankrow
+.octoend	move.b	_keycode,d0
 		cmp.b	#$10,d0
 		bne	.again
 
@@ -193,15 +216,42 @@ _check		lea	_call,a0
 		bsr	_ps
 		move.l	d2,d1
 
-.loop		move.l	d1,d2			;y
-		move.l	d7,d0
+.loop		move.l	d7,d0
 		tst.b	d6
 		beq	.nodetect
 		bset	#RJPB_DETECT,d0
 .nodetect	tst.b	_mouse
 		beq	.nomouse
 		bset	#RJPB_WANTMOUSE,d0
-.nomouse
+.nomouse	bsr	_query
+		addq.l	#1,d7
+		cmp	#4,d7
+		bne	.loop
+
+		rts
+
+;--------------------------------
+; query the octodapter ports #0-7 and print the results
+
+_checko		lea	_call,a0
+		addq.l	#1,(a0)
+		moveq	#0,d7			;port
+.loop		move.l	d7,d0
+		bset	#RJPB_OCTODAPTER,d0
+		bsr	_query
+		addq.l	#1,d7
+		cmp	#8,d7
+		bne	.loop
+		rts
+
+;--------------------------------
+; query one port and print the result
+; IN:	d0 = ulong port/flags for resload_ReadJoyPort
+;	d1 = word y
+;	d7 = ulong port number to print
+; OUT:	d1 = word y for the next row
+
+_query		move.l	d1,d2			;y
 		bset	#CIACRAB_LOAD,(ciacra,a4)
 		bsr	_getta
 		jsr	(resload_ReadJoyPort,a5)
@@ -283,11 +333,6 @@ _check		lea	_call,a0
 		move.l	a7,a1
 		bsr	_ps
 		add	#4+4+12*2+4+4,a7
-
-		addq.l	#1,d7
-		cmp	#4,d7
-		bne	.loop
-
 		rts
 
 _vbi		move	#INTF_VERTB,(_custom+intreq)
@@ -481,11 +526,12 @@ _data		dc.b	"%4ld %08lx %4d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%2d%8ld%6ld",0
 _detect		db	"detect",0
 _nodetect	db	"      ",0
 _bottom		db	"hold D for detection                   press q to quit",0
-	EVEN
+_octohint	db	"hold O to query the Octodapter ports                  ",0
+_octoblank	dcb.b	54,$20
+		db	0
 
 ;============================================================================
 
-_keycode	dx.b	1	;rawkey code
 	CNOP 0,4
 _resload	dx.l	1	;address of resident loader
 _call		dx.l	1	;call counter
