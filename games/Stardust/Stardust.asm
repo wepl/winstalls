@@ -43,6 +43,12 @@
 ;		26.12.2022 - data directory always set to data now, no
 ;			     special case directory for debugging purposes
 ;			      anymore
+;		20.08.2026 Arise from Decay
+;			trainer started: unlimited lives in main and tunnels1-4,
+;			no highscore save when cheating (custom3)
+;		23.08.2026 splash optimised, unlimited energy in main and tunnels1-4,
+;			fuel in special missions, shield in main game and special missions, weapons trained
+;		26.08.2026 added levelselect
 ;
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
@@ -51,12 +57,12 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
-		INCDIR	SOURCES:Include/
+		INCDIR	Includes:
 		INCLUDE	whdload.i
 		INCLUDE	whdmacros.i
 
 	IFD BARFLY
-	OUTPUT	"wart:st/stardust/Stardust.Slave"
+	OUTPUT	"hd2:util/dev/whdload/stardust/Stardust.Slave"
 	BOPT	O+				;enable optimizing
 	BOPT	OG+				;enable optimizing
 	BOPT	ODd-				;disable mul optimizing
@@ -92,6 +98,14 @@ HEADER		SLAVE_HEADER		;ws_Security + ws_ID
 
 .config	dc.b	"C1:B:Skip Intro;"
 	dc.b	"C2:B:Enable Support for 2nd Fire Button;"
+	dc.b	"C3:X:Unlimited Lives:0;"
+	dc.b	"C3:X:Unlimited Energy/Fuel (in Special Missions):1;"
+	dc.b	"C3:X:Unlimited Shields:2;"
+	dc.b	"C3:X:Unlimited Time:3;"
+	;dc.b    "C3:X:Set own password:4;" 		;for debug/testing, see password breakdown
+	dc.b	"C3:X:Keep Weapon Power:5;"
+	dc.b	"C3:X:Start with max Weapons:6;"
+	dc.b    "C4:L:Startlevel:Level 1,Level 2,Level 3,Level 4,Level 5"
 	dc.b	0
 
 
@@ -103,12 +117,13 @@ _dir		dc.b	"data",0
 _name		dc.b	"Stardust",0
 _copy		dc.b	"1993 Bloodhouse",0
 _info		dc.b	"installed & fixed by Mr.Larmer/Bored Seal/Wepl/StingRay",10
-		dc.b	"V1.6 "
+		dc.b	"V1.7 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ELSE
 		dc.b	"(26.12.2022)"
 	ENDC
+		dc.b	-1,"Trainer added by Arise from Decay"
 		dc.b	0
 
 
@@ -412,8 +427,55 @@ PLGAME	PL_START
 
 
 	PL_PS	$428a,.wblit
-
+	
+	PL_IFC3X	0
+	PL_NOPS	$4b0c,3				;unlimited lives in main game
+	PL_W	$4486,$ff00			;esc during main game sets game over even with unlimited lives
+	PL_ENDIF
+	PL_IFC3X	1
+	PL_NOPS	$657c,3				;unlimited energy in main game
+	PL_ENDIF
+	PL_IFC3X	2
+	PL_NOPS $143f8,3			;unlimited shields in main game
+	PL_ENDIF
+	PL_IFC3X	3
+	PL_NOP	$19078,2			;unlimited time (sbcd d1,d0)
+	PL_ENDIF
+	;PL_IFC3X    4
+	;PL_NOPS $6cab2,2		     ;checksum for password check off, see password breakdown
+	;PL_ENDIF
+	PL_IFC3X	5
+	PL_S	$6ed16,$30			;skip routine to check activated weapon (to subtract 2 if dead)
+	PL_NOPS	$6ecf0,3			;missiles subq.w #1
+	PL_ENDIF
+	PL_IFC3X	6
+	PL_PSS	$6ccca,_weapons,2	;set own values for weapons
+	PL_S	$6ccd2,$54			;skip rest of routine
+	PL_PSS	$6cbba,_weapons,6	;must be called here too, if password is used
+	PL_ENDIF
+	PL_IFC4
+	PL_PS   $6ca7c,_lvsel	    ;override check if password is present, branch to own code instead
+	PL_S    $6ca82,$34		    ;skip checksum calculation to level selection
+	PL_S    $6cae6,$d4		    ;skip rest (to $ecbc6) of password routine to the max weapons location
+	PL_NOPS	$6cbc0,3			;nop out the rest
+	PL_ENDIF
 	PL_END
+
+;Password system breakdown:
+;Example: BCQQAAAAAGGN
+;		  1234567890XX
+;	$ece6 CDEF01234567
+;1:		Start Level (A=1 B=2 C=3 D=4)  if A is set no other digit should be used else game crashes
+;2:		Lives (A=1 B=2 C=3...)
+;3:		Threeway Power (Q=1 R=2, S=3)
+;4:		Bouncer Power (Q=1 R=2 S=3 T=4 U=5)
+;5:		Plasma Power (Q=1 R=2 S=3 T=4 U=5 V=6)
+;6:		Flamer Power (Q=1 R=2 S=3 T=4 U=5 V=6 W=7 X=8 Y=9)
+;7:		Burster Power (Q=1 R=2)
+;8:		Missile (Q=1 R=2 S=3 T=4 U=5 V=6 W=7 X=8 Y=9)
+;9:		unused
+;0:		Engine Power: (A=VERY slow... W=VERY fast)
+;XX:	Checksum (check at $ecab2)
 
 .checkquit3
 
@@ -437,7 +499,7 @@ PLGAME	PL_START
 
 .checkquit2
 	move.b 	$bfec01,d0
-	ror.b	d0
+	ror.b   #1,d0				
 	not.b	d0
 	cmp.b	HEADER+ws_keyexit(pc),d0
 	beq.w	QUIT
@@ -510,7 +572,49 @@ PLGAME	PL_START
 .fire2	dc.b	0
 	dc.b	0			; delay
 
+_lvsel
+	move.l startmiss(pc),d0
+	beq .nostartlv			    ;if custom4 is 0 but the patches are applied for some reason >skip
+	cmp #5,d0				    ;value to big?
+	bhs .nostartlv			    ;we skip
+	move.b d0,$ece6c		    ;move lvlnumber to first digit of password
+.nostartlv 						
+	move.b #$F,$8435c           ;original code for weapons and other values
+	move.b #0,$8435d            ;since the password routine was skipped the game wont have used
+	move.b #0,$8435e            ;the original routine
+	move.b #0,$8435f
+	move.b #0,$84360
+	move.b #1,$84361
+	move.b #0,$84362
+	clr.w $87979
+	clr.w $8796c
+	clr.w $8796a
+	clr.w $8796e
+	move.w #$0014,$94c68
+	clr.w $94b70
+	clr.w $94b72
+	move.w #$0008,$94c6e
+	move.b d0,$ece6c
+	rts
 
+_weapons
+	move.b #1,$8435d
+	move.b #1,$8435e
+	move.b #1,$8435f	;enable weapons
+	move.b #1,$84360
+	move.b #1,$84361
+	move.b #1,$84362
+
+	move.w #4,$87970	;three way power
+	move.w #8,$8796c	;bouncer power
+	move.w #$a,$8796a	;plasma power
+	move.w #2,$8796e	;burster power
+	move.w #5,$94b70	;missiles
+	move.w #$64,$94c68	;flamer power
+	
+	move.w #$8,$94c6e	;original code
+	clr.w $94b72		;original code
+	rts
 
 QUIT	pea	(TDREASON_OK).w
 	move.l	_resload(pc),-(a7)
@@ -541,10 +645,35 @@ PatchSM		movem.l	a0-a4/d0-d5,-(sp)
 		move.w	#$e44,d2
 		moveq	#$44,d3
 		bsr	Replace3
-
+		
+		lea	pl_specialmiss(pc),a0
+		move.l	a5,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+		
 		movem.l	(sp)+,a0-a4/d0-d5
 		move.w	$e8bf2,d3
+			
 		jmp	(a5)
+
+pl_specialmiss
+		PL_START
+		PL_IFC3X	0
+		PL_NOPS $f7a,5				;unlimited lives in special missions (and nop out a bra after the subq.w)
+		PL_ENDIF
+		PL_IFC3X    2
+		PL_NOPS	$1ae4,3				;why so many subq.w instructions?
+		PL_NOPS	$1a88,3
+		PL_NOPS	$1ab6,3				
+		PL_NOPS	$1b12,3
+		PL_NOPS	$1b8e,3
+		PL_NOPS	$1c08,3
+		PL_NOPS	$1bcc,3				;anyway... unlimited shields in special missions
+		PL_ENDIF
+		PL_IFC3X	1
+		PL_NOPS	$389e,3				;unlimited fuel in specialmissions
+		PL_ENDIF
+		PL_END
 
 PatchOutro	move.w	#2,$1358.w		;fix access fault
 		jmp	$7d4.w
@@ -615,7 +744,24 @@ PatchTun4	movem.l	a0-a4/d0-d5,-(sp)
 		bsr	Replace3
 		move.w	d3,$5e36
 		move.w	d3,$63de
+
+		lea	pl_tunnel4(pc),a0
+		move.l	a5,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+
 		bra	RunIt
+
+pl_tunnel4
+		PL_START
+		PL_IFC3X   0
+		PL_NOPS $105c,3 		;unlimited lives in tunnel4
+		PL_ENDIF
+		PL_IFC3X	1
+		PL_NOPS	$349a,3			;unlimited energy in tunnel4
+		PL_NOPS $538,5			;schaumund closed the warp gates! I opened them again:)
+		PL_ENDIF
+		PL_END
 
 PatchTun3	movem.l	a0-a4/d0-d5,-(sp)
 		move.w	#$6006,$181a.w
@@ -682,7 +828,24 @@ PatchTun3	movem.l	a0-a4/d0-d5,-(sp)
 		bsr	Replace3
 		move.w	d3,$5e70
 		move.w	d3,$6418
+		
+		lea	pl_tunnel3(pc),a0
+		move.l	a5,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+
 		bra	RunIt
+
+pl_tunnel3
+		PL_START
+		PL_IFC3X   0
+		PL_NOPS $130a,3 		;unlimited lives in tunnel3
+		PL_ENDIF
+		PL_IFC3X	1
+		PL_NOPS	$33fc,3			;unlimited energy in tunnel3
+		PL_ENDIF
+		PL_END
+
 
 PatchTun2	movem.l	a0-a4/d0-d5,-(sp)
 		move.w	#$6006,$11e4.w		;disk access
@@ -750,10 +913,26 @@ PatchTun2	movem.l	a0-a4/d0-d5,-(sp)
 		move.w	d3,$5dac
 		move.w	d3,$6352
 
+		lea	pl_tunnel2(pc),a0
+		move.l	a5,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+
 		bra	RunIt
+
+pl_tunnel2
+		PL_START
+		PL_IFC3X   0
+		PL_NOPS $12fa,3 		;unlimited lives in tunnel2
+		PL_ENDIF
+		PL_IFC3X	1
+		PL_NOPS	$33e4,3			;unlimited energy in tunnel2
+		PL_ENDIF
+		PL_END
 
 PatchTun1	move.w	#$6006,$5832.w		;disk access
 		movem.l	a0-a4/d0-d5,-(sp)
+
 		lea	$7d0.w,a1		;access fault fixes
 		lea	$bd28,a2
 		move.w	#$4a6d,d1
@@ -830,9 +1009,26 @@ PatchTun1	move.w	#$6006,$5832.w		;disk access
 		bsr	Replace3
 		move.w	d3,$5426
 		move.w	d3,$5cec
-RunIt		movem.l	(sp)+,a0-a4/d0-d5
+		
+		lea	pl_tunnel1(pc),a0
+		move.l	a5,a1
+		move.l	_resload(pc),a2
+		jsr	resload_Patch(a2)
+RunIt
+		movem.l	(sp)+,a0-a4/d0-d5
 		movea.w	$ed406,a4
-		jmp	(a5)
+		jmp	(a5) 	;$7d4
+
+pl_tunnel1
+		PL_START
+		PL_IFC3X   0
+		PL_NOPS	$fce,3 			;unlimited lives in tunnel1
+		PL_ENDIF
+		PL_IFC3X	1
+		PL_NOPS	$2cac,3			;unlimited energy in tunnel1
+		PL_ENDIF
+		PL_END
+
 
 GetAdr		lea	$dff000,a6
 		rts
@@ -1018,7 +1214,7 @@ LoadSaveHighs	movem.l	d0-a6,-(sp)
 		lea	(a0),a1			;address
 		bsr	Params
 		jsr	(resload_SaveFile,a2)
-		lea	password(pc),a0
+.nohighs	lea	password(pc),a0
 		lea	$ece6c,a1
 		moveq	#12,d0
 		jsr	(resload_SaveFile,a2)
@@ -1075,6 +1271,10 @@ BlitFix4	bsr.b	BlitWait
 _resload	dc.l	0
 _tags		dc.l	WHDLTAG_CUSTOM1_GET
 SKIPINTRO	dc.l    0
+cheatflag	dc.l	WHDLTAG_CUSTOM3_GET
+cheat		dc.l	0
+missionsel	dc.l	WHDLTAG_CUSTOM4_GET
+startmiss	dc.l	0
 		dc.l	TAG_DONE
 
 _savename	dc.b	'Highs',0
@@ -1114,7 +1314,7 @@ SetLev2IRQ
 	lea	Key(pc),a2
 	move.b	d0,(a2)+
 	not.b	d0
-	ror.b	d0
+	ror.b	#1,d0
 	move.b	d0,(a2)
 
 	move.l	KbdCust(pc),d1

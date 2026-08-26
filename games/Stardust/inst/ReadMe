@@ -68,6 +68,10 @@
 	version 1.6, #3 (26-Dec-2022) done by StingRay
 	- all good things come in threes, data directory path fixed
 	  (thanks to Retroplay again)
+	  
+	  version 1.7 (24.08.2026) done by Arise from Decay
+	  - trainer added
+	  - no highscores will be saved when any trainer or levelselect is used
 	
            for full WHDLoad package and other installs refer to:
                           http://www.whdload.de
