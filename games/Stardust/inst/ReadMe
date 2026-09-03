@@ -69,9 +69,10 @@
 	- all good things come in threes, data directory path fixed
 	  (thanks to Retroplay again)
 	  
-	  version 1.7 (24.08.2026) done by Arise from Decay
-	  - trainer added
-	  - no highscores will be saved when any trainer or levelselect is used
+	version 1.7 (24.08.2026) done by Arise from Decay
+	- trainer added
+	- no highscores will be saved when any trainer or levelselect is used
+	- source: https://github.com/wepl/winstalls/tree/master/games/Stardust
 	
            for full WHDLoad package and other installs refer to:
                           http://www.whdload.de
