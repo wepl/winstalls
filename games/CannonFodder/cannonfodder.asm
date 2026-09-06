@@ -2,6 +2,11 @@
 ;  :Program.	cannonfodder.asm
 ;  :Contents.	Slave for "Cannon Fodder"
 ;  :Author.	Wepl
+;  :Originals.	en1 sps-860
+;		en2
+;		de
+;		fr
+;		it
 ;  :History.	25.03.18 derrived from cannonfoddercd.asm
 ;		17.05.18 access fault fix improved
 ;			 support for en2/de added
@@ -24,6 +29,9 @@
 ;			 disabled timer on final phase
 ;		15.08.26 made ingame keys selectable from splash, trainer for timer on last
 ;			 phase changed so that the map is accessible
+;		06.09.26 disable _s1 patch to fix music problems, probably sound module is in
+;			 chip memory and range check must be changed to basemem, seems to
+;			 work without for now (issue #7014)
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -85,7 +93,7 @@ _expmem		dc.l	EXELEN+PICLEN		;ws_ExpMem
 _name		dc.b	"Cannon Fodder",0
 _copy		dc.b	"1993 Sensible Software",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 3.2 "
+		dc.b	"Version 3.3 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -195,32 +203,32 @@ _plen1		PL_START
 		PL_W	$2c64,$4200		;bplcon0
 		PL_S	$5d92,$5dc2-$5d92	;skip init stuff
 		PL_PS	$5eb0,_missionselect
-		PL_I	$7a14			;copylock
-		PL_I	$7aaa			;copylock
+	;	PL_I	$7a14			;copylock
+	;	PL_I	$7aaa			;copylock
 		PL_P	$a2f8,_keyboard		;keyboard int umleiten
 		PL_R	$a6a8			;copylock
 		PL_P	$b3e8,_loader
 		PL_P	$bd2e,_gettmp
-		PL_I	$c3c6			;smc
+	;	PL_I	$c3c6			;smc
 		PL_W	$cc52,$1e		;htotal
 		PL_W	$cf96,$200		;bplcon0
 	;	PL_PS	$153d2,_diag		;DIAG: catch handler trashing A0
 	;	PL_PS	$163c2,_af3
 		PL_PS	$16d7c,_af0
 	;	PL_PS	$1a83a,_af4
-		PL_B	$1a882,$6f		;beq -> ble
+	;	PL_B	$1a882,$6f		;beq -> ble
 		PL_W	$1ccf2,$4200		;bplcon0
 		PL_W	$1cd92,$4200		;bplcon0
 		PL_W	$1cda6,$5200		;bplcon0
 		PL_R	$1d370			;skip disk2 check
 		PL_W	$1d3a2,$5200		;bplcon0
 		PL_W	$1d462,$4200		;bplcon0
-		PL_I	$1d810			;random
+	;	PL_I	$1d810			;random
 		PL_PS	$1eb36,_af1
 		PL_PS	$1eb44,_af2		;guard empty/invalid team order list
-		PL_I	$1fc92			;copylock
+	;	PL_I	$1fc92			;copylock
 		PL_B	$24304,$6f		;beq -> ble
-		PL_PS	$243ee,_s1
+	;	PL_PS	$243ee,_s1
 		PL_PS	$25e08,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$276a8,$6600		;bplcon0
 		PL_W	$2785e,$4200		;bplcon0
@@ -235,7 +243,7 @@ _plen1		PL_START
 		PL_S	$2a29e,10		;load/save game
 		PL_PS	$2a2c8,_savegame
 		PL_R	$2acfe			;"insert disk 3"
-		PL_I	$2c044			;copylock
+	;	PL_I	$2c044			;copylock
 		PL_IFC1X 0
 		PL_NOPS	$1e208,3		;Trainer Soldiers
 		PL_ENDIF
@@ -332,7 +340,7 @@ _plen2		PL_START
 		PL_PS	$1ec10,_af1
 		PL_PS	$1ec1e,_af2		;guard empty/invalid team order list
 		PL_B	$243de,$6f		;beq -> ble
-		PL_PS	$244c8,_s1
+	;	PL_PS	$244c8,_s1
 		PL_PS	$25eea,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$277da,$6600		;bplcon0
 		PL_W	$27998,$4200		;bplcon0
@@ -375,7 +383,7 @@ _plde		PL_START
 		PL_PS	$1ed1a,_af1
 		PL_PS	$1ed28,_af2		;guard empty/invalid team order list
 		PL_B	$244e8,$6f		;beq -> ble
-		PL_PS	$245d2,_s1
+	;	PL_PS	$245d2,_s1
 		PL_PS	$26036,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27baa,$6600		;bplcon0
 		PL_W	$27d92,$4200		;bplcon0
@@ -434,7 +442,7 @@ _plfr		PL_START
 		PL_PS	$1ed60,_af1
 		PL_PS	$1ed6e,_af2		;guard empty/invalid team order list
 		PL_B	$2452e,$6f		;beq -> ble
-		PL_PS	$24618,_s1
+	;	PL_PS	$24618,_s1
 		PL_PS	$26064,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27bd0,$6600		;bplcon0
 		PL_W	$27db8,$4200		;bplcon0
@@ -473,7 +481,7 @@ _plit		PL_START
 		PL_PS	$1ed12,_af1
 		PL_PS	$1ed20,_af2		;guard empty/invalid team order list
 		PL_B	$244e0,$6f		;beq -> ble
-		PL_PS	$245ca,_s1
+	;	PL_PS	$245ca,_s1
 		PL_PS	$2601c,_hill		;cap recruit-hill draw (name table overflow)
 		PL_W	$27b88,$6600		;bplcon0
 		PL_W	$27d70,$4200		;bplcon0
@@ -699,6 +707,7 @@ _af2		movea.l	(a1,d0.w),a1			;a1 = team's order list
 .bad		add.l	#$1eb52-$1eb4a,(a7)		;skip tst.b+bne.w -> fall-through
 		rts
 
+	IFEQ 1
 _s1		cmp.l	_expmem,d0
 		bls	.ret
 		cmp.l	_picmem,d0
@@ -708,6 +717,7 @@ _s1		cmp.l	_expmem,d0
 		rts
 .ret		addq.l	#4,a7
 		rts
+	ENDC
 
 ; The recruit-hill display lbC025DC4 draws (lbW000638) recruits into the buffer
 ; lbL012FC8 ($12fc8), writing downward (d1 from $660, -$18 per recruit) with no

@@ -8,6 +8,9 @@ This patch applies to Cannon Fodder, ©1993 Sensible Software
 Slave requires WHDLOAD V17+.
 Game requires 1 MB Chip memory and 0.5 MB other memory.
 
+Version 3.3 (06.09.2026) done by Wepl:
+- fix music replay, got broken in 3.0 (issue #7014)
+
 Version 3.2 (15.08.2026) done by Arise from Decay:
 - skip phase is now optional
 - on last phase the map is now accessible
