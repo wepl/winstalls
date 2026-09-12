@@ -1,5 +1,4 @@
 
-
 	THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER
 	EXPRESS OR IMPLIED, STATUTORY OR OTHERWISE.
 	THE ENTIRE RISK AS TO USE, RESULTS AND PERFORMANCE OF THE PACKAGE IS
@@ -11,12 +10,10 @@
 	OWNER OR A THIRD PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF
 	DAMAGE.
 
-
 	That install applies to "Deuteros" © 1991 Ian Bird.
 	
-	There are at least four different disk versions of the game, directly
-	supported are only two. The second and third will be converted to the
-	first during the install process via WPatch.
+	There are at least four different disk versions of the game, all of
+	them are supported directly.
 
 	That install requires WHDLoad and DIC to be in the path. Both
 	can be found in the WHDLoad package.
@@ -30,9 +27,9 @@
 	This install was very, very much hard work. Many OS functions must be
 	emulated (interrupt handling, input.device, trackdisk.device, sprite
 	handling...).
-	Saving works only if WHDLoad is registered. Access Faults in the intro
-	and the middle sequences removed. Some delays inserted. Random
-	generator fixed. All reading and write redirected to harddisk.
+	Access Faults in the intro and the middle sequences removed. Some
+	delays inserted. Random generator fixed. All reading and write
+	redirected to harddisk.
 
 	if you have problems with this installation please report them via
 	the Bug-Report-Form which can be accessed on 
@@ -52,4 +49,11 @@
 
 	Version 1.10 (29.05.2002) by Wepl:
 	- supports another version
+
+	Version 1.11 (12.09.2026) by Wepl:
+	- sps-958, ingame known as V2, is now directly supported, previous
+	  install releases did convert it during installation into V1,
+	  V2 uses own trackloader instead trackdisk.device, V2 is nearly
+	  untested
+	- new install script
 
