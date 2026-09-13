@@ -20,7 +20,7 @@
 	To install from a different drive than DF0: select Expert as
 	installation mode.
 
-	You need 1 MB ChipMem and 0.5 MB OtherMem.
+	You need 0.5 MB ChipMem and 1 MB OtherMem.
 	You can quit the game by pressing F10 (key can be changed with
 	Tooltype "QuitKey=").
 
@@ -56,4 +56,8 @@
 	  V2 uses own trackloader instead trackdisk.device, V2 is nearly
 	  untested
 	- new install script
+
+	Version 1.12 (13.09.2026) by Wepl:
+	- now uses only 512 KiB ChipMem instead of 1 MB (issue #7018)
+	- source: https://github.com/wepl/winstalls/tree/master/games/Deuteros
 

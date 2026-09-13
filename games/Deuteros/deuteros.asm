@@ -16,6 +16,7 @@
 ;		03.08.01 adapted for kickemu
 ;		29.05.02 support for v4 added
 ;		12.09.26 support for v2/3 added
+;		13.09.26 use expmem
 ;  :Originals.	v1 ingame=v1
 ;		v2 crack of v3
 ;		v3 sps-958 ingame=v2
@@ -51,8 +52,8 @@ SAVEFILES=0
 
 ;============================================================================
 
-CHIPMEMSIZE	= $100000
-FASTMEMSIZE	= 0
+CHIPMEMSIZE	= $80000
+FASTMEMSIZE	= $80000
 NUMDRIVES	= 1
 WPDRIVES	= %1111
 
@@ -100,7 +101,7 @@ slv_CurrentDir = slv_base
 slv_name	dc.b	"Deuteros",0
 slv_copy	dc.b	"1991 Ian Bird",0
 slv_info	dc.b	"installed & fixed by Wepl",10
-		dc.b	"Version 1.11 "
+		dc.b	"Version 1.12 "
 		INCBIN	.date
 		dc.b	0
 _savename	dc.b	"Disk.3",0
