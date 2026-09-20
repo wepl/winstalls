@@ -3,6 +3,7 @@
 ;  :Contents.	CyberspherePlus
 ;  :Author.	Wepl
 ;  :History.	2024-11-20 started
+;		2026-09-20 cheat mode option added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -50,7 +51,7 @@ IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 
 ;============================================================================
 
-slv_Version	= 16
+slv_Version	= 17
 slv_Flags	= WHDLF_NoError|WHDLF_Examine|WHDLF_NoKbd
 slv_keyexit	= $59	;F10
 
@@ -64,12 +65,10 @@ slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Cybersphere Plus",0
 slv_copy	dc.b	"1995 Psycon",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"Version 1.0 "
+		dc.b	"Version 1.1 "
 		INCBIN	".date"
 		dc.b	0
-	IFGE slv_Version-17
-slv_config	dc.b	"C1:B:Trainer",0
-	ENDC
+slv_config	dc.b	"C1:B:Enable cheat mode",0
 _program	dc.b	"cybersphereplus",0
 	EVEN
 
@@ -150,6 +149,10 @@ _bootdos
 
 _pl_program	PL_START
 		PL_R	$9a		;getting vbr
+		PL_IFC1				;cheat mode
+		PL_W	$685a,1			;enable cheat flag, same as typing
+						;CALGARY on the title screen
+		PL_ENDIF
 		PL_END
 
 	ENDC
