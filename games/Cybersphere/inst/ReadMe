@@ -12,7 +12,7 @@
 
  Requirements:
  -------------
- This install requires WHDLoad version 16.0 to be in the path.
+ This install requires WHDLoad version 17.0 to be in the path.
  These programs can be found in the WHDLoad package.
  To install from a different drive than DF0: select installation mode Expert.
 
@@ -29,8 +29,20 @@
  directory as the kickstart image. It can be found in the archive
  "util/boot/skick346.lha" on aminet.
 
+ Cheat Mode:
+ -----------
+ The built-in cheat mode can be enabled at startup by selecting the option
+ "Enable cheat mode" in the WHDLoad splash window or by using the Tooltype
+ "Custom1=1". This is the same cheat which is activated by entering "CALGARY"
+ on the title screen. If enabled you can start in any of the five sectors and
+ skip the current level by pressing 'Q'. Entering "CALGARY" on the title
+ screen toggles the cheat mode off again.
+
  History:
  --------
+ version 1.1 (20.09.2026) done by Wepl:
+ - option to enable the built-in cheat mode added
+
  version 1.0 (20.11.2024) done by Wepl:
  - initial release
  - thanks for the icons to Irek Kloska
