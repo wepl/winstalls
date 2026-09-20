@@ -10,14 +10,32 @@ unless stated otherwise.
 |---|---|---|---|---|---|
 | v1 | `data:originals/games/LinWusChallenge/v1/LinWu-d1.wwp` | original with disk protection | 3958 bytes (protection code) | 22925 bytes | default table ("AAE" $5000 first) |
 | v2 | `data:originals/games/LinWusChallenge/v2/LinWu-d1-2.wwp` | password system, no disk protection | 22 bytes stub | 20301 bytes | played ("LION" $9111 first) |
+| v3 | english release, installed on the Amiga in `wart:li/LinWusChallenge/data-v3` | password system, no `CP` on the disk at all, `STARTUP` 4840, `GAME` 15858 | - | 20297 bytes | |
 
 - All other 36 files are identical in both versions, including `loader` (tracks 78-79).
+- v3 (2026-09-19, english): 37 files, no `CP`; `STARTUP`, `GAME` and `MAP` differ, all
+  other files are identical to v1/v2. Differences found so far:
+  - `STARTUP` (4840, 10 bytes shorter): identical structure, all addresses from the
+    beginning shifted by -$a -> motor off `$36ce`, motor on `$370c`, keyboard install
+    `$3898`, INTENA immediate `$3904`. The string table still contains "CP" but nothing
+    references it, so `CP` is never loaded.
+  - `GAME` (15858): identical up to at least `$41cb4`, so all keyboard offsets and both
+    trainer patches are the same. The STARTUP checksum at `$41cb4` is still computed but
+    the `bne` after it was removed (`$41cb8` is `movem.l (a7)+,d0-d7/a0-a6`), so the
+    protection is gone - `PL_NOP $1cb8,4` must *not* be applied to v3.
+  - `MAP` (20297, 4 bytes shorter): like v2 (password system at `$402b0`, no disk check);
+    identical up to `$40248`, everything after shifted by -4 (motor on `$41688`, seek
+    `$416a2`, motor off `$41bd0`, motor on `$41c0a`, opponent table `$441b6`).
+- The data directories on the Amiga: v1/v2 are packed with ProPack (RNC\1 header, the user
+  packed everything that was not PowerPacker crunched), v3 is unpacked. `xfddecrunch`
+  unpacks them; WHDLoad decrunches transparently, the slave identifies the files by their
+  *unpacked* length.
 - v2 is most likely an official later release (the encrypted booter is unchanged, a
   password system was added), not a crack — not proven.
 - The directories `v1` and `v2` contain only the wwp images (extracted files and the
   track dumps formerly lying next to them are gone).
-- Install/test dir on the Amiga: `wart:li/LinWusChallenge` with `data-v1`, `data-v2` and
-  one icon per version.
+- Install/test dir on the Amiga: `wart:li/LinWusChallenge` with `data-v1`, `data-v2`,
+  `data-v3` and one icon per version.
 - Own work files on the Amiga in `cr:LinWusChallenge`: `track.000/078/079.dosf`,
   `track.078.dosf.asm` (ReSource disassembly of the loader), `lib.00c0.bin` (decrypted
   file system library, 5044 bytes, `$c0-$1473`, MD5 `33e4fb7e5b492685a2ee278820fbfa5c`),
@@ -364,6 +382,14 @@ Trainers (2026-09-18; config labels must not contain `:`, WHDLoad rejects the st
 
 ## Slave (`linwuschallenge.asm`)
 
+- Releases: **1.0** (19.09.2026, slave MD5 `17d3c2c30df2e6a90d9b256f2d8a87f2`) is published
+  on whdload.de (`wget whdload.de/games/LinWusChallenge.lha` shows what is out there);
+  everything after it goes into **1.1** (english release support).
+- Version handling (2026-09-19): the patch list for `STARTUP` is chosen by its length
+  (4840 = v3 -> `_pl_startup3`, else `_pl_startup`), the files loaded to `$40000` by their
+  length: 15858 = `GAME` v3 -> `_pl_game`, 15850 = `GAME` v1/v2 -> `_pl_game12` (the
+  checksum patch, ends with `PL_NEXT _pl_game`, so one `resload_Patch` call is enough),
+  22925 -> `_pl_map1`, 20301 -> `_pl_map2`, 20297 -> `_pl_map3` (v3).
 - No `loader`: `($c0)` points to `_libbase` inside the slave; jump table entries are 6
   bytes (`illegal`/`bra` + 0 padding): -6 `_load`, -$c `_save`, rest illegal.
 - `_load`: `resload_LoadFile`, PP20 decrunch like the library (tested in Musashi against

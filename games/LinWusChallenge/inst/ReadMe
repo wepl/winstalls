@@ -17,7 +17,7 @@
  The installed program requires 0.5 MB ChipMem.
  It can be quit by pressing F10 (key can be changed with Tooltype "QuitKey=").
 
- The version with password system asks for a password at the start of the game.
+ The releases with password system ask for a password at the start of the game.
  Every opponent plays three games, a password is shown for the first game only:
 
    Nr  Opponent       Country     Lvl  Password
@@ -69,4 +69,7 @@
    are already PowerPacker compressed
  - source available: https://github.com/wepl/winstalls
  - thanks to nujack for the disk images and testing
+
+ version 1.1 (19.09.26) done by Wepl:
+ - support for the english release added
 

@@ -2,8 +2,11 @@
 ;  :Program.	linwuschallenge.asm
 ;  :Contents.	Slave for "Lin Wu's Challenge" by Lasersoft
 ;  :Author.	Wepl
-;  :Originals.	v1 disk protection, CP=3958 MAP=22925
-;		v2 password system, no disk protection, CP=22 MAP=20301
+;  :Originals.	v1 disk protection, CP=3958 STARTUP=4850 GAME=15850 MAP=22925
+;		v2 password system, no disk protection, CP=22 STARTUP=4850
+;		   GAME=15850 MAP=20301
+;		v3 english release, password system, no 'CP' at all,
+;		   STARTUP=4840 GAME=15858 MAP=20297
 ;  :History.	2026-09-13 started
 ;		2026-09-14 file system library at $c0 replaced by slave routines,
 ;			   'STARTUP' is loaded directly, disk protection of v1 removed,
@@ -13,6 +16,7 @@
 ;			   redirected to a variable
 ;		2026-09-18 trainer for the time limit added, with an enabled trainer
 ;			   the highscores are no longer saved
+;		2026-09-19 support for the english release (v3) added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -35,12 +39,14 @@
 ;	($84)=0 and ($88)=$500 on success, 'MAP' checks both values
 ;	'MAP' contains a second disk check at $41278 (trace obfuscated)
 ;	v2 contains 'CP' as stub setting the values and 'MAP' has no check
+;	v3 has no 'CP' at all, 'STARTUP' never loads it
 ;	the slave always provides the 'CP' of v2 (the imager does not save 'CP')
 ;
 ;	both versions: the loader writes CIA-B TALO=$aa TAHI=$e1, 'GAME' checks
 ;	TAHI=$e1 at $40a72, $40c42 and $414a0 (read via $f0500+$b0d000)
 ;	'GAME' $41c92 checksums 'STARTUP' $3000-$36ff (=$16e0) at the end of a
 ;	level, on mismatch it jumps to $c0 with a movem frame on the stack
+;	(v3 has the checksum code but the conditional branch was removed)
 ;
 ;	keyboard: 'STARTUP' installs a level 2 handler ($38a2 -> $68) which writes
 ;	the received raw byte back into CIA-A SDR (with a too short handshake),
@@ -89,7 +95,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Lin Wu's Challenge",0
 _copy		dc.b	"1990 Lasersoft",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 1.0 "
+		dc.b	"Version 1.1 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -142,8 +148,11 @@ _start	;	A0 = resident loader
 		lea	$3000,a3			;A3 = STARTUP
 		move.l	a3,d0
 		bsr	_load
-		lea	(_pl_startup,pc),a0
-		move.l	a3,a1
+		lea	(_pl_startup3,pc),a0		;v3
+		cmp.l	#4840,d1
+		beq	.plstartup
+		lea	(_pl_startup,pc),a0		;v1/v2
+.plstartup	move.l	a3,a1
 		jsr	(resload_Patch,a2)
 
 		lea	$80000,a7
@@ -235,14 +244,21 @@ _load		movem.l	d2-d7/a1-a6,-(a7)
 		cmp.l	#$40000,a3
 		bne	.ret
 		lea	(_pl_game,pc),a0
+		cmp.l	#15858,d6			;GAME v3
+		beq	.patch
+		lea	(_pl_game12,pc),a0		;GAME v1/v2, continues with _pl_game
 		cmp.l	#15850,d6
 		beq	.patch
 		lea	(_pl_map1,pc),a0
-		cmp.l	#22925,d6
+		cmp.l	#22925,d6			;MAP v1
 		beq	.patch
 		lea	(_pl_map2,pc),a0
-		cmp.l	#20301,d6
+		cmp.l	#20301,d6			;MAP v2
+		beq	.patch
+		lea	(_pl_map3,pc),a0
+		cmp.l	#20297,d6			;MAP v3
 		bne	.ret
+
 .patch		move.l	a3,a1
 		jsr	(resload_Patch,a2)
 
@@ -252,15 +268,51 @@ _load		movem.l	d2-d7/a1-a6,-(a7)
 		movem.l	(a7)+,d2-d7/a1-a6
 		rts
 
-_pl_startup	PL_START
+_pl_startup	PL_START		;v1/v2
 		PL_R	$6d8				;floppy motor off/deselect
 		PL_R	$716				;floppy motor on/select
 		PL_R	$8a2				;keyboard handler install
 		PL_W	$90e,$3ff7			;don't disable INTEN/PORTS
 		PL_END
 
-_pl_game	PL_START
+_pl_map3	PL_START		;v3
+		PL_R	$1688				;floppy motor on/select
+		PL_R	$16a2				;floppy seek to track 0
+		PL_R	$1bd0				;floppy motor off/deselect
+		PL_R	$1c0a				;floppy motor on/select
+	;all accesses to CIA-A SDR
+		PL_L	$1da,_keybuf
+		PL_L	$248,_keybuf
+		PL_L	$7ea,_keybuf
+		PL_L	$892,_keybuf
+		PL_L	$970,_keybuf
+		PL_L	$982,_keybuf
+		PL_L	$99e,_keybuf
+		PL_L	$9b2,_keybuf
+		PL_L	$d32,_keybuf
+		PL_L	$d3e,_keybuf
+		PL_L	$d8a,_keybuf
+		PL_L	$db4,_keybuf
+		PL_L	$dc6,_keybuf
+		PL_L	$de2,_keybuf
+		PL_L	$df6,_keybuf
+		PL_L	$ea4,_keybuf
+		PL_L	$f1c,_keybuf
+		PL_END
+
+_pl_startup3	PL_START		;v3
+		PL_R	$6ce				;floppy motor off/deselect
+		PL_R	$70c				;floppy motor on/select
+		PL_R	$898				;keyboard handler install
+		PL_W	$904,$3ff7			;don't disable INTEN/PORTS
+		PL_END
+
+	;'GAME' v1/v2 checksums 'STARTUP' at the end of a level, v3 does not
+_pl_game12	PL_START
 		PL_NOP	$1cb8,4				;checksum over STARTUP $3000-$36ff
+		PL_NEXT	_pl_game
+
+_pl_game	PL_START		;v1/v2/v3
 	;the vertb interrupt counts 5 frames ($41a5e), then the displayed time
 	;at $43dc4 is decremented by one (bcd) at $40a14, on zero the game ends
 		PL_IFC1
