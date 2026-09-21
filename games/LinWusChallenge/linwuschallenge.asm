@@ -17,6 +17,7 @@
 ;		2026-09-18 trainer for the time limit added, with an enabled trainer
 ;			   the highscores are no longer saved
 ;		2026-09-19 support for the english release (v3) added
+;		2026-09-20 avoid address error on 68000
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -95,7 +96,7 @@ _expmem		dc.l	0			;ws_ExpMem
 _name		dc.b	"Lin Wu's Challenge",0
 _copy		dc.b	"1990 Lasersoft",0
 _info		dc.b	"installed and fixed by Wepl",10
-		dc.b	"Version 1.1 "
+		dc.b	"Version 1.2 "
 	IFD BARFLY
 		INCBIN	"T:date"
 	ENDC
@@ -219,9 +220,8 @@ _load		movem.l	d2-d7/a1-a6,-(a7)
 		move.l	(_resload),a2
 
 	;'CP' is the disk protection, install the version of v2
-		cmp.w	#"CP",(a0)
-		bne	.load
-		tst.b	(2,a0)
+	;there is only one file starting with 'C'
+		cmp.b	#"C",(a0)
 		bne	.load
 		lea	(_cp,pc),a0
 		moveq	#_cpend-_cp,d6			;D6 = file length
