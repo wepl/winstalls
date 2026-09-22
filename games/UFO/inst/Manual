@@ -1,0 +1,3066 @@
+                   UFO - ENEMY UNKNOWN - AMIGA VERSION
+                   ===================================
+
+Contents                                        TYPED BY UNKNOWN WARRIOR
+--------
+
+Credits
+Introduction
+ Background
+ The Game
+ This Manual
+   The Controls
+ Sorting the Materials
+
+Section 1: The Gameplay Tutorials
+ Before We Begin...
+   Starting a New Game
+   Setting-Up a New Xcom Base
+ Tutorial 1: The Geoscape
+   The Time Controls
+   Detecting UFO's
+   Intercepting UFOs
+   Air to Air Combat
+   Saving the Game
+   Investigating the Crash Site
+ Tutorial 2: The Battlescape
+   Arming Your Squad
+   The Battlescape
+   Using the Split Level View 
+   Selecting Soldiers
+   Moving Soldiers
+   The Map Screen
+   The Turn-Based System 
+   Searching For the Aliens
+   Seeing the Aliens
+   Using Guns
+   Using Grenades
+   Completing the Mission
+   The Debriefing
+ Tutorial 3: The Bases
+   Equipping the Interceptor
+   Assigning Research
+   Purchasing/Recruiting 
+   Waiting For Delivery
+   Equipping the Skyranger
+   Returning to the Geoscape
+   The End the Tutorial
+   Playing Tips
+. 
+Section 2: The Reference Guide
+ The Game Options
+   New game
+   Load Saved Game
+ The Geoscape Screen
+   The Geoscape
+   The View Controls
+   The Time Controls
+   The Game Time
+      The XCom Project Monthly Report
+      Psioniic Training
+   The Menu Options
+   Using the Geoscape
+      The UFO Detected Window
+      The Launch Interception Window
+      Selecting an Interception Craft
+      The Craft Status Window
+      The UFO Status Window 
+      The Tracking Lost Window
+      The Air-to Air Combat Window
+      Shooting the UFO Down
+      Investigating UFO Crash Sites
+     Other Geoscape Uses
+Ground Assaults
+   The Equip Squad Screen
+   The Battlescape Screen
+      Using the Battlescape
+      Using Weapons
+      The Battlescape Control Bar 
+      Promotions
+      Wounding
+      Opportunity Fire
+      Objective
+   The Debriefing Screen
+Bases
+   The Base Display 
+   The Menu Options
+      Build New Base
+      Base Information 
+      Equip Craft
+      Build Facilities
+      Research
+      Manufacture
+      Transfer
+      Purchase/Recruit
+      Sell/Sack
+      Soldiers 
+      Geoscape 
+ Graphs
+   UFO Activity in Areas
+   UFO Activity in Countries
+   XCom Activity in Areas
+   XCom Activity in Countries
+   Income
+   Finance
+     Income 
+     Expenditure 
+     Maintenance
+     Balance
+     Performance
+  UFOpaedia
+     The Select Subject Screen
+     The Select Item Screen
+     UFOpaedia Data Screens
+  Options
+     Load Game
+       Select Game to Load
+     Save Game
+       Select Save Position
+     Cancel
+ Funding 
+
+Glossary
+
+INTRODUCTION
+------------
+
+BACKGROUND
+
+It  is  the  year  1999.    Unidentified  Flying Objects (UFOs) have started
+appearing with disturbing regularity in the night skies.  Reports of violent
+human  abductions  and  horrific  experimentation has struck terror into the
+hearts  of  millions.  Mass public hysteria has only served to expose Earths
+impotence against a vastly superior technology.
+
+Many  countries  have  attempted  to deal independantly with the aliens.  In
+August  1998,  Japan  established an anti alien combat force, the Kiryu Kai.
+Equipped  with Japanese made fighter aircraft the Kiryu Kai certainly looked
+like  a powerful force.  However after 5 months of expensive operations they
+had  yet  to  intercept  their  first UFO.  The lesson was clear: this was a
+worldwide problem which could not be dealt with by individual countries.
+
+On  December  11th  1998, representatives from the world's most economically
+powerful  countries  gathered  secretly  in  Geneva.   After much debate the
+decision  was  made  to  establish  a  covert  independant  body  to combat,
+investigate  and  defeat  the  alien  threat.    this  organisation would be
+equipped with the world's finest pilots, soldiers, scientists and engineers,
+working together as one multi national force.
+
+This organisation was named the Extraterrestrial Combat unit: XCOM
+
+THE GAME
+
+UFO  Enemy  Unknown  puts  you  in  command  of  XCom, with the finest Earth
+technology  at  your  disposal  to  defend  the  Earth  from alien invasion.
+Shooting  down UFOs is just the beginning.  You will then control a squad of
+heavily  armed  soldiers,  edging  cautiously  through  the  local  terrain,
+battling aliens and recovering UFO technology.
+
+When  you  command  a  ground  assault,  you  will  use  the  3-D  isometric
+'Battlescape'  display.  This shows terrain, buildings, XCom craft and UFOs,
+but will only display what your soldiers can see so beware of danger lurking
+around corners or down dark corridors!
+ 
+Successful  ground  assault  missions mean that XCom scientists can research
+alien  technology.   Engineers can then reproduce their superior weapons and
+spacecraft.  Soon you will be fighting the aliens with their own technology.
+
+As  the  game  progresses, you will use the on line 'UFOpaedia' to learn the
+latest  details  from your research teams about alien technology, life forms
+and  their  real  objectives.  Above all, you must watch the world political
+situation.   Look out for governments who may be forced to make secret pacts
+with  the  aliens  and  make  sure  you  defend  the countries who fund XCom
+heavily.
+
+UFO Enemy Unknown.  Command Earth's forces against the alien terror!
+ 
+THIS MANUAL
+
+This Manual is split into two main sections; 
+
+Section  1: The Gameplay Tutorials are designed to get you playing UFO Enemy
+Unknown as quickly as possible.  You are recommended to follow each tutorial
+before you start to play the game on your own.
+
+Section  2:  The  Reference Guide is intended for the player who is familiar
+with  how to play UFO Enemy Unknown and needs to learn more about particular
+game features.
+ 
+The Controls 
+
+You  will require a Mouse to play UFO Enemy Unknown.  This manual will refer
+to  'clicking'  on  buttons,  icons or highlighted text.  To do this, simply
+move the cursor over the option and press the Left Mouse Button (LMB).
+ 
+SORTING THE MATERIALS
+
+Your  UFO Enemy Unknown package contains this Manual, a Technical Supplement
+and a set of disks to run the game.
+
+SECTION 1 - THE GAMEPLAY TUTORIALS
+----------------------------------
+
+BEFORE WE BEGIN... 
+
+Welcome  to  UFO  Enemy  Unknown.   These tutorials are designed to help you
+start  playing  with the minimum of trouble.  The three main sections of the
+game are covered here; the Geoscape, the Battlescape and the Bases Screen.
+
+For  extra  information on particular game features, see the Reference Guide
+section of the manual.
+
+First of all, we will start a new game.
+
+Starting a New Game
+
+1.    Install  and  Load  UFO  Enemy  Unknown by referring to your Technical
+      supplement.
+
+2.    After  the  animated  introduction,  you  will  be  taken  to the Copy
+      Protection Screen.
+
+Type  in the from the manual reference given.  You will be taken to the game
+options screen.
+
+3.    Move  the mouse pointer over the New Game option and click on the Left
+      Mouse  Button  (LMB)  to  select.  You will now be taken to the Select
+      Difficulty Level screen.
+
+4.    Move the mouse pointer over the Beginner option and click on the LMB to
+      select.    You  will  now  be  taken  into  the  main game screen, the
+      Geoscape.   The first thing you must do is to position your first XCom
+      base on the surface of the Earth.
+
+Setting-Up a New XCom Base
+
+5.    The  message  Select  Site  for New Base will appear in the top of the
+      screen.
+
+In  the  bottom  right  hand  side  of  the screen, you will see three green
+spheres  surrounded  by arrows.  These are the view controls which allow you
+to rotate and magnify the display of the Earth.
+
+Click  on  the  up  arrow  icon.   The Earth display will be magnified, some
+borders around countries will appear.
+
+6.   Click again on the up arrow icon.  The Earth display will be magnified
+     again, some country names will now appear.
+
+7.   Click  twice on the down arrow icon.  The Earth display will return to
+     its minimum magnification.
+
+8.   The  four  arrow icon allows you to rotate the Earth display up, down,
+     left, or right.
+
+Click a few times on the up arrow, The Earth display will tilt towards you
+
+9.   Click a few times on the left arrow, the Earth display will rotate.
+
+10.  Position the Mouse pointer over the Earth and click on the Right Mouse
+     Button to centre the Geoscape on that location.
+
+By  using  a  combination  of  these  controls, you can manipulate the Earth
+display to show any part of the Earth in detail.
+
+Note.  It is a good idea to position your base in the middle of a large land
+mass such as North or South America, Russia or Europe.  This will give , you
+a better chance of defending that area from UFO raids.
+
+12.  A window containing the prompt Base Name?  will appear Type in a name
+     using the Keyboard and press the Return Key.  You have now set up a new
+     XCom base and you are ready to start playing UFO Enemy Unknown.
+
+TUTORIAL 1: THE GEOSCAPE
+------------------------
+
+Tutorial  1  guides you through the Geoscapes basic controls and the process
+of intercepting UFOs. 
+
+1.  The Geoscape is the main screen for playing UFO Enemy Unknown.  You will
+    see your base on the 3-D view of the Earth, represented as a hollow blue
+    square.
+
+On  the  right-hand  side  of  the screen, there is a list of Menu Options a
+display of the Game Time, the Time Controls and the View Controls.
+
+The  Time Controls are very important to the game, and it is these which we
+will go through next.
+
+Note:  If  you  wish  to pause the time at any stage during the game, simply
+click on any of the menu options.
+
+The Time Controls 
+ 
+2.    Look  at  the Game Time.  You will see that it is passing by with five
+second  jumps.   The Time Controls below the Game Time, allow you to control
+the rate at which this time passes.
+
+Click  on  the 5 Mins button.  The button will depress and time will pass at
+an  increased  rate.    You will see the Game Time (above the Time Controls)
+change  rapidly  and  night  and  day  will  be visible on the Earth, slowly
+changing.
+
+You  should  use  the  Time  Controls  to  advance the game through any time
+consuming  section  of  the  game (eg.  waiting for craft to arrive at their
+destinations or waiting for UFOs to be detected)
+
+Detecting UFOs 
+
+3.    We will now advance time to the point when XCom detect their first UFO
+      (if this has not already happened.
+
+Click on the 1 Day button in the Time Controls.  The button will depress and
+time will pass at the maximum rate.
+
+4.    Eventually,  a  window  will appear over the Geoscape with the message
+      UFO-1 Detected.  data regarding the UFO is shown in this window.
+
+Click  on the button marked Centre on UFO-Time=5 Secs.  This will centre the
+Earth  display  on the UFO and reduce the passage of time to 5 seconds.  The
+UFO will appear as a red cross in the centre of the Geoscape, moving slowly.
+
+Intercepting UFOs 
+
+5.   Position the Mouse pointer on your base and click on the LMB.  a window
+     will  appear  with  the  title  Launch  Interception  and a list of the
+     available craft at the base.
+ 
+6.   Move the Mouse pointer to highlight Interceptor 2 and click on the LMB.
+
+7.   The message Select Destination appears in the top of the screen.
+
+Click  on  the  UFO  (represented  as  a  red  cross)  to select this as the
+Interceptors target.
+
+8.   The confirmation message Target: UFO-1 will appear.
+
+Click on the OK button.
+
+9.   The  Interceptor  (represented by a yellow cross) will launch from its
+     underground base and attempt to intercept the UFO.
+
+Note:  remember, if you need to pause the game, click on any of the Geoscape
+Menu Options.
+
+If  the  UFO  lands,  it  will appear as a green cross.  Interceptors cannot
+carry out ground attacks; so you will have to wait until the UFO lifts off -
+click on 5 Mins Time Control Button to accelerate the passage of time.
+
+10.  At this point, one of two things could happen:-
+
+A.  If your Interceptor catches the UFO, the Air-to-Air Combat window will
+    appear.    Skip  the  rest  of  this  section  and go to step 19 of this
+    tutorial.
+
+B.  If  your  Interceptor  loses  contact  with  the UFO, the window UFO-1
+    Tracking  Lost  will  appear.   This may happen several times before you
+    actually get into combat; most UFOs can outperform your Interceptors.
+
+Click on the OK button. Continue to the next step of this tutorial.
+ 
+11. The Craft Status window will now appear, allowing you to redirect the
+    Interceptor.
+
+12. Click on the Go To Last Known UFO Position button.
+ 
+13. While the Interceptor is on its way to the last known UFO position, it
+    uses its on-board radar to scan for the UFO.
+
+If  the  UFO-1  Detected  window  reappears,  go straight to step 14 of this
+tutorial.
+
+If  the  Interceptor reaches the last known UFO position without re-aquiring
+the UFO, the following window will appear:-
+
+If  this  happens,  the  UFO has disappeared from all XCom tracking devices.
+The interception mission has failed.
+
+Click on the Redirect Craft button.  The Craft Status window will re-appear.
+Click on Return to Base.  The Interceptor will return to its base.
+
+Go back to step 3 of this tutorial.
+
+14.  Click  on  the  Centre  on  UFO-Time=5 Secs button in the UFO-1 Detected
+     window.
+
+15.  At the moment, the Interceptor is still heading for the last reported
+     position  of the UFO.  Now we'll re-assign the UFO as the Interceptor's
+     target.
+
+Click on the Interceptor.  This will bring up the Craft Status window.
+ 
+16.  Click on the Select New Target button.
+
+17.  The message Select Destination appears in the top of the screen.
+ 
+Click on the UFO to re-select it as the target.
+
+18.  The message Target: UFO-1 will re-appear.
+
+Click on the OK button.
+
+Go back to step 10 of this tutorial.
+
+
+Air-to-Air Combat 
+
+19.  If  the  Interceptor  gets within range of the UFO, the Geoscape will
+     automatically  increase  in  magnification  and  the  Air-to-Air Combat
+     window will appear over the centre of the Geoscape.
+
+20.  UFOs should not be shot down over water because you will not be able to
+     examine the wreckage.
+
+Click on the minimise window (large & small rectangles) icon in the top left
+of the Air-to-Air Combat window.  The craft icon will appear in the top left
+of the screen.
+
+Check that the UFO is over dry land.  If it is over the sea, you can use the
+1 Min Time Control to accelerate the passage of time.
+
+21.  Click on the craft icon when the UFO is over the land.  This will bring
+     back the Air-to Air Combat window, ready for you to attack the UFO.
+
+22.  Click on the (.<) icon to carry out a Standard Attack on the UFO.  You
+     will  see  the  progress  of the attack on the radar screen in the left
+     hand  side  of  the  Air-to-Air  Combat window.  The message box in the
+     bottom of the window relays the pilot's messages to you
+
+If the UFO out runs the Interceptor, return to step 10 of this tutorial.
+
+If  the  Interceptor  destroys  the UFO, you have failed in your objectives;
+there  is  no  useful  debris  to  investigate.    Return  to step 3 of this
+tutorial.
+ 
+If  the  UFO  crash  lands, you have succeeded in your objectives; the crash
+site  is  marked  with a white cross.  The UFO is now vulnerable to a ground
+assault, allowing you to recover the wreckage.
+
+Saving the Game
+
+23.  Now would be a good time to save your current game.
+
+Click on the Options button.
+
+24.  Click on the Save Game button.
+
+25.  The Select Save Position screen will appear.
+
+Click  on any of the ten numbered buttons to select the slot into which your
+current game will be saved.
+
+26.  Type  in  a name for your saved game using the Keyboard and press the
+     Return Key.
+ 
+When the game has saved, you will be returned to the Geoscape.
+
+Investigating the Crash Site. 
+
+27.  You  will  need  to  assign  a Skyranger transport to take a squad of
+     soldiers from your base to the Crash Site.
+
+Find  your base (you may need to rotate the Geoscape to bring it into view).
+Click on your base: the Launch Interception window will appear.
+ 
+28.  Move the Mouse pointer to highlight Skyranger-1 and click.
+
+29.  The  message Select Destination appears in the top of the screen.  . 
+
+30.  Click on the UFO Crash Site (the white cross) to the Skyrangers target.
+
+31.  The message Target: Crash Site-1 will appear.
+
+Click on the OK button.
+ 
+32.  The Skyranger (represented by a yellow cross) will launch and make its
+     way to the UFO Crash Site.)
+
+Click on the 5 mins button if you want to increase the passage of time.
+
+33.  When  the Skyranger arrives at the Crash Site, the UFO Crash Recovery
+     screen will appear.  Read the instructions on this screen.
+
+Click  on  the OK button to enter the next section of UFO Enemy Unknown; the
+Battlescape.
+
+TUTORIAL 2: THE BATTLESCAPE
+---------------------------
+
+Tutorial  2  guides you through the close combat Battlescape; the section of
+the game where you fight the aliens face to face.
+
+Arming Your Squad
+
+1.  The eight members of your squad automatically arm thejmselves with guns,
+    ammunition  and  grenades.   The initial screen allows you to adjust the
+    weapons your squad will carry into action.
+
+Click  on  the left/right arrows in the top right of the screen to check the
+armament of each of the eight members of your squad.
+
+2.  You will see that six of your soldiers have rifles, one has a pistol and
+    one  has  a  heavy  cannon.    The  soldiers  carry extra ammunition and
+    grenades on their belts.
+
+Full  details  of this section of the game are given oin the Ground Assaults
+chapter of this manual.
+
+Click on the OK button to exit this screen.
+
+3.  The 'turn' screen will appear.
+
+Note:  All  Battlescape  action  is turn based.  This means it is like a 3-D
+game of chess - you move your pieces, the aliens moves theirs!
+
+Click the Left Mouse Button to continue.
+
+The Battlescape
+
+4.   You will now see your Skyranger on the ground with its rear door open. 
+     The  aircraft's  cabin  roof  is  'peeled away' to reveal your squad of
+     eight soldiers within.
+
+The  bottom section of the screen contains a number of buttons and displays.
+This section of the screen is known as the Control Bar.
+
+Using the Split Level View
+
+5.   The  Battlescape  is  built up of several levels.  These can be viewed
+     individually  or  may  be  assembled  into  a   complete   3-D picture.
+     Splitting  the  Battlescape  into levels allows you to see behind walls
+     and inside buildinds or craft.
+
+At  the  moment,  the Battlescape is set to normal setting - the Multi-level
+View.    The  multi-level view hides everything above the currently selected
+level, this is why the Skyranger appears to have no roof.
+
+Click  on the diamond 1 button in the Control Bar.  The number on the button
+will change to 2.
+
+The  cabin  roof and wings of the Skyranger will appear.  Your soldiers will
+now be hidden from view.  This is a Full View of the Battlescape.
+
+6.   Click  again  on  the diamond 1 button.  The number on the button will
+     change back to 1.  The Battlescape returns to the Multi-level View.
+
+7.   When you are in any of these views, you may need to switch to the next
+     level up or down.
+
+Click on the Down arrow/ladder button.
+
+8.   The display will change to show just the landing legs and tail ramp of
+     the Skyranger.
+
+9.   Click on the up arrow/ladder button.
+ 
+The display will return to the original view, with your squad visible inside
+the Skyranger
+
+Selecting Soldiers
+
+10.  You control your squad individually, selecting and moving each soldier
+     in turn
+
+Move  the  Mouse  pointer  over the Battlescape display.  A red 3-D box will
+appear under the pointer.
+
+11.  Move this box over any soldier.  The box will now flash yellow and red.
+
+12.  Click  on  the  Left  Mouse Button.  A yellow arrow appears above the
+     soldier's head to show that he/she is now selected.
+
+13.  Move  the  Mouse  pointer over any other soldier in the Skyranger and
+     click  to  select.   Watch the soldier's name (halfway down the Control
+     Bar) change.
+
+Moving Soldiers 
+
+14.  Move the Mouse pointer over either of the soldiers at the rear of the
+     Skyranger  and  click  to  select.   The yellow arrow appears above the
+     soldier's head to show that he/she is now selected.
+
+15.  Now,  move  the  Mouse pointer over the ground just behind and to the
+     right of the Skyranger.
+
+16.  Click the Left Mouse Button.
+
+The  soldier will walk out of the Skyranger to the destination you have just
+set.  The Battlescape automatically switches to the next level down, so that
+the Skyranger now only appears as the ramp and a set of landing legs.
+ 
+17.  Click on the up arrow/ladder button.
+ 
+18.  Move  the  Mouse  pointer  over  the other soldier at the rear of the
+     Skyranger and click to select. 
+
+19.  Now move the Mouse pointer over the ground just behind and to the left
+     of the Skyranger.
+
+20.  Click the Left Mouse Button. 
+
+The  soldier will walk out of the Skyranger to the destination you have set.
+
+21.  We now have two soldiers deployed from the Skyranger.  You may notice
+     that  the Battlescape displays a little more of the surrounding terrain
+     now.    This  is  because  the  Battlescape  only shows what is in your
+     squad's line of sight.
+
+Move  the  3-D  box to a point near one of the landing legs and click on the
+Right Mouse Button.
+
+The  currently  selected  soldier  will  turn  round and face the Skyranger,
+scanning  the  surrounding terrain in the process.  Any nearby black squares
+will turn into terrain as the soldier looks at them.
+
+22.  If you want to look around the Battlescape at the visible terrain, move
+     the Mouse pointer to the very edge of the screen.  The view window will
+     move in that direction.
+
+Note:  you  must  take  the  Mouse pointer to the very bottom of the screen,
+under the Control Bar, to move the view window downwards.
+
+23.  Click on the man/four arrows button to re-centre the Battlescape on the
+     currently selected soldier.
+
+24.  Click on the two people button.  The next soldier in your squad will be
+     selected.
+
+This  is an alternative way of selecting soldiers, saving you from having to
+search around the Battlescape for every soldier.
+
+25.  Move  this soldier out of the Skyranger, in the same way as the other
+     two.
+
+26.  Select and move another soldier out of the skyranger.
+
+27.  You now have four soldiers deployed from the Skyranger.  This is enough
+     for the moment, the rest can remain on board as reinforcements.
+
+The primary objective of this mission is to kill or stun the aliens.  A good
+place  to  find  aliens is the crashed UFO itself, so we'll start the search
+there.
+
+The Map Screen
+
+28.  Click  on  the  rectangle grid button to access the Map Screen.  This
+     displavs  a map of the mission area, allowing you to see XCom and alien
+     forces, XCom craft and UFOs.
+
+29.  You  will  see  four  flashing yellow dots on the map; these are your
+     soldiers.    If a UFO has been spotted, its hull appears as a pale grey
+     line.
+
+30.  The map only shows one level of the Battlescape at a time.
+
+Click  on  the up/down arrows on the left-hand side of the screen to display
+the next level up or down.
+
+31.  Click on the Right Mouse Button to return to the Battlescape.
+
+The Turn - Based System
+
+32.  If you saw a UFO in the Map screen, start moving your soldiers towards
+     it.  If not, continue moving your soldiers around the Battlescape until
+     you find the UFO.
+
+Eventually the message Not Enough Time Units! appears.
+
+33.  This  means  that the selected soldier has moved as far as he/she can
+     possibly  move  in this turn.  When all four of the soldiers have moved
+     to this point, it is time to end your turn.
+ 
+Click on the circle/ button to end the turn.
+
+The  aliens  will  now  be given a turn to move.  They may open fire on your
+squad - you are helpless until your next turn.
+
+On screen prompts tell you when to click the LMB to begin your next turn.
+
+Searching For the Aliens
+
+34.  Continue moving your squad around the Battlescape
+
+to go through doors, click inside the room
+
+to go up stairs, click at the top of the stairs
+
+You  will notice that the Battlescape has an edge beyond which everything is
+black.  This is the edge of the map - aliens will not go into this area.
+
+Seeing the Aliens
+
+35.  If  one  of  your soldiers sees an alien, he/she will immediatly stop
+     moving  and  a  red  flashing  square  will  appear in the right of the
+     Battlescape screen, just above the Control Bar.
+
+Click on the red flashing square to centre the Battlescape on the alien
+
+36.  The alien can now be seen in the centre of the screen
+
+Click on the grid rectangle button to access the Map Screen.
+
+37.  Aliens will appear as blue flashing dots on this map, the white cross
+     indicates where the map is centred.
+
+Look  for  your  soldiers  on  the map - there might be soldiers in a better
+position to fire than the soldier currently selected.
+
+Click on the Right Mouse Button to return to the Battlescape
+
+38.  If  you  want  to re-centre the Battlescape on the currently selected
+     soldier, click on the direction arrows button in the Control bar.
+
+Using Guns
+
+39.  We will now use a weapon against the alien, before it gets the chance
+     to  fire at us.  This is probably a long range shot, so a rifle will be
+     required.
+
+Click on the rifle (at the far right of the Control Bar).
+
+40.  A window will appear, allowing you to choose from a number of shots.
+
+Move the Mouse pointer over the Aimed Shot option and click.
+
+41.  You  will now return to the Battlescape.  The cursor has changed to a
+     targeting cross instead of the 3-D box.
+
+Position the cross over the alien and click the Left Mouse Button.
+
+42.  Now, one of four things could happen:
+
+A.    The  message  No  Line of Fire!  appears.  This means that there is an
+object  between your soldier and the alien.  You must move your soldier to a
+different  position  or  select  another  soldier  before attempting to fire
+again.
+
+B.    The  message  Not  Enough  Time Units!  appears.  This means that your
+soldier  does  not  have  enough  Time Units to complete the shot.  You must
+either choose another type of shot, select another soldier or end your turn.
+
+C.    The  soldier  fires a shot..  and misses.  This is unfortunate, but is
+expected - initially your soldiers are all rookies.  You will find that your
+soldiers become more accurate as they fight more battles.
+
+D.    The  soldier  hits  the  alien  with the shot.  The aliens wear strong
+armour, so it may take more than one hit to kill them.
+
+Click on the Right Mouse Button to change the Mouse pointer from a targeting
+Cross to the 3-D box, ready to move your soldier again
+
+Using Grenades
+
+43.   If an alien is using an object for cover, you may prefer to attack it
+      with a Grenade.
+
+Click  on the single man button to access the Equip Soldier screen.  This is
+similar to the screen which you saw before entering the Battlescape
+
+44.  Initially  every  soldier has one grenade (the round black object) in
+     his/her belt.
+
+Move the Mouse pointer over the grenade and click.
+
+The word Grenade will appear below the Soldier's name
+
+45.  Move the Grenade over the box marked Left Hand and click again
+
+If  the  soldier  has  enough  Time Units, the Grenade will be placed in the
+soldier's left hand.
+
+If  the  soldier does not have enough Time Units, replace the grenade in the
+belt and repeat the operation after the next turn.
+
+46.   Click on the OK button to return to the Battlescape.
+
+47.   You  will  now see the Grenade in the Item Box on the far left of the
+      Control Bar.
+
+Click on the Grenade.
+
+48.  A window containing the options Prime Grenade or Throw will appear.
+
+Click on Prime Grenade.
+
+Note:  If  at  any stage your soldier runs out of Time Units, simply end the
+turn  and  complete  the  priming/throwing  process  on  the next turn.  But
+beware!    The Soldier may be killed during the aliens turn if he/she is not
+in cover.
+
+49.  The  Set  timer window will appear, allowing you to set the number of
+     turns until the grenade detonates.
+
+Click on the number 3.
+
+You  will  now  return  to  the  Battlescape,  with a primed grenade in your
+soldier's left hand
+
+50.  You  now  have three turns to throw the grenade and get away from the
+     blast area.
+
+Click on the grenade again.
+
+51.  The only option is Throw.
+
+Click on throw.
+
+52.  You  now  return  to  the  Battlescape.   The cursor has a throw icon
+     superimposed over the 3-D box
+
+Click on the location where you want to throw the grenade.
+
+53.  One of three things will happen:-
+
+A.   The soldier will throw the grenade.
+
+B.   The  message  Out  of Range!  will appear.  This is because the target
+     location  is  too  far away.  If this happens, choose a target location
+     which is closer to your soldier.
+
+C.   The  message  Unable  to throw here!  will appear.  This is because an
+     object  is  obstructing  the throw.  If this happens choose a different
+     target location.
+
+Don't forget.  Once you have thrown the grenade, you've got just three turns
+to clear the area!
+
+Completing the Mission
+
+54.  Continue  searching for aliens (go back to step 34 of this tutorial).
+     When all aliens have been killed, the mission is over.
+
+XCom  will then automatically recover the UFO's remains, alien artefacts and
+alien corpses.
+
+To  abort  the mission before the mission objectives are completed, click on
+the plane button in the Control bar.
+
+Abort mission will only save soldiers who have returned to the Skyranger - a
+warning  message  will  appear if you attemnpt to take off without your full
+squad.
+
+Note:  Do  not allow the aliens to kill all of your squad - there will be no
+one to fly the Skyranger back to base, and it will be lost.  If you are down
+to your last soldier, abort the mission.
+
+The Debriefing 
+
+55.  At  the  end  of  the  ground  assault  mission,  you will be given a
+     debriefing.    This  will  inform  you if your missicon objectives were
+     achieved and lists the items recovered.
+
+Click  on  the  OK button in the bottom left of this screen to return to the
+Geoscape.
+
+56.  You might want to save the game at this point (see step 23 of Tutorial
+     1  for details of how to save games).  If you want to replay the ground
+     assault load in your previously saved game.
+ 
+TUTORIAL 3: BASES
+-----------------
+
+From  research  and  manufacture  to equipping craft and soldiers, the Bases
+screens  define  how  well  you  will be able to deal with the alien threat.
+Tutorial  3  guides  you through this, the most complex section of UFO Enemy
+Unknown.
+
+1.  If  you  are continuing from tutorial 2, do not worry if you 1ost your
+    Skyranger; you can buy another in the Bases Screen.
+
+Click on the button labelled Bases in the Geoscape Menu Options.
+
+2.  The Bases Screen will appear.
+
+Note:  From  now until you re-enter the Geoscape Screen, time is paused.  If
+at  any time you need to pause the game, simply click on one of the Geoscape
+Menu Options.
+
+Equipping the Interceptor.
+
+3.  We  will  now  use  the  Equip  Craft  screen  to  re-arm   one of the
+    Interceptors.
+
+Click on the button labelled Equip Craft in the Bases screen.
+
+You  will  enter the Interception Craft screen, allowing you to choose which
+craft you will equip with weapons or equipment.
+
+4.  Move the Mouse pointer over Interceptor 2 (a pale highlight will appear
+    to show it is selected) and click.
+
+5.  The Interceptor 2 Equip Craft screen will appear.
+
+You  will  see  each of the Interceptors two weapon bays, represented by the
+numbers  1  and  2.    The  armaments  loaded onto the aircraft are Stingray
+missiles and a Cannon.
+
+Click on the button marked with the number 2.
+
+6.  The Select Armament window will appear.
+
+You  will  see  that  you  have  1  Stingray  short-range  missile launcher,
+Avalanche long range missile launcher and 2 cannons in the base's stores.
+
+7.  We will now re-arm the Interceptor with Avalanche long-range missiles in
+    place of the cannon.
+ 
+Move  the Mouse pointer over Avalanche (a pale highlight will appear to show
+it is selected) and click.
+ 
+8.  The  display will return to the Interceptor-2 Equip Craft screen.  The
+    Interceptor  now  has  an all nmissile armament - this is more effective
+    for attacking UFOs.
+
+Click on the button marked OK in the bottom of the screen.
+
+9.  You will now return to the Interception Craft screen.  You will see that
+    the Status column for Interceptor 2 shows that it is Rearming.
+
+Click on the button marked OK in the bottom of this screen.
+
+10. You will return to the Bases screen.
+
+Next we will assign XCom scientists to undertake research.
+
+Click on the button marked Research.
+
+Assigning Research 
+
+11. You will be taken to the Current Research screen
+
+We  will  now  assign  our  scientists  to  work  on  two different research
+projects; Laser Weapons and the Motion Scanner.
+
+Click on the button labelled New Project in the bottom left of the screen.
+
+12.  The New Research Projects window will appear.
+
+Move  the  Mouse pointer over Laser Weapons (a pale highlight will appear to
+show it is selected) and click.
+
+13.  The Start Project window will appear.
+
+Click on the Start Project button in the bottom-left of the window.
+
+14.  The Scientists Allocated window will appear.  This allows you to change
+     the number of scientists working on the project.
+
+Click  on  the  up  arrow  next to the word Increase until the number to the
+right of the Word Scientists Allocated is 10.
+
+15.  Click on the button marked OK.
+
+16.  You will return to the New Research Projects window
+
+Move the Mouse pointer over Motion Scanner and click
+
+17.  The Start Project window will appear.
+
+Click on the Start Project button in the bottom left of the window.
+
+18.  The Scientists Allocated window will appear.
+
+Click  on  the  up  arrow  next to the word increase uutil the number to the
+right of the word Scientists Allocated is 10.
+
+19.  Click on the button marked OK.
+
+20.  You will return to the New Research Projects window.
+
+Click on the OK button in the bottom of this window.
+
+21.  You will now return to the Current Research screen.  You will see that
+     you  have  10  scientists  assigned to researching Laser Weapons and 10
+     scientists assigned to researching the Motion Scanner.  The progress in
+     each  of these projects is unknown; the scientists have not yet started
+     work.
+
+Click on the OK button in the bottom-right of this screen.
+
+22.  You will return to the Bases screen.
+
+Another important function carried out in the Bases screen is the purchasing
+of items or the recruiting of personnel.
+
+Click on the button marked Purchase/Recruit.
+
+Purchasing/Recruiting
+
+23.  You will be taken to the Purchase/Hire Personnel screen.
+
+We will now purchase some items and hire some extra soldiers.
+
+Move  the Mouse pointer over the up arrow button in the Soldier line (at the
+top of the list of items) and click once.
+
+24.  You will see the number in the Quantity column change to 1.
+
+Click  on  the  up  arrow  button until the message Not Enough Living Space!
+appears.
+
+Note:  The message Not Enough Living Space!  appears because you do not have
+enough  Living Quarter facilities at your base to accommodate the soldiers. 
+To  build  more Living Qnarters, click on the Build Facilities button in the
+Bases  screen,  see  the Bases section of the Reference Guide of this manual
+for full details.
+
+25.  If you lost your Skyranger troop transport in the ground assault, you
+     can replace it by clicking once on the up arrow button in the Skyranger
+     line of this screen.
+
+26.  Move  the  Mouse  pointer  down the list until you get to Tank/Rocket
+     Launcher.  The tank is a large weapon, expensive but powerful.
+
+27.  Click once on the up arrow button.  You will see the Cost Of Purchases
+     (in the top-right of this screen) increase by $900,000 (the cost of the
+     tank). 
+
+28.  Now we'll need some ammunition for it.
+ 
+Move  the  Mouse  pointer over the HWP Rocket up arrow button and click four
+times.   You may need to buy more ammunition later when you return from your
+next gronnd assault.
+
+Note: The message Not Enough Store Space!  will appear if you attempt to buy
+too  many items.  To build more storage space, click on the Build Facilities
+button  in  the Bases screen - again, see the Bases section of the Reference
+Guide of this manual for full details.
+
+29.  Click on the down arrow button in the bottom-right of the screen.  The
+     list  will  move down a little.  Continue clicking on this button until
+     it disappears.  You have reached the bottom of the list.  The last item
+     on  the  list is the Stun Rod.  This item allows your soldiers to knock
+     aliens  out  instead  of  killing them, the alien can then be recovered
+     alive and interrogated.
+
+30.  Move  the  mouse  pointer over the Stun Rod up arrow button and click
+     twice.
+
+31.  If  you  lost  your Skyranger in the ground assault, you will need to
+     equip  its  crew.    Carry out the same process as above to choose some
+     weapons  from  the  list  -  don't forget ammunition if you buy guns or
+     rocket launchers.
+
+32.  You have now completed choosing what you want to buy.
+
+Click  on  the  OK  button  in  the bottom-left of the screen to confirm the
+purchase.
+
+33.  You will return to the Bases screen.
+
+Click  on  the  Geoscape button in the bottom-right of the Bases screen, you
+will return to the Geoscape.
+
+Waiting For Delivery
+
+34.  It  will  take  several  days  for  all the items you purchased to be
+     delivered.
+
+Check the Game Time.
+
+Click  on the 1 Day button in the Geoscape Time Controls and allow 3 days to
+pass.  If a UFO is detected, intercept it (see step 4 of tutorial 1 for full
+details).
+
+35.   Several windows may appear as time passes.  For the moment, just click
+      on the OK button to make them go away.  We'll worry about these later.
+
+When 3 days have passed, click on the 5 Secs button.
+
+36.  We will now return to the Bases screen and equip the Skyranger with all
+     the items we have just purchased.
+
+Click on the Bases button.
+
+37.  Click on the Equip Craft button.
+
+Equipping the Skyranger
+
+38.  Use the Mouse to highlight and click on Skyranger-1.
+
+39.  The Equip Craft screen for the Skyranger will appear.
+
+You  will  see  the  soldiers  assigned to the Skyranger, next to the button
+marked  Crew.    If you didn't lose any in the ground assault, there will be
+eight soldier icons.
+
+Click on the Crew button.
+
+40.  The Select Squad screen will appear.
+
+This  screen  displays  the  names  of  the  soldiers  who  are  assigned to
+Skyranger-1.
+
+Click  on any names which are shown in light blue.  This will assign them to
+Skyranger 1.  The Craft column of this screen shows which craft the soldiers
+are assigned to.
+
+41.   When  all the soldier's names are shown in white, all the soldiers at
+      the hase are assigned to Skyranger-1.
+
+Click on the OK button in the bottom of this screen.
+
+42.   You  will  return  to  the  Equip  Craft screen.  Now we'll load some
+      equipment onto the Skyranger.
+
+Click on the button marked Equipment.
+
+43.  The Select Equipment screen will appear.
+
+Move  the  Mouse  pointer  over  the  right  arrow button in the Tank/Rocket
+Launcher line (at the top of the list) and click.
+
+The  tank/rocket launcher is now loaded onto Skyranger-1.  The number in the
+Stores  column  changes  to  1 from 0, and the name of the item changes from
+light blue to white, indicating that it is on board.
+
+44.  Use  the same process to load any other equipment of your choice onto
+     the Skyranger.
+
+45.  Click on the OK button in the bottom of the screen.
+
+46.  You will return to the Equip Craft screen.
+
+Click  on the OK button in the bottom of the Equip Craft screen to return to
+the Interception Craft screen.
+
+47.  Click on the OK button in the bottom of the Interception Craft screen
+     to return to the Bases screen.
+
+48.  Click on the Geoscape button in the bottom-right of the Bases screen. 
+     You will return to the Geoscape.
+
+Returning to the Geoscape 
+
+49.  Click  on  the  1  Day button in the Geoscape Time Controls.  Soon, a
+     message will appear on the Geoscape.  This may be one of the following:
+ 
+UFO  Detected  - go to step 4 of tutorial 1 for details of intercepting UFOs
+when  you investigate the crash site this time, your soldiers will be better
+equipped.
+
+Research  Completed  -  your  scientists have completed their research work.
+You should allocate them to another project as soon as possible (see step 11
+of this tutorial).
+ 
+XCom  Project  Monthly  Report  - at the end of each month, the XCom Project
+Monthly  Report  will  appear  to  inform  you  of your progess in the fight
+against the aliens.  See the Geoscape section of the Reference Guide of this
+manual for full details.
+
+Other messages may appeal to inform you that a new purchase has arrived or a
+manufacturing process has become available.
+
+The End Of the Tutorial
+
+Much  of  the  enjoyment of UFO Enemy Unknown is discovering new technology,
+gathering  informnation  on  the  aliens  and  battling  through hundreds of
+different landscapes.
+
+These  tutorials have been a basic gnide to the way UFO Enemy Unknown plays.
+There may be further game enhancements which are documented in the Technical
+Supplement.    Use the Reference Guide section of this manual for details of
+specific menu options or game features.
+
+Playing Tips
+
+To  succeed  in  the  war against the aliens, you will need to carry out the
+following:-
+
+Establish more bases around the world
+
+Click  on the Build New Base button in the Bases screen.  Establish bases in
+the  countries  who are funding you heavily - refer to the Graphs screen for
+this information.
+
+Build more facilities at your bases.
+
+Click  on  the Build Facilities button in the Bases screen.  Experiment with
+different  sized  bases  -  you  dont  always  have to build hangars.  Build
+dedicated  'listening  posts',  equipped  with  both  large  and small radar
+systems,  then  add hangars when you can afford them.  By using this tactic,
+you will detect many more UFOs.
+
+Develop a powerful squad
+
+Don't allow your soldiers to be killed in the ground assaults, you will find
+that  they  fight  better  when they are more experienced.  Equip your squad
+with  the  best  weapons available and avoid exposing your soldiers to enemy
+fire by keeping them in cover.
+
+Plan your research carefully
+
+Concentrate  research  on  developing alien based technologies and take care
+that  your  scientists stay busy - research work costs relatively little and
+the rewards are great.
+
+Build new weapons and craft based on alien technology
+
+If  your scientists have researched alien items, your engineers will be able
+to reproduce them.  XCom will eventually be using the most advanced weaponry
+on Earth, fighting the aliens with their own technology. 
+
+SECTION 2: THE REFERENCE GUIDE
+------------------------------
+
+1. GAME OPTIONS
+
+The  Game  Options  screen appears when you load UFO Enemy Unknown, allowing
+you  to  select  between  New  Game  or Load Saved Game.  Position the Mouse
+Pointer  over  the  required option and click the Left Mouse Button (LMB) to
+select.
+
+1.1 NEW GAME
+
+If  you  select New Game in the Game Option screen, you will be taken to the
+Select Difficulty Level screen.
+
+This  allows  you to change the way the game plays to suit your skill level,
+from level 1 (Beginner) to level 5 (Superhuman).  It is recommended that you
+complete the game at one of the lower difficulty levels before attempting to
+play the game at level 5.
+
+The difficulty level affects :-
+
+- the hostility and skill of aliens
+
+- the aggression of UFOs
+
+Pick a difficulty level by clicking on one of these five buttons.
+
+You  will  now  be  taken  to the main game screen, the geoscape The message
+Select Site For New Base will appear at the top of the screen
+
+Click  on  any  part of the world to position your first XCom base.  Use the
+Geoscape  controls  if  you want to rotate the display of the Earth (see the
+section  of  this  manual  on  The  Geoscape  Screen for full details of the
+Geoscape controls)
+
+The  last New Game set-up is to name your first base.  The prompt Base Name?
+will appear - type in your first bases name using the Keyboard and press the
+Return Key.  You will now be able to use the Geoscape as normal.
+
+1.2 LOAD SAVED GAME
+
+If  you select Load Saved Game in the Game Options, you will be taken to the
+Select Game To Load Screen.
+
+The  name  of  the  saved game is displayed in the middle of the screen, the
+game's time and date is also displayed.
+
+Pick  a  saved  game  by clicking on one of the ten buttons on the left-hand
+side  of  the  screen  and  click  the  LMB.    You will now be taken to the
+Geoscape, at the point when the game was saved.
+
+2. THE GEOSCAPE SCREEN.
+
+The  Geoscape  Screen  is  the main screen for playing UFO Enemy Unknown; it
+displays  the  latest  data  on alien activity and allows you to control and
+monitor XCom interception craft.
+
+The  Geoscape  screen  is  made  up  of  five  parts: the Geoscape, the View
+Controls, the Time Controls, the Game Time and the Menu Options.
+
+2.1 THE GEOSCAPE
+
+The  Geoscape is a 3-D view of the Earth which may be rotated or magnified. 
+At  minimum  magnification  it  displays  the whole planet, while at maximum
+magnification  it  shows  detail  such as borders and cities.  Terrain types
+from  desert  to  snowscape  are  represented  on the surface of each of the
+continents, and night and day are fully simulated.
+
+The Geoscape uses symbols to represent the following:-
+
+Blue Box     -  an XCom base
+Yellow +     -  an XCOm craft
+Orange x     -  an XCom craft's destination (also known as a 'waypoint')
+Red +        -  a UFO in the air.
+Green x      -  a UFO on the ground
+White x      -  a UFO crash site
+Pink Box     -  an alien base
+Pink +       -  an alien terror site
+
+2.2  THE VIEW CONTROLS
+
+The  view  Controls  allow  you  to  manipulate the view of the Earth in the
+Geoscape.
+
+Click on the up or dowu arrows to tilt the view of the Earth up or down.
+
+Click  on  the  left  or right arrows to rotate the view of the Earth to the
+left or right (about the Earths polar axis)
+
+Click on the up arrow icon to increase the magnification of the Geoscape.
+
+Click  on the down arrow icon to decrease the magnification of the Geoscape.
+
+Click  on the Geoscape using the Right Mouse Button to centre the display on
+that location.
+
+2.3 THE TIME CONTROLS
+
+The  Time  Controls allow you to adjust the rate at which time passes in the
+game.
+
+Time  may  be  accelerated  from  5  second stages to 1 minute, 5 minute, 30
+minute, 1 hour and 1 day segments.  This means that you may cut out the long
+periods  of  waiting for XCom radar to detect a UFO.  To select a particular
+rate of time passage, click on any of the six Time Control Buttons.
+
+The  passage  of time is suspended when any of the Geoscape Menu Options are
+accessed.
+
+2.4  THE GAME TIME
+
+UFO  Enemy  Unknown  begins  at  12:00 pm on the 1st January 1999.  All game
+times are given in Greenwich Mean Time (GMT).
+
+2.4.1 THE XCOM PROJECT MONTHLY REPORT
+
+At  the  end  of  each month, you will be given a report of your progress so
+far.  This report is in the following form:-
+
+Month - the month which has just ended.
+
+Monthly  Rating - XCom's overall performance rating for the previous month. 
+This takes into account the following:-
+
+- success of interceptions
+
+- scores for ground assault missions
+
+- research work completed
+
+- alien activity
+
+A  plus  (  + ) sign before the figure indicates a good performance, a minus
+(-) sign indicates a poor performance.
+
+Funding  Change  - the difference between this months and last month's total
+funding.    A  plus  (  +  ) sign before the figure indicates an increase in
+funding, a minus (-) sign indicates a decrease in funding.
+
+This  is  followed by a general report on how the Council of Funding Nations
+views recent XCom anti alien operations.
+
+Click on the OK button to exit this screen.
+
+2.4.2 PSIONIC TRAINING
+
+If  you  have built a Psi-Lab at any of your bases, you will be taken to the
+Psionic Training screen each month, after the Monthly Report.
+
+Psionic powers allow XCom soldiers to use mind control as a weapon.  The Psi
+Amp  is  required  to convert the thoughts into psionic powers, without this
+the soldier cannot use psionic skills as a weapon.
+
+The  Psionic  Training  screen lists all XCom bases with a Psi Lab facility.
+Psi Labs are essential to carry out psionic training.
+
+Click on any of the Base Name buttons to Assign soldiers to Psionic Training
+at that base.
+
+2.4.2.1 Assign Soldiers to Psionic Training
+
+This  screen  allows  you to assign individual soldiers to psionic training.
+The  top of the screen shows the Remaining Psi-Lab Capacity.  This indicates
+the nunmber of soldiers who may be assigned to Psionic Training.
+
+Below this is a list of the following:-
+
+Name - the soldier's name.
+
+Psionic  Strength  -  this  is a measure of the soldier's natural ability to
+defend  against  psionic  attack.   It never changes, regardless of how much
+training the soldier goes through.
+
+Psionic Skill/Improvement - this is the soldier's ability to use the Psi Amp
+in  mental combat.  The soldier's mental combat ability is dependent on both
+this and Psionic Strength.
+
+Note:  it  is  better to concentrate your Psionic Training on soldier's with
+high Psionic Strength.
+
+In Training? - whether or not the soldier is in training.
+
+Note: carrying out missions also improves a soldier's Psionic Skill.
+
+Click on the OK button to return to the Psionic Training screen.
+
+Click  on  another  Base  Name  button  to  assign more soldier's to Psionic
+Training or click on the OK button to return to the Geoscape.
+
+2.5 THE MENU OPTIONS
+
+Click on the Menu Option buttons to access other screens and functions:
+
+Intercept - allows you to give XCom craft orders to intercept UFOs.
+
+Bases  -  takes  you  into  the  Bases screen (see the Bases section of this
+manual for full details).
+
+Graphs  -  takes  you into the Graphs screen (see the Graphs section of this
+nmanual for full details).
+
+UFOpaedia  - takes you into the UFOpaedia (see the UFOpaedia section of this
+manual for full details).
+
+Options - takes you into the Options screen (see the Options section of this
+mannal for full details).
+
+Funding  -  takes  you  into  the  International  Relations display (see the
+Funding section of this manual for full details).
+
+2.6 USING THE GEOSCAPE
+
+XCom's  main  task  is  to  shoot  down  and investigate UFOs.  This ensures
+coutinued  government  funding and allows XCom to learn more about the alien
+threat.
+
+When  there  is  no UFO activity, you will probably want to keep the rate of
+time  passage  fairly high.  Click on the 1 hour button in the Geoscape Time
+Controls.  Time will pass rapidly until you get a message informing you that
+a UFO has been detected.
+
+2.6.1 THE UFO DETECTED WINDOW
+
+XCom bases automatically detect any UFOs within range of their radar.  Later
+on  in  the  game,  you  will  be  able  to  research and manufacture better
+detection and tracking systems, based on captured alien technology.
+
+When  a  UFO  is  detected, time is paused and a window titled UFO- (number)
+Detected  appears in the centre of the Geoscape display.  Every UFO detected
+is  given  a  consecutive number, for example, the 41st UFO detected by XCom
+will be named UFO-41.
+
+The following data is also presented when a UFO is detected:-
+
+Size     - the size of the UFO.
+
+Altitude - the approximate height at which the UFO is flying.
+
+Heading  - the general direction in which the UFO is travelling.
+
+Speed    - the speed at which the UFO is travelling (in knots).
+
+This window also gives you the option to either:-
+
+Centre  on  UFO  -  Time = 5 Secs - centres the Geoscape display on the UFOs
+current  position  and  reduces  the passage of time to 5 seconds.  Click on
+this option if you intend to intercept the UFO. 
+ 
+Cancel  -  hides the message window and leaves the Geoscape as it was before
+the  UFO  was  detected.  Click on this option if you wish to take no action
+against the UFO.
+
+Note:  While  your  Interceptors  are  capable of a high maximum speed, UFOs
+often  travel  faster.    A  UFO may unwittingly change course or slow down,
+however, so it is good practice to attempt to intercept all UFOs detected.
+
+2.6.2 THE LAUNCH INTERCEPTION WINDOW
+
+To  assign  an XCom Interceptor to attack a UFO, you may either click on the
+Interceptor's  base, or click on the Intercept Menu Option (in the top-right
+of the Geoscape screen)
+
+The  advantage of clicking on the Intercept Menu Option is that you may give
+orders  to  an  Interceptor  which  is  based  on  the  opposite side of the
+Geoscape,  hidden  from  view.  Simply clicking on a base only allows you to
+assign craft from that base.
+
+The Launch Interception window displays the following information:-
+
+Craft  -  the  type  and  registration  number  of  the  craft (for example,
+Skyranger  6  is  the  sixth craft to be operated by XCom and is a Skyranger
+transport).
+
+Status - this may be either: -
+
+Ready - the craft is available for interception duty.
+
+Refuelling - the craft is refuelling; this can take several hours.
+
+Rearming - the craft is having its air-to-air weaponry changed.
+
+Repairs - the craft is undergoing repair work.
+
+Out - the craft is already carrying out an interception.
+
+Base - the craft's home base.
+
+If  you  wish  to  return  to the Geoscape without selecting an interception
+craft, click on the Cancel button.
+
+2.6.3 SELECTING AN INTERCEPTION CRAFT
+
+Use  the Mouse to highlight an Interceptor from the Launch Interception list
+and click to select this craft.
+
+The  Select Destination window will now appear at the top of the screen.  If
+you  wish to return to the Geoscape without selecting a target, click on the
+Cancel button.
+
+To  select a UFO as the interception target, simply click on its location on
+the Geoscape.
+
+The message Target: UFO-(number) will appear.
+
+Click  on  the  OK  button to accept this UFO as the target, or click on the
+Cancel button to select a different target.
+
+The  interceptor will now launch from its underground base and take the most
+direct path to the UFO.
+
+2.6.4 THE CRAFT STATUS WINDOW
+
+At any time when an XCom craft is airborne, click on it to display the Craft
+Status window.  This contains the following information:-
+
+Craft name - the type and registration nnmber of the craft.
+
+Status - the orders which the craft is carrying out.
+
+Base - the craft's home hase.
+
+Speed - the current speed of the craft (in knots).
+
+Maximum Speed - the craft's maximum speed (in knots).
+
+Altitude - the craft's approximate height.
+
+Fuel  -  the percentage of fuel remaining in the craft.  When fuel reaches a
+critical level, the craft will automatically return to base.
+
+Weapon-1  -  The  type of weapon loaded into weapon bay number 1 followed by
+number of rounds of that weapon remaining.
+
+Weapon-2  -  The  type of weapon loaded into weapon bay number 2 followed by
+number of rounds of that weapon remaining.
+
+The Craft Status Window also has four buttons, allowing you to:-
+
+Return to Base - abort the interception and return to base.
+
+Select New Target - abort the interception and select a new target.
+
+Patrol - abort the interception and remain at the current position.
+
+Cancel - return to the Geoscape without issuing any orders.
+
+2.6.5 THE UFO STATUS WINDOW
+
+At any time when a UFO is displayed on the Geoscape, click on it to bring up
+the  UFO  Status window, repeating the information shown in the UFO Detected
+window.
+
+2.6.6 THE TRACKING LOST WINDOW
+
+The message UFO- (number) Tracking Lost will appear if XCom tracking devices
+lose contact with a UFO while it is being intercepted.
+
+Click on the OK button.  The Craft Status window will appear, giving you the
+option to either Return to Base, Patrol or Go to Last known UFO Position.
+
+It  is  usually  best  to  go  to  the  last  known  UFO position, since the
+interception  craft  may  be  able  to  re acquire the UFO with its on board
+radar.
+
+2.6.7 THE AIR-TO-AIR COMBAT WINDOW
+
+When  the  XCom  craft  has  manoeuvred  within firing range of the UFO, the
+Air-to-Air  Conmbat  window  will  appear.  The interception craft is now at
+stand-off range, awaiting your orders.
+
+Remember  that  you  are  setting out to cause the UFO to crash land, not to
+blow it into a million pieces!
+
+The Air-to-Air Combat window consists of the following:-
+
+2.6.7.1 The Order Buttons
+
+Click on the buttons in this display to carry out the following:-
+
+Standoff - follow the UFO without firing at it.
+
+Cautious Attack - attack the UFO from the maximum range of each weapon.
+
+Standard Attack - move to the minimum range of each of the available weapons
+and fire at the standard rate.
+
+Aggressive  Attack  -  move  to  the  minimum range of each of the available
+weapons and fire at the maximum rate.
+
+Disengage - abort the interception and return to base.
+
+View  UFO  -  replace  the  Air-to-Air combat window with a view of the UFO.
+Click on the LMB to return to the Air-to-Air Combat window.
+
+2.6.7.2 The Radar Screen
+
+The  Interceptor  will use its on-board radar to carry out the attack on the
+UFO.    The  Radar  Screen section of the Air-to-Air Combat Window shows the
+Interceptor's  Radar Screen, allowing you to monitor the final stages of the
+interception.
+
+The  UF0  will  appear  as  a bright "blip" on the Radar Screen, the size of
+which depends on the size of the UFO.
+
+2.6.7.3 The Weapons Display
+
+There  are  a  pair of icons either side of the Radar Screen which represent
+what  is  fitted  to  the weapons bays of the Interceptor.  These icons each
+have  a  number  under  them,  indicating the number of rounds of the weapon
+which are remaining.
+
+The  maximum  range  of  each of the weapons is also shown, in the form of a
+line extending out of the weapon icon and onto the Radar Screen.  When a UFO
+gets within this boundary, the Interceptor will open fire.
+
+2.6.7.4 The Range to the UFO
+
+The  range  to  the UFO is a simple digital readout of the distance from the
+UFO to the Interceptor.
+
+2.6.7.5 The Damage Display
+
+The  damage display indicates the Interception Craft's current damage state.
+The picture of the craft is filled in red as it receives damage.
+
+2.6.7.6 The Minimise Window Icon
+
+If you shoot the UFO down over water, the wreckage will be swept away before
+anything  of value can be recovered.  The Minimise Window feature allows you
+to  track the UFO on the Geoscape until it is over land, then shoot it down.
+
+To carry this out, click on the double rectangle icon in the top-left of the
+Air-to-  Air Combat window.  The Craft Icon (with a pictorial representation
+of  the  craft  plus  its  XCom  registration number) will now appear in the
+top-left of the Geoscape and time may be advanced or slowed as normal.
+
+When  the  UFO  gets over the land, click on the Craft Icon.  The Air to Air
+Combat window will now re-appear, ready for you to carry out your attack.
+
+Note:  you  can also use the Minimise Window icon to give other Interception
+Craft  orders to attack the UFO.  There can be up to four Interception Craft
+attacking  a  UFO  simultaneously, maximising the chances of success against
+the larger UFOs.
+
+2.6.7.7 The Message Box
+
+The  Message  Box  is  in  the  bottom  of  the Air-to-Air Combat window and
+displays  messages  from the pilot of the nterceptor to you.  These messages
+either confirm your orders or inform you of what the UFO is doing.
+
+2.6.8 SHOOTING THE UFO DOWN
+
+Click  on  the  Standard  Attack button.  The message UFO Crash Lands!  will
+appear  if  you  successfully cause the UFO to crash land.  The display will
+then  automatically  return  to  the full screen Geoscape with a white cross
+marking the UFO Crash Site.
+
+2.6.9 INVESTIGATING UFO CRASH SITES
+
+The UFO is now vulnerable to ground assault, and you should send out an XCom
+squad to investigate it and to recover any available alien technology.
+
+Click on a base or use the intercept Menu Option to select a Skyranger troop
+transport  craft (just as you did previously with the Interceptor and assign
+the  UFO Crash Site as the target.  The Skyranger will now take-off and make
+its way to the UFO Crash Site.
+
+Note  :  Only  craft which contain soldiers or HWPs are allowed to intercept
+Crash Sites or landed UFOs.
+
+When the Skyranger arrives at the Crash Site, you are taken to the UFO Crash
+Recovery screen
+
+Click  on  the  OK  button  to  enter  the Equip Squad screen.  See the next
+chapter of this manual for full details on Ground Assaults.
+
+2.7 OTHER GEOSCAPE USES
+
+As  well  as  controlling  the  interception  and investigation of UFOs, the
+Geoscape  may  be used for several other functions Some of them are outlined
+below; the others are for you to discover!
+
+2.7.1 GROUND ASSAULTS ON UFOS
+
+As  well as investigating crashed UFOs, you may send a troop transport craft
+to  an  intact  UFO  which has landed.  This is dangerous for your soldiers,
+however, and is not advised unless you have a very powerful squad.
+
+2.7.2 TERROR SITES
+
+The  aliens  will attempt to terrorise civilian populations as part of their
+invasion  plans.    This  must be prevented at all costs: a successful alien
+Terror Site in a funding country could cause its government to withdraw from
+the XCom project.
+
+2.7.3 ALIEN RAIDS ON XCOM BASES
+ 
+As  the  ganme  progresses,  the aliens will carry out missions to find XCom
+bases.   If the aliens discover the location of any of your bases, they will
+attempt to destroy them with a ground assault.
+
+2.7.4 ALIEN BASES
+
+The  aliens  will attempt to build bases on the Earth.  These are used for a
+variety  of purposes from operating UFOs to infiltrating governments.  Alien
+bases  may  be  detected  by  sending an Interception Craft to the suspected
+location  of  the base aud selecting the Patrol option.  You advised to raid
+alien  bases  at  the  earliest  opportunity,  but make sure you have a very
+powerful squad before you try!
+
+3 GROUND ASSAULTS
+
+Ground Assaults take place when XCom carry out any of the following:-
+
+- Investigate crashed UFO sites
+
+- Assault UFOs at their landing sites.
+
+- Intervene at alien terror sites.
+
+- Defend XCom bases against alien attack.
+
+- Attack alien bases.
+
+All  missions,  except  defending XCom bases, require you to use a transport
+craft  to  get to your destination.  When you begin the game, the only troop
+transport available is the Skyranger, but as the game progresses you will he
+able to manufacture new craft.
+
+3.1 THE EQUIP SQUAD SCREEN
+
+Before  you  begin  a  Ground  Assault, you will be taken to the Equip Squad
+screen.   Your soldiers will automatically pick up some weapons, but you may
+wish to re-equip them.
+
+The  top  left  of the Equip Squad screen contains the name of the currently
+selected  soldier.   At the top-right of the screen are two arrows, allowing
+you to select the next, or the previous soldier in your squad.
+
+At  the centre of the screen is a soldier, who will be dressed in the armour
+which  you  may  have  selected  in the Equip Craft screen.  This soldier is
+surrounded  by  the locations in which weapons may be carried.  The items on
+the ground may be picked up and carried by the soldier.
+
+To  pick  up a item from the ground, simply move the Mouse over the item and
+click.    The item will now be "attached" to the Mouse pointer.  The name of
+this  item is shown in the top of the screen under the soldier's name.  Move
+the  item  over  the  location  in which you want it to be carried and click
+again.  The item will now be available for use by the soldier.
+
+To  load  a  weapon with ammunition, pick up the ammunition and click on the
+appropriate  weapon.    To carry this out, the weapon must be in a hand, the
+right type and unloaded.
+
+To  unload  ammunition from a weapon, pick up the loaded weapon and click on
+the  Unload  button.  The weapon will go to the soldier's right hand and the
+ammunition to the left.  To carry this out, both of the soldier's hands must
+be empty.
+
+When  you  have  finished equipping your soldiers, click on the OK button to
+enter the main part of the Ground Assault; the Battlescape. 
+
+3.2 THE BATTLESCAPE SCREEN 
+
+The  Battlescape Screen is a 3-D display which allows you to control a small
+squad of heavily armed XCom soldiers.
+
+3.2.1 USING THE BATTLESCAPE
+
+Your  squad start the mission in their transport craft.  The soldier nearest
+to the craft's exit ramp has a yellow arrow to show that he/she is selected,
+ready to move out.
+
+3.2.1.1 Selecting and Moving Soldiers
+
+A  3-D box will appear when you move the Mouse pointer over the Battlescape.
+To select a different soldier, either click on the button in the Control Bar
+(see  the  next  section  for  full  details of the Control Bar) or move the
+cursor  box  over  the required soldier and click.  A yellow arrow indicates
+the selected soldier.
+
+To  move the selected soldier to a destination simply move the cursor box to
+the destination and click.
+
+To  make the selected soldier turn around without moving along, position the
+cursor box in the direction you want the soldier to face and press the Right
+Mouse Button.
+
+3.2.1.2 Moving the View Window
+
+Move  the  Mouse  pointer  to the edge of the screen to move the Battlescape
+view window up, down, left or right.
+
+Note: you must take the Mouse pointer to very bottom of the screen under the
+Control Bar, to move the view window downwards.
+
+You  will  notice that there is an edge to the Battlescape map, beyond which
+everything  is  black;  this  is  a  region  into  which the aliens will not
+venture.    Aliens  do  not stray far from their crashed UFO because Earth's
+atmosphere is hostile to them.
+
+3.2.1.3 Line of Sight
+
+The  Battlescape will only display what is within your squads line of sight.
+This means that you must seek out the aliens through dark, unexplored areas.
+
+3.2.1.4 Using the Split Level View
+
+The  Battlescape  is  built  up  of  several  levels.    These can be viewed
+individually,  allowing  you  to  see  behind  walls and inside buildings or
+craft.    Click  on  the  diamond  1  button on the Control Bar to break the
+Battlescape into levels.
+
+3.2.1.5 The Turn-Based System
+
+The  Battlescape  operates  uuder a turn-based system.  This means that your
+soldiers  will  he  able  to  move a certain distance before the message Not
+Enough  Time  Units!    appears.    When  all  of your squad have used their
+allocated  Time  Units,  click on the cancelled circle button on the Control
+Bar  to  end  your  turn.  When the aliens have completed their moves, it is
+your turn again.
+
+The  Hidden  Movement  screen  will appear when the aliens are moving out of
+sight of XCom soldiers.
+
+However  there  is  an  exception  to the turn based rule.  If you move your
+soldiers  directly  into  the  alien's  line  of fire, they will take a shot
+during  your turn.  Similarly, your soldiers will automatically open fire if
+the aliens move into your soldiers' line of fire during their turn.  See the
+section of this manual on Opportunity Fire for full details. 
+
+Note:  it is best to end your turn when your soldiers are in cover; close to
+walls or behind large objects.
+
+3.2.1.6 Seeing the Aliens
+
+When one of your soldiers sees an alien, a pulsing red square will appear in
+the bottom right of the Battlescape screen.
+
+Click on the pulsing red square to centre the Battlescape on the alien
+
+3.2.2  USING WEAPONS
+
+When  you  can  see  an  alien  on  the Battlescape, you should use a weapon
+against  it before it gets a chance to fire.  Click on one of the Item Boxes
+on the left or right of the Control Bar to use a weapon.
+
+A  window appears, giving you the option to select from a number of options.
+These  will  vary,  depending  on the weapon Click on the required option to
+carry out any of the following:-
+
+Aimed  Shot  -  a  carefully  aimed  shot, requiring maximum effort from the
+soldier and therefore maximum Time Units.
+ 
+Snap  Shot  - an un-aimed shot in the target's general direction.  This type
+of  shot  is  only  effective at extremely short range, or when using a very
+powerful weapon (such as a rocket launcher).
+
+Auto  Shot  -  a  three  shot burst of automatic fire in the targets general
+direction.  This type of shot can be very effective, especially when used at
+Short range.  Not all weapons are capable of automatic fire, however.
+
+Prime  Grenade  -  set the timer on a grenade or explosive charge.  When you
+click  on  this option, a window appears with numbers from 0 to 23.  This is
+the number of turns it will take before the grenade detonates.  Click on the
+required number and either put the grenade down or throw it.
+
+Note:  proximity  grenade's  do  not  have  a  timer, but will detonate when
+anything  (including  your  soldiers)  moves nearby.  These should always be
+thrown to prevent the risk of detonation.
+
+Hit  - strike your opponent with the weapon/object.  To do this your soldier
+must be standing next to the opponent.
+
+Throw  -  throw  the  Weapon/Object.  This option is mainly intended for use
+with grenades or explosives.
+
+3.2.2.1  Maximising Your Fire Potential
+
+As  well  as  the  soldier's  ability  and the type of shot fired, there are
+several other factors which determine the accuracy of a shot:-
+
+Accuracy is increased if the soldier is kneeling.
+
+Accuracy  is  decreased if the soldier is wounded or if a two- handed weapon
+(such  as a rifle or rocket lauucher) is being fired while the other hand is
+not free.
+
+3.2.3  THE BATTLESCAPE CONTROL BAR 
+
+3.2.3.1  The Item Boxes
+
+To  the  extreme  left  and  right  of  the  control  bar are the Item Boxes
+containing  a  picture  of  the items held in the soldier's hands.  Click on
+these boxes to use a Weapon/object.
+
+3.2.3.2  Ascend/Descend Controls: Up/Down
+
+Click  on either of these buttons to move soldiers up or down between levels
+when  they are either standing on a gravlift or if the soldier is capable of
+flight.
+
+3.2.3.3  View Next Level Up/Down
+
+Click  on either of these buttons to view the next level up or down from the
+level which is currently displayed.
+
+3.2.3.4 Map Screen
+ 
+Click  on  this  button to view a map of the mission area.  To re-centre the
+map  on  another  part  of  the  mission  area,  simply click on the desired
+position.   The white cross in the centre of the screen shows where both the
+map and the Battlescape are centred.
+ 
+The  map will only display one level of the Battlescape at a time.  Click on
+the  up  or  down  arrows  on the left-hand side of the map to view the next
+level up or down.
+
+The map uses symhols to represent the following:-
+
+Yellow dots   - XCom forces
+
+Blue dots     - alien forces
+
+Red dots      - civilians
+
+White Crosses - dead aliens or humans
+
+Click on the Right Mouse Button to return to the Battlescape Screen.
+
+3.2.3.5 Stand/Kneel
+
+Click  on  this  button  to  make  the selected soldier stand or kneel.  The
+advantage of kneeling is that your soldier is less visible to the aliens and
+fires more accurately.
+
+3.2.3.6 Equip Soldier Screen
+
+Click on this button to view the equipment carried on the selected soldier's
+body or on the ground at the soldiers feet.
+
+This  display  is  similar to the Equip Squad screen at the beginning of the
+Ground Assault.  The only difference is that the top right of the screen now
+displays the soldier's remaining Time Units.
+
+Moving  weapons and equipment from one location to another uses Time Units. 
+The  amount  of  Time Units required to move an object is dependent on where
+the  item is - removing items from a backpack takes more effort than putting
+an item on the ground.
+
+Click on the OK button to return to the Battlescape screen
+
+3.2.3.7 Centre Display on Soldier
+
+Click  on  this  button  to centre the Battlescape on the currently selected
+soldier's level and location.
+
+3.2.3.8 Select Next Soldier
+
+Click  on  this  button  to  select  and  centre the Battlescape on the next
+soldier in your squad. 
+
+3.2.3.9 Select Next Soldier - Deselect Current Soldier
+
+Click  on  this  button  to  select  and  centre the Battlescape on the next
+soldier  in  your squad.  The soldier currently selected will be de-selected
+so  next  time  you click on the icon the soldier will not appear.  Use this
+button when you are happy with the position of a particular soldier.
+
+3.2.3.10 Split Level View
+
+Click  on  this  button  to  change  how  the  levels of the Battlescape are
+displayed.  The number on the button will change to indicate:-
+ 
+1  -  Multi  level  View  -  everything  from  the  currently selected level
+downwards is displayed.
+
+2  -  Full  View  -  every  level  is displayed, regardless of what level is
+selected.    Selecting  this  will  hide any of your soldiers who are behind
+walls and inside buildings or craft.
+
+3.2.3.11 Options
+
+Click on this button to call up the Battlescape Options screen.  This allows
+you  to  select  different speeds for animations and scrolling, depending on
+player preference and the processing speed of your computer.
+
+3.2.3.12 End Turn
+
+Click on this button to end your turn.
+
+3.2.3.13 Dust Off
+
+Click on this icon to abort the mission.  Only soldiers aboard the transport
+craft will be saved.
+
+Note:  if you abort an alien base raid, only soldiers in the rooms where you
+are initially deployed are saved.  Aborting the mission during an alien raid
+of an XCom base concedes defeat to the aliens.
+
+3.2.3.14 Reserve Time Units
+
+When  your soldiers move, they use Time Units which might be needed to use a
+weapon.  These buttons allow you to reserve Time Units for using weapons:
+
+- click on the top left button to carry out free movement with no limitation
+
+-  click  on  the  top  right button to reserve enough Time Units for a Snap
+Shot.
+ 
+-  click on the bottom left button to reserve enough Time Units for an Aimed
+Shot.
+
+-  click on the bottom right button to reserve enough Time Units for an Auto
+Shot.
+
+3.2.3.15 Rank
+
+This is an icon representing the currently selected soldier's rank.
+
+XCom soldiers may have the following ranks: 
+
+Rookie       Captain
+
+Squaddie     Colonel
+
+Sergeant     Commander
+
+As  the  soldier's  rank  improves so too does the skill with which they can
+fight.
+
+3.2.3.16 Soldier Data
+ 
+The  name  of the selected soldier is shown at the top of this section, with
+statistics and information regarding the soldier shown underneath.
+
+These statistics are displayed as both figures and bar charts and are colour
+coded as follows:
+ 
+Green    -  Time Units .
+Orange   -  Energy .
+Red      -  Health 
+Purple   -  Morale 
+
+Click on the Soldier Data box to view the Soldier Data screen.
+
+This displays the soldier's name at the top of the screen with the following
+information:-
+ 
+Time Units - the soldier's remaining Time Units.  Time Units are required to
+carry out everything from walking to firing weapons.
+
+Energy  - the soldier's remaining energy.  This will decrease as the soldier
+carries out energy consuming actions such as Walking through thick grass.
+
+Health  -  the  soldier's current health.  This will decrease as the soldier
+takes hits from enemy weapons.
+
+Reactions  -  the  soldier's reactions.  This will allow the soldier to take
+snap shots during the aliens turn.
+
+Firing  Accuracy  -  the  soldier's  accuracy  at firing weapons.  This will
+increase as the soldier becomes more experienced.
+
+Throwing  Accuracy  - the soldier's accuracy at throwing objects.  This will
+increase as the soldier- becomes more experienced.
+ 
+Morale  -  the  soldier's  morale.  A soldier will lose morale if the battle
+starts to swing in the alien's favour.  If the morale falls below 5O%, there
+is a chance that the soldier could panic.
+ 
+Bravery  -  the soldier's bravery.  This determines the likelihood of morale
+decreasing.
+ 
+Armour  Status - the soldier's armour status.  This will rise as the soldier
+is equipped with armour manufactured by your engineers.
+ 
+Psionic  Strength/Skill  -  the psionic strength/skill which the soldier may
+call upon.
+
+Click on the Right Mouse Button to return to the Battlescape screen.
+
+3.2.4  PROMOTIONS
+
+At  the end of every mission, subject to their mission performance, soldiers
+will be promoted.
+
+The rank to which the soldier is promoted is dependent on the following:-
+
+Rookie - each new recruit begins at this level.
+
+Squaddie - in order to be promoted to a Squaddie a Rookie must have had some
+combat experience (cowering in the back of a Skranger doesn't count!).
+
+Sergeant  -  there  is one sergeant per 5 soldiers.  If a position is vacant
+the best available Squaddie is promoted.
+
+Captain - there is one Captain per 11 soldiers.  If a position is vacant the
+best available Sergeant is promoted.
+
+Colonel - there is one Colonel per 23 soldiers.  If a position is vacant the
+best available Captain is promoted.
+
+Commander  -  this  is the supreme leader of Xcom forces - there is only one
+Commander.    If  there  are at least 30 soldiers the best available Colonel
+will be promoted.
+
+It  does  not  automatically  follow that the higher the rank the better the
+soldier, although this will tend to be the case.
+
+3.2.4.1 The Effect of Rank
+
+When  officers  accompany a mission then the morale of all the soldiers will
+be  boosted and they will be less susceptible to panic.  The higher the rank
+of the officer, the better the effect on the soldier's morale.
+
+Note:  if  an officer is killed during a mission it will have a worse effect
+on morale than if a rookie had been killed.
+
+3.2.4.2 Mission Experience
+
+When  soldiers return from a mission then their abilities may be increased. 
+For a skill to benefit from experience it must be used during combat as much
+as  possible.    For  example,  if  a  soldier  uses a rifle many times then
+accuracy  is  likely  to improve.  Reactions, accuracy, Time Units, throwing
+accuracy,  psionic  skill, health, strength, fitness and bravery all benefit
+from mission experience.
+
+3.2.4.3 Morale 
+
+At  the  start  of  each mission each soldier's morale starts at 100%.  This
+will  decrease if a soldier is wounded or if fellow soldiers are killed.  It
+will  recover if a soldier successfully kills aliens.  The decline in morale
+is  reduced by a soldier's Bravery rating - the more brave a soldier is, the
+less likely they are to panic. 
+
+3.2.4.4 Panic
+
+When  morale falls the likelihood of panic increases.  When a soldier panics
+one of three things can happen:-
+
+A.    The  soldier  freezes,  and can do nothing for the current turn.  (ie.
+he/she will have no Time Units)
+
+B.    The soldier drops his/her weapon and runs away, searching for a hiding
+place.
+
+C.    The soldier goes berserk and starts firing at random.
+ 
+Panic can also be caused by an alien psionic attack.
+ 
+3.2.5  WOUNDING.
+
+A  soldier's health is a general indication of well being, but a soldier can
+also receive wounds.  These afflict a certain part of the body as follows:
+
+Head, Left/Right Arm - each wound reduces the soldier's weapon accuracy.
+
+Torso - each wound reduces the soldier's rate of Energy recovery.
+
+Left/Right Leg - each wound reduces the soldier's available Time Units.
+ 
+The  soldier  data  screen  displays  any wounds.  Each wound also reduces a
+soldier's Health by one point per turn, so that it is possible for a soldier
+to  die  from  a hit received much earlier in the mission.  The Medi kit can
+heal wounds.
+
+3.2.5.1 Stunning
+
+Soldiers  or  aliens  can be stunned if hit by a stun weapon or if suffering
+from smoke inhalation.
+
+You  can  monitor the effect of smoke on your soldiers by checking the white
+bar  on  the soldier's health bar.  If this advances as far as the soldier's
+health level the soldier will collapse and may recover a few turns later.
+
+Aliens can also be stunned and carried back to your craft.  However, if they
+wake up they will jump out of the soldier's arms and run away!
+
+3.2.6  OPPORTUNITY FIRE 
+
+If  you end your turn leaving your soldiers with enough Time Units to fire a
+shot,  your  soldiers  will automatically fire during the aliens turn at any
+alien who strays into their line of sight This is called opportunity fire.
+
+Your  soidiers  might  even  be able to take a shot before the aliens if the
+soldier's Reactions and Time Units are high enough.
+ 
+There  may  be  several  exchanges  of  fire  in   each   Opportunity   Fire
+confrontation.
+ 
+Note:  Opportunity  fire  is  crucial to mission success.  Remember to leave
+your  soldiers  with enough Time Units at the end of their turn to carry out
+opportunity fire - use the Reserve Time Units buttons to do this.
+
+3.2.7 OBJECTIVE 
+
+The  mission  will  be successful when all aliens have either been killed or
+stunned.    The UFOs remains, alien artefacts and alien corpses will then be
+recovered automatically.
+
+To  abort the mission before the objectives have been achieved, click on the
+button in the Control Bar. 
+
+Note: any soldiers not on the transport at this stage will be left behind.
+
+3.3 THE DEBRIEFING SCREEN
+
+The  Debriefing  Screen is displayed at the end of the Ground Assault giving
+you a breakdown of your mission performance.
+ 
+The first line of this display tells you whether the mission objectives were
+achieved.
+
+Below  this  is the mission performance list, showing a breakdown of all the
+Items  recovered,  the  Quantity  of each and the Score for retrieving them.
+The last line of the mission performance list shows the total mission score.
+
+At  the  bottom  of  the screen is the overall mission Rating.  Poor mission
+performance may affect XCom funding.
+
+Click  on  the  OK  button in the bottom left of the screen to return to the
+Geoscape screen.
+
+4. BASES
+--------
+
+Click on the Bases button in the Geoscape screen to access the Bases screen;
+a  display  of  the  varions  XCom  installations  in  operation  or   under
+construction.
+
+XCom  bases are underground facilities, hidden from alien detection systems.
+Craft  operate from concealed hangers and the only access to the base is via
+the access lift(s).  XCom bases carry out several different functions:
+
+- Detection of UFOs.
+
+- Operation of XCom fighter and transport craft.
+
+- Research into alien technology and life forms.
+
+- Manufacture of vehicles, equipment and weapons for XCom use.
+
+The  Bases  screen consists of two main parts: the Base Display and the Menu
+Optious.
+
+4.1 THE BASE DISPLAY
+
+The  Base Display allows you to see, at a glance, the size of your bases and
+their facilities.
+
+XCom  may  have up to eight bases worldwide, these are represented above the
+Menu  Options as a row of eight icons.   Each of these icons contain a small
+map  of  the  facilities  which  make  up the base.  Green squares represent
+existing  facilities,  red  squares represent facilities under construction.
+Click on any of these icons to select a different base.
+
+The  name  of  the  selected base is displayed in the top right of the bases
+screen.    Below  this is the geographical area in which the base is located
+followed by the total Funds available to XCom.
+
+The  left two thirds of the Bases Screen shows a top down view of the base. 
+Move  the  Mouse pointer over a base facility to display its name in the top
+left of the screen.
+
+4.2 THE MENU OPTIONS
+
+The  Menu  Options  allow  you  to  see  in detail how each of your bases is
+currently  functioning.    You  will use the Menu Options to carry out tasks
+such as building facilities, aiming individual craft and organising research
+and manufacture work.
+
+Note:  At  times during the game, lists of information may extend beyond the
+screen.    If  this happens, an arrow will appear in the bottom right of the
+screen.   Similarly, if the list extends off the top of the screen, an arrow
+will  appear  in the top right.  Click on these arrows to scroll the list up
+or down.
+
+4.2.1 BUILD NEW BASE
+
+Click on this option to establish a new XCom base.
+
+You  will  be taken to the Geoscape and the message Select Site For New Base
+will  appear  at  the  top  of  the  screen - click on any part of the world
+(except  the sea) to position the base.  You may cancel the order to build a
+new base by clicking on the Cancel button.  Use the Geoscape controls if you
+want  to  rotate the display of the Earth (see the section of this manual on
+The Geoscape Screen for full details of the Geoscape controls)
+
+When  you  have  selected  the location for your base, a message window will
+appear  informing  you  of  the cost to establish a base in this part of the
+world.    Click on OK to accept this location or click on Cancel to select a
+different location.
+
+Note:  As  you play the game, you will find that some areas of the world are
+better than others for XCom base sites.  North America is a good area for an
+XCom base because it is both large and wealthy.
+
+When  you  have  decided on your new Base's location you will be prompted to
+give  it  a  name - type in your bases name using the Keyboard and press the
+Return Key.
+
+You  will  now  be  taken  back  to  the Bases screen and prompted to Select
+Position  For  Access  Lift.    This  will  position  the main access to the
+facility  from  the surface.  It is better to position this fairly centrally
+so that new facilities may be built around it.
+
+You  have  now  established  a new XCom base.  Click on the Build Facilities
+Menu Option to put some facilities into the base.
+
+4.2.2 BASE INFORMATION
+
+Click on this option to display a breakdown of base-related information.
+
+The  Personnel  Available/ Personnel Total data shows how your personnel are
+being  utilised.    It  is  broken  down into the three groups of personnel:
+soldiers, engineers and scientists.
+
+The  figures show the number of personnel available for work followed by the
+total  number  of  personnel  at the base.  You should keep the first figure
+zero  to  stop  workers  being  wasted.  The Bar graphs to the right of this
+numerical display are useful to see at a glance how your personnel are being
+utilised.
+
+The  Space  Used/Space  Available  bar  graphs shows how your space is being
+utilised.   This is broken down into five categories in a similar way to the
+Personnel.
+
+The  figures  show  the  space  used  followed  by the total amount of space
+available.    You  should  be  aiming to keep the first figure equal or very
+close  to  the second figure to prevent wasted space.  The bar graphs to the
+right  of  this  numerical display are useful to see how your space is being
+utilised at a glance.
+
+The  Defences is a rating of how well the base can defend itself against UFO
+attack.
+
+Click  on the transfers button in the bottom of this screen to see a display
+of  the  personnel or equipment currently in transit between other bases and
+the selected base.
+
+The  Item  in  transit  is  listed next to the Quantity of that item and its
+Arrival Time at the base in hours.
+
+For  full details on Transferring personnel and equipment between bases, see
+the Transfer section of this chapter.
+
+Click on the OK button to return to the Base Information screen.
+
+Click  on the OK button in tbe bottom-left of the Base Information screen to
+return to the Bases screen.
+
+4.2.3 EQUIP CRAFT
+
+Click on this option to configure your interception craft.
+
+The Interception Craft Screen lists the following information:-
+
+Name  -  the  type  and  registration  number  of  the  craft  (for example.
+Interceptor-3  is  the  third  craft  to  be  operated  by  XCom  and  is an
+Interceptor).
+
+Status - this may be either:-
+
+Ready      - the Craft is available for interception duty.
+ 
+Refuelling - the craft is refuelling. 
+
+Rearming   - the craft is having its air-to-air weaponry changed.
+ 
+Repairs    - the craft is undergoing repair work. 
+
+Out        - the craft is carrying out an interception.
+
+Weapon  Systems  -  the  air  to-air weaponry carried by the craft.  This is
+represented as number carried / maximum number which may be carried.
+
+Crew - the number of soldiers carried on the craft.
+
+HWPs  -  the  number  of Heavy Weapon Platforms (e.g.  tanks) carried on the
+craft.
+
+To configure a craft, use the Mouse to highlight the required craft from the
+list and click to enter the Equip Craft screen.
+
+The Equip Craft screen allows you to configure individual interception craft
+to suit your requirements. 
+
+The crafts name is at the top of the screen.  Below this is a display of the
+Damage  and Fuel status - useful to establish how much longer the craft will
+be  in repair or refuelling.  0% damage and 100% fuel mean that the craft is
+fully operational.
+
+Below  the  Damage  and  Fuel status are the air to-air weapon configuration
+buttons, marked with numbers.  These do not appear on the Equip Craft screen
+for  the  Skyranger  transport,  since  it  does  not  have  an   air-to-air
+capability.   Craft such as the Interceptor have two weapon bays, marked '1'
+and '2'.
+ 
+Alongside  the  numbered  buttons  are the names of the loaded weapons and a
+pair of figures:-
+
+Ammo - the number of rounds of the weapon loaded onto the craft. 
+
+Max - the maximum number of rounds which may be carried by the craft.
+
+A small icon representing the weapons is shown to each side of the craft.
+
+4.2.3.1 The Select Armament Window
+
+Click  on one of the numbered buttons to access the Select Armament window. 
+This allows you to change the weapons carried in the craft's weapon bays.
+
+Armament - the names of the available weapons.
+
+Quantity - the number of the weapon in storage.
+
+Ammunition Available - the number of rounds of the weapon in storage.
+
+If  you  wish  to  load a different weapon onto your craft, use the Mouse to
+highlight the required weapon from the list and click.
+
+Alternatively,  you  may  click  on  the  Cancel  button to exit this window
+without making any weapon changes.
+
+You  will now return to the Equip Craft screen.  If you changed the weapons,
+the  new  armament  will be shown loaded on the craft.  The number of rounds
+loaded will be zero - it takes time to rearm the craft.
+
+4.3.3.2 The Select Squad Screen
+
+Click  on the Crew button to enter the Select Squad screen.  This allows you
+to assign individual soldiers to the selected craft.
+ 
+The  top of the screen displays the total Space Available on board the craft
+and the current amount of Space Used.
+
+Below  this  is a list of the Name of the soldiers available with their Rank
+and the Craft which they are currently assigned to.
+
+To  assign  or  de-assign  a soldier to the selected craft, use the Mouse to
+highlight the required soldier from the list and click.
+
+Click  on  the  OK  button  when you have finished assigning soldiers to the
+craft.
+
+4.2.3.3 The Select Equipment Screen
+
+Click  on  the  Equipment button to enter the Select Equipment screen.  This
+allows you to load equipment onto the selected craft.
+
+The  top of the screen displays the total Space Available on board the craft
+and the current amount of Space Used on the craft.
+
+Below this information is:-
+
+The  Item  column,  listing  the  names  of the items which may be loaded on
+board.
+
+The Stores column listing the number of the item which are available
+
+The  Loaded  column,  consisting  of a pair of buttons for each item and the
+number of the item which are loaded on the craft.
+
+Click  on  the  < > buttons to increase/decrease the number of an item which
+are loaded on board the selected craft.
+
+Click  on  the  OK  button when you have finished loading equipment onto the
+craft.
+
+4.2.3.4 The Select Armour Screen 
+
+Click  on  the Armour button to enter the Select Armour screen.  This allows
+you to configure the body armour which your soldiers will wear.
+
+To  set-up  the  armour  worn  by  a  particular  soldier,  use the Mouse to
+highlight the required soldier from the list and click.
+
+The  Select  Armour  Type  window  will  appear, listing the types of armour
+available and the number in each storage.
+ 
+Click  on  the  Armour  button.    The soldier will now be equipped with the
+selected armour.
+
+Click  on the OK button when you have finished assigning armour to Soldiers.
+
+To  return  to  the  Interception  Craft screen from the Equip Craft screen,
+click on the OK button.
+
+To  return  to the Bases screen from the Interception Craft screen, click on
+the OK button
+
+4.2.4 BUILD FACILITIES
+
+Click on this option to build new base facilities.
+
+The  Menu  Options  will be replaced by the Select Installltion window.  You
+may choose from the following:-
+
+Access Lift
+Living Quarters
+Laboratory
+Workshop
+Small Radar System
+Large Radar System
+Missile Defences
+General Stores
+Alien Containment
+Hanger
+
+As  the game progresses, you will be able to research alien-based technology
+to  be  incorporated into your bases.  See the UFOpaedia for full details of
+all base installations.
+
+Use  the  Mouse  to  highlight  and click on the required installation.  The
+Select  Installation  window  will  be  replaced  by  the Build Installation
+window.
+
+This  displays  the cost to build the installation, the time it will take to
+construct  it  and  the maintenance cost per month.  You may click on the OK
+button to abort the build facility operation at this stage.
+
+To construct the new facility, move the Mouse pointer over the Base Display,
+position the installation and click.
+
+The  new  installation  will now be shown on the Base Display, enclosed in a
+dotted  line and displaying the number of days construction time remaining. 
+The Build Installation window reverts to the Select Installation window.
+
+Click on the Cancel button to return to the Bases Screen or click on another
+installation from the list to continue constructing base facilities.
+
+A  message  will appear in the Geoscape screen when a base facility has been
+completed.
+
+4.2.5 RESEARCH
+
+Click on this option to view your current research status.
+
+The Current Research screen displays the following: -
+
+Scientists Available - the number of scientists available for work.
+
+Scientists  Allocated  -  the  number  of  scientists  currently  working on
+research projects.
+
+Laboratory  Space  Available  -  the  amount of floor space available in the
+laboratories.
+
+Below  this  is  a  list of the research projects currently being undertaken
+with  the  number  of  scientists  working  on  each  project  and a general
+indication of the progress being made.
+
+4.2.5.1 New Project
+
+Click  on  the  New  Project  button  to  start  new research work.  The New
+Research  Projects  window  will  appear, listing the available projects for
+research.
+
+Use the Mouse to highlight and click on the required project.
+
+The  New  Research  Projects  window  will  now  change to display the Start
+Project window.
+
+You  may cancel research at this stage by clicking on the Cancel button.  To
+accept the project and continue, click on the Start Project button.
+
+The window will change again to display the Scientists Allocated window.
+
+This displays the Scientists Available and the Laboratory Space Available as
+before,  but  allows  you  to set the number of scientists allocated to this
+particular project.
+
+Click  on  the  up/down arrows to Increase/Decrease the number of scientists
+allocated  to  the  project.    Click  on  the  OK button to exit to the New
+Research Projects window.
+
+Click  on  the  OK  button  in  the New Research Projects window to exit the
+Current Research screen.
+
+4.2.5.2 Scientists Allocated
+
+Use  the  Mouse  to  highlight and click on a project to alter the number of
+scientists  allocated  to that project.  This is identical to the scientists
+Allocated  window described above.  The more scientists involved the quicker
+the research will be completed.
+
+Click on the OK button to exit to the Current Research screen.
+
+Click  on  the OK button in the Current Research screen to exit to the Bases
+screen.
+
+4.2.5.3 Research Completed
+
+When  work  has  finished  on  a  project the Research Completed window will
+appear  on  the Geoscape.  Click on OK to return to the Geoscape or click on
+View  Reports  to view the result of the research (this may also be accessed
+at any time in the UFOpaedia).
+
+Your  scientists  will  then  inform  you of any new research or manufacture
+projects  which are now possible.  Click on OK to exit from these screens or
+click  on Allocate Research or Allocate Manufacture to start new research or
+manufacture projects.
+
+4.2.6 MANUFACTURE
+
+Click on this option to view your current production status.
+
+The Current Production screen displays the following:-
+
+Engineers Available - the number of engineers available for work.
+
+Engineers  Allocated  -  the  number  of  engineers  currently  working   on
+production.
+
+Workshop  Space  Available  -  the  amount  of  floor space available in the
+workshops.
+ 
+Current Funds - the amount of money currently available to XCom.  Below this
+is the production list, containing the following:-
+
+Item - the item which is being manufactured.
+ 
+Engineers Allocated - the Number of engineers working on the project.
+ 
+Units Produced - the number of units of the item produced so far.
+ 
+Total  to  Produce  -  the  total  number  of  units  you have ordered to be
+produced.
+
+Cost per Unit - the Cost to manufacture each item.
+
+Days/Hours  Left  - the number of days/hours remaining before the production
+will be complete.
+
+4.2.6.1 New Production
+
+Click  on  the New Production button to start production of a new item.  The
+Production  Items  window  will  appear,  listing  the  available  items for
+production.
+
+Use the mouse to highlight and click on the required item.
+
+The start Production window will now appear.
+
+The  first  line of this window displays the number of engineer days it will
+take  to  produce  the  items.    One Engineer day is the amount of work one
+engineer can carry out in one day.
+
+The next two lines show the cost to one unit and the workspace required.
+
+You  may  cancel  production at this stage by clicking on the Cancel button.
+To accept the production and continue, click on the Start Production button.
+
+The Engineers Allocated window will now appear.
+
+This displays the Engineers Available and the Workshop Space available as on
+the  Current  Production  screen,  but  allows you to set both the number of
+Engineers Allocated and the number of items to produce.
+ 
+Click  on  the  up/down  arrows to Increase/Decrease the number of Engineers
+allocated  to the production or the number of units of the item to produce. 
+You  may  cancel production at this stage by clicking on the Stop Production
+button.  To accept the production and return to the Production Items window,
+click on the OK button.
+
+Click on the OK button in the Production Items window to exit to the Current
+Production screen. 
+
+4.2.6.2 Engineers Allocated/Units to Produce 
+
+Use the Mouse to highlight and click on any manufacture project to alter the
+number  of  scientists  allocated to that project.  This is identical to the
+Engineers  Allocated  window  described above.  The more engineers involved,
+the quicker the manufacture will be completed.
+ 
+Click on the OK button to exit to the Current Production screen.
+
+Click  on  the  OK  button in the Current Production screen to return to the
+Bases screen.
+
+4.2.6.3 Production Complete
+
+When  production  of  an  item  has  been completed, the Production Complete
+window will appear on the Geoscape.  This displays both the name of the item
+and the location at which it has been manufactured.
+ 
+4.2.7 TRANSFER
+
+Click on this option to transfer craft, personnel or items between bases.
+
+The Transfer screen consists of:-
+
+The Item column, listing the names of the items at the base.
+
+The Quantity column, listing the number of each of the items at the base.
+
+The Amount to Transfer column, consisting of a pair of buttons for each item
+and the number of items to transfer.
+
+Click  on  the  up/down arrow buttons to increase/decrease the number of the
+item which will be transferred to another base.
+
+When  you  are happy with the items to be transferred, click on the Transfer
+button  in  the  bottom  left  of  the screen.  You will now be taken to the
+Select Destination Base Screen.
+
+4.2.7.1 Select Destination Base
+
+This  screen  displays your Current Funds in the top of the screen, to allow
+you to see how the planned transfer affects your finances.
+
+Below  this  is  a list of all the XCom bases in the world, with the area of
+the  world  in  which  they are and the amount it would cost to transfer the
+items to each of the bases.
+
+Use  the  mouse to highlight and click on the required base.  The items will
+now be transferred.  You will be returned to the Transfer screen.
+
+You  may  view  details  of  the items which are in transit between bases by
+clicking on the Transfers button in the Base Information screen.
+
+Click on the Cancel button to return to the Bases screen.
+
+4.2.8 PURCHASE/RECRUIT
+
+Click on this option to recruit personnel, lease craft or purchase items.
+
+The Purchase/Hire Personnel screen displays your Current Funds in the top of
+the screen alongside the Cost of Purchases for the items chosen.
+
+Below this information is:-
+
+The Item column, listing the names of the items which may be bought.
+
+The Cost per Unit column, listing the price of each of these items.
+
+The  Quantity  column, consisting of a pair or buttons for each item and the
+number of that item to be bought.
+
+Click  on  the  up/down arrow buttons to increase/decrease the number of the
+item which will be bought.
+
+If  you  do  not  wish  to make any purchases, click on the Cancel button to
+return to the Bases screen.
+
+Whe  you  are  happy with your choice of items to be bought, Click on the OK
+button.    The  items  will now be purchased and you will be returned to the
+Bases screen.
+
+Items  will  not  arrive immediatly; there will be a delivery time.  You may
+view  details  of  the  items  which  are in transit to the selected base by
+clicking on the Transfers button in the Base Information screen.
+
+4.2.9 SELL/SACK
+
+Click on this option to sell items or to sack personnel.
+
+The  Sell  Items/Sack Personnel screen displays the Value of Sales for items
+which  you  have chosen to sell in the top left of the screen with the total
+Funds available to XCom in the top right.
+
+Below this information is:-
+
+The  Item column, listing the items at the currently selected base which may
+be sold.
+
+The Quantity column, listing the number of each item which may be sold.
+
+The  Sell/Sack column, consisting of a pair of buttons for each item and the
+number of that item which will be sold.
+
+The Value column listing the value of each item.
+
+Click  on  the  up/down arrow buttons to increase/decrease the number of the
+item to be sold.
+
+If  you  do not wish to make any sales, click on the Cancel button to return
+to the Bases screen.
+
+When  you  are  happy  with  your  choice  of items to be sold, click on the
+Sell/Sack  button.    The items will now be sold and you will be retutned to
+the Bases screen.
+
+4.2.10 SOLDIERS
+
+Click on this option to display a list of soldiers at the currently selected
+base.  The information presented in this screen is similar to that presented
+in the Select Armour section of the Equip Craft screen.
+
+Highlight  and  click  on the soldiers name to display the selected soldiers
+information  screen.    Click on the Armour button to allocate armour to the
+soldier.
+
+4.2.11 GEOSCAPE
+
+Click on this option to return to the Geoscape screen.
+
+Click  on  the  Graphs button in the Geoscape to access the Graphs screen; a
+graphical breakdown of UFO, XCom and Financial information.
+
+These  graphs  are  useful when planning strategy such as where to establish
+new XCom bases and which countries to concentrate on defending.
+
+5.1 UFO ACTIVITY IN AREAS
+
+Click  on  the  spaceship  icon  in  the  top  of the screen to view the UFO
+Activity in Areas.
+
+This  graph displays the level of UFO activity in areas of the world.  Click
+on  the  buttons on the left hand side of the screen to view the graph plots
+for particular areas.
+
+5.2 UFO ACTIVITY IN COUNTRIES.
+
+Click  on  the  flag/spaceship icon in the top of the screen to view the UFO
+Activity in Countries.
+
+This  graph  displays  the  level  of UFO activity in the funding countries.
+Click  on  the buttons on the left hand side of the screen to view the graph
+plots for individual countries.
+
+5.3 XCOM ACTIVITY IN AREAS
+
+Click on the cross/spacecraft icon in the top of the screen to view the XCom
+Activity in Areas
+
+This graph displays the level of XCom activitv in areas of the world.  Click
+on  the  buttons on the left-hand side of the screen to view the graph plots
+for particular areas.
+
+5.4 XCOM ACTIVITY IN COUNTRIES
+
+Click  on the flag/spacecraft icon in the top of the screen to view the XCom
+Activity in Countries.
+
+This  graph  displays  the  level of XCom activity in the funding countries.
+Click  on  the buttons on the left hand side of the screen to view the graph
+plots for individual countries.
+
+5.5 INCOME
+
+Click on the flag/$ icon in the top of the screen to view XCom's Income.
+
+This graph displays XCom's income from each of the funding Countries.  Click
+on  the  buttons on the left-hand side of the screen to view the graph plots
+for individual countries.
+
+5.6 FINANCE
+
+Click  on  the  graph/$  icon in the top of the screen to view XComs Finance
+situation.
+
+This  graph  displays the overall financial situation.  Click on the buttons
+on the left hand side of the screen to view graph plots for the following:-
+
+5.6.1  INCOME
+
+The  main  source  of  XCom's  income comes from the governments funding the
+project.    Funding will vary as the game progresses and will depend on such
+things as:-
+
+-  success  by  XCom  to  intercept  UFOs  flying  over  a  funding country:
+contribution levels will fall if UFOs are not intercepted.
+
+-  internal  events  by  XCom in recovering, researching and producing alien
+items: funding will rise if XCom is seen to be doing well.
+
+- internal events such as change of government, civil war or recession.
+
+-  alien  influence:  funding  will  stop if a country signs a pact with the
+aliens.
+
+Additional income may be generated by the sale of alien items recovered from
+UFOs.
+
+5.6.2  EXPENDITURE
+
+XCom  expenditure may be of several types.  As well as purchasing/recruiting
+costs, there may be:-
+
+- transfer costs.
+
+- building costs for new bases or base facilities.
+
+- production costs for items manufactured by XCom engineers.
+
+5.6.3 MAINTENANCE
+
+Maintenance costs are incurred on a regular basis.  These include:-
+
+- wages for personnel.
+
+- maintaining base facilities.
+
+- maintaining, refuelling and repairing craft.
+
+5.6.4 BALANCE
+
+The  balance  is the amount of money available to XCom after Expenditure and
+Maintenance have been subtracted from the Income.
+
+5.6.5 PERFORMANCE
+
+XCom's performance rating.  This score takes into account the following:-
+
+- success of interceptions
+
+- scores for ground assault missions
+
+- research work completed
+
+- alien activity
+
+Scores  above  zero  indicate  that  XCom  are  winning.   Scores below zero
+indicate that XCom are losing.
+
+Click  on  the  globe  icon  in the top-right of the screen to return to the
+Geoscape screen.
+
+6. UFOPAEDIA
+
+Click  on  the  UFOpaedia button in the Geoscape to access the UFOpaedia, an
+on-line encyclopaedia which contains all the information currently available
+to  XCom.    Each  entry consists of a diagram with accompanying text and/or
+data.
+
+6.1 THE SELECT SUBJECT SCREEN 
+
+The  first  screen  of  the UFOpaedia is a list of the subjects which may be
+reviewed.  Click on any one of these buttons to get to the section which you
+require:
+
+XCom  Craft and Armament - the aircraft or spacecraft available for XCom use
+and the armament which they may be equipped with.
+ 
+Heavy  Weapons  Platforms  -  the  vehicles  which  may  he  carried on Xcom
+transport Craft.
+ 
+Weapons  and  Equipment  - the weapons and equipment which your soldiers may
+use.
+ 
+Alien  Artefacts - alien weapons and equipment which have been recovered and
+researched.
+
+Base  Facilities - the available structural units which may be added to your
+underground bases.
+
+Alien  Life  Forms  -  data  gathered from captured aliens (either living or
+dead) which have been researched by your scientists.
+
+Alien  Research - information gained fronm the interrogation of live aliens.
+
+UFO  Components  -  information gained by researching objects retrieved from
+crashed UFOs.
+
+UFOs - information regarding known UFOs
+
+OK - click on this button to return to the Geoscape.
+
+6.2 THE SELECT ITEM SCREEN
+
+The  next UFOpaedia screen allows you to select a specific entry to review. 
+Highlight  and click on the required item or click on the OK button to exit.
+
+6.3 UFOPAEDIA DATA SCREENS
+
+When you are viewing a UFOpaedia Data screen, clicke on the << >> buttons to
+view the next/previous UFOpaedia entries.
+
+Click on the OK button to return to the Select Item screen.
+
+7. OPTIONS
+----------
+
+Click  on  the  Options button in the Geoscape to access the Options window,
+allowing you to load and save games
+
+7.1 LOAD GAME
+
+Click  on the Load Game button to load a previously saved game.  You will be
+taken to the Select Game to Load screen.
+
+7.1.1 SELECT GAME TO LOAD
+
+The  Select Game to Load screen displays the name date and time of up to ten
+games.  Pick a saved game by clicking on any of the buttons numbered 1 to 10
+on the left-hand side of the screen.  You will now return to the Geoscape at
+the point when the game was saved.
+
+Click on the Cancel button to return to the Geoscape without loading a game.
+
+7.2 SAVE GAME
+
+Click  on  the  Save Game button to save your current game.  You will now be
+taken to the Select Save Position screen.
+
+7.2.1 SELECT SAVE POSITION
+
+Choose  the  game  slot  you  wish  to  write over by clicking on any of the
+buttons  numbered 1 to 10 on the left hand side of the screen.  A flashing *
+will  appear.    You  may  now use the keyboard to type or delete as normal.
+Press the Return Key to save the game and return to the Geoscape.
+
+Click  on the Cancel button to return to the Geoscape without saving a game.
+
+7.3 CANCEL
+
+Click  on  the  Cancel  button  to return to the Geoscape without loading or
+saving a game.
+
+8. FUNDING
+----------
+
+Click  on  the  Funding  button  in the Geoscape to access the International
+Relations Display.  this shows which countries are funding XCom and how much
+each are contributing.
+
+The International Relations display shows the following:-
+
+The  Country column, listing the name of the countries who are funding XCom.
+
+The  Funding  column,  listing the amount of money each country is paying to
+XCom per month.
+
+The  Change  column, listing the change in a countries funding at the end of
+the last month.  this is dependant on Xcom performance in that country.
+
+Click on the OK button to return to the Geoscape screen.
+
+GLOSSARY
+--------
+
+CRAFT
+An XCom vehicle which is capable of flight.
+
+HWP
+Heavy  Weapon Platform - a vehicle which carries a weapon which is too bulky
+to be hand held.
+
+Interceptor
+The  most  advanced  and  powerful  fighter  aircraft  available to mankind.
+Leased from the US Air Force for Xcom use.
+
+Skyranger
+The  ideal  light transport craft, combining high speed, long range and high
+load  capacity with a vertical take off and landing capability.  Leased from
+the Russian Air Force for XCom use.
+
+XCom
+Extraterrestrial Combat Unit.  The multi-national covert organisation formed
+by the Earth to defeat the alien nation.
+
+UFO
+Unidentified  Flying  Object.    The aliens operate many types of craft, the
+term  UFO  is used to describe all of them.  Your scientists will be able to
+research what each UFO carries out.
+
+UFOpaedia
+All  XCom research data is entered into the UFOpaedia.  as Commander of Xcom
+you will refer to the UFOpaedia when planning strategy.
+
+-----------------------------------END-------------------------------------

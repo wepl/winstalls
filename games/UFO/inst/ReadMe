@@ -1,0 +1,82 @@
+
+ THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, STATUTORY OR OTHERWISE. THE ENTIRE RISK AS TO USE, RESULTS AND
+ PERFORMANCE OF THE PACKAGE IS ASSUMED BY YOU AND IF THE PACKAGE SHOULD PROVE
+ TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR OTHER REMEDIATION.
+ UNDER NO CIRCUMSTANCES, CAN THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE
+ CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
+ PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+
+ This install applies to "UFO Enemy Unknow" (c) Microprose.
+
+ This install requires WHDLoad and DIC to be in the path. Both can be found in
+ the WHDLoad package.
+ To install from a different drive than DF0: select installation mode Expert.
+
+ The installed program requires for the
+	OCS version	1 MB ChipMem and 1.5 MB OtherMem
+	AGA version	2 MB ChipMem and 1.5 MB OtherMem
+	CD남 version	2 MB ChipMem and 1.5 MB OtherMem
+
+ It can be quit by pressing * (key can be changed with Tooltype "QuitKey=").
+
+ If you have problems with this installation please try and get a newer
+ version of this package from the WHDLoad WWW-Page. If that doesn't help try
+ some Tooltypes like NOCACHE, NOAUTOVEC, NOVBRMOVE, NOMMU, PAL or NTSC. If
+ that also fails, please inform the author via the Bug-Report-Form which
+ can be accessed on the WHDLoad WWW-Page.
+
+ The OCS game requires an installed A500 Kickstart 1.3 image.
+ The kickstart image must be located in the directory "Devs:Kickstarts" and
+ must be named "kick34005.A500". The image can be extracted from a A500 with
+ tools like 'GrabKick' or similar which can be found on aminet.
+ If the image is of wrong version or altered in any way WHDLoad will quit with
+ an appropriate message.
+ Additionally the file "kick34005.A500.RTB" must be installed in the same
+ directory as the kickstart image. It can be found in the archive
+ "util/boot/skick346.lha" on aminet.
+
+ The AGA/CD남 game requires an installed A600/A1200/A4000 Kickstart 3.1 image.
+ The kickstart image must be located in the directory "Devs:Kickstarts" and
+ must be named "kick40063.A600", "kick40068.A1200" or "kick40068.A4000". The
+ image can be extracted from a A600/A1200/A4000 with tools like 'GrabKick' or
+ similar which can be found on aminet.
+ If the image is of wrong version or altered in any way WHDLoad will quit with
+ an appropriate message.
+ Additionally the file "kick40063.A600.RTB", "kick40068.A1200.RTB" or
+ "kick40068.A4000.RTB" must be installed in the same directory as the kickstart
+ image. It can be found in the archive "util/boot/skick346.lha" on aminet.
+
+ For the full WHDLoad package, other installs and updates refer to:
+   http://www.whdload.de/
+ or   aminet:dev/misc/whdload#?
+ and  aminet:game/patch/
+
+ Notes:
+ ------
+ - first save game creation in the AGA version takes a while because a lot of
+   small files will be created, subsequent saves will be faster
+   OCS version uses less files, CD남 version uses single file 'nvram'
+
+ version AGA/CD남 1.0 (29.08.2003) done by CFou!
+ - CD32&AGA version supported
+ - CUSTOM1=1 Tooltype used to skip the intro
+ - Load/Save game redirected on HD in 'UFO.nvd' and 'Temp' folders
+ - Manual protection of aga version ripped
+ - Exotica icon added
+ - Manual added
+ - Thanks Tony Aknes for original aga version
+
+ version AGA/CD남 1.1 (22.03.2018) done by Wepl
+ - slave rewritten
+ - uses cpu caches now
+ - nonvolatile stuff replaced, saves now to a single file 'nvram', no
+   directories required anymore
+ - new install script
+
+ version OCS 1.0 (22.03.2018) done by Wepl
+ - support for OCS version added
+ - SMC fixed
+ - aud*vol writes fixed
+
