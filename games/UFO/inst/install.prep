@@ -1,0 +1,176 @@
+#multiple-versions=y
+#sub-dir=data
+#man-file=Manual
+#P_SelectVersion-Name-0=OCS version
+#P_SelectVersion-Name-1=AGA version
+#P_SelectVersion-Name-2=CD³² version
+#P_SelectVersion-Code#1
+      (set #prefix-slave (cat #prefix "_AGA"))
+#P_SelectVersion-Code#2
+      (set #prefix-slave (cat #prefix "_AGA"))
+#P_MakeImages#0
+      ;----- 0 = OCS version (Files) -----
+      (set #AD_disk "UFO_Disk_1")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "~(C|L|S|#?.info|#?.files|#?install#?|ufo#?)")
+      )
+      (copyfiles
+        (help @copyfiles-help)
+	(source ("%s:geoscape_hd.files" #AD_disk))
+        (dest #dest)
+	(newname "geoscape.files")
+      )
+      (set #AD_disk "UFO_Disk_2")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "UFO_Disk_3")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "~(C|#?.info|read.me|#?.files)")
+      )
+      (copyfiles
+        (help @copyfiles-help)
+	(source ("%s:tactical_hd.files" #AD_disk))
+        (dest #dest)
+	(newname "tactical.files")
+      )
+      (set #AD_disk "UFO_Disk_4")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "UFO_Disk_5")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (makedir
+	(tackon #dest "Game_1")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_2")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_3")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_4")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_5")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_6")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_7")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_8")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_9")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_10")
+	(help @makedir-help)
+      )
+
+#P_MakeImages#1
+      ;----- 1 = AGA version (Files) -----
+      (set #AD_disk "UFO disk 1")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "~(C|S|UFO|UFO_HD)")
+      )
+      (set #AD_disk "UFO disk 2")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (set #AD_disk "UFO disk 3")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+	(pattern "~(CR|Install#?|UFO.inf)")
+      )
+      (set #AD_disk "UFO disk 4")
+      (P_AskDisk)
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (all)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+	(source "locale.library")
+	(dest (tackon #dest "libs"))
+      )
+      (makedir
+	(tackon #dest "Game_2")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_3")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_4")
+	(help @makedir-help)
+      )
+      (makedir
+	(tackon #dest "Game_5")
+	(help @makedir-help)
+      )
+
+#P_MakeImages#2
+      ;----- 2 = CD³² version (Files) -----
+      (message ("\nInsert your %s CD in any drive." @app-name))
+      (copyfiles
+        (help @copyfiles-help)
+	(source "UFO CD³²:")
+        (dest #dest)
+	(pattern "~(C|S|UFO|UFO.info)")
+      )
+      (copyfiles
+        (help @copyfiles-help)
+	(source "locale.library")
+	(dest (tackon #dest "libs"))
+      )
+

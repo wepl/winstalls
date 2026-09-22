@@ -80,8 +80,8 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick31.s
-	INCLUDE	Sources:whdload/nonvolatile.s
+	INCLUDE	whdload/kick31.s
+	INCLUDE	whdload/nonvolatile.s
 
 ;============================================================================
 
