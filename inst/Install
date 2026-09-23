@@ -160,34 +160,12 @@
   (select #version
     (				;----- 0 = RawDIC -----
       (set #last-file "Disk.1")		;last file the imager should create
-      (copyfiles
-        (help @copyfiles-help)
-        (source ("%s.ISlave" #prefix))
-        (dest #dest)
-      )
-      (P_AskSrcDrvRaw)
-      (working "calling RawDIC...")
-      (run ("CD \"%s\"\nRawDIC SLAVE=%s.islave SOURCE=%s\nDelete %s.ISlave Quiet" #dest #prefix #CI_drive #prefix))
-      (if (exists (tackon #dest #last-file))
-        ("")
-        (abort "Disk imaging was not successful!\nRawDIC was unable to create all needed files!")
-      )
+      (P_RawDIC)
     )
 
     (				;----- 1 = Patcher -----
       (set #last-file "Disk.1")		;last file the imager should create
-      (copyfiles
-        (help @copyfiles-help)
-        (source ("%s.imager" #prefix))
-        (dest #dest)
-      )
-      (P_AskSrcDrvRaw)
-      (working "calling Patcher...")
-      (run ("CD \"%s\"\nPatcher -p%s.imager -s%s\nDelete %s.imager Quiet" #dest @app-name #CI_drive @app-name))
-      (if (exists (tackon #dest #last-file))
-        ("")
-        (abort "Disk imaging was not successful!\nThe Patcher was unable to create all needed files!")
-      )
+      (P_Patcher)
     )
 
     (				;----- 2 = DIC (Disk Images) -----
@@ -891,6 +869,54 @@
 )
 
 ;----------------------------
+; create disk images using RawDIC
+; #dest        - path to create the images in
+; #islave      - name of the imager slave, defaults to "<#prefix>.ISlave"
+; #last-file   - last file the imager should create
+
+(procedure P_RawDIC
+  (set #program "RawDIC")
+  (P_ChkRun)
+  (if (= #islave "") (set #islave ("%s.ISlave" #prefix)))
+  (copyfiles
+    (help @copyfiles-help)
+    (source #islave)
+    (dest #dest)
+  )
+  (P_AskSrcDrvRaw)
+  (working "calling RawDIC...")
+  (run ("CD \"%s\"\nRawDIC SLAVE=%s SOURCE=%s\nDelete %s Quiet" #dest #islave #CI_drive #islave))
+  (if (exists (tackon #dest #last-file))
+    ("")
+    (abort "Disk imaging was not successful!\nRawDIC was unable to create all needed files!")
+  )
+)
+
+;----------------------------
+; create disk images using the Patcher
+; #dest        - path to create the images in
+; #imager      - name of the imager, defaults to "<#prefix>.imager"
+; #last-file   - last file the imager should create
+
+(procedure P_Patcher
+  (set #program "Patcher")
+  (P_ChkRun)
+  (if (= #imager "") (set #imager ("%s.imager" #prefix)))
+  (copyfiles
+    (help @copyfiles-help)
+    (source #imager)
+    (dest #dest)
+  )
+  (P_AskSrcDrvRaw)
+  (working "calling Patcher...")
+  (run ("CD \"%s\"\nPatcher -p%s -s%s\nDelete %s Quiet" #dest #imager #CI_drive #imager))
+  (if (exists (tackon #dest #last-file))
+    ("")
+    (abort "Disk imaging was not successful!\nThe Patcher was unable to create all needed files!")
+  )
+)
+
+;----------------------------
 ; Create Image using DIC
 ; #dest        - path to save image in
 ; #CI_disknum  - number of the disk image to create
@@ -900,6 +926,8 @@
 ; #CI_drive    - drive to create image from
 
 (procedure P_CreateImage
+  (set #program "DIC")
+  (P_ChkRun)
   (PDI_AskMode)
   (set #DI_diskname #CI_diskname)
   (select #DI_mode
@@ -1244,15 +1272,6 @@
 )
 
 (set #program "WHDLoad")
-(P_ChkRun)
-
-(set #program "RawDIC")
-(P_ChkRun)
-
-(set #program "Patcher")
-(P_ChkRun)
-
-(set #program "DIC")
 (P_ChkRun)
 
 (if (getenv "WHDLInstPath")
