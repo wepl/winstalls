@@ -10,6 +10,7 @@
 ;			 v17 button infos added
 ;			 nonvolatile stuff replaced
 ;			 chip memory requirements reduced
+;		2026-09-23 rebuilt with current kickemu sources
 ;  :Requires.   kick31.s
 ;  :Copyright.  Public Domain
 ;  :Language.   68000 Assembler
@@ -85,21 +86,12 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"UFO Enemy Unknown",0
 slv_copy	dc.b	"1994 Microprose",0
 slv_info	dc.b	"adapted for WHDLoad by CFou!/Wepl",10
-		dc.b	"AGA/CD³² Version 1.1 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"AGA/CD³² Version 1.2 "
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Skip Intro (CD³²)",0

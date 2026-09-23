@@ -10,14 +10,12 @@
 
  This install applies to "UFO Enemy Unknow" (c) Microprose.
 
- This install requires WHDLoad and DIC to be in the path. Both can be found in
- the WHDLoad package.
- To install from a different drive than DF0: select installation mode Expert.
+ This install requires WHDLoad to be in the path. It can be found in the
+ WHDLoad package.
 
  The installed program requires for the
-	OCS version	1 MB ChipMem and 1.5 MB OtherMem
-	AGA version	2 MB ChipMem and 1.5 MB OtherMem
-	CD남 version	2 MB ChipMem and 1.5 MB OtherMem
+	OCS version	 1 MB ChipMem and 1.5 MB OtherMem
+	AGA/CD남 version 1.5 MB ChipMem and 1.5 MB OtherMem
 
  It can be quit by pressing * (key can be changed with Tooltype "QuitKey=").
 
@@ -58,6 +56,7 @@
  - first save game creation in the AGA version takes a while because a lot of
    small files will be created, subsequent saves will be faster
    OCS version uses less files, CD남 version uses single file 'nvram'
+ - source: https://github.com/wepl/winstalls/tree/master/games/UFO
 
  version AGA/CD남 1.0 (29.08.2003) done by CFou!
  - CD32&AGA version supported
@@ -79,4 +78,12 @@
  - support for OCS version added
  - SMC fixed
  - aud*vol writes fixed
+
+ version OCS 1.1 (23.09.2026) done by Wepl
+ - fixed division by zero which occurred if a turn was finished while no alien
+   was left which is able to move, e.g. on the last mission if all aliens are
+   killed except the brain (issue #6623)
+
+ version AGA/CD남 1.2 (23.09.2026) done by Wepl
+ - rebuilt with current kickemu sources
 

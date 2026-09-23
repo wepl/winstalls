@@ -5,6 +5,7 @@
 ;  :Version.	$Id: ufo.asm 1.1 2015/07/19 22:43:38 wepl Exp wepl $
 ;  :History.	12.07.15 started
 ;		19.03.18 updated to latest kickemu
+;		2026-09-22 fix division by zero on alien turn progress bar
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -55,10 +56,12 @@ IOCACHE		= 45300		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $100		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu
 POINTERTICKS	= 1		;set mouse speed
+;SEGTRACKER			;add segment tracker
 SETPATCH			;enable patches from SetPatch 1.38
 ;SNOOPFS			;trace filesystem handler
 ;STACKSIZE	= 6000		;increase default stack
 ;TRDCHANGEDISK			;enable _trd_changedisk routine
+;WHDCTRL			;add WHDCtrl resident command
 
 ;============================================================================
 
@@ -72,21 +75,12 @@ slv_keyexit	= $59	;F10
 
 ;============================================================================
 
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"UFO Enemy Unknown",0
 slv_copy	dc.b	"1994 Microprose",0
 slv_info	dc.b	"adapted for WHDLoad by Wepl",10
-		dc.b	"OCS Version 1.0 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		dc.b	"OCS Version 1.1 "
+		INCBIN	".date"
 		dc.b	0
 	IFGE slv_Version-17
 slv_config	dc.b	"C1:B:Skip Intro",0
@@ -264,6 +258,7 @@ _pl_geo		PL_START
 		PL_END
 
 _pl_tactical	PL_START
+		PL_PS	$498e,_percent	;div by zero
 		PL_B	$3e76e,$60	;beq -> bra vbr
 		PL_PS	$3e796,_intoff	;smc
 		PL_P	$3e7ae,_flush	;smc
@@ -285,6 +280,19 @@ _flush		move.l	_resload,a0
 _intack		move.w	#$10,_custom+intreq
 		tst.w	_custom+intreqr
 		rte
+
+;calculation of the progress bar shown while the aliens are moving
+;divides by the amount of alien moves which is zero if no alien is able to
+;move, e.g. on the last mission if all aliens are killed except the brain
+;in: D0 = 100 * moves done, D1 = amount of moves, out: D0 = percentage
+
+_percent	tst.l	d1
+		beq	.none
+		divu	d1,d0		;values are small, no overflow possible
+		and.l	#$ffff,d0	;remove remainder
+		rts
+.none		moveq	#100,d0		;nothing to do, show complete bar
+		rts
 
 _ufotemp	dc.b	"ufotemp",0
 _geo		dc.b	"geo",0
