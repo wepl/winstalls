@@ -4,7 +4,6 @@
 ;		setups, upper half of the screen shows performance with test
 ;		code located in Chip memory, lower half code in ExpMem (Fast)
 ;  :Author.	Wepl
-;  :Version.	$Id: speed.asm 1.13 2020/03/21 02:17:07 wepl Exp wepl $
 ;  :History.	xx.xx.xx started
 ;		12.12.00 cleanup for public release
 ;		20.02.01 slave is also cacheable, more clear results with NoMMU
@@ -14,6 +13,7 @@
 ;			 options added to control repeat etc.
 ;		21.03.20 interruptible after each test, several optimizations
 ;			 create files with timestamp
+;		07.10.26 imported to winstalls repo
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -27,13 +27,16 @@
 
  BITDEF AF,68060,7
 
-	OUTPUT	"ram:speed.slave"
+	IFD BARFLY
 
+	OUTPUT	"ram:speed.slave"
 	BOPT	O+			;enable optimizing
 	BOPT	OG+			;enable optimizing
 	BOPT	w4-			;disable 64k warnings
 	BOPT	wo-			;disable optimize warnings
 	SUPER
+
+	ENDC
 
 ;======================================================================
 
@@ -58,10 +61,9 @@ _expmem		dc.l	EXPMEMLEN		;ws_ExpMem
 		dc.w	_config-_base		;ws_config
 
 _name		dc.b	"Memory Speed Benchmark Slave",0
-_copy		dc.b	"2000-2003,2011,2020 Wepl",0
+_copy		dc.b	"2000-2003,2011,2020,2026 Wepl",0
 _info		dc.b	"done by Wepl "
-	DOSCMD	"WDate  >T:date"
-	INCBIN	"T:date"
+	INCBIN	.date
 		dc.b	0
 _config		dc.b	"C1:B:Run in Usermode;"
 		dc.b	"C2:L:Test period:1/11s,1s,2s,10s;"
@@ -637,7 +639,7 @@ _pc		movem.l	d0-d5/a0-a1,-(a7)
 		movem.l	(a7)+,d0-d5/a0-a1
 		rts
 
-_font		INCBIN	sources:pics/pic_font_5x6_br.bin
+_font		INCBIN	pic_font_5x6_br.bin
 _font_
 _stuffend
 
@@ -679,8 +681,8 @@ _leg4		dc.b	"pcr",0
 _top1		dc.b	">>speed<< - amount of memory accesses per %ld/11 second",0
 _top2		dc.b	"AttnFlags=$%lx  Eclock=%ld  whdload=%ld.%ld.%ld",0
 _top3		dc.b	"chip(code top)=$%lx  exp(code bottom)=$%lx  slv=$%lx",0
-_quit		dc.b	"hold lmb to quit and save pic  v1.11 wepl "
-	INCBIN	t:date
+_quit		dc.b	"hold lmb to quit and save pic  v1.12 wepl "
+	INCBIN	.date
 		dc.b	0
 	EVEN
 
