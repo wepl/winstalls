@@ -6,6 +6,8 @@
 ;		see speed.asm for that
 ;  :Author.	Wepl
 ;  :History.	08.10.26 started, derived from speed.asm
+;		11.10.26 the measurement loop is left by a flag instead of
+;			 patching the stack frame
 ;  :Requires.	WHDLoad v18, MMU
 ;  :Copyright.	Public Domain
 ;  :Language.	68020 Assembler
@@ -231,10 +233,10 @@ _start	;	A0 = resident loader
 		move.b	#CIACRAF_RUNMODE,(ciacra,a4)
 		bset	#CIACRAB_LOAD,(ciacra,a4)
 		move.b	#$7f,(ciaicr,a4)
-		move.b	#CIAICRF_SETCLR|CIAICRF_TA,(ciaicr,a4)
-		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena,a6)
 		tst.b	(ciaicr,a4)
+		move.b	#CIAICRF_SETCLR|CIAICRF_TA,(ciaicr,a4)
 		move.w	#INTF_PORTS,(intreq,a6)
+		move.w	#INTF_SETCLR|INTF_INTEN|INTF_PORTS,(intena,a6)
 
 	;set extra loops, _loops+1 periods of 1/11s are measured
 		move.l	(_custom2),d0
@@ -377,15 +379,27 @@ _start	;	A0 = resident loader
 ;
 ; the loop is aborted by the cia timer a interrupt, which is vectored to
 ; the end of the loop, there CALC_E either restarts the timer for the next
-; period or returns to the instruction after the loop
+; period or sets the flag which leaves the loop
+;
+; the flag is used instead of patching the return address in the stack
+; frame, because only the 68060 grants that the first instruction of an
+; exception handler is executed before a pending interrupt is taken, on the
+; 68030/040 the timer interrupt may be taken right after an access fault of
+; a measured access, the frame on top of the stack is then the one of the
+; interrupt within the access fault handler, patching it would leave the
+; handler without completing the access and abandon its frame on the stack,
+; d4-d7 and a4-a7 are not touched by any of the handlers, so the flag
+; survives and the loop is left at an instruction boundary
 ;
 ; d1.w	line
 ; d2.l	amount of performed accesses
 ; d4.w	remaining periods
+; d6.b	flag to leave the loop
 
 CALC_S	MACRO
 		move.l	(_loops),d4
 		moveq	#0,d2
+		moveq	#0,d6
 		pea	\1			;stop address
 		move.l	(a7)+,$68
 	CNOP 2,4
@@ -395,17 +409,14 @@ CALC_S	MACRO
 CALC_E	MACRO
 		btst	#CIAICRB_TA,(ciaicr,a4)
 		beq	_badint
+		move.w	#INTF_PORTS,(intreq,a6)
 		subq.w	#1,d4
 		bmi	.quit\@
-		move.w	#INTF_PORTS,(intreq,a6)
 		bset	#CIACRAB_START,(ciacra,a4)
 		rte
-.quit\@		move.w	#INTF_PORTS,(intreq,a6)
-		tst.w	(dmaconr,a6)		;delay for intack
-		lea	.back\@,a1
-		move.l	a1,(2,a7)
+.quit\@		tst.w	(dmaconr,a6)		;delay for intack
+		st	d6			;leave the loop
 		rte
-.back\@
 	ENDM
 
 ; the gap between two groups of tests, in the text log the empty line is
@@ -437,9 +448,11 @@ SNOOP	MACRO
 		\2
 		\2
 		addq.l	#8,d2
-		bra	.loop\@
+		tst.b	d6
+		beq	.loop\@
+		bra	.done\@
 .go\@		CALC_E
-		bsr	_pr
+.done\@	bsr	_pr
 	ENDM
 
 ;======================================================================
@@ -448,9 +461,7 @@ SNOOP	MACRO
 	;place, so a round which is aborted keeps the lines of the one before,
 	;that works because all lines have the same length, _logmax is the end
 	;of the longest round and therefore the end of the log
-_tests		lea	(_logbuf),a0
-		move.l	a0,(_logptr)
-		clr.b	(_loggap)
+_tests		move.l	#_logbuf,(_logptr)
 
 		move.w	#TOPY-(CHARHEIGHT+1),d1
 		move.w	#$1200,d7		;value written, harmless everywhere
@@ -544,9 +555,8 @@ _pr		movem.l	d0-d3/a0-a2,-(a7)
 		move.l	a7,a2			;args
 		lea	(_logline),a1		;format
 		move.l	(_logptr),a0		;buffer
-		tst.b	(_loggap)
+		bclr	#0,(_loggap)
 		beq	.nogap
-		clr.b	(_loggap)
 		move.b	#10,(a0)+		;the pending group separator
 .nogap		move.l	#_logend,d0
 		sub.l	a0,d0			;buflen
@@ -703,7 +713,7 @@ _top2		dc.b	"%02d.%02d.%02d %02d:%02d:%02d  Attn=$%lx  Eclock=%ld  whdload=%ld.%
 _top3		dc.b	"  path                             accesses  us/access",0
 _leg1		dc.b	"* makes the copperlist check walk the list",0
 _leg2		dc.b	"  short copperlist %ld instructions, long %ld",0
-_quit		dc.b	"hold lmb to quit and save text  v1.0 wepl "
+_quit		dc.b	"hold lmb to quit and save text  v1.1 wepl "
 	INCBIN	.date
 		dc.b	0
 	EVEN
