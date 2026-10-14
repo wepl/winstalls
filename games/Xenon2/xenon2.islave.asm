@@ -2,7 +2,6 @@
 ;  :Program.	xenon2.islave.asm
 ;  :Contents.	Imager for Xenon 2
 ;  :Author.	Wepl
-;  :Version.	$Id: xenon2.islave.asm 1.3 2005/05/11 17:52:46 wepl Exp wepl $
 ;  :History.	10.08.04 created
 ;		11.02.05 v6 added
 ;  :Requires.	-
@@ -42,7 +41,7 @@
 ;---------------------------------------------------------------------------*
 
 	INCDIR	Includes:
-	INCLUDE	RawDic.i
+	INCLUDE	RawDIC.i
 
 	IFD BARFLY
 	OUTPUT	"Develop:Installs/Xenon2 Install/Xenon2.ISlave"
@@ -65,8 +64,7 @@
 		dc.b	"$VER: "
 _text		dc.b	"Xenon 2 Imager",10
 		dc.b	"Done by Wepl, Version 1.1 "
-	DOSCMD	"WDate >T:date"
-	INCBIN	"T:date"
+	INCBIN	".date"
 		dc.b	".",0
 	EVEN
 
@@ -119,7 +117,7 @@ _decodev61	move.l	#$55555555,d5		;D5 = 55555555
 		or.l	d3,d0
 		eor.l	d0,d4
 		bne	.error
-		
+
 		moveq	#IERR_OK,d0
 		rts
 
@@ -151,7 +149,7 @@ _decodev62	move.l	#$55555555,d5		;D5 = 55555555
 		or.l	d3,d0
 		eor.l	d0,d4
 		bne	.error
-		
+
 		moveq	#IERR_OK,d0
 		rts
 
@@ -240,7 +238,7 @@ _decodev5	move.l	d0,d6			;D6 = track number
 		addq.w	#1,d7
 		cmp.w	#12,d7
 		bne	.sector
-		
+
 		moveq	#IERR_OK,d0
 		rts
 

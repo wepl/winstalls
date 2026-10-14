@@ -19,13 +19,13 @@
             eye.
   Spider:   Destroy as much web as possible.  Fly down to face spider and
             fire continuously.
-  Crayfish: Travels in figure eight.  Stay below and fire in it's face.
+  Crayfish: Travels in figure eight.  Stay below and fire in its face.
   Snake:    Attacks from left of screen.
   Dragon:   Shoot the side heads first, then tail, then main head.
   Head:     Shoot both eyes, avoiding laser fire and extending tongue.  Shoot
             at head when tongue goes in.
   Tank:     Use missiles.
-  Gand Spaceship: Shoot all cannons until totally destroyed.
+  Grand Spaceship: Shoot all cannons until totally destroyed.
           ITEM             COST         COMMENTS
   +--------------------+---------+--------------------------------+
   | Advice             |    200  | Only useful after Level 1      |
@@ -45,7 +45,7 @@
   | Dive               |   4000  | Waste of Money, but fun        |
   | Missiles           |   4000  | Weak to start with             |
   | Laser              |   4000  | Awesome when using two or more |
-  | Drone              |   4500  | Two slow                       |
+  | Drone              |   4500  | Too slow                       |
   | Flamer             |   5000  | Extremely limited range        |
   | Bomb               |   5500  | Limited range but powerful     |
   | Extra Life         |   6000  | You'll need lots of these!     |

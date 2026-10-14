@@ -1,0 +1,21 @@
+#multiple-versions=y
+#man-file=Manual
+#hint-file=Hints
+#P_SelectVersion-Name-0=Floppy Disk version
+#P_SelectVersion-Name-1=CDTV version
+#P_SelectVersion-Code#1
+          (set #prefix-slave (cat #prefix "CDTV"))
+          (set #sub-dir "data")
+#P_MakeImages#0
+      ;----- 0 = Floppy Disk version - RawDIC
+      (set #last-file "Disk.1")		;last file the imager should create
+      (P_RawDIC)
+#P_MakeImages#1
+      ;----- 1 = CDTV version - Files
+      (message ("\nInsert your %s CD in any drive." @app-name))
+      (copyfiles
+        (help @copyfiles-help)
+        (source "XENONII:")
+        (dest #dest)
+        (pattern "(intro|level?|piccode|picdata?|sounds??|speech??|x2)")
+      )

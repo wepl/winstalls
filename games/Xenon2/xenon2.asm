@@ -1,14 +1,13 @@
 ;*---------------------------------------------------------------------------
 ;  :Program.	xenon2.asm
 ;  :Contents.	Slave for "Xenon 2"
-;  :Author.	Wepl
-;  :Version.	$Id: xenon2.asm 1.9 2005/05/11 17:47:20 wepl Exp wepl $
+;  :Author.	Wepl, JOTD
 ;  :History.	31.03.97 initial
 ;		12.04.97 adaptation from J.F.Fabre's (JOTD) Installer
 ;		20.12.98 work on CDTV version started
 ;		24.12.98 work on disk version started
 ;		25.12.98 disk version finished
-;		07.01.98 support for second disk version started
+;		07.01.99 support for second disk version started
 ;		03.06.99 support for third disk version added
 ;		17.06.00 highscores fixed
 ;		18.06.00 trainer fixed
@@ -19,17 +18,14 @@
 ;		11.03.05 support for v6 added
 ;		04.05.05 support for v6 continuing
 ;		11.05.05 autofire fix added
-;       24.12.17 (JOTD) adapted to WHDLoad v17
-;       25.02.18 (JOTD) added intro skip in floppy version,
-;                added cache flushes, 68000 quitkey
+;		24.12.17 (JOTD) adapted to WHDLoad v17
+;		25.02.18 (JOTD) added intro skip in floppy version, added cache flushes, 68000 quitkey
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9, Vasm
 ;  :To Do.
 ;---------------------------------------------------------------------------*
-
-;CDTV		;if defined Slave for CDTV version will be created
 
 	INCDIR	Includes:
 	INCLUDE	whdload.i
@@ -48,12 +44,11 @@
 	BOPT	w4-			;disable 64k warnings
 	SUPER
 	ENDC
-	
+
 	STRUCTURE	globals,$100
-		LONG	RESLOAD
+		LONG	_resload
 
 ;======================================================================
-
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	17			;ws_Version
@@ -82,56 +77,39 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 		dc.w	0                       ;ws_kickcrc
 		dc.w	_config-_base		;ws_config
 
-_config
-        dc.b    "C1:X:Trainer 9 lives/continues 100000 cash:0;"
+_config		dc.b    "C1:X:Trainer 9 lives/continues 100000 cash:0;"
 	IFD CDTV
-        dc.b    "C2:X:left mouse button emulates B CDTV button:0;"
+		dc.b    "C2:X:left mouse button emulates B CDTV button:0;"
 	ELSE
-        dc.b    "C2:X:Skip introduction:0;"	
+		dc.b    "C2:X:Skip introduction:0;"
 	ENDC
 		dc.b	0
+
 ;============================================================================
 
-
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
-		
-DECL_DATE:MACRO
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
-	IFD	DATETIME
-		incbin	datetime
-	ENDC
-	ENDM
-		
 	IFND CDTV
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1988 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl & JOTD",10
-		dc.b	"Version 1.12 Floppy "
-		DECL_DATE
-		dc.b	0
+		dc.b	"Version 1.13 Floppy "
 	ELSE
+_x2		dc.b	"X2",0
 _data		dc.b	"data",0
 _name		dc.b	"Xenon 2 - Megablast",0
 _copy		dc.b	"1991 The Bitmap Brothers",0
 _info		dc.b	"installed & fixed by Wepl & JOTD",10
-		dc.b	"Version 1.7 CDTV "
-		DECL_DATE
-		dc.b	0
+		dc.b	"Version 1.8 CDTV "
 	ENDC
+	INCBIN	".date"
+		dc.b	0
+_highs		dc.b	"highs",0
 	EVEN
 
 ;======================================================================
 _start	;	A0 = resident loader
 ;======================================================================
 
-		move.l	a0,(RESLOAD)
+		move.l	a0,(_resload)
 		move.l	a0,a5			;A5 = resload
 		lea	(_custom),a6		;A6 = _custom
 
@@ -152,7 +130,7 @@ _start	;	A0 = resident loader
 		sub.l	a1,a1
 		jsr	(resload_Relocate,a5)
 
-		lea	_px2(pc),a0
+		lea	(_px2,pc),a0
 		sub.l	a1,a1
 		jsr	(resload_Patch,a5)
 
@@ -190,12 +168,10 @@ _start	;	A0 = resident loader
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,(intena,a6)
 		move.w	#INTF_VERTB,(intreq,a6)
 
-		
 		jmp	(a4)
 
 _vbi		move.w	#INTF_VERTB,(_custom+intreq)
 		rte
-
 
 _px2	PL_START
 	PL_P	$33930,_load_level
@@ -212,18 +188,17 @@ _px2	PL_START
 	PL_P	$3e09a,_load_intro2
 	;PL_P	$410b2,$34fb2			;strange sound problem (does not help)
 	PL_P	$411a8,_load_speech2
-	PL_P	$4fd28,_load_sounds2
+	PL_P	$4fd28,_load_sounds
 	PL_P	$4fd78,_load_sounds
 	PL_P	$50f68,_load_pics
 	PL_P	$50fce,_load_piccode
 	PL_END
 
-_load_sounds
-_load_sounds2	lea	($88a48),a1		;186900 bytes
+_load_sounds	lea	($88a48),a1		;186900 bytes
 
 _load		move.l	d1,a0
 		addq.l	#4,a0
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jmp	(resload_LoadFileDecrunch,a2)
 
 _load_speech	move.l	($411e4),a1		;107800 bytes
@@ -266,7 +241,7 @@ _savehighs	addq.l	#2,a7			;original
 		bsr	_crypt
 		move.l	a0,a1
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_SaveFile,a2)
 		movem.l	(a7)+,d0/a0
 
@@ -286,21 +261,12 @@ _gametrainer	move.w	#9,($cd0)		;ships
 		move.l	#100000,($ca0)		;cash
 		rts
 
-_x2		dc.b	"X2",0
-	EVEN
-
-_resload = RESLOAD
-
-	IFD	BARFLY
-	INCLUDE	Sources:whdload/keyboard.s147
-	ELSE
 	INCLUDE	whdload/keyboard.s
-	ENDC
-	
+
 ;======================================================================
 
 	ELSE
-	
+
 ;======================================================================
 
 	;bootblock
@@ -313,8 +279,6 @@ _resload = RESLOAD
 		movem.l	(a7)+,d0/a0
 		jsr	(resload_CRC16,a5)
 
-		;sub.l	a3,a3
-
 		cmp.w	#$7f8f,d0
 		beq	_v1			; intro, Imageworks slow zoom
 		cmp.w	#$7ea7,d0
@@ -326,10 +290,10 @@ _resload = RESLOAD
 		beq	_v5			; intro, Bitmap Brothers slow zoom
 		cmp.w	#$6827,d0
 		beq	_v6			; intro, Imageworks slow zoom
-		cmp.w	#$c0fb,d0	; version 2
+		cmp.w	#$c0fb,d0		; version 2
 		bne	_wrongver
 
-;============== version 2: 			; intro, Imageworks fast zoom
+;============== version 2 			; intro, Imageworks fast zoom
 
 _v2		move.b	#-1,$1055		;snoop ciab.prb
 		patch	$10ac,_v2_1
@@ -339,29 +303,29 @@ _v2		move.b	#-1,$1055		;snoop ciab.prb
 _v2_1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400.W,a0			;address
+		lea	$400,a0			;address
 		jsr	(resload_DiskLoad,a5)
-		lea	_pl_intro_v2(pc),a0
+		lea	_pl_intro_v2,a0
 		sub.l	a1,a1
 		jsr	(resload_Patch,a5)
-		move.l	#$636,_custom+cop1lc	;snoop copper dma before list		
-		jmp	$400.W
+		move.l	#$636,_custom+cop1lc	;snoop copper dma before list
+		jmp	$400
 
-_pl_intro_v2
-	PL_START
-	PL_P	$63f62,_v2_2
-	PL_B	$44f,$FF		;snoop ciab.prb
-	PL_W	$45e,$4200,		;snoop custom.bplcon0
-	PL_PS	$5f4,_keyboard
-	PL_IFC2
-	PL_S	$548,$FCA-$548	; skip intro
-	PL_ENDIF
-	PL_END
+_pl_intro_v2	PL_START
+		PL_P	$63f62,_v2_2
+		PL_B	$44f,$FF		;snoop ciab.prb
+		PL_W	$45e,$4200,		;snoop custom.bplcon0
+		PL_PS	$5f4,_keyboard
+		PL_IFC2
+		PL_S	$548,$FCA-$548		;skip intro
+		PL_ENDIF
+		PL_END
+
 _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	#$40000,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400.W,a0			;address
-		move.l  (RESLOAD),a5
+		lea	$400,a0			;address
+		move.l  (_resload),a5
 		jsr	(resload_DiskLoad,a5)
 
 		patchs	$fd4,_keyboard
@@ -381,7 +345,7 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	a0,$6bae+2
 
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
@@ -438,29 +402,28 @@ _v3		move.b	#-1,$1051		;snoop ciab.prb
 		bsr	_flushcache
 		jmp	$400
 
-.3
-		movem.l	d1/A0-A2,-(A7)
-		move.l	RESLOAD,A2
+.3		movem.l	d1/A0-A2,-(A7)
+		move.l	_resload,A2
 		sub.l	a1,a1
 		lea	.pl_intro(pc),a0
 		jsr	(resload_Patch,a2)
 		movem.l	(a7)+,d1/A0-A2
-		
+
 		bra	_common_game_v1_v3
 
-.pl_intro:
-	PL_START
-	PL_P	$641D4,.4
-	PL_IFC2
-	PL_S	$125E,$1492-$125E
-	PL_ENDIF
-	PL_END
+.pl_intro	PL_START
+		PL_P	$641D4,.4
+		PL_IFC2
+		PL_S	$125E,$1492-$125E
+		PL_ENDIF
+		PL_END
+
 	;after intro
 .4		move.l	#$70c00,d0		;offset
 		move.l	#$3fc00,d1		;size
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_DiskLoad,a2)
 		patch	$64276,_v13_5
 		bsr	_flushcache
@@ -468,8 +431,7 @@ _v3		move.b	#-1,$1051		;snoop ciab.prb
 
 ;============== version 1
 
-_v1:
-		move.b	#-1,$104d		;snoop ciab.prb
+_v1		move.b	#-1,$104d		;snoop ciab.prb
 		patch	$10b0,.1
 		bsr	_flushcache
 		jmp	$1016.W
@@ -477,7 +439,7 @@ _v1:
 .1		move.l	#$2c00,d0		;offset
 		move.l	#$6b6c0,d1		;size
 		moveq	#1,d2			;disk
-		lea	$400.W,a0			;address
+		lea	$400,a0			;address
 		jsr	(resload_DiskLoad,a5)
 
 		lea	$64de4,a7		;$410
@@ -485,14 +447,13 @@ _v1:
 		rol.l	#8,d0			;$a1a
 		eor.l	#$400,d0		;$a20
 		ror.l	#8,d0			;$a22
-		;prefetching problem on UAE/non 68000?
-		;skips some code that writes ILLEGAL in $64B5E
-		;which is the instruction just after the current instruction
-		;intended to destroy the code after it's executed??
-		skip	4,$64b5a		
+	;prefetching problem on UAE/non 68000?
+	;skips some code that writes ILLEGAL in $64B5E
+	;which is the instruction just after the current instruction
+	;intended to destroy the code after it's executed??
+		skip	4,$64b5a
 		patch	$64b84,.2
-		
-		
+
 		bsr	_flushcache
 		jmp	$64b48			;$a24
 
@@ -504,31 +465,28 @@ _v1:
 		bsr	_flushcache
 		jmp	$400.W
 
-.3
-		movem.l	d1/A0-A2,-(A7)
-		move.l	RESLOAD,A2
+.3		movem.l	d1/A0-A2,-(A7)
+		move.l	_resload,A2
 		sub.l	a1,a1
 		lea	.pl_intro(pc),a0
 		jsr	(resload_Patch,a2)
 		movem.l	(a7)+,d1/A0-A2
-	
-	bra	_common_game_v1_v3
-	
-.pl_intro:
-	PL_START
-	PL_P	$641D2,.4
 
-	PL_IFC2
-	PL_S	$125E,$1492-$125E
-	PL_ENDIF
-	PL_END
-	
+		bra	_common_game_v1_v3
+
+.pl_intro	PL_START
+		PL_P	$641D2,.4
+		PL_IFC2
+		PL_S	$125E,$1492-$125E
+		PL_ENDIF
+		PL_END
+
 	;after intro
 .4		move.l	#$70c00,d0		;offset
 		move.l	#$3fc00,d1		;size
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_DiskLoad,a2)
 		patch	$64260,_v13_5
 		jmp	$6423c
@@ -536,36 +494,35 @@ _v1:
 _common_game_v1_v3
 	; but there's another strange thing that happens on WinUAE without "more compatible"
 	; let's fix it (copylock key overwrites some code)
-	move.l	#$7670CF6B,d0		;CopyLock
-	MOVE.L #$7670cb6b,D1		; 00000B82 223c 7670 cb6b (not exactly same value)
-	MOVE.L D1,(A0)				; 00000B88 2081   this overwrites the next instruction
-    MOVE.L (A0),$0024 ;  00000B8A 21d0 0024  possible that this code is required for protection
-	jmp	$b8e.W		; instead of jumping to $B82, no prefetch issue, and protection code is executed
+		move.l	#$7670CF6B,d0		;CopyLock
+		MOVE.L	#$7670cb6b,D1		; 00000B82 223c 7670 cb6b (not exactly same value)
+		MOVE.L	D1,(A0)			; 00000B88 2081   this overwrites the next instruction
+		MOVE.L	(A0),$0024		; 00000B8A 21d0 0024  possible that this code is required for protection
+		jmp	$b8e.W			; instead of jumping to $B82, no prefetch issue, and protection code is executed
 
 	;main loaded and decrypted
-_v13_5		
-		patchs	$fd4,_keyboard
+_v13_5		patchs	$fd4,_keyboard
 		move.l	#$4ef8763a,$70f6	;third copylock
-		skip	($7654-$7642),$7642		;vector init
+		skip	($7654-$7642),$7642	;vector init
 		move.b	#-1,$76d1		;snoop ciab.prb
 		move.w	#$4200,$76e0		;snoop custom.bplcon0
 		patch	$47ce,_32bit
 		patch	$921a,_load
 		skip	8,$6f7c			;cash clear before each level
 		patchs	$8a58,_waitautofire
-		
+
 		lea	(_gametrainer,pc),a0
 		move.l	(_custom1,pc),d0
 		bne	.trained
 		lea	(_notrainer,pc),a0
-;;		skip	6,$7AF0	; no autofire reset when losing a life, seems not sufficent. Damn game code!
+;;		skip	6,$7AF0	; no autofire reset when losing a life, seems not sufficient. Damn game code!
 		patch	$8b18,_v13_savehighs
-.trained	
+.trained
 		move.w	#$4eb9,$6ba4
 		move.l	a0,$6ba4+2
 .skipsh
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
@@ -590,7 +547,7 @@ _savehighs	movem.l	d0/a0,-(a7)
 		bsr	_crypt
 		move.l	a0,a1
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_SaveFile,a2)
 		movem.l	(a7)+,d0/a0
 
@@ -610,9 +567,9 @@ _v4		move.l	#$400,d0		;offset
 		jsr	(resload_DiskLoad,a5)
 
 		pea	$14000+$281b6
-		pea	_v4_load(pc)
+		pea	_v4_load
 		bra	_v45_2
-		
+
 ;============== version 5
 
 _v5		moveq	#12,d1			;offset
@@ -625,11 +582,11 @@ _v5		moveq	#12,d1			;offset
 		jsr	(resload_Decrunch,a5)
 		tst.l	d0
 		beq	_wrongver
-		
+
 		lea	.pl1(pc),a0
 		lea	$400,a1
 		jsr	(resload_Patch,a5)
-		
+
 		move.l	#$850,_custom+cop1lc	;snoop copper dma before list
 		lea	$78000,a0
 		move.w	#$7d00/4-1,d0
@@ -651,7 +608,6 @@ _v5		moveq	#12,d1			;offset
 		PL_ENDIF
 		PL_END
 
-	
 _v5_2		bsr	_v5_load1
 
 	;load filetable
@@ -659,26 +615,26 @@ _v5_2		bsr	_v5_load1
 		move.l	#$16*4,d1		;size
 		moveq	#1,d2			;disk
 		lea	$380,a0			;address
-		move.l	RESLOAD,a5
+		move.l	_resload,a5
 		jsr	(resload_DiskLoad,a5)
 
 		pea	$400
 		pea	_v5_load2(pc)
-		
+
 _v45_2		lea	$14006,a0
 		lea	$400,a1
 		jsr	(resload_Decrunch,a5)
 		tst.l	d0
 		beq	_wrongver
-		
+
 		lea	.pl(pc),a0
 		lea	$400,a1
 		jsr	(resload_Patch,a5)
-		
+
 		lea	$400+$90e2,a0
 		move.w	#$4ef9,(a0)+
 		move.l	(a7)+,(a0)+
-		
+
 		lea	(_gametrainer,pc),a0
 		move.l	(_custom1,pc),d0
 		bne	.trained
@@ -688,7 +644,7 @@ _v45_2		lea	$14006,a0
 		move.l	a0,$400+$6a34+4
 
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
@@ -724,7 +680,7 @@ _v45_savehighs	addq.l	#2,a7			;original
 		bra	_savehighs
 
 _decrunch	movem.l	d0-d1/a0-a2,-(a7)
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_Decrunch,a2)
 		tst.l	d0
 		beq	_wrongver
@@ -733,9 +689,7 @@ _decrunch	movem.l	d0-d1/a0-a2,-(a7)
 
 ;============== version 6
 
-_v6	;	bra	_v6main
-
-		move.l	#0,d0			;offset
+_v6		move.l	#0,d0			;offset
 		move.l	#$4b170,d1		;length
 		moveq	#1,d2			;disk
 		lea	$400,a0			;address
@@ -748,7 +702,7 @@ _v6	;	bra	_v6main
 		lea	.pl(pc),a0
 		lea	0,a1
 		jsr	(resload_Patch,a5)
-		
+
 		move.l	#$c02,$dff080		;copper list
 		lea	$78000,a0
 		move.w	#$8000/4-1,d0
@@ -775,14 +729,14 @@ _v6main		lea	_custom,a6
 		move.l	#$2b120-$e0c,d1		;length
 		moveq	#1,d2			;disk
 		lea	$e0c,a0			;address
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_DiskLoad,a5)
 
 		move.l	#$3f1f4,d1
 		lea	$2b120,a0
 		lea	$e0c,a1
 		bsr	_v6decrunch
-		
+
 		lea	.pl(pc),a0
 		sub.l	a1,a1
 		jsr	(resload_Patch,a5)
@@ -796,7 +750,7 @@ _v6main		lea	_custom,a6
 		move.l	a0,$6ba4+2
 
 		lea	(_highs,pc),a0
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
@@ -844,15 +798,15 @@ _v6main		lea	_custom,a6
 		addq.w	#1,d7
 		cmp.w	d4,d2
 		bne	.search
-		
+
 		sub.w	#3,d0			;diskimage starts at track 3
 		mulu	#$1b00,d0		;offset
 		mulu	#$1b00,d1		;length
 		moveq	#1,d2			;disk
 		lea	$54e00,a0
-		move.l	(RESLOAD),a5
+		move.l	(_resload),a5
 		jsr	(resload_DiskLoad,a5)
-		
+
 		lsl.w	#4,d7
 		lea	$94b2,a6		;fileaddresstable
 		add.w	d7,a6
@@ -862,7 +816,7 @@ _v6main		lea	_custom,a6
 		add.l	(a6)+,a0		;end packed
 		move.l	(a6)+,d1		;unpacked length
 		lea	(a1,d1.l),a2		;end unpacked
-		
+
 	move.l	-(a0),d0
 	eor.l	d0,d5
 .93C8	lsr.l	#1,d0
@@ -1076,7 +1030,7 @@ _notrainer	move.w	#3,($cca)		;ships
 _gametrainer	move.w	#9,$cca.w		;ships
 		move.l	#100000,$c9a.w		;cash
 		rts
-		
+
 		; this part isn't working properly, too hard to debug this bloody game, and its 7 versions
 		IFEQ	1
 _powerup:
@@ -1102,7 +1056,7 @@ _load0		mulu	#512,d0			;offset
 		mulu	#512,d1			;size
 		move.l	a0,-(a7)
 		add.l	d1,(a7)
-		move.l	(RESLOAD),a2
+		move.l	(_resload),a2
 		jsr	(resload_DiskLoad,a2)
 		move.l	(a7)+,a0
 		moveq	#0,d0
@@ -1134,25 +1088,24 @@ _waitautofire	move.b	#$3a,(12,a1)		;original
 		movem.l	(a7)+,d0-d2
 		rts
 
-_flushcache:
-	move.l	a2,-(a7)
-	move.l	RESLOAD,a2
-	jsr	resload_FlushCache(a2)
-	move.l	(a7)+,a2
-	rts
+_flushcache	move.l	a2,-(a7)
+		move.l	_resload,a2
+		jsr	(resload_FlushCache,a2)
+		move.l	(a7)+,a2
+		rts
 
 ; useful to shut DMA and set SR when skipping intro
 _shutdma_setsr:
 	move.w	#$2000,SR
 	move.w	#$4000,$DFF096
 	rts
-	
+
 _keyboard	move.l	d1,-(a7)
 		cmp.b	_keyexit(pc),d0
 		bne.b	.noquit
-		; JOTD added quitkey for 68000 (floppy version)		
+		; JOTD added quitkey for 68000 (floppy version)
 		pea	TDREASON_OK
-		move.l	RESLOAD,-(a7)
+		move.l	_resload,-(a7)
 		addq.l	#resload_Abort,(a7)
 		rts
 .noquit
@@ -1177,7 +1130,7 @@ _wrongver	pea	TDREASON_WRONGVER
 _exit		pea	TDREASON_OK
 		bra	_end
 _debug		pea	TDREASON_DEBUG
-_end		move.l	(RESLOAD),-(a7)
+_end		move.l	(_resload),-(a7)
 		add.l	#resload_Abort,(a7)
 		rts
 
@@ -1190,9 +1143,7 @@ _custom1	dc.l	0
 		dc.l	WHDLTAG_CUSTOM2_GET
 _custom2	dc.l	0
 		dc.l	WHDLTAG_CUSTOM3_GET
-_custom3	dc.l	0
-		dc.l	TAG_DONE
-_highs		dc.b	"highs",0
+_custom3	dx.l	2
 
 ;======================================================================
 
