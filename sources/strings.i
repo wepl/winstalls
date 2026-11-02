@@ -27,6 +27,7 @@ STRINGS_I = 1
 ;		13.02.26 _FormatString using _VSNPrintF
 ;		23.02.26 _VSNPrintF flags moved to upper bits of D3
 ;			 _VSNPrintF optimized .putc subroutine
+;		28.10.26 _StrNCaseCmp fixed flags on return, Z was f(d2)
 ;  :Copyright.	All rights reserved.
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly 2.9
@@ -438,9 +439,7 @@ _StrCaseCmp	cmp.l	a0,a1		;string equal ?
 StrNCaseCmp	MACRO
 	IFND	STRNCASECMP
 STRNCASECMP=1
-_StrNCaseCmp	move.l	d2,-(a7)
-
-		tst.l	d0		;len = 0 ?
+_StrNCaseCmp	tst.l	d0		;len = 0 ?
 		beq	.equal
 		cmp.l	a0,a1		;string equal ?
 		beq	.equal
@@ -449,22 +448,26 @@ _StrNCaseCmp	move.l	d2,-(a7)
 		move.l	a1,d1
 		beq	.greater
 
+		move.l	d2,-(a7)
 .next		move.b	(a0)+,d1
 		UPPER	d1
 		move.b	(a1)+,d2
 		UPPER	d2
 		cmp.b	d1,d2
-		bhi	.less
-		blo	.greater
+		bhi	.less_d2
+		blo	.greater_d2
 		subq.l	#1,d0
 		bne	.next
 
+	;d2 must be restored before d0 is set, so that the flags reflect d0
+		move.l	(a7)+,d2
 .equal		moveq	#0,d0
-		bra	.end
+		rts
+.less_d2	move.l	(a7)+,d2
 .less		moveq	#-1,d0
-		bra	.end
+		rts
+.greater_d2	move.l	(a7)+,d2
 .greater	moveq	#1,d0
-.end		move.l	(a7)+,d2
 		rts
 	ENDC
 		ENDM
