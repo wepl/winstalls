@@ -19,3 +19,12 @@
         (dest #dest)
         (pattern "(intro|level?|piccode|picdata?|sounds??|speech??|x2)")
       )
+      ;directory for the compressed CD audio tracks, must be copied manually
+      (makedir (tackon #dest-org "data-da")
+        (help @makedir-help)
+      )
+      ;tooltype for CD audio, disabled because tracks and hardware are required
+      (tooltype
+        (dest (tackon #dest-org #icon_newname))
+        (settooltype ";Audio" "data-da")
+      )

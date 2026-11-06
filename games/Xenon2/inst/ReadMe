@@ -18,7 +18,7 @@
 	To install from a different drive than DF0: select Expert as
 	installation mode.
 
-	CDTV: You need 1.0 MB ChipMem and 0.5 MB OtherMem.
+	CDTV: You need WHDLoad 21+, 1.0 MB ChipMem and 0.5 MB OtherMem.
 	Floppy: You need 0.5 MB ChipMem and 0.5 MB OtherMem.
 	
 	You can quit the game by pressing F10 (key can be changed with
@@ -37,9 +37,14 @@
 	   won't be saved
 	 - in the CDTV version Custom2 redirects the left mouse button to the
 	   fire button B (if you don't have a joypad)
-	 - CD music control from the game is currently impossible (CDTV), 
-	   maybe there will be a future version of WHDLoad which makes it
-	   possible
+	 - in the CDTV version the CD audio tracks can be played via WHDLoad.
+	   This requires audio hardware supported by WHDLoad, currently only
+	   the AmiGUS. The CD audio tracks must be compressed (e.g. MP3) and
+	   copied manually as Track02.mp3 .. Track13.mp3 into the directory
+	   "data-da" created by the installer. Then enable the Tooltype
+	   "Audio=data-da" in the icon (remove the leading ';').
+	 - in the CDTV version the "select joypad mode" and "loading" screens
+	   are skipped
 
 	if you have problems with this installation please try first to get
 	a newer version of this install from 
@@ -55,6 +60,12 @@
 	and	aminet:game/patch/
 
 	Thanks to Frank Brandis for support.
+
+	version Floppy 1.13 CDTV 1.8 (06.11.2026) by Wepl:
+	- CDTV: CD audio tracks are played via WHDLoad (requires WHDLoad 21+)
+	- CDTV: "select joypad mode" and "loading" screens skipped
+	- CDTV: stack moved to fast memory
+	- trainer and highscore patches reworked
 
 	version Floppy 1.12 (14.07.2019) done by JOTD:
 	- reduced chipmem usage to strict $80000 instead of $81000, so 512k

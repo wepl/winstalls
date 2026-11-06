@@ -20,7 +20,12 @@
 ;		11.05.05 autofire fix added
 ;		24.12.17 (JOTD) adapted to WHDLoad v17
 ;		25.02.18 (JOTD) added intro skip in floppy version, added cache flushes, 68000 quitkey
-;  :Requires.	-
+;		15.10.26 CDTV: CD audio via resload_Audio added
+;		06.11.26 trainer, highscore saving and CDTV LMB fix moved into patchlists
+;		06.11.26 CDTV: "select joypad mode" screen skipped
+;		06.11.26 CDTV: stack moved to ExpMem
+;		06.11.26 CDTV: "loading" screens skipped
+;  :Requires.	CDTV version: WHDLoad 21+
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
 ;  :Translator.	Barfly V2.9, Vasm
@@ -51,7 +56,11 @@
 ;======================================================================
 
 _base		SLAVE_HEADER			;ws_Security + ws_ID
+	IFD CDTV
+		dc.w	21			;ws_Version
+	ELSE
 		dc.w	17			;ws_Version
+	ENDC
 		dc.w	WHDLF_NoError		;ws_flags
 	IFD CDTV
 		dc.l	$c6000			;ws_BaseMemSize
@@ -68,7 +77,11 @@ _base		SLAVE_HEADER			;ws_Security + ws_ID
 		dc.w	0			;ws_DontCache
 _keydebug	dc.b	0			;ws_keydebug
 _keyexit	dc.b	$59			;ws_keyexit = F10
+	IFD CDTV
+_expmem		dc.l	$1000			;ws_ExpMem
+	ELSE
 		dc.l	0			;ws_ExpMem
+	ENDC
 		dc.w	_name-_base		;ws_name
 		dc.w	_copy-_base		;ws_copy
 		dc.w	_info-_base		;ws_info
@@ -76,6 +89,9 @@ _keyexit	dc.b	$59			;ws_keyexit = F10
 		dc.l	0                       ;ws_kicksize
 		dc.w	0                       ;ws_kickcrc
 		dc.w	_config-_base		;ws_config
+	IFD CDTV
+		dc.w	0			;ws_MemConfig
+	ENDC
 
 _config		dc.b    "C1:X:Trainer 9 lives/continues 100000 cash:0;"
 	IFD CDTV
@@ -119,6 +135,12 @@ _start	;	A0 = resident loader
 
 	IFD CDTV
 
+	;the game sets ssp to $84f9c in chip memory (lea lbL084B9C,sp), the
+	;stack then grows into the end of the buffer lbL07F112, use ExpMem
+	;instead, the lea in the game is skipped
+		move.l	(_expmem,pc),a7
+		add.l	#$1000,a7
+
 	;install keyboard quitter
 		bsr	_SetupKeyboard
 	;load exe
@@ -139,15 +161,6 @@ _start	;	A0 = resident loader
 		bne	.1
 		move.w	#4,($12,a4)		;3=pal 4=ntsc
 .1
-		lea	(_gametrainer,pc),a0
-		move.l	(_custom1,pc),d0
-		bne	.trained
-		lea	(_notrainer,pc),a0
-		patch	$3c54a,_savehighs
-.trained	lea	$3a296,a1
-		move.l	#$4e714eb9,(a1)+
-		move.l	a0,(a1)
-
 		lea	(_highs,pc),a0
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
@@ -159,10 +172,6 @@ _start	;	A0 = resident loader
 		move.l	(a7)+,a0
 		bsr	_crypt
 .nohighs
-		move.l	(_custom2,pc),d0
-		beq	.nolmb
-		move.l	#$bfe001,$35092+4	;second fire button -> LMB
-.nolmb
 		lea	(_vbi,pc),a0
 		move.l	a0,($6c)
 		move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,(intena,a6)
@@ -171,19 +180,44 @@ _start	;	A0 = resident loader
 		jmp	(a4)
 
 _vbi		move.w	#INTF_VERTB,(_custom+intreq)
+		tst	(_custom+intreqr)
 		rte
 
 _px2	PL_START
+	PL_S	$33910,10			;vbi with starfield for loading screen
 	PL_P	$33930,_load_level
+	PL_IFC2
+	PL_L	$35092+4,$bfe001		;second fire button -> LMB
+	PL_ENDIF
 	PL_P	$37a98,_32bit
+	PL_NOP	$3a296,2			;ships/cash init
+	PL_IFC1
+	PL_PS	$3a298,_gametrainer
+	PL_ELSE
+	PL_PS	$3a298,_notrainer
+	PL_P	$3c54a,_savehighs		;save highscores only without trainer
+	PL_ENDIF
 	PL_S	$3a742,12			;cash clear before each level
-	PL_R	$3a924				;cdtv.device stuff
-	PL_R	$3a9ba				;cdtv.device stuff
+	PL_P	$3a8f6,_cd_stop			;cdtv.device stop playing
+	PL_P	$3a924,_cd_play			;cdtv.device play track
+	PL_R	$3a95c				;cdtv.device restart track (vbi), done via WHDLAUDF_LOOP
+	PL_R	$3a9ba				;cdtv.device set volume, game sets only maximum volume
+	PL_S	$3aa18,6			;lea lbL084B9C,sp, stack is set in ExpMem by the slave
 	PL_S	$3aa4a,$3aae8-$3aa4a		;os stuff
 	PL_S	$3ab2c,$3ab40-$3ab2c		;asking exec.VBlankFrequency
 	PL_PS	$3c07e+$400,_waitautofire
 	PL_P	$3c7de,_load_speech
+	PL_S	$3c83c,$3c976-$3c83c		;skip "select joypad mode and press button a"
+	;loading screens are skipped, the starfield data used by the vbi
+	;lbC034B7C are not initialized then (div zero), so that vbi is
+	;not installed during loading
+	PL_R	$3c9e2				;show "loading please wait"
+	PL_R	$3c9ea				;show "loading level"
+	PL_R	$3ca1a				;hide "loading please wait"
+	PL_R	$3ca22				;hide "loading level"
+	PL_S	$3d284,10			;vbi with starfield for loading screen
 	PL_P	$3d2a4,_load_level2
+	PL_S	$3d85e,10			;vbi with starfield for loading screen
 	PL_P	$3d86e,_load_intro
 	PL_P	$3e09a,_load_intro2
 	;PL_P	$410b2,$34fb2			;strange sound problem (does not help)
@@ -193,6 +227,34 @@ _px2	PL_START
 	PL_P	$50f68,_load_pics
 	PL_P	$50fce,_load_piccode
 	PL_END
+
+; play cd audio track
+; IN:	d0.w = track number
+
+_cd_play	movem.l	d0-d2/a0-a2,-(a7)
+		and.l	#$ffff,d0
+		move.l	d0,$3a8f2		;actual playing track
+		move.l	d0,d1			;track
+		moveq	#WHDLAUDC_PLAY,d0
+		moveq	#WHDLAUDF_LOOP,d2
+		move.l	(_resload),a2
+		jsr	(resload_Audio,a2)
+		movem.l	(a7)+,d0-d2/a0-a2
+		rts
+
+; stop playing cd audio
+
+_cd_stop	tst.l	$3a8f2			;actual playing track
+		bmi	.rts
+		movem.l	d0-d2/a0-a2,-(a7)
+		moveq	#WHDLAUDC_STOP,d0
+		moveq	#0,d1
+		moveq	#0,d2
+		move.l	(_resload),a2
+		jsr	(resload_Audio,a2)
+		movem.l	(a7)+,d0-d2/a0-a2
+		move.l	#-1,$3a8f2
+.rts		rts
 
 _load_sounds	lea	($88a48),a1		;186900 bytes
 
@@ -328,21 +390,9 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l  (_resload),a5
 		jsr	(resload_DiskLoad,a5)
 
-		patchs	$fd4,_keyboard
-		skip	($7058-$7046),$7046	;vector init
-		move.b	#-1,$70ab		;snoop ciab.prb
-		patch	$47d8,_32bit
-		patch	$9012,_load
-		skip	8,$6f86			;cash clear before each level
-		patchs	$847a,_waitautofire
-
-		lea	(_gametrainer,pc),a0
-		move.l	(_custom1,pc),d0
-		bne	.trained
-		lea	(_notrainer,pc),a0
-		patch	$853a,_v2_savehighs
-.trained	move.w	#$4eb9,$6bae
-		move.l	a0,$6bae+2
+		lea	(_pl_v2,pc),a0
+		sub.l	a1,a1
+		jsr	(resload_Patch,a5)
 
 		lea	(_highs,pc),a0
 		move.l	(_resload),a5
@@ -356,14 +406,27 @@ _v2_2		move.l	#$52*$1600,d0		;offset
 		move.l	(a7)+,a0
 		bsr	_crypt
 .nohighs
-		move.l	#$e841c3fc,d0
-		move.l	d0,$2d10		;access fault (lsr->asr,mulu->muls)
-		move.l	d0,$2d42		;access fault (lsr->asr,mulu->muls)
-		move.l	d0,$2f8e		;access fault (lsr->asr,mulu->muls)
-		move.l	d0,$34d6		;access fault (lsr->asr,mulu->muls)
-
-		bsr	_flushcache
 		jmp	$400
+
+_pl_v2		PL_START
+		PL_PS	$fd4,_keyboard
+		PL_L	$2d10,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$2d42,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$2f8e,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_L	$34d6,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_P	$47d8,_32bit
+		PL_IFC1
+		PL_PS	$6bae,_gametrainer
+		PL_ELSE
+		PL_PS	$6bae,_notrainer
+		PL_P	$853a,_v2_savehighs	;save highscores only without trainer
+		PL_ENDIF
+		PL_S	$6f86,8			;cash clear before each level
+		PL_S	$7046,$7058-$7046	;vector init
+		PL_B	$70ab,-1		;snoop ciab.prb
+		PL_PS	$847a,_waitautofire
+		PL_P	$9012,_load
+		PL_END
 
 _v2_savehighs	addq.l	#2,a7			;original
 		jsr	$86aa			;original
@@ -501,28 +564,12 @@ _common_game_v1_v3
 		jmp	$b8e.W			; instead of jumping to $B82, no prefetch issue, and protection code is executed
 
 	;main loaded and decrypted
-_v13_5		patchs	$fd4,_keyboard
-		move.l	#$4ef8763a,$70f6	;third copylock
-		skip	($7654-$7642),$7642	;vector init
-		move.b	#-1,$76d1		;snoop ciab.prb
-		move.w	#$4200,$76e0		;snoop custom.bplcon0
-		patch	$47ce,_32bit
-		patch	$921a,_load
-		skip	8,$6f7c			;cash clear before each level
-		patchs	$8a58,_waitautofire
-
-		lea	(_gametrainer,pc),a0
-		move.l	(_custom1,pc),d0
-		bne	.trained
-		lea	(_notrainer,pc),a0
-;;		skip	6,$7AF0	; no autofire reset when losing a life, seems not sufficient. Damn game code!
-		patch	$8b18,_v13_savehighs
-.trained
-		move.w	#$4eb9,$6ba4
-		move.l	a0,$6ba4+2
-.skipsh
-		lea	(_highs,pc),a0
+_v13_5		lea	(_pl_v13,pc),a0
+		sub.l	a1,a1
 		move.l	(_resload),a5
+		jsr	(resload_Patch,a5)
+
+		lea	(_highs,pc),a0
 		jsr	(resload_GetFileSize,a5)
 		cmp.l	#$fc-$66+$28,d0
 		bne	.nohighs
@@ -533,11 +580,29 @@ _v13_5		patchs	$fd4,_keyboard
 		move.l	(a7)+,a0
 		bsr	_crypt
 .nohighs
-		move.l	#$e841c3fc,$2f84	;access fault (lsr->asr,mulu->muls)
-
 		move.l	#$7670CF6B,d0		;CopyLock
 	;	move.l	#$5618,d1
 		jmp	$400
+
+_pl_v13		PL_START
+		PL_PS	$fd4,_keyboard
+		PL_L	$2f84,$e841c3fc		;access fault (lsr->asr,mulu->muls)
+		PL_P	$47ce,_32bit
+		PL_IFC1
+		PL_PS	$6ba4,_gametrainer
+		PL_ELSE
+		PL_PS	$6ba4,_notrainer
+	;;	PL_S	$7af0,6			;no autofire reset when losing a life, seems not sufficient. Damn game code!
+		PL_P	$8b18,_v13_savehighs	;save highscores only without trainer
+		PL_ENDIF
+		PL_S	$6f7c,8			;cash clear before each level
+		PL_L	$70f6,$4ef8763a		;third copylock
+		PL_S	$7642,$7654-$7642	;vector init
+		PL_B	$76d1,-1		;snoop ciab.prb
+		PL_W	$76e0,$4200		;snoop custom.bplcon0
+		PL_PS	$8a58,_waitautofire
+		PL_P	$921a,_load
+		PL_END
 
 _v13_savehighs	addq.l	#2,a7			;original
 		jsr	$8c88			;original
@@ -635,14 +700,6 @@ _v45_2		lea	$14006,a0
 		move.w	#$4ef9,(a0)+
 		move.l	(a7)+,(a0)+
 
-		lea	(_gametrainer,pc),a0
-		move.l	(_custom1,pc),d0
-		bne	.trained
-		lea	(_notrainer,pc),a0
-		patch	$400+$85f2,_v45_savehighs
-.trained	move.l	#$4e714eb9,$400+$6a34
-		move.l	a0,$400+$6a34+4
-
 		lea	(_highs,pc),a0
 		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
@@ -666,6 +723,13 @@ _v45_2		lea	$14006,a0
 		PL_L	$298e,$e841c3fc		;access fault (lsr->asr,mulu->muls)
 		PL_L	$2f12,$e841c3fc		;access fault (lsr->asr,mulu->muls)
 		PL_P	$431a,_32bit
+		PL_NOP	$6a34,2			;ships/cash init
+		PL_IFC1
+		PL_PS	$6a36,_gametrainer
+		PL_ELSE
+		PL_PS	$6a36,_notrainer
+		PL_P	$85f2,_v45_savehighs	;save highscores only without trainer
+		PL_ENDIF
 		PL_S	$6eae,12		;cash clear before each level
 		PL_S	$6f8c,$6fa2-$6f8c	;vector init
 		PL_B	$7029,-1		;snoop ciab.prb
@@ -741,14 +805,6 @@ _v6main		lea	_custom,a6
 		sub.l	a1,a1
 		jsr	(resload_Patch,a5)
 
-		lea	(_gametrainer,pc),a0
-		move.l	(_custom1,pc),d0
-		bne	.trained
-		lea	(_notrainer,pc),a0
-		patch	$8b18,.savehighs
-.trained	move.w	#$4eb9,$6ba4
-		move.l	a0,$6ba4+2
-
 		lea	(_highs,pc),a0
 		move.l	(_resload),a5
 		jsr	(resload_GetFileSize,a5)
@@ -771,6 +827,12 @@ _v6main		lea	_custom,a6
 		PL_L	$2f84,$e841c3fc		;access fault (lsr->asr,mulu->muls)
 		PL_L	$34cc,$e841c3fc		;access fault (lsr->asr,mulu->muls)
 		PL_P	$47ce,_32bit
+		PL_IFC1
+		PL_PS	$6ba4,_gametrainer
+		PL_ELSE
+		PL_PS	$6ba4,_notrainer
+		PL_P	$8b18,.savehighs	;save highscores only without trainer
+		PL_ENDIF
 		PL_S	$6f7c,8			;cash clear before each level
 		PL_S	$7642,$7654-$7642	;vector init
 		PL_S	$76c6,3*8		;cia access
@@ -1068,6 +1130,11 @@ _load0		mulu	#512,d0			;offset
 
 ; wait a specific time the fire button hasn't been pressed
 ; to avoid filling the highscore name with autofire
+; waiting only for the release of the fire button is not sufficient: when the
+; player is hammering fire or uses a joystick with hardware autofire, the
+; button is released shortly between two presses, the wait would end at once
+; and the next press would enter a letter, so the button must stay released
+; for about a second (50 frames)
 
 _waitautofire	move.b	#$3a,(12,a1)		;original
 
