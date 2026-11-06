@@ -42,7 +42,8 @@
 ;		29.10.25 added ws_MemConfig, WHDLTAG_EXPMEMSIZE_GET
 ;		24.11.25 add PL_VB/W/L
 ;		29.11.25 add PL_ANDB/W/L, PL_IFCxEQ, PL_IFCxRG, PL_IFVB/W/L, PL_IFVB/W/LEQ
-;  :Copyright.	19© 1996-2025 Bert Jahn, All Rights Reserved
+;		15.10.26 added resload_Audio
+;  :Copyright.	©1996-2026 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
 ;---------------------------------------------------------------------------*
@@ -588,6 +589,15 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; return the state of the selected joy/mouse port (8c)
 		; IN:	d0 = ULONG  port/flags
 		; OUT:	d0 = ULONG  state
+
+******* the following functions require ws_Version >= 21
+
+	ULONG	resload_Audio
+		; play audio tracks (CD-DA replacement) (90)
+		; IN:	d0 = ULONG  command, see WHDLAUDC_*
+		;	d1 = ULONG  argument 1 (command specific)
+		;	d2 = ULONG  argument 2 (command specific)
+		; OUT:	d0 = ULONG  result (command specific)
 
 	LABEL	resload_SIZEOF
 
@@ -1290,6 +1300,18 @@ PL_IFVLEQ	MACRO
 	dc.w	\1-.patchlist		;source (inside Slave!)
 	dc.l	\2			;value to compare
 		ENDM
+
+;=============================================================================
+; commands and flags for resload_Audio
+;=============================================================================
+
+WHDLAUDC_PLAY	= 1	; start playing a track, a playing track is stopped before
+			; d1 = track number 1..99, d2 = flags (see below)
+WHDLAUDC_STOP	= 2	; stop playing
+WHDLAUDC_STATUS = 3	; get status, returns d0 = number of playing track or 0
+WHDLAUDC_VOLUME = 4	; set volume, d1 = 0 (silent) .. $7fff (maximum)
+
+ BITDEF WHDLAUD,LOOP,0	; restart track after its end
 
 ;=============================================================================
 ; flags for resload_ReadJoyPort

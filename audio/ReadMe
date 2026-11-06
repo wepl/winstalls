@@ -1,0 +1,60 @@
+WHDLoad.Audio - CD-DA plugin for WHDLoad
+----------------------------------------
+
+CDTV and CD32 games play their music as CD-DA tracks from the CD. Under
+WHDLoad these tracks are replaced by compressed audio files, which are played
+via additional audio hardware.
+The plugin WHDLoad.Audio contains the hardware drivers. WHDLoad loads the
+tracks and calls the plugin via resload_Audio (requires WHDLoad 21+).
+
+Usage:
+- copy WHDLoad.Audio to the directory where WHDLoad is located
+- set the option Audio/K (Tooltype or CLI) to the directory with the tracks
+- the tracks are named trackNN.<ext>, NN = CD track number 01..99
+  (e.g. track02.mp3), case does not matter
+- the game must use level 2 interrupts (PORTS) and WHDLoad must be able to
+  move the VBR, otherwise there is no music
+
+Build:
+	make		build WHDLoad.Audio (vasm or basm)
+	make clean	remove all generated artefacts
+
+The plugin consists of a single hunk. On init all drivers are probed until the
+first one finds its hardware.
+
+AmiGUS driver (amigus.s)
+------------------------
+
+https://github.com/necronomfive/AmiGUS-pub
+
+- supported cards: AmiGUS (Zorro II) and AmiGUS mini (PCMCIA, interrupt via
+  Gayle)
+- requires amigus.library, the codec part of the card is reserved while
+  WHDLoad is running, if it is in use by another program audio is disabled
+- decoding is done in hardware by the VS1063a codec, supported formats:
+  mp3	MPEG 1/2 Layer III
+  ogg	Ogg Vorbis
+  flac	FLAC
+  wav	WAV (PCM, IMA ADPCM)
+  aac	AAC-LC, HE-AAC v2 (ADTS recommended, ADIF also possible)
+  m4a	MPEG4 audio (AAC), the mdat atom must be the last atom in the file,
+	convert if necessary (e.g. mp4creator -optimize)
+  wma	WMA 2/7/8/9 (not WMA Pro/Voice)
+  if multiple files exist for a track the first format in this list is used
+- the codec fifo is fed from the level 2 interrupt (watermark 1024 words), no
+  custom or cia registers are accessed
+- looping restarts the stream directly from the start without stop, this
+  works best with formats which resynchronize on frames (mp3, ogg, flac, aac
+  ADTS), with the others (wav, m4a, wma) the file header is fed in the
+  middle of the stream and may cause a click or glitch
+- volume $0..$7fff is mapped to 128 steps of codec attenuation (0.5 dB steps,
+  0 = silent)
+- after the end of a track the end fill bytes are fed, so the codec finishes
+  the decoding completely
+- during OS switches of WHDLoad (e.g. loading files) the interrupt is disabled,
+  the fifo plays out, longer OS actions may cause a gap in the music
+- the VS1063a patches package 2.6 of VLSI Solution is loaded on init and
+  after each codec reset (fixes e.g. FLAC and AAC decoding issues)
+  https://www.vlsi.fi/en/support/software/vs10xxpatches.html
+- the trace file (option Trace) shows card type, hardware and firmware
+  revision and the result of the codec initialization
