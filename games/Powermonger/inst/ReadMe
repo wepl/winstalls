@@ -39,6 +39,60 @@
 	or	aminet:dev/misc/whdload#?
 	and	aminet:game/patch/
 
+	version 1.5 (07.11.2026): game bug fixes
+	- Fixes for faults in the game's own code, applied by default. Each is
+	  a few bytes changed where the original reads the wrong register,
+	  width or bound; none changes the game's balance or data:
+	  - a supply run returned to a spot four cells south of the town
+	    clicked (the stored cell gained 256 from a dirty register)
+	  - a captain of a slow tribe walked away from his target in rain or
+	    snow at 6 units a tick (speed 10-16 = -6, stored unsigned and
+	    then taken as a signed step); he now walks toward it at speed 2
+	  - a man turned back by water wandered off in a direction unrelated
+	    to his facing (the step was looked up by the whole random draw
+	    instead of the facing byte)
+	  - a shooter's facing was set to the low byte of his target's y
+	    coordinate instead of the aim angle
+	  - a planted spy stayed on his home town's resident list, which then
+	    led into the host town's residents; he is now unlinked on planting
+	    and relinked on unmasking
+	  - the first sheep of every land had the handle that also ends a
+	    flock chain, so no shepherd could ever gather it; animal record 0
+	    is now left unused (39 animals per land instead of 40)
+	  - a sheep blocked by the shore then drifted one unit a tick faster
+	    than its pace
+	  - a loose sheep in the southern quarter of the map never moved (the
+	    row bound was 96 on a map 128 rows high)
+	  - a short, near-diagonal shot flew the wrong way when its step
+	    exceeded 127; the step is clamped
+	  - the computer's reinforcement army was ordered to a mirrored cell
+	    (the cell was packed y then x)
+	  - the settlement ring scan could replace a settlement's owner by
+	    half its headcount for the rest of the scan
+	- Four optional corrections that change how the game plays, each off
+	  by default:
+	  - diplomacy: a clash between tribes set their dispositions to the
+	    friendliest value (a signed -8 read as +248, and the entry before
+	    the right one), so an alliance after a war was free; and the
+	    computer's choice of target read a meaningless byte instead of the
+	    disposition. Fixed: clashes breed hostility and the computer reads
+	    real dispositions
+	  - alliance gifts: goods offered with an alliance were destroyed;
+	    they now reach the receiving town
+	  - target choice: a fighter kept a record number as his "best
+	    distance", so a nearer target replaced the old one only by
+	    accident; he now picks the nearest
+	  - AI town scoring: the computer scored its own towns with a dirty
+	    32-bit dividend and sent captains to distant towns for men and
+	    food; the division is now clean
+	- The switches are in WHDLoad's splash window ("Original game bugs:
+	  Fixed/Kept" and the four "Also fix" boxes), saved to the icon when
+	  started from Workbench, or as tooltypes: CUSTOM4=1 keeps the
+	  original bugs; CUSTOM5 is a bit mask of the four options (1
+	  diplomacy, 2 alliance gifts, 4 target choice, 8 AI town scoring).
+	- Every correction was checked against the unpatched game under
+	  emulation, before and after the change.
+
 	version 1.4.1 (19.02.2025):
 	- made Manual.pdf compatible to APDF, thanks Retroplay
 

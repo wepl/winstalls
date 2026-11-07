@@ -60,6 +60,11 @@ _config
 		; C2 is frame rate limit
 		dc.b	"C3:X:All maps conquered:0;"
 		dc.b	"C3:X:Win on retire:1;"
+		dc.b	"C4:L:Original game bugs:Fixed,Kept;"
+		dc.b	"C5:X:Also fix diplomacy:0;"
+		dc.b	"C5:X:Also fix alliance gifts:1;"
+		dc.b	"C5:X:Also fix target choice:2;"
+		dc.b	"C5:X:Also fix AI town scoring:3;"
 		dc.b	0
 
 ;============================================================================
@@ -68,7 +73,7 @@ _name		dc.b	"Powermonger",0
 _copy		dc.b	"1990 Bullfrog Productions",0
 _info		dc.b	"installed & fixed by Wepl",10
 		dc.b	"update by paraj",10
-		dc.b	"version 1.4 "
+		dc.b	"version 1.5 "
 		INCBIN	".date"
 		dc.b	0
 _keyexit2	dc.b	$45				;ws_keyexit = ESC
@@ -240,6 +245,11 @@ DIR = $400
 		bsr	_fastpatches
 
 		lea	(_pl_trainer,pc),a0
+		sub.l	a1,a1
+		move.l	(_resload,pc),a2
+		jsr	(resload_Patch,a2)
+
+		lea	(_pl_fixes,pc),a0
 		sub.l	a1,a1
 		move.l	(_resload,pc),a2
 		jsr	(resload_Patch,a2)
@@ -752,6 +762,173 @@ _alllevels
 .out
 		jmp	$1aac6			;fade to black
 ;--------------------------------
+
+
+;--------------------------------
+; Game bug fixes (version 1.5). Each entry names the row of the defect
+; register it corrects. Addresses are absolute (the program decrunches to
+; $1400). "Original game bugs: Fixed" (CUSTOM4 = 0, the default) applies the
+; corrections that only remove nonsense; the CUSTOM5 bits are the ones that
+; change how the game plays, each off by default.
+
+_pl_fixes	PL_START
+		PL_IFC4EQ 0			;Original game bugs: Fixed
+		PL_W	$4032,$d200		;36 supply run: cell packing adds the x byte only (no +4 rows)
+		PL_W	$4852,$4441		;29 blocked animal turns with its pace negated, not complemented
+		PL_L	$4806,$8000		;24 loose animal row bound is the map height (128 rows), not 96
+		PL_W	$471e,$6f02		;27 captain speed floored at 2 always...
+		PL_W	$4722,$4a43		;   tst.w d3
+		PL_W	$4724,$6e02		;   bgt
+		PL_W	$4726,$7602		;   moveq #2,d3
+		PL_W	$606c,$1340		;30 a shooter's facing is the angle returned, not the target y
+		PL_PS	$145d2,_wander_rotate	;32 recovery wander rotates by the stored facing
+		PL_NOPS	$145d8,2
+		PL_PS	$604a,_projectile_clamp	;33 projectile step bytes clamped instead of wrapping
+		PL_NOPS	$6050,1
+		PL_B	$6d1d,$08		;28 AI reinforcement packs the cell x then y...
+		PL_B	$6d21,$0a		;   ...like every other order
+		PL_PS	$dc76,_ring_headcount	;35 settlement ring scan counts in its own register
+		PL_W	$dc7c,$602c		;   bra past the in-line loop
+		PL_W	$dcaa,$e24a		;   lsr.w #1,d2
+		PL_W	$dcac,$b46d		;   cmp.w -$18(a5),d2
+		PL_W	$dcae,$ffe8
+		PL_W	$dcb0,$6f0e		;   ble
+		PL_W	$dcb2,$4e71
+		PL_PS	$44b4,_spy_plant	;34 a planted spy leaves his home building's list...
+		PL_PS	$3ee6,_spy_unmask	;   ...and an unmasked one is taken off the host's and put back home
+		PL_NOPS	$3eec,5
+		PL_PS	$3406,_animal_pool	;25 no animal takes handle 0, the flock terminator
+		PL_NOPS	$340c,1
+		PL_ENDIF
+		PL_IFC5X 0			;Also fix diplomacy (rows 1, 2, 4)
+		PL_W	$3824,$1035		;1+2 disposition adjust reads the entry it writes, signed
+		PL_W	$3826,$2010
+		PL_W	$3828,$4880
+		PL_W	$53ae,$fff8		;1 the clash penalty is -8, not +248
+		PL_W	$53ba,$fff8
+		PL_W	$706e,$0240		;4 AI target scoring indexes the disposition row by tribe
+		PL_W	$7070,$00ff
+		PL_NOPS	$7072,2
+		PL_ENDIF
+		PL_IFC5X 1			;Also fix alliance gifts (row 5)
+		PL_W	$3ad2,$671c
+		PL_B	$3ad9,$30
+		PL_W	$3aec,$1183		;move.b d3,$18(a0,d2.w): the receiver gets the goods
+		PL_W	$3aee,$2018
+		PL_W	$3af0,$548a		;addq.l #2,a2
+		PL_W	$3af2,$5242		;addq.w #1,d2
+		PL_ENDIF
+		PL_IFC5X 2			;Also fix target choice (row 23)
+		PL_W	$5c14,$3c01		;keep the candidate's distance as best-so-far
+		PL_ENDIF
+		PL_IFC5X 3			;Also fix AI town scoring (row 31)
+		PL_W	$711e,$6606
+		PL_W	$7124,$6008		;bra.b
+		PL_W	$7126,$48c0		;ext.l d0 before the divu
+		PL_ENDIF
+		PL_END
+
+; row 32: the wander step is rotated by the facing (low byte of the draw)
+_wander_rotate	move.w	d0,d2
+		and.w	#$ff,d2
+		moveq	#0,d0
+		jmp	$126ac			;the rotate; its rts returns to the game
+
+; row 33: both projectile step components clamped to -127..127 before the byte stores
+_projectile_clamp
+		cmp.w	#127,d0
+		ble	.a
+		move.w	#127,d0
+.a		cmp.w	#-127,d0
+		bge	.b
+		move.w	#-127,d0
+.b		cmp.w	#127,d1
+		ble	.c
+		move.w	#127,d1
+.c		cmp.w	#-127,d1
+		bge	.d
+		move.w	#-127,d1
+.d		move.b	d0,(4,a0)
+		move.b	d1,(5,a0)
+		rts
+
+; row 25: the first animal takes handle $14, so no animal has the handle 0 that ends a flock chain
+_animal_pool	tst.w	$7300a
+		bne	.chk
+		move.w	#$14,$7300a
+.chk		cmpi.w	#$320,$7300a		;the pool-full test the caller branches on
+		rts
+
+; row 35: the ring scan's headcount, counting in a saved register; returns the count in d2, owner d1 intact
+_ring_headcount	move.l	a2,-(a7)
+		move.w	d1,-(a7)
+		moveq	#0,d1
+		move.w	(2,a0),d0		;first building of the settlement
+		beq	.done
+		lea	$7592a,a2
+.l1		move.w	($a,a2,d0.w),d2		;first occupant
+		beq	.l4
+.l2		cmpi.b	#$3c,($1f,a4,d2.w)
+		beq	.l3
+		tst.b	(5,a4,d2.w)
+		ble	.l3
+		addq.w	#1,d1
+.l3		move.w	($18,a4,d2.w),d2	;next occupant
+		bne	.l2
+.l4		move.w	(8,a2,d0.w),d0		;next building
+		bne	.l1
+.done		move.w	d1,d2
+		move.w	(a7)+,d1
+		movea.l	(a7)+,a2
+		rts
+
+; row 34: unlink person (a1) from the occupant list of building (a2); clobbers d0, d1
+_spy_plant	move.w	($22,a1),($18,a3)	;the replaced instruction: home building saved in the team
+		move.l	a0,-(a7)
+		lea	$7592a,a2
+		adda.w	($22,a1),a2		;home building
+		move.l	a1,d0
+		sub.l	#$77b7a,d0		;his handle
+		move.w	($a,a2),d1		;head
+		cmp.w	d0,d1
+		bne	.walk
+		move.w	($18,a1),($a,a2)	;head = his next
+		bra	.ret
+.walk		tst.w	d1
+		beq	.ret
+		lea	$77b7a,a0
+		adda.w	d1,a0
+		move.w	($18,a0),d1
+		cmp.w	d0,d1
+		bne	.walk
+		move.w	($18,a1),($18,a0)	;node.next = his next
+.ret		movea.l	(a7)+,a0
+		rts
+
+_spy_unmask	move.l	a1,-(a7)		;a0 = the captain, a1 = his team
+		lea	$7592a,a2
+		adda.w	($22,a0),a2		;host building
+		move.l	a0,d0
+		sub.l	#$77b7a,d0		;his handle
+		move.w	($a,a2),d1
+		cmp.w	d0,d1
+		bne	.walk
+		move.w	($18,a0),($a,a2)	;host head = his next
+		bra	.relink
+.walk		tst.w	d1
+		beq	.relink
+		lea	$77b7a,a1
+		adda.w	d1,a1
+		move.w	($18,a1),d1
+		cmp.w	d0,d1
+		bne	.walk
+		move.w	($18,a0),($18,a1)
+.relink		movea.l	(a7)+,a1
+		lea	$7592a,a2
+		adda.w	($18,a1),a2		;home building (saved at the plant)
+		move.w	($a,a2),($18,a0)	;his next = home head
+		move.w	d0,($a,a2)		;home head = him
+		rts
 
 _introdat	DC.B	'INTRODAT'
 _start_up	DC.B	'START_UP'
