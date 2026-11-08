@@ -1,0 +1,59 @@
+Title......: HD-Installer for Sim City
+Type.......: Hard drive patch (WHDLoad)
+Author.....: Galahad of Fairlight (galahadfairlight@yahoo.co.uk)
+
+This patch applies to "Sim City", ©1989 Maxis
+
+Versions supported: 512K, 1.0, 1.2, CDTV
+
+Slave requires WHDLOAD V16+.
+512K version requires 0.5 MB Chip Mem (+ 1.0 other memory for preload)
+1.0 version requires 0.5MB Chip Mem (+1.5 other memory for preload)
+1.2 version requires 0.5MB Chip Mem (+1.5 other memory for preload)
+CDTV version requires 1.0MB Chip Mem (+4.0 other memory for preload)
+
+FEATURES:
+- Full load from Hard drive (REAL Files)
+- Lame-o-Protect removed (Doc Check or HLS Ben Herndon)
+- Save games to Hard drive
+- Quit option is 'F10'
+
+Thanks to Exotica for the icons
+
+NOTES:
+
+Started this install a long time ago, and promptly lost the lot in a 
+hard drive crash!
+
+In a way, thats a bit of a bonus, because KickDOS has been replaced by
+KickEMU and this install now uses files instead of diskimages that it
+did when I first did the install, so its better all round.
+
+Version 1.0 NTSC will be released as and when the KickEMU fault can be fixed.  
+The copy protection for this version is the rather lame-tastic HLS Ben
+Herndon system of Encryption, track check and decryption (2 passes no less!).
+
+This was removed quickly, but there it appears the Maxis method of detecting
+NTSC is rather crude, and it only has problems within the WHDLoad environment
+and nowhere else, so this leads me to believe its a KickEMU fault.
+
+I can't quite understand why Maxis would choose to use this particularly
+stupid protection method for their game.  They put a readme text on the disk
+telling you how to install to hard drive, but this copy protection means that
+you still need the original disk to be able to continue past the protection
+check!! I guess thats why they only used it the once, no other versions
+of Sim City carry this useless 'protection'.
+
+The CDTV version of this game expects 1Meg of Chip ram, so it will not work
+on any Amigas with less.  This game was never intended to be run on anything
+other than a CDTV, so this is to be expected.
+
+Special Regards go out to: Wepl for constantly striving to improve WHDLoad,
+Stingray, Magic Mushroom, WayneK, Jope, DLFRSilver, Musashi, KillerGorilla,
+and most people from EAB, and everyone from my 'illustrious' past who 
+are never forgotten! :)
+
+Regards, Galahad
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de
