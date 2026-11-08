@@ -1,0 +1,99 @@
+
+ THIS PACKAGE COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, STATUTORY OR OTHERWISE. THE ENTIRE RISK AS TO USE, RESULTS AND
+ PERFORMANCE OF THE PACKAGE IS ASSUMED BY YOU AND IF THE PACKAGE SHOULD PROVE
+ TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR OTHER REMEDIATION.
+ UNDER NO CIRCUMSTANCES, CAN THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE
+ CAUSED IN ANY USUAL, SPECIAL, OR ACCIDENTAL WAY, ALSO IF THE OWNER OR A THIRD
+ PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+
+ That install applies to "Flink CD32" © 1994 Psygnosis.
+
+ That install requires WHDLoad version 16.0 to be in the path. It can be found
+ in the WHDLoad package.
+
+ You need 2.0 MB ChipMem and 0.5 MB OtherMem.
+ You can quit the game by pressing '*' on the numeric keypad (key can be
+ changed with Tooltype "QuitKey=").
+
+ The game requires an installed A600/A1200/A4000 Kickstart 3.1 image.
+ The kickstart image must be located in the directory "Devs:Kickstarts" and
+ must be named "kick40063.A600", "kick40068.A1200" or "kick40068.A4000". The
+ image can be extracted from an A600/A1200/A4000 with tools like 'GrabKick' or
+ similar which can be found on Aminet.
+ If the image is of wrong version or altered in any way WHDLoad will quit with
+ an appropriate message.
+ Additionally the file "kick40063.A600.RTB", "kick40068.A1200.RTB" or
+ "kick40068.A4000.RTB" must be installed in the same directory as the kickstart
+ image. It can be found in the archive "util/boot/skick346.lha" on Aminet.
+
+ The game is designed for joypad use only. To make it playable with a joystick
+ too a joypad emulation via the keyboard has been implemented. The default
+ joypad to keyboard assignment is as follows:
+	Blue - Stop		- F1 (Action)
+	Green - Shuffle		- F2 (NTSC/PAL)
+	Yellow - Repeat		- F3 (Cast spell)
+	Grey - Play/Pause	- F4 (Pause)
+ You can change the keys using the Custom tooltype. The template for the string
+ is "Blue/K,Green/K,Yellow/K,Grey/K,LeftEar/K,RightEar/K,Force/S".
+ Example to set Grey button to Space and Blue to Del:
+	Custom=grey $40 blue $46
+ To make lowlevel.library detect a joystick you must move the stick right/left
+ or up/down a few times. After this the emulation will start to work.
+ You can also add/use the option Force to the Custom tooltype to disable the
+ auto sensing of the lowlevel.library and to force it to assume a joystick is
+ connected and enable the joypad emulation.
+	Custom=grey $40 blue $46 force
+
+ If you have problems with this installation please try and get a newer
+ version of this package from the WHDLoad WWW-Page. If that doesn't help try
+ some Tooltypes like NOCACHE, NOAUTOVEC, EXPCHIP, NOMMU, PAL or NTSC. If
+ that also fails, please inform the author via the Bug-Report-Form which
+ can be accessed on the WHDLoad WWW-Page.
+
+ For the full WHDLoad package, other installs and updates refer to:
+	http://www.whdload.de/
+ or	aminet:dev/misc/whdload#?
+ and	aminet:game/patch/
+
+ Features:
+ - joypad is emulated by joystick + keyboard (F1-F4)
+ - nice NI/MWB icons included
+ - source: https://github.com/wepl/winstalls/tree/master/games/Flink
+
+ Note:
+ - Since there is an extra life at the first level no trainer is needed, you
+   can get an unlimited amount of lives by getting it, leaving the level and
+   playing it again
+
+ Thanks to:
+ - Don Adan for the original files from CD32 version.
+
+ History:
+ - V1.3, July 2000: sound and crash in certain spells fixed by Harry
+
+ Mr.Larmer/Wanted Team in 1999 and Harry in July 2000.
+
+ version 2.0 (07.07.04) by Wepl:
+ - reworked for kickemu
+ - to save disk space and memory for preload you may uncompress (XFD) and
+   afterwards compress (ProPack) all *.wld and *.raw files
+
+ version 2.1 (31.08.05) by Wepl:
+ - joypad emulation has now user definable keys
+ - works with caches on 68060 (blitter interrupt handling fixed)
+ - correct language is automatically set
+
+ version 2.2 (14.12.05) by CFOU!/Wepl:
+ - problems with nonworking blue button when using joypad fixed
+ - sound problems fixed (more chip memory required)
+ - some color icons added
+
+ version 2.3 (30.05.09) by Wepl:
+ - language detection fixed (Italian was defaulted to Spanish), thanks to
+   Hexaae for the report
+
+ version 2.4 (09.06.09) by Wepl:
+ - joypad emulation now supports the Force keyword to disable auto sensing and
+   force joystick mode

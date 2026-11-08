@@ -1,0 +1,10 @@
+#version=3
+#sub-dir=data
+#P_MakeImages#3
+      (message ("\nInsert your %s CD in any drive." @app-name))
+      (copyfiles
+        (help @copyfiles-help)
+        (source "cdtv_test:")
+        (dest #dest)
+        (pattern "~(s|cd32.tm|fadelogo|isocd)")
+      )

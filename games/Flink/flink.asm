@@ -10,16 +10,16 @@
 ;		03.12.05 chip memory increased to fix sound
 ;		30.05.09 auto language fixed for italian->spanish
 ;		09.06.09 version bump for new joypad emu with force option
+;		08.11.26 adapted for repo build (vasm/basm)
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
-;  :Translator.	Barfly V2.9
+;  :Translator.	BASM 2.16, vasm
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 
 Trainer		=	0	; 0-off, 1-on
 
-	INCDIR	Includes:
 	INCLUDE	whdload.i
 	INCLUDE	whdmacros.i
 	INCLUDE	lvo/dos.i
@@ -77,25 +77,16 @@ slv_keyexit	= $5d
 
 ;============================================================================
 
-	INCLUDE	Sources:whdload/kick31.s
+	INCLUDE	whdload/kick31.s
 
 ;============================================================================
-
-	IFD BARFLY
-	IFND	.passchk
-	DOSCMD	"WDate  >T:date"
-.passchk
-	ENDC
-	ENDC
 
 slv_CurrentDir	dc.b	"data",0
 slv_name	dc.b	"Flink",0
 slv_copy	dc.b	"1994 Psygnosis",0
 slv_info	dc.b	"adapted by Mr.Larmer, Harry, Wepl",10
 		dc.b	"Version 2.4 "
-	IFD BARFLY
-		INCBIN	"T:date"
-	ENDC
+		INCBIN	".date"
 		dc.b	0
 _programreq	dc.b	"cannot loadseg "
 _program	dc.b	"flink",0
