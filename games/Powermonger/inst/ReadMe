@@ -40,9 +40,11 @@
 	and	aminet:game/patch/
 
 	version 1.5 (07.11.2026): game bug fixes
-	- Fixes for faults in the game's own code, applied by default. Each is
-	  a few bytes changed where the original reads the wrong register,
-	  width or bound; none changes the game's balance or data:
+	- Optional fixes for faults in the game's own code. All are off by
+	  default.
+	- "Fix original game bugs": each is a few bytes changed where the
+	  original reads the wrong register, width or bound; none changes the
+	  game's balance or data:
 	  - a supply run returned to a spot four cells south of the town
 	    clicked (the stored cell gained 256 from a dirty register)
 	  - a captain of a slow tribe walked away from his target in rain or
@@ -69,8 +71,8 @@
 	    (the cell was packed y then x)
 	  - the settlement ring scan could replace a settlement's owner by
 	    half its headcount for the rest of the scan
-	- Four optional corrections that change how the game plays, each off
-	  by default:
+	- Four further corrections that change how the game plays, each with
+	  its own box:
 	  - diplomacy: a clash between tribes set their dispositions to the
 	    friendliest value (a signed -8 read as +248, and the entry before
 	    the right one), so an alliance after a war was free; and the
@@ -85,11 +87,11 @@
 	  - AI town scoring: the computer scored its own towns with a dirty
 	    32-bit dividend and sent captains to distant towns for men and
 	    food; the division is now clean
-	- The switches are in WHDLoad's splash window ("Original game bugs:
-	  Fixed/Kept" and the four "Also fix" boxes), saved to the icon when
-	  started from Workbench, or as tooltypes: CUSTOM4=1 keeps the
-	  original bugs; CUSTOM5 is a bit mask of the four options (1
-	  diplomacy, 2 alliance gifts, 4 target choice, 8 AI town scoring).
+	- The switches are the CUSTOM4 boxes in WHDLoad's splash window
+	  ("Fix original game bugs" and the four further "Fix" options),
+	  saved to the icon when started from Workbench, or as a tooltype:
+	  CUSTOM4 is a bit mask (1 original game bugs, 2 diplomacy, 4 alliance
+	  gifts, 8 target choice, 16 AI town scoring; 31 is everything).
 	- Every correction was checked against the unpatched game under
 	  emulation, before and after the change.
 

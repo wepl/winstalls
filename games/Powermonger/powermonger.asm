@@ -60,11 +60,11 @@ _config
 		; C2 is frame rate limit
 		dc.b	"C3:X:All maps conquered:0;"
 		dc.b	"C3:X:Win on retire:1;"
-		dc.b	"C4:L:Original game bugs:Fixed,Kept;"
-		dc.b	"C5:X:Also fix diplomacy:0;"
-		dc.b	"C5:X:Also fix alliance gifts:1;"
-		dc.b	"C5:X:Also fix target choice:2;"
-		dc.b	"C5:X:Also fix AI town scoring:3;"
+		dc.b	"C4:X:Fix original game bugs:0;"
+		dc.b	"C4:X:Fix diplomacy:1;"
+		dc.b	"C4:X:Fix alliance gifts:2;"
+		dc.b	"C4:X:Fix target choice:3;"
+		dc.b	"C4:X:Fix AI town scoring:4;"
 		dc.b	0
 
 ;============================================================================
@@ -244,12 +244,7 @@ DIR = $400
 
 		bsr	_fastpatches
 
-		lea	(_pl_trainer,pc),a0
-		sub.l	a1,a1
-		move.l	(_resload,pc),a2
-		jsr	(resload_Patch,a2)
-
-		lea	(_pl_fixes,pc),a0
+		lea	(_pl,pc),a0
 		sub.l	a1,a1
 		move.l	(_resload,pc),a2
 		jsr	(resload_Patch,a2)
@@ -739,7 +734,13 @@ _handlecopyprot
 		jmp	$c06e		;dismiss dialog immediately
 ;--------------------------------
 
-_pl_trainer	PL_START
+; Game bug fixes (version 1.5) follow the trainer. Each entry names the row
+; of the defect register it corrects. Addresses are absolute (the program
+; decrunches to $1400). All are off by default. CUSTOM4 bit 0 ("Fix
+; original game bugs") applies the corrections that only remove nonsense,
+; bits 1-4 the ones that change how the game plays.
+
+_pl		PL_START
 		PL_IFC3X 0
 		PL_P	$13762,_alllevels
 		PL_NOPS $1ad04,1		;can win in first game
@@ -747,32 +748,7 @@ _pl_trainer	PL_START
 		PL_IFC3X 1
 		PL_B	$db22,$60
 		PL_ENDIF
-		PL_END
-
-
-_alllevels
-		cmp.w	#2,$535b8		;new game?
-		bne	.out
-		lea	$648ea,a0
-		move.w	#195-1,d0
-		moveq	#1,d1
-.fill
-		move.b	d1,(a0)+
-		dbf	d0,.fill
-.out
-		jmp	$1aac6			;fade to black
-;--------------------------------
-
-
-;--------------------------------
-; Game bug fixes (version 1.5). Each entry names the row of the defect
-; register it corrects. Addresses are absolute (the program decrunches to
-; $1400). "Original game bugs: Fixed" (CUSTOM4 = 0, the default) applies the
-; corrections that only remove nonsense; the CUSTOM5 bits are the ones that
-; change how the game plays, each off by default.
-
-_pl_fixes	PL_START
-		PL_IFC4EQ 0			;Original game bugs: Fixed
+		PL_IFC4X 0			;Fix original game bugs
 		PL_W	$4032,$d200		;36 supply run: cell packing adds the x byte only (no +4 rows)
 		PL_W	$4852,$4441		;29 blocked animal turns with its pace negated, not complemented
 		PL_L	$4806,$8000		;24 loose animal row bound is the map height (128 rows), not 96
@@ -800,7 +776,7 @@ _pl_fixes	PL_START
 		PL_PS	$3406,_animal_pool	;25 no animal takes handle 0, the flock terminator
 		PL_NOPS	$340c,1
 		PL_ENDIF
-		PL_IFC5X 0			;Also fix diplomacy (rows 1, 2, 4)
+		PL_IFC4X 1			;Fix diplomacy (rows 1, 2, 4)
 		PL_W	$3824,$1035		;1+2 disposition adjust reads the entry it writes, signed
 		PL_W	$3826,$2010
 		PL_W	$3828,$4880
@@ -810,7 +786,7 @@ _pl_fixes	PL_START
 		PL_W	$7070,$00ff
 		PL_NOPS	$7072,2
 		PL_ENDIF
-		PL_IFC5X 1			;Also fix alliance gifts (row 5)
+		PL_IFC4X 2			;Fix alliance gifts (row 5)
 		PL_W	$3ad2,$671c
 		PL_B	$3ad9,$30
 		PL_W	$3aec,$1183		;move.b d3,$18(a0,d2.w): the receiver gets the goods
@@ -818,15 +794,30 @@ _pl_fixes	PL_START
 		PL_W	$3af0,$548a		;addq.l #2,a2
 		PL_W	$3af2,$5242		;addq.w #1,d2
 		PL_ENDIF
-		PL_IFC5X 2			;Also fix target choice (row 23)
+		PL_IFC4X 3			;Fix target choice (row 23)
 		PL_W	$5c14,$3c01		;keep the candidate's distance as best-so-far
 		PL_ENDIF
-		PL_IFC5X 3			;Also fix AI town scoring (row 31)
+		PL_IFC4X 4			;Fix AI town scoring (row 31)
 		PL_W	$711e,$6606
 		PL_W	$7124,$6008		;bra.b
 		PL_W	$7126,$48c0		;ext.l d0 before the divu
 		PL_ENDIF
 		PL_END
+
+
+_alllevels
+		cmp.w	#2,$535b8		;new game?
+		bne	.out
+		lea	$648ea,a0
+		move.w	#195-1,d0
+		moveq	#1,d1
+.fill
+		move.b	d1,(a0)+
+		dbf	d0,.fill
+.out
+		jmp	$1aac6			;fade to black
+;--------------------------------
+; routines the bug fixes jump to
 
 ; row 32: the wander step is rotated by the facing (low byte of the draw)
 _wander_rotate	move.w	d0,d2
