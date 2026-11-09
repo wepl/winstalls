@@ -45,6 +45,7 @@
 	   "Audio=data-da" in the icon (remove the leading ';').
 	 - in the CDTV version the "select joypad mode" and "loading" screens
 	   are skipped
+	 - source: https://github.com/wepl/winstalls/tree/master/games/Xenon2
 
 	if you have problems with this installation please try first to get
 	a newer version of this install from 
@@ -60,6 +61,9 @@
 	and	aminet:game/patch/
 
 	Thanks to Frank Brandis for support.
+
+	update (09.11.2026) by Wepl:
+	- install script fixed (imager slave was not found)
 
 	version Floppy 1.13 CDTV 1.8 (06.11.2026) by Wepl:
 	- CDTV: CD audio tracks are played via WHDLoad (requires WHDLoad 21+)

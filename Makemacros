@@ -224,8 +224,9 @@ get :
 	$(RM) $(INSTALLARCHIVE)
 	wget whdload.de/$(notdir $(patsubst %/,%,$(dir $(CURDIR))))/$(INSTALLARCHIVE)
 	$(LHAX) $(INSTALLARCHIVE)
-	$(CP) $(INSTALLSLAVE) $(SLAVE)
-	touch -r $(INSTALLSLAVE) $(SLAVESRC) $(SLAVE)
+	$(CP) $(INSTALLSLAVE) $(INSTALLISLAVE) $(CURDIR)
+	touch -r $(firstword $(SLAVE)) $(SLAVESRC) $(SLAVE)
+	$(if $(ISLAVE),touch -r $(firstword $(ISLAVE)) $(ISLAVESRC) $(ISLAVE))
 
 #
 # generic rules
