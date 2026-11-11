@@ -73,6 +73,7 @@ _name		dc.b	"Powermonger",0
 _copy		dc.b	"1990 Bullfrog Productions",0
 _info		dc.b	"installed & fixed by Wepl",10
 		dc.b	"update by paraj",10
+		dc.b	"bug fixes by Thomas Severinsen",10
 		dc.b	"version 1.5 "
 		INCBIN	".date"
 		dc.b	0
@@ -752,7 +753,7 @@ _pl		PL_START
 		PL_W	$4032,$d200		;36 supply run: cell packing adds the x byte only (no +4 rows)
 		PL_W	$4852,$4441		;29 blocked animal turns with its pace negated, not complemented
 		PL_L	$4806,$8000		;24 loose animal row bound is the map height (128 rows), not 96
-		PL_W	$471e,$6f02		;27 captain speed floored at 2 always...
+		PL_W	$471e,$6f02		;27 captain speed of 0 or less becomes 2, load deduction or not...
 		PL_W	$4722,$4a43		;   tst.w d3
 		PL_W	$4724,$6e02		;   bgt
 		PL_W	$4726,$7602		;   moveq #2,d3
@@ -780,8 +781,6 @@ _pl		PL_START
 		PL_W	$3824,$1035		;1+2 disposition adjust reads the entry it writes, signed
 		PL_W	$3826,$2010
 		PL_W	$3828,$4880
-		PL_W	$53ae,$fff8		;1 the clash penalty is -8, not +248
-		PL_W	$53ba,$fff8
 		PL_W	$706e,$0240		;4 AI target scoring indexes the disposition row by tribe
 		PL_W	$7070,$00ff
 		PL_NOPS	$7072,2
@@ -798,9 +797,7 @@ _pl		PL_START
 		PL_W	$5c14,$3c01		;keep the candidate's distance as best-so-far
 		PL_ENDIF
 		PL_IFC4X 4			;Fix AI town scoring (row 31)
-		PL_W	$711e,$6606
-		PL_W	$7124,$6008		;bra.b
-		PL_W	$7126,$48c0		;ext.l d0 before the divu
+		PL_L	$70e2,$70001010		;moveq #0,d0 / move.b (a0),d0: the dividend's high half is clear on every pass
 		PL_ENDIF
 		PL_END
 
@@ -873,7 +870,8 @@ _ring_headcount	move.l	a2,-(a7)
 		movea.l	(a7)+,a2
 		rts
 
-; row 34: unlink person (a1) from the occupant list of building (a2); clobbers d0, d1
+; row 34: the replaced instruction, then take the captain (a1) off his home
+; building's occupant list; clobbers d0, d1 and a2, which the caller restores
 _spy_plant	move.w	($22,a1),($18,a3)	;the replaced instruction: home building saved in the team
 		move.l	a0,-(a7)
 		lea	$7592a,a2
@@ -896,7 +894,14 @@ _spy_plant	move.w	($22,a1),($18,a3)	;the replaced instruction: home building sav
 .ret		movea.l	(a7)+,a0
 		rts
 
-_spy_unmask	move.l	a1,-(a7)		;a0 = the captain, a1 = his team
+; row 34: take the captain (a0) off the host building's list and put him back on
+; his home building's (a1 = his team), unless he is still on it, as a spy planted
+; without this fix is; returns the host building in a2 like the replaced code,
+; the game uses it next; clobbers d0, d1
+; the host list is walked rather than its head popped as the original does: a
+; man born into that building after the plant is linked in front of the spy,
+; and the pop would drop him from the list too
+_spy_unmask	movem.l	a1/a3,-(a7)
 		lea	$7592a,a2
 		adda.w	($22,a0),a2		;host building
 		move.l	a0,d0
@@ -905,20 +910,28 @@ _spy_unmask	move.l	a1,-(a7)		;a0 = the captain, a1 = his team
 		cmp.w	d0,d1
 		bne	.walk
 		move.w	($18,a0),($a,a2)	;host head = his next
-		bra	.relink
+		bra	.home
 .walk		tst.w	d1
-		beq	.relink
+		beq	.home
+		lea	$77b7a,a3
+		adda.w	d1,a3
+		move.w	($18,a3),d1
+		cmp.w	d0,d1
+		bne	.walk
+		move.w	($18,a0),($18,a3)	;node.next = his next
+.home		lea	$7592a,a3
+		adda.w	($18,a1),a3		;home building (saved at the plant)
+		move.w	($a,a3),d1
+.find		beq	.link			;end of the home list: he is not on it
+		cmp.w	d0,d1
+		beq	.done			;already on it: leave the list alone
 		lea	$77b7a,a1
 		adda.w	d1,a1
 		move.w	($18,a1),d1
-		cmp.w	d0,d1
-		bne	.walk
-		move.w	($18,a0),($18,a1)
-.relink		movea.l	(a7)+,a1
-		lea	$7592a,a2
-		adda.w	($18,a1),a2		;home building (saved at the plant)
-		move.w	($a,a2),($18,a0)	;his next = home head
-		move.w	d0,($a,a2)		;home head = him
+		bra	.find
+.link		move.w	($a,a3),($18,a0)	;his next = home head
+		move.w	d0,($a,a3)		;home head = him
+.done		movem.l	(a7)+,a1/a3
 		rts
 
 _introdat	DC.B	'INTRODAT'

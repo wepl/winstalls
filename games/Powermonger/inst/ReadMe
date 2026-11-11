@@ -39,7 +39,7 @@
 	or	aminet:dev/misc/whdload#?
 	and	aminet:game/patch/
 
-	version 1.5 (07.11.2026): game bug fixes
+	version 1.5 (07.11.2026) done by Thomas Severinsen: game bug fixes
 	- Optional fixes for faults in the game's own code. All are off by
 	  default.
 	- "Fix original game bugs": each is a few bytes changed where the
@@ -57,7 +57,8 @@
 	    coordinate instead of the aim angle
 	  - a planted spy stayed on his home town's resident list, which then
 	    led into the host town's residents; he is now unlinked on planting
-	    and relinked on unmasking
+	    and relinked on unmasking (a spy planted while the fix was off is
+	    left as the original left him)
 	  - the first sheep of every land had the handle that also ends a
 	    flock chain, so no shepherd could ever gather it; animal record 0
 	    is now left unused (39 animals per land instead of 40)
@@ -73,12 +74,12 @@
 	    half its headcount for the rest of the scan
 	- Four further corrections that change how the game plays, each with
 	  its own box:
-	  - diplomacy: a clash between tribes set their dispositions to the
-	    friendliest value (a signed -8 read as +248, and the entry before
-	    the right one), so an alliance after a war was free; and the
+	  - diplomacy: when two tribes clashed, the new disposition was worked
+	    out from the entry before the right one, read unsigned, so a
+	    hostile value there came out as the friendliest; and the
 	    computer's choice of target read a meaningless byte instead of the
-	    disposition. Fixed: clashes breed hostility and the computer reads
-	    real dispositions
+	    disposition. Fixed: each clash lowers the right disposition by 8
+	    and the computer reads real dispositions
 	  - alliance gifts: goods offered with an alliance were destroyed;
 	    they now reach the receiving town
 	  - target choice: a fighter kept a record number as his "best
