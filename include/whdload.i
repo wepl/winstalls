@@ -43,6 +43,7 @@
 ;		24.11.25 add PL_VB/W/L
 ;		29.11.25 add PL_ANDB/W/L, PL_IFCxEQ, PL_IFCxRG, PL_IFVB/W/L, PL_IFVB/W/LEQ
 ;		15.10.26 added resload_Audio
+;		11.11.26 added RJPF_OCTODAPTER
 ;  :Copyright.	©1996-2026 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -1321,6 +1322,7 @@ WHDLAUDC_VOLUME = 4	; set volume, d1 = 0 (silent) .. $7fff (maximum)
 
  BITDEF RJP,DETECT,31		; request new detection (GAMECTRL/JOYSTK)
  BITDEF RJP,WANTMOUSE,30	; get mouse result
+ BITDEF RJP,OCTODAPTER,29	; query Octodapter port (8 joysticks at parallel port)
 
 ; output flags:
 
