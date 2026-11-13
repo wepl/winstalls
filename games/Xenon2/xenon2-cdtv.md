@@ -1,7 +1,7 @@
 # Xenon 2 CDTV: Findings
 
-As of 25.10.2026. Collected while introducing `resload_Audio`
-(CD-DA replacement).
+As of 13.11.2026. Collected while introducing `resload_Audio`
+(CD-DA replacement). Released as Floppy 1.13 CDTV 1.8.
 
 ## Sources
 - Disassembly: `cr:xenon2/cdtv/X2.asm`, also `X2.rs`, `Fix`, `Fix.rs`,
@@ -197,13 +197,10 @@ On the Amiga with an AmiGUS and `Audio=data-da` (evaluated via trace file):
 - On exit the card is freed, there is no memory leak.
 - Whether the audio files are named `Track02.mp3` or `track02.mp3` does not
   matter, the search ignores case.
-
-## Open
-- Not yet checked in detail: music in title, levels, music selection and
-  picture sequence, loop at the end of a track, music on/off in the game
-  menu.
-- `inst/install.prep` (CDTV) creates `data-da` and sets the disabled
-  tooltype `;Audio=data-da`; the ReadMe explains copying the compressed
-  tracks manually and that AmiGUS is required. Installer not yet run on
-  the Amiga.
-- Restart via MemConfig in the splash window while the tracks are preloaded.
+- Music in title, levels, music selection and picture sequence, loop at
+  the end of a track and music on/off in the game menu work as expected.
+- Restart via MemConfig in the splash window while the tracks are
+  preloaded works.
+- The installer creates `data-da` and sets the disabled tooltype
+  `;Audio=data-da`, the ReadMe explains copying the compressed tracks
+  manually and that an AmiGUS is required.
