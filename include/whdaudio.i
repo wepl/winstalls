@@ -93,7 +93,9 @@ WAUD_VERSION	= 1		; current version of the interface
 	APTR	waud_exit
 
 	; start playing an audio stream
-	; called with operating system inactive and interrupts disabled
+	; called with operating system inactive and interrupts disabled,
+	; also called from the level 2 interrupt after waud_irq has returned
+	; WAUDIRQF_FINISHED to start the next track of a sequence
 	; IN:	d0 = ULONG  length of audio data
 	;	d1 = ULONG  flags, WHDLAUDF_* (whdload.i)
 	;	a0 = APTR   audio data (readable until stopped or finished)

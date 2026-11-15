@@ -44,6 +44,7 @@
 ;		29.11.25 add PL_ANDB/W/L, PL_IFCxEQ, PL_IFCxRG, PL_IFVB/W/L, PL_IFVB/W/LEQ
 ;		15.10.26 added resload_Audio
 ;		11.11.26 added RJPF_OCTODAPTER
+;		13.11.26 added WHDLAUDF_COUNT
 ;  :Copyright.	©1996-2026 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -598,6 +599,7 @@ WCPUF_All	= WCPUF_Base!WCPUF_Exp!WCPUF_Slave!WCPUF_IC!WCPUF_DC!WCPUF_NWA!WCPUF_S
 		; IN:	d0 = ULONG  command, see WHDLAUDC_*
 		;	d1 = ULONG  argument 1 (command specific)
 		;	d2 = ULONG  argument 2 (command specific)
+		;	d3 = ULONG  argument 3 (command specific)
 		; OUT:	d0 = ULONG  result (command specific)
 
 	LABEL	resload_SIZEOF
@@ -1308,11 +1310,14 @@ PL_IFVLEQ	MACRO
 
 WHDLAUDC_PLAY	= 1	; start playing a track, a playing track is stopped before
 			; d1 = track number 1..99, d2 = flags (see below)
+			; d3 = number of tracks if WHDLAUDF_COUNT is set
 WHDLAUDC_STOP	= 2	; stop playing
 WHDLAUDC_STATUS = 3	; get status, returns d0 = number of playing track or 0
 WHDLAUDC_VOLUME = 4	; set volume, d1 = 0 (silent) .. $7fff (maximum)
 
- BITDEF WHDLAUD,LOOP,0	; restart track after its end
+ BITDEF WHDLAUD,LOOP,0	; restart track after its end, with WHDLAUDF_COUNT
+			; restart the first track after the end of the last
+ BITDEF WHDLAUD,COUNT,1	; play d3 tracks in sequence
 
 ;=============================================================================
 ; flags for resload_ReadJoyPort

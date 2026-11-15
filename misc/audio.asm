@@ -3,6 +3,7 @@
 ;  :Contents.	Slave to check resload_Audio
 ;  :Author.	Wepl
 ;  :History.	2026-10-25 created
+;		2026-11-13 WHDLAUDF_COUNT added
 ;  :Requires.	WHDLoad 21+, option Audio/K set to a directory containing track01.<ext> .. track09.<ext>
 ;		whdload audio.slave audio=cdda nowritecache trace
 ;  :Copyright.	Public Domain
@@ -11,9 +12,10 @@
 ;  :To Do.
 ;---------------------------------------------------------------------------*
 ; keys:
-;	1-9		play track 1-9 (with actual loop mode)
-;	n		play track 99 (normally not existing)
+;	1-9		play track 1-9 (with actual loop mode and count)
+;	n		play track 99 (normally not existing), without count
 ;	l		toggle loop mode
+;	c		count of tracks to play 0-9, 0 = WHDLAUDF_COUNT not set
 ;	space		stop
 ;	cursor up/down	volume, changed every frame while pressed, step increases
 ;	s		get status via normal call
@@ -47,6 +49,7 @@ HISTSIZE	= 18			;commands shown, y=60..166, help starts at y=170
 		APTR	he_name		;command name
 		ULONG	he_d1		;command arguments
 		ULONG	he_d2
+		ULONG	he_d3
 		ULONG	he_res		;command result
 		ULONG	he_lines	;command duration in hsyncs
 		LABEL	he_SIZEOF
@@ -58,6 +61,7 @@ HISTSIZE	= 18			;commands shown, y=60..166, help starts at y=170
 	STRUCTURE	Vars,0
 		APTR	v_kbdint	;level 2 interrupt of keyboard.s
 		ULONG	v_loop		;flags for play
+		ULONG	v_count		;tracks to play, 0 = WHDLAUDF_COUNT not set
 		ULONG	v_volume	;actual volume
 		ULONG	v_portscnt	;ports interrupts counter
 		ULONG	v_portsvbi	;ports interrupts during last vbi
@@ -72,6 +76,7 @@ HISTSIZE	= 18			;commands shown, y=60..166, help starts at y=170
 		APTR	v_lastname	;last command name
 		ULONG	v_lastd1	;last command arguments
 		ULONG	v_lastd2
+		ULONG	v_lastd3
 		ULONG	v_lastres	;last command result
 		ULONG	v_lastlines	;last command duration in hsyncs
 		ULONG	v_volheld	;frames volume key is pressed
@@ -211,6 +216,8 @@ _keys		moveq	#0,d0
 		beq	.stop
 		cmp.b	#$28,d0			;l
 		beq	.loopmode
+		cmp.b	#$33,d0			;c
+		beq	.count
 		cmp.b	#$21,d0			;s
 		beq	.status
 		cmp.b	#$18,d0			;o
@@ -224,32 +231,46 @@ _keys		moveq	#0,d0
 		bhi	.rts
 		addq.b	#1,d0
 		move.l	d0,d1			;track
+		move.l	(v_loop,a4),d2
+		move.l	(v_count,a4),d3
+		beq	.play
+		bset	#WHDLAUDB_COUNT,d2
 .play		clr.l	(v_playframes,a4)
 		moveq	#WHDLAUDC_PLAY,d0
-		move.l	(v_loop,a4),d2
 		lea	_cmd_play,a0
 		bra	_cmd
 .play99		moveq	#99,d1
+		move.l	(v_loop,a4),d2
+		moveq	#0,d3
 		bra	.play
 
 .stop		moveq	#WHDLAUDC_STOP,d0
 		moveq	#0,d1
 		moveq	#0,d2
+		moveq	#0,d3
 		lea	_cmd_stop,a0
 		bra	_cmd
 
 .status		moveq	#WHDLAUDC_STATUS,d0
 		moveq	#0,d1
 		moveq	#0,d2
+		moveq	#0,d3
 		lea	_cmd_status,a0
 		bra	_cmd
 
 .loopmode	bchg	#WHDLAUDB_LOOP,(v_loop+3,a4)
 .rts		rts
 
+.count		addq.l	#1,(v_count,a4)
+		cmp.l	#9,(v_count,a4)
+		bls	.rts
+		clr.l	(v_count,a4)
+		rts
+
 .save		lea	_cmd_save,a0
 		clr.l	(v_lastd1,a4)
 		clr.l	(v_lastd2,a4)
+		clr.l	(v_lastd3,a4)
 		bsr	_timestart
 		move.l	#_stuffend-_base,d0	;size
 		lea	_savename,a0
@@ -294,18 +315,20 @@ _volume		move.b	(v_volkey,a4),d0
 		move.l	d1,(v_volume,a4)
 		moveq	#WHDLAUDC_VOLUME,d0
 		moveq	#0,d2
+		moveq	#0,d3
 		lea	_cmd_volume,a0
 		bra	_cmd
 .rts		rts
 
 ;--------------------------------
 ; call resload_Audio and measure the duration
-; IN:	d0/d1/d2 = arguments
+; IN:	d0/d1/d2/d3 = arguments
 ;	a0 = CPTR name of the command
 ; OUT:	-
 
 _cmd		move.l	d1,(v_lastd1,a4)
 		move.l	d2,(v_lastd2,a4)
+		move.l	d3,(v_lastd3,a4)
 		bsr	_timestart
 		jsr	(resload_Audio,a5)
 	;fall through
@@ -347,6 +370,7 @@ _histadd	movem.l	d0/a0-a1,-(a7)
 .set		move.l	(v_lastname,a4),(he_name,a1)
 		move.l	(v_lastd1,a4),(he_d1,a1)
 		move.l	(v_lastd2,a4),(he_d2,a1)
+		move.l	(v_lastd3,a4),(he_d3,a1)
 		move.l	(v_lastres,a4),(he_res,a1)
 		move.l	(v_lastlines,a4),(he_lines,a1)
 		st	(v_histnew,a4)
@@ -371,8 +395,9 @@ _timestart	move.l	a0,(v_lastname,a4)
 
 _display	moveq	#4*LINE,d1
 
-	;track, loop, volume
+	;loop, count, volume
 		move.l	(v_volume,a4),-(a7)
+		move.l	(v_count,a4),-(a7)
 		lea	_off,a0
 		tst.l	(v_loop,a4)
 		beq	.loopoff
@@ -382,7 +407,7 @@ _display	moveq	#4*LINE,d1
 		lea	_fmt_mode,a0
 		move.l	a7,a1
 		bsr	_ps
-		addq.l	#2*4,a7
+		add	#3*4,a7
 
 	;status
 		add.l	#2*LINE,d1
@@ -463,6 +488,7 @@ _disphist	tst.b	(v_histnew,a4)
 		move.l	d0,-(a7)
 		move.l	(he_lines,a2),-(a7)
 		move.l	(he_res,a2),-(a7)
+		move.l	(he_d3,a2),-(a7)
 		move.l	(he_d2,a2),-(a7)
 		move.l	(he_d1,a2),-(a7)
 		move.l	(he_name,a2),-(a7)
@@ -470,7 +496,7 @@ _disphist	tst.b	(v_histnew,a4)
 		lea	_fmt_hist,a0
 		move.l	a7,a1
 		bsr	_ps
-		add	#6*4,a7
+		add	#7*4,a7
 		add	#he_SIZEOF,a2
 		addq.l	#LINE,d1
 .in		dbf	d3,.loop
@@ -676,12 +702,12 @@ _top1		dc.b	"resload_Audio Testslave "
 	INCBIN	.date
 		dc.b	0
 _top2		dc.b	"whdload %ld.%ld.%ld",0
-_fmt_mode	dc.b	"loop=%s  volume=$%04lx",0
+_fmt_mode	dc.b	"loop=%s  count=%ld  volume=$%04lx",0
 _fmt_status	dc.b	"status main=%2ld  vbi=%2ld  playtime=%2ld:%02ld.%02ld  ",0
 _fmt_ports	dc.b	"ports ints  last-vbi=%2ld  max-vbi=%2ld  last-sec=%3ld",0
 _fmt_hold	dc.b	"ports interrupt disabled for %3ld frames",0
 _fmt_nohold	dc.b	"                                        ",0
-_fmt_hist	dc.b	"%-6s d1=%-5ld d2=%ld result=%-2ld %6ld lines %5ld ms",0
+_fmt_hist	dc.b	"%-6s d1=%-5ld d2=%ld d3=%ld result=%-2ld %6ld lines %5ld ms",0
 _on		dc.b	"on ",0
 _off		dc.b	"off",0
 _cmd_play	dc.b	"play",0
@@ -694,7 +720,7 @@ _help		dc.b	"1-9 play track 1-9            n play track 99",0
 		dc.b	"l loop                        space stop",0
 		dc.b	"cursor up/down (hold) volume  s status",0
 		dc.b	"o savefile (os switch)        h disable ports int for 2s",0
-		dc.b	"q quit",0
+		dc.b	"c count 0-9 (0 = no WHDLAUDF_COUNT)  q quit",0
 		dc.b	0
 	EVEN
 
