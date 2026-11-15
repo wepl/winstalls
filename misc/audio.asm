@@ -4,6 +4,7 @@
 ;  :Author.	Wepl
 ;  :History.	2026-10-25 created
 ;		2026-11-13 WHDLAUDF_COUNT added
+;		2026-11-15 WHDLAUDC_CALLBACK added
 ;  :Requires.	WHDLoad 21+, option Audio/K set to a directory containing track01.<ext> .. track09.<ext>
 ;		whdload audio.slave audio=cdda nowritecache trace
 ;  :Copyright.	Public Domain
@@ -23,6 +24,7 @@
 ;	h		disable ports interrupt for 2 seconds (fifo underrun)
 ;	q		quit
 ; displayed:
+;	result of WHDLAUDC_CALLBACK, number of callbacks and last track passed
 ;	status from the main loop and from the VBI (fast path of WHDLAUDC_STATUS)
 ;	ports interrupts per VBI, maximum and per second
 ;	last 18 commands with result and duration (measured via ciab tod/hsyncs),
@@ -81,6 +83,9 @@ HISTSIZE	= 18			;commands shown, y=60..166, help starts at y=170
 		ULONG	v_lastlines	;last command duration in hsyncs
 		ULONG	v_volheld	;frames volume key is pressed
 		ULONG	v_histcnt	;entries in v_hist
+		ULONG	v_cbavail	;result of WHDLAUDC_CALLBACK
+		ULONG	v_cbcount	;callbacks received
+		ULONG	v_cbtrack	;track of the last callback
 		STRUCT	v_hist,HISTSIZE*he_SIZEOF	;command history, oldest first
 		BYTE	v_volkey	;volume key pressed: 1 = up, -1 = down, 0 = none
 		UBYTE	v_newkey	;last pressed rawkey, 0 = none
@@ -164,6 +169,12 @@ HOLDFRAMES	= 100
 	;init variables
 		move.l	#$7fff,(v_volume,a4)
 		move.l	#50,(v_seccnt,a4)
+	;set callback for the end of playing
+		moveq	#WHDLAUDC_CALLBACK,d0
+		lea	(_callback,pc),a0
+		move.l	a0,d1
+		jsr	(resload_Audio,a5)
+		move.l	d0,(v_cbavail,a4)
 	;init vbi
 		lea	(_vbi,pc),a0
 		move.l	a0,($6c)
@@ -393,7 +404,19 @@ _timestart	move.l	a0,(v_lastname,a4)
 ;--------------------------------
 ; print actual state
 
-_display	moveq	#4*LINE,d1
+_display	moveq	#2*LINE+1,d1
+
+	;callback
+		move.l	(v_cbtrack,a4),-(a7)
+		move.l	(v_cbcount,a4),-(a7)
+		move.l	(v_cbavail,a4),-(a7)
+		moveq	#0,d0
+		lea	_fmt_callback,a0
+		move.l	a7,a1
+		bsr	_ps
+		add	#3*4,a7
+
+		moveq	#4*LINE,d1
 
 	;loop, count, volume
 		move.l	(v_volume,a4),-(a7)
@@ -503,6 +526,17 @@ _disphist	tst.b	(v_histnew,a4)
 
 		movem.l	(a7)+,_MOVEMREGS
 .rts		rts
+
+;--------------------------------
+; called by WHDLoad at the end of playing, from the level 2 interrupt
+; IN:	d0 = ULONG last played track
+; OUT:	-
+;	d0-d1/a0-a1 may be destroyed
+
+_callback	lea	(_vars,pc),a0
+		addq.l	#1,(v_cbcount,a0)
+		move.l	d0,(v_cbtrack,a0)
+		rts
 
 ;--------------------------------
 ; level 2 interrupt, count and continue in keyboard handler
@@ -703,6 +737,7 @@ _top1		dc.b	"resload_Audio Testslave "
 		dc.b	0
 _top2		dc.b	"whdload %ld.%ld.%ld",0
 _fmt_mode	dc.b	"loop=%s  count=%ld  volume=$%04lx",0
+_fmt_callback	dc.b	"callback available=%ld  count=%ld  last track=%2ld",0
 _fmt_status	dc.b	"status main=%2ld  vbi=%2ld  playtime=%2ld:%02ld.%02ld  ",0
 _fmt_ports	dc.b	"ports ints  last-vbi=%2ld  max-vbi=%2ld  last-sec=%3ld",0
 _fmt_hold	dc.b	"ports interrupt disabled for %3ld frames",0

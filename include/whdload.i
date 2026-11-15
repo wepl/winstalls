@@ -45,6 +45,7 @@
 ;		15.10.26 added resload_Audio
 ;		11.11.26 added RJPF_OCTODAPTER
 ;		13.11.26 added WHDLAUDF_COUNT
+;		15.11.26 added WHDLAUDC_CALLBACK
 ;  :Copyright.	©1996-2026 Bert Jahn, All Rights Reserved
 ;  :Language.	68000 Assembler
 ;  :Translator.	BASM 2.16, ASM-One 1.44, Asm-Pro 1.17, PhxAss 4.38, Devpac 3.18, Vasm
@@ -1311,9 +1312,13 @@ PL_IFVLEQ	MACRO
 WHDLAUDC_PLAY	= 1	; start playing a track, a playing track is stopped before
 			; d1 = track number 1..99, d2 = flags (see below)
 			; d3 = number of tracks if WHDLAUDF_COUNT is set
+			; returns d0 = -1 if playing has been started, otherwise 0
 WHDLAUDC_STOP	= 2	; stop playing
 WHDLAUDC_STATUS = 3	; get status, returns d0 = number of playing track or 0
 WHDLAUDC_VOLUME = 4	; set volume, d1 = 0 (silent) .. $7fff (maximum)
+WHDLAUDC_CALLBACK = 5	; set function called at the end of playing, d1 = function
+			; inside the Slave or 0, returns d0 = -1 if audio is
+			; available, otherwise 0
 
  BITDEF WHDLAUD,LOOP,0	; restart track after its end, with WHDLAUDF_COUNT
 			; restart the first track after the end of the last
