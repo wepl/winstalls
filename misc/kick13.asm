@@ -25,6 +25,7 @@
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;		05.02.23 WHDCTRL added
 ;		09.11.25 add support for MemConfig
+;		10.11.26 INIT_CDDEVICE added
 ;  :Requires.	kick13.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -71,6 +72,7 @@ DOSASSIGN			;enable _dos_assign routine
 FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
+;INIT_CDDEVICE			;add cdtv.device, CD audio via resload_Audio
 IOCACHE		= 1024		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu

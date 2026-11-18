@@ -54,6 +54,7 @@
 ;		14.11.21 WHDCTRL added
 ;		01.11.25 support for ws_MemConfig added
 ;		11.07.26 WHDCTRL patch added for A600/A4000 kickstart too
+;		10.11.26 INIT_CDDEVICE added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1160,6 +1161,9 @@ dos_startup
 	IFD INIT_NONVOLATILE
 		bsr	_nonvolatile_init
 	ENDC
+	IFD INIT_CDDEVICE
+		bsr	_cddevice_init
+	ENDC
 	IFD PROMOTE_DISPLAY
 		bsr	_promotedisplay
 	ENDC
@@ -1320,6 +1324,16 @@ _flushcache	move.l	(_resload,pc),-(a7)
 
 	IFD INIT_RESOURCE
 	INCLUDE whdload/resource.s
+	ENDC
+
+	IFD INIT_CDDEVICE
+	IFND BOOTDOS
+	FAIL	INIT_CDDEVICE requires BOOTDOS
+	ENDC
+	IFND CDDEVICE_CDTV
+CDDEVICE_CD = 1
+	ENDC
+	INCLUDE whdload/cddevice.s
 	ENDC
 
 ;============================================================================

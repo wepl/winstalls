@@ -143,6 +143,19 @@ INIT_AUDIO
 Only available in kick31.s. Forces the kickstart to initialize the
 audio.device.
 
+INIT_CDDEVICE
+
+Includes the source file cddevice.s and calls its initialization routine. This
+builds a minimal device in memory, with kick13.s it is named "cdtv.device" and
+with kick31.s "cd.device". The default can be changed by defining CDDEVICE_CD
+or CDDEVICE_CDTV. The CD audio commands (PLAYTRACK, PAUSE, CDTV_STOPPLAY,
+CDTV_MUTE, CDTV_FADE, CD_ATTENUATE and AbortIO of a playing track) are
+forwarded to resload_Audio, so the CD-DA tracks can be played from compressed
+files (see WHDLoad option Audio/K). PLAYTRACK plays multiple tracks and is
+replied at the end of playing (WHDLAUDC_CALLBACK). All other commands do
+nothing and are completed immediately. All commands are written to the WHDLoad
+log (option FileLog/K/N). Requires BOOTDOS and slv_Version 21 or higher.
+
 INIT_GADTOOLS
 
 Only available in kick31.s. Forces the kickstart to initialize the

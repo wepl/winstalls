@@ -23,6 +23,7 @@
 ;		14.11.21 WHDCTRL added
 ;		28.09.22 ignore unset names in _cb_dosLoadSeg
 ;		09.11.25 add support for MemConfig
+;		10.11.26 INIT_CDDEVICE added
 ;  :Requires.	kick31.s
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -70,6 +71,7 @@ HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
 ;INITAGA			;enable AGA features
 ;INIT_AUDIO			;enable audio.device
+;INIT_CDDEVICE			;add cd.device, CD audio via resload_Audio
 ;INIT_GADTOOLS			;enable gadtools.library
 ;INIT_LOWLEVEL			;load lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library

@@ -55,6 +55,7 @@ CBDOSLOADSEG			;enable _cb_dosLoadSeg routine
 FONTHEIGHT	= 8		;enable 80 chars per line
 HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
+;INIT_CDDEVICE			;add cdtv.device, CD audio via resload_Audio
 IOCACHE		= 8192		;cache for the filesystem handler (per fh)
 ;MEMFREE	= $200		;location to store free memory counter
 ;NEEDFPU			;set requirement for a fpu

@@ -66,6 +66,7 @@ HDINIT				;initialize filesystem handler
 HRTMON				;add support for HrtMON
 ;INITAGA			;enable AGA features
 ;INIT_AUDIO			;enable audio.device
+;INIT_CDDEVICE			;add cd.device, CD audio via resload_Audio
 ;INIT_GADTOOLS			;enable gadtools.library
 ;INIT_LOWLEVEL			;init lowlevel.library
 ;INIT_MATHFFP			;enable mathffp.library

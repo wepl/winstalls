@@ -87,6 +87,7 @@
 ;		19.02.23 CLI/Resident patch for WHDCtrl added
 ;		19.01.25 on DEBUG and FileLog/S dump all files read via trackdisk.device
 ;		07.11.25 support for ws_MemConfig added
+;		10.11.26 INIT_CDDEVICE added
 ;  :Requires.	-
 ;  :Copyright.	Public Domain
 ;  :Language.	68000 Assembler
@@ -1171,8 +1172,13 @@ dos_residentunload
 	IFD BOOTDOS
 dos_bootdos
 	;init boot exe
+	IFD INIT_CDDEVICE
+		lea	(_bootdos_cddevice,pc),a3
+		move.l	a3,(bootfile_exe_j+2-_bootdos_cddevice,a3)
+	ELSE
 		lea	(_bootdos,pc),a3
 		move.l	a3,(bootfile_exe_j+2-_bootdos,a3)
+	ENDC
 	;fake startup-sequence
 		lea	(bootname_ss_b,pc),a3	;bstr
 		move.l	a3,d1
@@ -1278,6 +1284,21 @@ hd_init		lea	-1,a2				;original A2 = -1
 
 	IFD SEGTRACKER
 	INCLUDE whdload/segtracker.s
+	ENDC
+
+;============================================================================
+
+	IFD INIT_CDDEVICE
+	IFND BOOTDOS
+	FAIL	INIT_CDDEVICE requires BOOTDOS
+	ENDC
+	IFND CDDEVICE_CD
+CDDEVICE_CDTV = 1
+	ENDC
+_bootdos_cddevice
+		bsr	_cddevice_init
+		bra	_bootdos
+	INCLUDE whdload/cddevice.s
 	ENDC
 
 ;============================================================================
