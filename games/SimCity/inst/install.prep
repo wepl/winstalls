@@ -1,0 +1,154 @@
+#multiple-versions=y
+#sub-dir=data
+#man-file=Manual
+#extra-file=History
+#P_SelectVersion-Name-0=512K version
+#P_SelectVersion-Name-1=1.0 version
+#P_SelectVersion-Name-2=1.2 version
+#P_SelectVersion-Name-3=CDTV version
+#P_SelectVersion-Code#3
+          (set #prefix-slave (cat #prefix "CDTV"))
+#P_MakeImages#0
+      (set #AD_disk "SimCity512K")
+      (P_AskDisk)
+      ;only the files used by the game including their icons, Somewhere is a
+      ;sample city on SPS 888, PrintCity prints saved cities
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "(SimCity|SimData?|Scenarios|Somewhere|PrintCity)(.info|%)")
+      )
+      ;icon.library is opened at startup, the game does not start without it
+      (makedir (tackon #dest "LIBS")
+        (help @makedir-help)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:LIBS" #AD_disk))
+        (dest (tackon #dest "LIBS"))
+        (pattern "icon.library")
+      )
+      ;printer.device for PrintCity
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "Devs")
+      )
+      ;documentation, into the install directory
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest-org)
+        (pattern "ZoneEvolutionChart(.info|%)")
+      )
+      (tooltype
+        (dest (tackon #dest-org "ZoneEvolutionChart"))
+        (noposition)
+      )
+#P_MakeImages#1
+      (set #AD_disk "SimCity 1.0")
+      (P_AskDisk)
+      ;only the files used by the game including their icons
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "(SimCity|SimData?|Scenarios)(.info|%)")
+      )
+      ;icon.library is opened at startup, the game does not start without it
+      (makedir (tackon #dest "LIBS")
+        (help @makedir-help)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:LIBS" #AD_disk))
+        (dest (tackon #dest "LIBS"))
+        (pattern "icon.library")
+      )
+      ;printer.device for "Print City"
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "Devs")
+      )
+      ;documentation, into the install directory, lastminute has notes not
+      ;in the manual
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest-org)
+        (pattern "(ZoneEvolutionChart|lastminute)(.info|%)")
+      )
+      (tooltype
+        (dest (tackon #dest-org "ZoneEvolutionChart"))
+        (noposition)
+      )
+      (tooltype
+        (dest (tackon #dest-org "lastminute"))
+        (setdefaulttool "MultiView")
+        (noposition)
+      )
+#P_MakeImages#2
+      (set #AD_disk "SimCity1.2")
+      (P_AskDisk)
+      ;only the files used by the game including their icons
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "(SimCity|SimData?|Scenarios)(.info|%)")
+      )
+      ;icon.library is opened at startup, the game does not start without it
+      (makedir (tackon #dest "LIBS")
+        (help @makedir-help)
+      )
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:LIBS" #AD_disk))
+        (dest (tackon #dest "LIBS"))
+        (pattern "icon.library")
+      )
+      ;printer.device for "Print City"
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest)
+        (pattern "Devs")
+      )
+      ;documentation, into the install directory
+      (copyfiles
+        (help @copyfiles-help)
+        (source ("%s:" #AD_disk))
+        (dest #dest-org)
+        (pattern "ZoneEvolutionChart(.info|%)")
+      )
+      (tooltype
+        (dest (tackon #dest-org "ZoneEvolutionChart"))
+        (noposition)
+      )
+#P_MakeImages#3
+      ;the CD is requested directly, P_AskDisk would offer disk images
+      (askdisk
+        (dest "SIM_CITY")
+        (prompt ("\nInsert your %s CD in any drive!" @app-name))
+        (help @askdisk-help)
+      )
+      ;skip CDTV boot files, not required by the game
+      (copyfiles
+        (help @copyfiles-help)
+        (source "SIM_CITY:")
+        (dest #dest)
+        (pattern "~(s|devs|cdtv.tm|cdtvprefs|endcli|rmtm|run|runback)")
+      )
+      ;directory for the compressed CD audio tracks, must be copied manually
+      (makedir (tackon #dest-org "data-da")
+        (help @makedir-help)
+      )
+      ;tooltype for CD audio, disabled because tracks and hardware are required
+      (tooltype
+        (dest (tackon #dest-org #icon_newname))
+        (settooltype ";Audio" "data-da")
+      )

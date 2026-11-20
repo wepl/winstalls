@@ -1,0 +1,103 @@
+Title......: HD-Installer for Sim City
+Type.......: Hard drive patch (WHDLoad)
+Author.....: Galahad of Fairlight, Wepl
+
+This patch applies to "Sim City", ©1989,1991 Maxis/Infogrames
+
+Versions supported (SPS = IPF number of the Software Preservation Society):
+  512K  SPS 888, 1870, 2192
+  1.0   SPS 1992 (HLS encrypted)
+  1.2   SPS 1953, 2193
+  CDTV
+
+There are two Slaves:
+  SimCity.Slave      floppy versions 512K, 1.0, 1.2 (detected automatically)
+                     requires WHDLoad 17+
+  SimCityCDTV.Slave  CDTV version, requires WHDLoad 21+
+
+With the tooltype Custom1=1 SimCity.Slave starts the program PrintCity
+instead of the game, which prints saved cities. PrintCity exists only on
+the 512K disks, version 1.2 has this function built into the game.
+
+SimCity.Slave uses 512 KB Chip + 768 KB Fast memory, SimCityCDTV.Slave
+uses 960 KB Chip + 304 KB Fast memory.
+Additionally around 1.5 MB (floppy) or 3 MB (CDTV) other memory are
+required for preload.
+Version 1.0 may run too fast on faster machines, in this case use the
+tooltype NoCache or ExpChip.
+
+CD audio (CDTV version):
+The CD audio tracks can be played via WHDLoad. This requires audio
+hardware supported by WHDLoad. The CD audio tracks 2-19 must be compressed
+(e.g. MP3) and copied manually as Track02.mp3 .. Track19.mp3 into the
+directory "data-da" created by the installer. Then enable the tooltype
+"Audio=data-da" in the icon (remove the leading ';').
+
+The CDTV memory card is not supported. Cities can be saved via the disk
+option instead, they are stored as C1.CTY .. C6.CTY in the data directory.
+
+FEATURES:
+- Full load from Hard drive (REAL Files)
+- Lame-o-Protect removed (Doc Check)
+- Save games to Hard drive
+- Quit option is 'F10'
+
+Thanks to Exotica for the icons
+
+NOTES:
+
+Started this install a long time ago, and promptly lost the lot in a 
+hard drive crash!
+
+In a way, thats a bit of a bonus, because KickDOS has been replaced by
+KickEMU and this install now uses files instead of diskimages that it
+did when I first did the install, so its better all round.
+
+Version 1.0 NTSC will be released as and when the KickEMU fault can be fixed.  
+The copy protection for this version is the rather lame-tastic HLS Ben
+Herndon system of Encryption, track check and decryption (2 passes no less!).
+
+This was removed quickly, but there it appears the Maxis method of detecting
+NTSC is rather crude, and it only has problems within the WHDLoad environment
+and nowhere else, so this leads me to believe its a KickEMU fault.
+
+I can't quite understand why Maxis would choose to use this particularly
+stupid protection method for their game.  They put a readme text on the disk
+telling you how to install to hard drive, but this copy protection means that
+you still need the original disk to be able to continue past the protection
+check!! I guess thats why they only used it the once, no other versions
+of Sim City carry this useless 'protection'.
+
+The CDTV version of this game expects 1Meg of Chip ram, so it will not work
+on any Amigas with less.  This game was never intended to be run on anything
+other than a CDTV, so this is to be expected.
+
+Special Regards go out to: Wepl for constantly striving to improve WHDLoad,
+Stingray, Magic Mushroom, WayneK, Jope, DLFRSilver, Musashi, KillerGorilla,
+and most people from EAB, and everyone from my 'illustrious' past who 
+are never forgotten! :)
+
+Regards, Galahad
+
+Version 2.0 (2026-11-08) done by Wepl:
+- one Slave for all floppy versions
+- versions are detected via checksum, random generator is now initialized
+  like on the original (was skipped together with the manual check)
+- CDTV: language is taken from the system (lowlevel.library like)
+- Custom1 starts PrintCity (512K version)
+- version 1.0 supported, the HLS protection is removed without the need of
+  the original disk
+- ZoneEvolutionChart is copied into the install directory
+- CDTV: CD audio tracks are played via WHDLoad (requires WHDLoad 21)
+- CDTV: access fault on loading from the memory card fixed, the memory card
+  is reported as missing, the disk option must be used instead
+- CDTV: memory changed to 960 KB Chip + 304 KB Fast
+- cache problem on starting the simulation (512K) or the maps and graphs
+  windows (1.x) with Fast memory fixed
+- 1.0/1.2: access faults and overwritten exception vectors on drawing into
+  the message line and the graphs window before they are opened fixed
+- new install script
+- source available: https://github.com/wepl/winstalls
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.de
